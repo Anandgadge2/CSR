@@ -18,7 +18,7 @@ const BudgetPieChart = dynamic(() => import("@/components/BudgetPieChart"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full flex items-center justify-center">
-      <div className="w-6 h-6 rounded-full border-2 border-slate-700 border-t-transparent animate-spin" />
+      <div className="w-6 h-6 rounded-full border-2 border-[#1e3a8a] border-t-transparent animate-spin" />
     </div>
   )
 });
@@ -44,9 +44,8 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
     router.push(`/company-dashboard/${tab}`);
   };
 
-  const [totalBudget, setTotalBudget] = useState(10000000); // 1 Crore default
+  const [totalBudget, setTotalBudget] = useState(10000000);
   
-  // Sliders budget allocation (in percentages)
   const [allocations, setAllocations] = useState({
     education: 40,
     healthcare: 30,
@@ -127,16 +126,16 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
   const totalAllocatedPercentage = allocations.education + allocations.healthcare + allocations.water + allocations.environment;
 
   return (
-    <div className="px-6 md:px-12 py-10 max-w-7xl mx-auto flex flex-col gap-8 bg-slate-950 text-slate-100 min-h-screen">
+    <div className="px-6 md:px-10 py-8 max-w-7xl mx-auto flex flex-col gap-7 min-h-screen">
       
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <span className="text-[#f97316] font-bold text-xs uppercase tracking-widest">Sahyadri Technology Ventures Ltd</span>
-        <h1 className="font-heading font-extrabold text-4xl text-slate-100 tracking-tight">Company Console</h1>
+        <span className="text-[#f97316] font-bold text-[11px] uppercase tracking-widest">Sahyadri Technology Ventures Ltd</span>
+        <h1 className="font-heading font-extrabold text-2xl text-slate-900 tracking-tight">Company Console</h1>
       </div>
 
-      {/* Tabs switches */}
-      <div className="flex gap-2 border-b border-slate-800 pb-px overflow-x-auto">
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-slate-200 pb-px overflow-x-auto bg-white rounded-t-lg px-2 pt-1">
         {[
           { id: "overview", label: "Overview Workspace", icon: Layers },
           { id: "budget", label: "Budget Allocations", icon: Sliders },
@@ -150,13 +149,13 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id as CompanyTab)}
-              className={`flex items-center gap-2 px-5 py-3 text-xs font-bold border-b-2 transition-all shrink-0 ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold border-b-2 transition-all shrink-0 ${
                 isActive 
-                  ? "border-[#f97316] text-[#f97316] bg-slate-900/50" 
-                  : "border-transparent text-slate-400 hover:text-slate-200"
+                  ? "border-[#1e3a8a] text-[#1e3a8a] bg-blue-50/50" 
+                  : "border-transparent text-slate-500 hover:text-[#1e3a8a] hover:bg-slate-50"
               }`}
             >
-              <tab.icon size={14} />
+              <tab.icon size={13} />
               {tab.label}
             </button>
           );
@@ -165,19 +164,19 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
 
       {/* 1. Overview */}
       {activeTab === "overview" && (
-        <div className="flex flex-col gap-8 animate-fadeIn">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-col gap-7 animate-fadeIn">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatsCard label="CSR Budget Limit" value={`₹${totalBudget.toLocaleString("en-IN")}`} icon={Coins} />
             <StatsCard label="Funds Allocated" value={`₹${(totalBudget * totalAllocatedPercentage / 100).toLocaleString("en-IN")}`} icon={Award} />
             <StatsCard label="Audited Payments" value="₹17.0 Lakhs" icon={FileCheck2} />
             <StatsCard label="Focus SDGs Supported" value="4 Focus SDGs" icon={Compass} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div className="lg:col-span-2 flex flex-col gap-5">
               <Card>
                 <CardHeader>
-                  <h3 className="font-heading font-bold text-lg text-slate-200">Focus Sector Budget Spread</h3>
+                  <h3 className="govt-section-header">Focus Sector Budget Spread</h3>
                 </CardHeader>
                 <CardContent className="flex flex-col md:flex-row gap-8 items-center justify-around h-[300px]">
                   <div className="w-[200px] h-[200px] shrink-0">
@@ -189,7 +188,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                         <span className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: COLORS[idx] }} />
                         <div className="flex flex-col">
                           <span className="text-slate-500">{item.name}</span>
-                          <span className="text-slate-200 font-bold">₹{item.value.toLocaleString("en-IN")}</span>
+                          <span className="text-slate-800 font-bold">₹{item.value.toLocaleString("en-IN")}</span>
                         </div>
                       </div>
                     ))}
@@ -200,21 +199,21 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
 
             <Card>
               <CardHeader>
-                <h3 className="font-heading font-bold text-lg text-slate-200 flex items-center gap-2">
+                <h3 className="govt-section-header text-base">
                   <Sparkles size={18} className="text-[#f97316]" />
                   Best Matching Proposal
                 </h3>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {matches.slice(0, 1).map((m) => (
-                  <div key={m.id} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col gap-3">
+                  <div key={m.id} className="bg-blue-50 border border-blue-200 p-5 rounded-lg flex flex-col gap-3">
                     <div className="flex justify-between items-center text-xs font-semibold text-[#f97316]">
-                      <span>{m.score}% Compatibility</span>
-                      <span>{m.district}</span>
+                      <span className="govt-badge govt-badge-pending">{m.score}% Match</span>
+                      <span className="text-slate-500">{m.district}</span>
                     </div>
-                    <h4 className="font-heading font-bold text-sm text-slate-100 leading-tight">{m.title}</h4>
+                    <h4 className="font-heading font-bold text-sm text-slate-900 leading-tight">{m.title}</h4>
                     <span className="text-xs text-slate-500 font-medium">NGO: {m.ngo}</span>
-                    <Button variant="primary" size="sm" onClick={() => handleTabChange("recommendations")} className="w-full mt-2">
+                    <Button variant="primary" size="sm" onClick={() => handleTabChange("recommendations")} className="w-full mt-1">
                       Evaluate Match
                     </Button>
                   </div>
@@ -229,29 +228,29 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
       {activeTab === "budget" && (
         <Card className="animate-fadeIn">
           <CardHeader>
-            <h3 className="font-heading font-bold text-xl text-slate-100">Set Sector Investment Allocations</h3>
+            <h3 className="govt-section-header">Set Sector Investment Allocations</h3>
           </CardHeader>
           <CardContent className="flex flex-col gap-8 max-w-2xl">
-            <div className="flex flex-col gap-2 bg-slate-900 p-4 rounded-xl border border-slate-800 text-xs font-medium text-slate-400">
-              <span className="text-slate-200 font-bold">Total Budget Cap:</span>
+            <div className="flex flex-col gap-2 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs font-medium text-slate-500">
+              <span className="text-slate-800 font-bold">Total Budget Cap:</span>
               <input 
                 type="number"
                 value={totalBudget}
                 onChange={(e) => setTotalBudget(Number(e.target.value))}
-                className="bg-slate-950 border border-slate-850 rounded-xl py-2 px-3 text-slate-100 font-bold text-base focus:outline-none focus:border-violet-500 max-w-sm" 
+                className="govt-input font-bold text-base max-w-sm" 
               />
-              <span className="text-[10px] text-slate-600 mt-1 uppercase">Adjust total budget limits to re-scale investments</span>
+              <span className="text-[10px] text-slate-400 mt-1 uppercase">Adjust total budget limits to re-scale investments</span>
             </div>
 
             <div className="flex flex-col gap-6">
               {[
                 { key: "education", label: "Education & Smart Labs", color: "#1e3a8a" },
                 { key: "healthcare", label: "Healthcare & Primary Care Mobile Clinics", color: "#f97316" },
-                { key: "water", label: "Water Harvesting dams", color: "#16a34a" },
+                { key: "water", label: "Water Harvesting Dams", color: "#16a34a" },
                 { key: "environment", label: "Urban Afforestation", color: "#64748b" }
               ].map((sec) => (
                 <div key={sec.key} className="flex flex-col gap-2">
-                  <div className="flex justify-between text-xs font-bold text-slate-200">
+                  <div className="flex justify-between text-xs font-bold text-slate-700">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: sec.color }} />
                       {sec.label}
@@ -264,13 +263,13 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                     max="100" 
                     value={allocations[sec.key as keyof typeof allocations]} 
                     onChange={(e) => handleSliderChange(sec.key as any, Number(e.target.value))}
-                    className="w-full accent-[#f97316] bg-slate-900 rounded-lg cursor-pointer"
+                    className="w-full accent-[#1e3a8a] rounded-lg cursor-pointer"
                   />
                 </div>
               ))}
             </div>
 
-            <div className="flex justify-between items-center text-xs font-bold border-t border-slate-800 pt-4 text-slate-400">
+            <div className="flex justify-between items-center text-xs font-bold border-t border-slate-200 pt-4 text-slate-500">
               <span>Combined Allocation: {totalAllocatedPercentage}%</span>
               <span className={totalAllocatedPercentage > 100 ? "text-rose-600 animate-pulse" : "text-emerald-600"}>
                 {totalAllocatedPercentage > 100 ? "Limit Exceeded (Over 100%)" : "Within Cap Limit"}
@@ -280,74 +279,72 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
         </Card>
       )}
 
-      {/* 3. AI Matches Recommendations */}
+      {/* 3. AI Matches */}
       {activeTab === "recommendations" && (
         <div className="flex flex-col gap-6 animate-fadeIn">
-          <div className="flex justify-between items-center">
-            <h3 className="font-heading font-bold text-xl text-slate-100 flex items-center gap-2">
-              <Sparkles size={20} className="text-[#f97316]" />
-              AI Proposal Recommendations
-            </h3>
-          </div>
+          <h3 className="govt-section-header">
+            <Sparkles size={20} className="text-[#f97316]" />
+            AI Proposal Recommendations
+          </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {matches.map((item) => (
-              <div key={item.id} className="glass-card p-6 rounded-3xl flex flex-col justify-between gap-6">
+              <Card key={item.id} className="flex flex-col justify-between gap-5">
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-center text-xs font-semibold">
-                    <span className="text-[#f97316] bg-[#fff7ed] border border-[#ffedd5] px-3 py-1 rounded-full font-bold">
-                      {item.score}% Match
-                    </span>
+                    <span className="govt-badge govt-badge-pending">{item.score}% Match</span>
                     <span className="text-slate-500 font-medium">NGO: {item.ngo}</span>
                   </div>
-                  <h4 className="font-heading font-bold text-lg text-slate-100 leading-tight">{item.title}</h4>
-                  <p className="text-slate-450 text-xs">Target Focus Area: {item.focus} | Location: {item.district}</p>
+                  <h4 className="font-heading font-bold text-lg text-slate-900 leading-tight">{item.title}</h4>
+                  <p className="text-slate-500 text-xs">Target Focus Area: {item.focus} | Location: {item.district}</p>
                 </div>
                 <div className="flex justify-between items-center text-xs font-bold">
-                  <span className="text-slate-200">Budget: ₹{item.budget.toLocaleString("en-IN")}</span>
-                  <Button variant="primary" size="sm" onClick={() => alert("Proposal accepted for funding escrow.")}>Accept for Escrow</Button>
+                  <span className="text-slate-700">Budget: ₹{item.budget.toLocaleString("en-IN")}</span>
+                  <Button variant="accent" size="sm" onClick={() => alert("Proposal accepted for funding escrow.")}>Accept for Escrow</Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
       )}
 
-      {/* 4. Milestone Tranche Approvals */}
+      {/* 4. Milestone Approvals */}
       {activeTab === "milestones" && (
         <Card className="animate-fadeIn">
           <CardHeader>
-            <h3 className="font-heading font-bold text-xl text-slate-100">Milestones Tranches Escrow Queue</h3>
+            <h3 className="govt-section-header">Milestones Tranches Escrow Queue</h3>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
             {milestones.length > 0 ? (
-              <table className="w-full text-left text-sm text-slate-350">
-                <thead className="text-xs uppercase text-slate-500 border-b border-slate-800 bg-slate-950/65 font-bold">
+              <table className="govt-table">
+                <thead>
                   <tr>
-                    <th className="py-3 px-5">Project Focus</th>
-                    <th className="py-3 px-5">Milestone Description</th>
-                    <th className="py-3 px-5">Recipient NGO</th>
-                    <th className="py-3 px-5">Amount</th>
-                    <th className="py-3 px-5 text-right">Audit Actions</th>
+                    <th>Project Focus</th>
+                    <th>Milestone Description</th>
+                    <th>Recipient NGO</th>
+                    <th>Amount</th>
+                    <th className="text-right">Audit Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 font-medium">
+                <tbody>
                   {milestones.map((m) => (
-                    <tr key={m.id} className="hover:bg-slate-900/40">
-                      <td className="py-4 px-5 font-bold text-slate-200">{m.project}</td>
-                      <td className="py-4 px-5 text-slate-400">{m.name}</td>
-                      <td className="py-4 px-5">{m.ngo}</td>
-                      <td className="py-4 px-5">₹{m.amount.toLocaleString("en-IN")}</td>
-                      <td className="py-4 px-5 text-right flex justify-end gap-2">
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => alert("Evidence ZIP downloaded.")}>View Evidence</Button>
-                        <Button 
-                          variant="primary" 
-                          size="sm"
-                          disabled={releasingId === m.id}
-                          onClick={() => handleReleaseMilestone(m.id, m.amount, m.project, m.ngo)}
-                        >
-                          {releasingId === m.id ? "Releasing..." : "Release Tranche"}
-                        </Button>
+                    <tr key={m.id}>
+                      <td className="font-bold text-slate-800">{m.project}</td>
+                      <td className="text-slate-500">{m.name}</td>
+                      <td>{m.ngo}</td>
+                      <td>₹{m.amount.toLocaleString("en-IN")}</td>
+                      <td className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" className="text-xs" onClick={() => alert("Evidence ZIP downloaded.")}>View Evidence</Button>
+                          <Button 
+                            variant="accent" 
+                            size="sm"
+                            disabled={releasingId === m.id}
+                            onClick={() => handleReleaseMilestone(m.id, m.amount, m.project, m.ngo)}
+                          >
+                            {releasingId === m.id ? "Releasing..." : "Release Tranche"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -364,29 +361,29 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
         </Card>
       )}
 
-      {/* 5. Meetings Coordinator */}
+      {/* 5. Meetings */}
       {activeTab === "meetings" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-fadeIn">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fadeIn">
           
           <Card className="lg:col-span-2">
             <CardHeader>
-              <h3 className="font-heading font-bold text-xl text-slate-100">Scheduled Meetings</h3>
+              <h3 className="govt-section-header">Scheduled Meetings</h3>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-350">
-                <thead className="text-xs uppercase text-slate-500 border-b border-slate-800 bg-slate-950/65 font-bold">
+              <table className="govt-table">
+                <thead>
                   <tr>
-                    <th className="py-3 px-5">Grassroots NGO</th>
-                    <th className="py-3 px-5">Scheduled Date & Time</th>
-                    <th className="py-3 px-5">Meeting Focus Topic</th>
+                    <th>Grassroots NGO</th>
+                    <th>Scheduled Date & Time</th>
+                    <th>Meeting Focus Topic</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 font-medium">
+                <tbody>
                   {meetings.map((meet) => (
-                    <tr key={meet.id} className="hover:bg-slate-900/40">
-                      <td className="py-4 px-5 text-slate-200 font-bold">{meet.ngo}</td>
-                      <td className="py-4 px-5">{meet.date} at {meet.time}</td>
-                      <td className="py-4 px-5">{meet.topic}</td>
+                    <tr key={meet.id}>
+                      <td className="font-bold text-slate-800">{meet.ngo}</td>
+                      <td>{meet.date} at {meet.time}</td>
+                      <td>{meet.topic}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -396,16 +393,16 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
 
           <Card>
             <CardHeader>
-              <h3 className="font-heading font-bold text-lg text-slate-200">Schedule Meeting</h3>
+              <h3 className="govt-section-header text-base">Schedule Meeting</h3>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddMeeting} className="flex flex-col gap-4 text-xs font-semibold text-slate-400">
+              <form onSubmit={handleAddMeeting} className="flex flex-col gap-4 text-xs font-semibold text-slate-600">
                 <div className="flex flex-col gap-1.5">
-                  <span>Target NGO Partner:</span>
+                  <label className="text-slate-700">Target NGO Partner:</label>
                   <select 
                     value={mNgo} 
                     onChange={(e) => setMNgo(e.target.value)}
-                    className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none"
+                    className="govt-input"
                   >
                     <option>Sahyadri Eco Foundation</option>
                     <option>Udan Welfare Society</option>
@@ -414,35 +411,35 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <span>Meeting Date:</span>
+                    <label className="text-slate-700">Meeting Date:</label>
                     <input 
                       type="date" 
                       value={mDate} 
                       onChange={(e) => setMDate(e.target.value)}
-                      className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none" 
+                      className="govt-input" 
                       required 
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <span>Meeting Time:</span>
+                    <label className="text-slate-700">Meeting Time:</label>
                     <input 
                       type="text" 
                       value={mTime} 
                       onChange={(e) => setMTime(e.target.value)}
                       placeholder="e.g. 11:30 AM"
-                      className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none" 
+                      className="govt-input" 
                       required 
                     />
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span>Agenda / Topic:</span>
+                  <label className="text-slate-700">Agenda / Topic:</label>
                   <input 
                     type="text" 
                     value={mTopic} 
                     onChange={(e) => setMTopic(e.target.value)}
                     placeholder="e.g. Discuss dam site audits"
-                    className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none" 
+                    className="govt-input" 
                     required 
                   />
                 </div>
@@ -454,34 +451,34 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
         </div>
       )}
 
-      {/* 6. Spend Auditing logs */}
+      {/* 6. Audit */}
       {activeTab === "audit" && (
         <Card className="animate-fadeIn">
           <CardHeader className="flex justify-between items-center sm:flex-row flex-col gap-4">
-            <h3 className="font-heading font-bold text-xl text-slate-100">Compliance Audit Ledger</h3>
-            <Button variant="outline" size="sm" className="flex items-center gap-1.5 shadow-sm" onClick={() => alert("Board PDF Summary Downloaded.")}>
+            <h3 className="govt-section-header">Compliance Audit Ledger</h3>
+            <Button variant="outline" size="sm" className="flex items-center gap-1.5" onClick={() => alert("Board PDF Summary Downloaded.")}>
               <Download size={14} /> Download Board Summary (PDF)
             </Button>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-350">
-              <thead className="text-xs uppercase text-slate-500 border-b border-slate-800 bg-slate-950/65 font-bold">
+            <table className="govt-table">
+              <thead>
                 <tr>
-                  <th className="py-3 px-5">Date Sourced</th>
-                  <th className="py-3 px-5">Initiative Details</th>
-                  <th className="py-3 px-5">Payment Nature</th>
-                  <th className="py-3 px-5">Transacted Amount</th>
-                  <th className="py-3 px-5 text-right">Audit Status</th>
+                  <th>Date Sourced</th>
+                  <th>Initiative Details</th>
+                  <th>Payment Nature</th>
+                  <th>Transacted Amount</th>
+                  <th className="text-right">Audit Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 font-medium">
+              <tbody>
                 {auditLogs.map((log, index) => (
-                  <tr key={index} className="hover:bg-slate-900/40">
-                    <td className="py-4 px-5 text-slate-400">{log.date}</td>
-                    <td className="py-4 px-5 font-bold text-slate-250">{log.project}</td>
-                    <td className="py-4 px-5">{log.type}</td>
-                    <td className="py-4 px-5">₹{log.amount.toLocaleString("en-IN")}</td>
-                    <td className="py-4 px-5 text-right text-emerald-600 font-bold">{log.status}</td>
+                  <tr key={index}>
+                    <td className="text-slate-500">{log.date}</td>
+                    <td className="font-bold text-slate-800">{log.project}</td>
+                    <td>{log.type}</td>
+                    <td>₹{log.amount.toLocaleString("en-IN")}</td>
+                    <td className="text-right"><span className="govt-badge govt-badge-verified">{log.status}</span></td>
                   </tr>
                 ))}
               </tbody>
