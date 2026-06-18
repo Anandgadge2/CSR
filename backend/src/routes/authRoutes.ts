@@ -2,6 +2,7 @@ import { Router } from "express";
 import { register, login, verifyOtp, refresh, logout } from "../controllers/authController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { z } from "zod";
+import { rateLimit } from "../middlewares/rateLimitMiddleware";
 
 const router = Router();
 
@@ -49,9 +50,12 @@ const verifyOtpSchema = z.object({
   })
 });
 
-router.post("/register", validateRequest(registerSchema), register);
-router.post("/verify-otp", validateRequest(verifyOtpSchema), verifyOtp);
-router.post("/login", validateRequest(loginSchema), login);
+const authRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 25, keyPrefix: "auth" });
+const otpRateLimit = rateLimit({ windowMs: 10 * 60 * 1000, max: 8, keyPrefix: "otp" });
+
+router.post("/register", authRateLimit, validateRequest(registerSchema), register);
+router.post("/verify-otp", otpRateLimit, validateRequest(verifyOtpSchema), verifyOtp);
+router.post("/login", authRateLimit, validateRequest(loginSchema), login);
 router.post("/refresh", refresh);
 router.post("/logout", logout);
 

@@ -4,9 +4,10 @@ import jwt from "jsonwebtoken";
 import prisma from "../config/db";
 import { Role, VerificationStatus } from "@prisma/client";
 import { sendOtpEmail } from "../utils/mailer";
+import { getJwtRefreshSecret, getJwtSecret } from "../config/env";
 
-const JWT_SECRET = process.env.JWT_SECRET || "mahacsr_super_secret_jwt_sign_key_2026";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "mahacsr_super_secret_jwt_refresh_sign_key_2026";
+const JWT_SECRET = getJwtSecret();
+const JWT_REFRESH_SECRET = getJwtRefreshSecret();
 
 // Helper to generate access & refresh tokens
 const generateTokens = (user: { id: string; email: string; role: Role; ngoId?: string | null; companyId?: string | null }) => {

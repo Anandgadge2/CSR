@@ -15,7 +15,13 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response, next
     if (district) filter.district = district as string;
     
     if (status) {
-      filter.status = status as ProjectStatus;
+      if (req.user?.role === Role.SUPER_ADMIN) {
+        filter.status = status as ProjectStatus;
+      } else if (status === ProjectStatus.DRAFT || status === ProjectStatus.REJECTED) {
+        filter.status = { notIn: ["DRAFT", "REJECTED"] };
+      } else {
+        filter.status = status as ProjectStatus;
+      }
     } else {
       // NGO can see drafts; others see only submitted or beyond
       if (req.user?.role === Role.NGO_ADMIN || req.user?.role === Role.NGO_MEMBER) {
@@ -67,6 +73,14 @@ export const getProjectById = async (req: AuthenticatedRequest, res: Response, n
       return res.status(404).json({ error: "Project not found" });
     }
 
+    const canViewRestrictedProject = req.user?.role === Role.SUPER_ADMIN || req.user?.ngoId === project.ngoId;
+    if (
+      (project.status === ProjectStatus.DRAFT || project.status === ProjectStatus.REJECTED) &&
+      !canViewRestrictedProject
+    ) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
     return res.json(project);
   } catch (error) {
     next(error);
@@ -78,7 +92,7 @@ export const createProject = async (req: AuthenticatedRequest, res: Response, ne
   try {
     const { title, description, focusArea, sdgGoal, beneficiaryCount, budgetRequested, district, taluka, village, startDate, endDate } = req.body;
 
-    if (!req.user?.ngoId) {
+    if (!req.user?.ngoId || (req.user.role !== Role.NGO_ADMIN && req.user.role !== Role.NGO_MEMBER)) {
       return res.status(403).json({ error: "Only users linked to an NGO can create project proposals" });
     }
 
@@ -133,7 +147,7 @@ export const updateProjectStatus = async (req: AuthenticatedRequest, res: Respon
 
     // Auth validation
     if (status === ProjectStatus.SUBMITTED) {
-      if (req.user?.role !== Role.NGO_ADMIN && req.user?.ngoId !== project.ngoId) {
+      if ((req.user?.role !== Role.NGO_ADMIN && req.user?.role !== Role.NGO_MEMBER) || req.user?.ngoId !== project.ngoId) {
         return res.status(403).json({ error: "Unauthorized operation" });
       }
     } else if (status === ProjectStatus.APPROVED || status === ProjectStatus.REJECTED || status === ProjectStatus.UNDER_REVIEW) {

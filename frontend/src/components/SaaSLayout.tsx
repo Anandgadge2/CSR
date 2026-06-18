@@ -10,6 +10,7 @@ import {
   Clock, Users, Calendar
 } from "lucide-react";
 import { Button } from "./ui/Button";
+import { apiFetch, getStoredUser } from "@/lib/api";
 
 interface SaaSLayoutProps {
   children: React.ReactNode;
@@ -23,6 +24,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [activeLanguage, setActiveLanguage] = useState<"EN" | "MH">("EN");
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; isRead: boolean }>>([]);
+  const [userEmail, setUserEmail] = useState("user@mahacsr.gov.in");
 
   const isDashboard = pathname.startsWith("/ngo-dashboard") || 
                       pathname.startsWith("/company-dashboard") || 
@@ -36,6 +39,44 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     setNotificationsOpen(false);
     setUserDropdownOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isDashboard) return;
+
+    const token = localStorage.getItem("accessToken");
+    const user = getStoredUser();
+
+    if (!token || !user) {
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    setUserEmail(user.email || "user@mahacsr.gov.in");
+
+    const role = user.role as string;
+    const allowed =
+      (pathname.startsWith("/ngo-dashboard") && ["NGO_ADMIN", "NGO_MEMBER"].includes(role)) ||
+      (pathname.startsWith("/company-dashboard") && ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) ||
+      (pathname.startsWith("/government-portal") && role === "SUPER_ADMIN") ||
+      (pathname.startsWith("/admin") && role === "SUPER_ADMIN") ||
+      pathname.startsWith("/chat") ||
+      pathname.startsWith("/analytics");
+
+    if (!allowed) {
+      if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) router.push("/ngo-dashboard");
+      else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) router.push("/company-dashboard");
+      else if (role === "SUPER_ADMIN") router.push("/admin");
+      else router.push("/");
+    }
+  }, [isDashboard, pathname, router]);
+
+  useEffect(() => {
+    if (!isDashboard) return;
+
+    apiFetch<Array<{ id: string; title: string; message: string; isRead: boolean }>>("/notifications")
+      .then(setNotifications)
+      .catch(() => setNotifications([]));
+  }, [isDashboard, pathname]);
 
   // const toggleLanguage = () => {
   //   setActiveLanguage(prev => prev === "EN" ? "MH" : "EN");
@@ -203,11 +244,17 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             <input 
               type="text" 
               placeholder="Search proposals, NGOs, or metrics..." 
-              className="govt-input pl-9"
+              className="govt-input pr-10 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all font-sans"
+              style={{ paddingLeft: "2.5rem" }}
             />
             <Search size={14} className="absolute left-3 text-slate-400" />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none text-[10px] font-extrabold text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md">
+              <span>⌘</span>
+              <span>K</span>
+            </div>
           </div>
         )}
+
 
         {/* Right Actions */}
         <div className="flex items-center gap-4">
@@ -235,24 +282,42 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
                 >
                   <Bell size={18} />
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white" />
+                  {notifications.some((notification) => !notification.isRead) && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white" />
+                  )}
                 </button>
                 
                 {notificationsOpen && (
                   <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 rounded-xl p-4 shadow-lg z-50 flex flex-col gap-3">
                     <div className="flex justify-between items-center pb-2 border-b border-slate-200">
                       <span className="text-xs font-extrabold text-slate-100">Notifications</span>
-                      <span className="text-[10px] text-[#1e3a8a] font-bold cursor-pointer hover:underline">Clear all</span>
+                      <button
+                        onClick={() => {
+                          apiFetch("/notifications/read-all", { method: "PATCH" })
+                            .then(() => setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))))
+                            .catch(() => {});
+                        }}
+                        className="text-[10px] text-[#1e3a8a] font-bold cursor-pointer hover:underline"
+                      >
+                        Clear all
+                      </button>
                     </div>
                     <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                      <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex flex-col gap-1 text-[11px]">
-                        <span className="font-bold text-amber-800">NGO Darpan Filing Outdated</span>
-                        <span className="text-amber-600">Compliance documentation requires immediate updating.</span>
-                      </div>
-                      <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex flex-col gap-1 text-[11px]">
-                        <span className="font-bold text-blue-800">Milestone Release Approved</span>
-                        <span className="text-blue-600">Tranche of ₹5,00,000 has been verified.</span>
-                      </div>
+                      {notifications.length === 0 ? (
+                        <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-500">
+                          No notifications yet.
+                        </div>
+                      ) : notifications.slice(0, 8).map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`p-3 rounded-lg border flex flex-col gap-1 text-[11px] ${
+                            notification.isRead ? "bg-slate-50 border-slate-200" : "bg-blue-50 border-blue-200"
+                          }`}
+                        >
+                          <span className="font-bold text-slate-800">{notification.title}</span>
+                          <span className="text-slate-600">{notification.message}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -273,7 +338,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   <div className="absolute right-0 mt-3 w-52 bg-white border border-slate-200 rounded-xl py-2 shadow-lg z-50">
                     <div className="px-4 py-2.5 border-b border-slate-100 flex flex-col">
                       <span className="text-xs font-bold text-slate-100">User Account</span>
-                      <span className="text-[10px] text-slate-400 truncate">user@mahacsr.gov.in</span>
+                      <span className="text-[10px] text-slate-400 truncate">{userEmail}</span>
                     </div>
                     <button 
                       onClick={() => router.push("/ngo-dashboard")}

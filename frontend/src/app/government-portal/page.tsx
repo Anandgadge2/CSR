@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { StatsCard } from "@/components/ui/StatsCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import dynamic from "next/dynamic";
+import { apiFetch } from "@/lib/api";
 
 const GisMap = dynamic(() => import("@/components/GisMap"), {
   ssr: false,
@@ -50,6 +51,41 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
     router.push(`/government-portal/${tab}`);
   };
 
+  useEffect(() => {
+    Promise.all([
+      apiFetch<any[]>("/ngos?status=PENDING"),
+      apiFetch<any[]>("/companies?status=PENDING"),
+      apiFetch<any[]>("/projects?status=SUBMITTED")
+    ])
+      .then(([ngoRows, companyRows, projectRows]) => {
+        setNgos(ngoRows.map((ngo) => ({
+          id: ngo.id,
+          name: ngo.name,
+          darpanId: ngo.darpanNumber,
+          csr1: ngo.csr1Number,
+          district: ngo.district,
+          contact: ngo.website || "Not published"
+        })));
+        setCompanies(companyRows.map((company) => ({
+          id: company.id,
+          name: company.name,
+          budget: `INR ${Number(company.csrBudget).toLocaleString("en-IN")}`,
+          industry: company.contactInfo?.industry || "Corporate",
+          district: company.contactInfo?.district || "Maharashtra"
+        })));
+        setProjects(projectRows.map((project) => ({
+          id: project.id,
+          title: project.title,
+          budget: Number(project.budgetRequested),
+          focusArea: project.focusArea,
+          district: project.district,
+          taluka: project.taluka,
+          ngo: project.ngo?.name || "Registered NGO"
+        })));
+      })
+      .catch(() => {});
+  }, []);
+
   // Mock NGO registrations awaiting verification
   const [ngos, setNgos] = useState([
     { id: "ngo-x", name: "Vidarbha Adivasi Vikas Sanstha", darpanId: "MH/2023/048591", csr1: "CSR-1 Pending", district: "Gadchiroli", contact: "vidarbha_adivasi@domain.org" },
@@ -83,6 +119,10 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
 
   const handleVerifyNgo = (id: string, approve: boolean) => {
     setAuditedNgoIds([...auditedNgoIds, id]);
+    apiFetch(`/ngos/${id}/verify`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: approve ? "VERIFIED" : "REJECTED", rejectionReason: approve ? undefined : "Flagged for credentials audit" })
+    }).catch(() => {});
     setTimeout(() => {
       setNgos(ngos.filter(n => n.id !== id));
       alert(approve ? "NGO approved and credentials activated." : "NGO flagged for credentials audit.");
@@ -90,6 +130,10 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
   };
 
   const handleVerifyCompany = (id: string, approve: boolean) => {
+    apiFetch(`/companies/${id}/verify`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: approve ? "VERIFIED" : "REJECTED", rejectionReason: approve ? undefined : "Flagged for budget audit" })
+    }).catch(() => {});
     setTimeout(() => {
       setCompanies(companies.filter(c => c.id !== id));
       alert(approve ? "Corporate account verified." : "Corporate flagged for budget audit.");
@@ -98,6 +142,10 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
 
   const handleVerifyProject = (id: string, approve: boolean) => {
     setAuditedProjIds([...auditedProjIds, id]);
+    apiFetch(`/projects/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: approve ? "APPROVED" : "REJECTED" })
+    }).catch(() => {});
     setTimeout(() => {
       setProjects(projects.filter(p => p.id !== id));
       alert(approve ? "Project proposal listed in public directories." : "Project proposal rejected.");
@@ -112,45 +160,144 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
     setNewCirBody("");
   };
 
+  const pageMeta: Record<GovTab, { title: string; description: string; office: string; status: string }> = {
+    statewide: {
+      title: "Statewide CSR Oversight",
+      description: "Consolidated monitor for funds sourced, verified institutions, disbursed capital, and district-level compliance posture.",
+      office: "State CSR Monitoring Cell",
+      status: "Live monitoring"
+    },
+    district: {
+      title: "District Coverage Register",
+      description: "District-wise CSR penetration, verified NGO availability, project density, and sourcing gaps for administrative review.",
+      office: "District Coordination Desk",
+      status: "Reviewed monthly"
+    },
+    analytics: {
+      title: "CSR Sourcing Analytics",
+      description: "Trend analysis for CSR capital mobilization, beneficiary reach, project approvals, and statewide implementation velocity.",
+      office: "Data and Evaluation Unit",
+      status: "Dashboard view"
+    },
+    "ngo-verify": {
+      title: "NGO Verification Desk",
+      description: "Credential review queue for NGO Darpan, CSR-1, PAN, 12A/80G, registration, and location records.",
+      office: "Registration Audit Cell",
+      status: `${ngos.length} pending`
+    },
+    "company-verify": {
+      title: "Corporate Verification Desk",
+      description: "Corporate identity, CSR budget, CIN, GST, PAN, focus-area, and policy validation before platform activation.",
+      office: "Corporate Compliance Cell",
+      status: `${companies.length} pending`
+    },
+    "project-verify": {
+      title: "Project Approval Desk",
+      description: "Administrative review queue for NGO proposals before listing them in the CSR project marketplace.",
+      office: "Project Sanction Committee",
+      status: `${projects.length} pending`
+    },
+    monitoring: {
+      title: "Milestone Inspection Register",
+      description: "Milestone evidence, field review, tranche readiness, and unresolved inspection matters for funded initiatives.",
+      office: "Inspection and Escrow Cell",
+      status: "Operational"
+    },
+    compliance: {
+      title: "Compliance Audit Register",
+      description: "Regulatory watchlist for overdue documents, rejected filings, funding exceptions, and audit follow-up.",
+      office: "Compliance Review Cell",
+      status: "Audit mode"
+    },
+    impact: {
+      title: "Impact Assessment Desk",
+      description: "Beneficiary outcomes, SDG coverage, focus-sector reach, and outcome evidence for completed and active projects.",
+      office: "Impact Evaluation Unit",
+      status: "Assessment view"
+    },
+    heatmaps: {
+      title: "GIS Heatmap Monitor",
+      description: "Geographic view of CSR project activity, funding density, beneficiary coverage, and under-served districts.",
+      office: "GIS and Planning Cell",
+      status: "Map view"
+    },
+    circulars: {
+      title: "Government Circular Management",
+      description: "Publish and maintain policy circulars, government resolutions, guidelines, and administrative advisories.",
+      office: "Policy Publication Desk",
+      status: "Drafting enabled"
+    },
+    knowledge: {
+      title: "Knowledge Index",
+      description: "Reference material for CSR rules, NGO registration, Section 135 compliance, and operational guidance.",
+      office: "Knowledge Management Cell",
+      status: "Reference view"
+    },
+    feedback: {
+      title: "Citizen Feedback Register",
+      description: "Track suggestions, grievances, field observations, and user feedback for administrative follow-up.",
+      office: "Public Grievance Cell",
+      status: `${feedbacks.length} entries`
+    },
+    audit: {
+      title: "System Audit Trail",
+      description: "Event history for verification actions, user access, data changes, and administrative decisions.",
+      office: "Security Audit Cell",
+      status: "Restricted"
+    },
+    settings: {
+      title: "Government Portal Settings",
+      description: "Administrative configuration for government portal workflows, publishing, and audit preferences.",
+      office: "System Administration",
+      status: "Restricted"
+    },
+    reports: {
+      title: "Government Reports Desk",
+      description: "Generate official summaries for district performance, CSR utilization, verification backlog, and compliance.",
+      office: "Reporting Cell",
+      status: "Export ready"
+    }
+  };
+
+  const currentPage = pageMeta[activeTab] || pageMeta.statewide;
+
   return (
     <div className="px-6 md:px-10 py-8 max-w-7xl mx-auto flex flex-col gap-7 min-h-screen">
       
       {/* Header Banner */}
-      <div className="flex flex-col gap-1">
-        <span className="text-[#f97316] font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
-          <ShieldAlert size={14} /> Maharashtra CSR Authority (महाराष्ट्र शासन)
-        </span>
-        <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">Government Audit Portal</h1>
-      </div>
-
-      {/* Gov Sub-Tabs Switches */}
-      <div className="flex gap-1 border-b border-gray-200 pb-px overflow-x-auto bg-gray-50/70 rounded-t-xl px-3 pt-2">
-        {[
-          { id: "statewide", label: "Statewide Monitor", icon: Layers },
-          { id: "district", label: "District Grids", icon: MapPin },
-          { id: "analytics", label: "Sourcing Analytics", icon: BarChart2 },
-          { id: "ngo-verify", label: "NGO Verifications", icon: Landmark },
-          { id: "company-verify", label: "Corporate Verifications", icon: Building2 },
-          { id: "project-verify", label: "Project Approvals", icon: ShieldCheck },
-          { id: "circulars", label: "Circulars Editor", icon: FileText },
-          { id: "feedback", label: "Citizen Feedbacks", icon: MessageSquare }
-        ].map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id as GovTab)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold border-b-2 transition-all shrink-0 ${
-                isActive 
-                  ? "border-[#f97316] text-[#f97316] bg-white rounded-t-lg shadow-sm" 
-                  : "border-transparent text-gray-500 hover:text-[#f97316] hover:bg-gray-100/50"
-              }`}
-            >
-              <tab.icon size={13} />
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="h-1.5 bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
+        <div className="p-6 md:p-7 flex flex-col gap-5">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
+            <div className="flex flex-col gap-2 max-w-3xl">
+              <span className="text-[#f97316] font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
+                <ShieldAlert size={14} /> Maharashtra CSR Authority
+              </span>
+              <div>
+                <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-slate-950 tracking-tight">{currentPage.title}</h1>
+                <p className="text-sm text-slate-600 mt-2 leading-relaxed">{currentPage.description}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs min-w-0 lg:min-w-[440px]">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <span className="block text-[10px] font-bold uppercase text-slate-500">Office</span>
+                <span className="block mt-1 font-bold text-slate-900">{currentPage.office}</span>
+              </div>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                <span className="block text-[10px] font-bold uppercase text-emerald-700">Status</span>
+                <span className="block mt-1 font-bold text-emerald-900">{currentPage.status}</span>
+              </div>
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 col-span-2 sm:col-span-1">
+                <span className="block text-[10px] font-bold uppercase text-blue-700">Access Class</span>
+                <span className="block mt-1 font-bold text-blue-950">Super Admin</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-slate-200 pt-4 text-[11px] font-semibold text-slate-500">
+            <span>Government of Maharashtra | Department of Industries and Social Welfare</span>
+            <span>Last reviewed: {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span>
+          </div>
+        </div>
       </div>
 
       {/* Tab 1: Statewide Monitor */}
@@ -484,6 +631,240 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
                 ))}
               </tbody>
             </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "monitoring" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <h3 className="govt-section-header">
+                <Calendar size={20} />
+                Milestone Inspection Queue
+              </h3>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="govt-table">
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Inspection Stage</th>
+                    <th>District</th>
+                    <th>Due Date</th>
+                    <th className="text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { project: "Gadchiroli Watershed Initiative", stage: "Check dam structure verification", district: "Gadchiroli", due: "25 Jun 2026", status: "Field visit due" },
+                    { project: "Pune Smart Classrooms", stage: "Asset delivery confirmation", district: "Pune", due: "30 Jun 2026", status: "Document review" }
+                  ].map((row) => (
+                    <tr key={row.project}>
+                      <td className="font-bold text-slate-800">{row.project}</td>
+                      <td>{row.stage}</td>
+                      <td>{row.district}</td>
+                      <td>{row.due}</td>
+                      <td className="text-right"><span className="govt-badge govt-badge-pending">{row.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <h3 className="govt-section-header text-base">
+                <AlertTriangle size={18} />
+                Inspection Controls
+              </h3>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-xs text-slate-600">
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">Require geo-tagged evidence for every tranche release.</div>
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">Escalate overdue inspections after 7 working days.</div>
+              <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">Maintain physical verification notes for audit retention.</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "compliance" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
+          {[
+            { title: "NGO Credential Expiry Watch", value: "12 records", tone: "amber", detail: "12A/80G, CSR-1, Darpan, and registration renewals due within 60 days." },
+            { title: "Funding Exception Review", value: "3 records", tone: "rose", detail: "Milestone releases requiring secondary approval before clearance." },
+            { title: "Corporate Filing Pending", value: "5 records", tone: "blue", detail: "CSR policy, board approval, and budget declaration records pending validation." },
+            { title: "Audit Completed This Month", value: "42 records", tone: "emerald", detail: "Verification decisions logged with user, timestamp, and organization reference." }
+          ].map((item) => (
+            <Card key={item.title}>
+              <CardContent className="p-5 flex flex-col gap-2">
+                <span className="text-[10px] font-bold uppercase text-slate-500">{item.title}</span>
+                <span className="text-2xl font-extrabold text-slate-900">{item.value}</span>
+                <p className="text-xs text-slate-600 leading-relaxed">{item.detail}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "impact" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <h3 className="govt-section-header">
+                <BarChart2 size={20} />
+                Impact Assessment Matrix
+              </h3>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="govt-table">
+                <thead>
+                  <tr>
+                    <th>Focus Area</th>
+                    <th>Beneficiaries</th>
+                    <th>Districts</th>
+                    <th>Projects</th>
+                    <th className="text-right">Outcome Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["Education", "62,400", "12", "41", "Strong"],
+                    ["Water Conservation", "38,200", "8", "22", "Strong"],
+                    ["Healthcare", "54,000", "10", "29", "Moderate"],
+                    ["Environment", "21,700", "7", "16", "Moderate"]
+                  ].map(([focus, beneficiaries, districts, projectCount, rating]) => (
+                    <tr key={focus}>
+                      <td className="font-bold text-slate-800">{focus}</td>
+                      <td>{beneficiaries}</td>
+                      <td>{districts}</td>
+                      <td>{projectCount}</td>
+                      <td className="text-right"><span className="govt-badge govt-badge-verified">{rating}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <h3 className="govt-section-header text-base">Assessment Notes</h3>
+            </CardHeader>
+            <CardContent className="text-xs text-slate-600 leading-relaxed">
+              Outcome ratings should be based on verified beneficiary evidence, tranche completion, district officer review, and post-implementation checks.
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "heatmaps" && (
+        <Card className="animate-fadeIn">
+          <CardHeader>
+            <h3 className="govt-section-header">
+              <MapPin size={20} />
+              GIS Funding and Project Density Heatmap
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <GisMap />
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "knowledge" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
+          {[
+            ["Section 135 Compliance", "CSR applicability, board committee duties, spending requirements, and annual disclosure rules."],
+            ["NGO Registration Checklist", "Darpan, CSR-1, PAN, 12A, 80G, audited statements, and office location validation."],
+            ["Milestone Evidence Standards", "Geo-tagged photos, beneficiary records, invoices, field reports, and completion certificates."],
+            ["District Priority Guidance", "Aspirational talukas, tribal areas, water-stress zones, and school infrastructure needs."]
+          ].map(([title, detail]) => (
+            <Card key={title}>
+              <CardContent className="p-5 flex flex-col gap-2">
+                <span className="font-bold text-slate-900">{title}</span>
+                <p className="text-xs text-slate-600 leading-relaxed">{detail}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "audit" && (
+        <Card className="animate-fadeIn">
+          <CardHeader>
+            <h3 className="govt-section-header">
+              <FileText size={20} />
+              Administrative Audit Trail
+            </h3>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="govt-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Officer</th>
+                  <th>Action</th>
+                  <th className="text-right">Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  ["18 Jun 2026, 16:10", "admin@mahacsr.gov.in", "NGO verification reviewed", "NGO-QUEUE"],
+                  ["18 Jun 2026, 15:42", "admin@mahacsr.gov.in", "Project approval desk opened", "PROJECT-QUEUE"],
+                  ["18 Jun 2026, 15:20", "system", "Matching scores recalculated", "MATCHING"]
+                ].map(([time, officer, action, ref]) => (
+                  <tr key={`${time}-${action}`}>
+                    <td>{time}</td>
+                    <td className="font-bold text-slate-800">{officer}</td>
+                    <td>{action}</td>
+                    <td className="text-right font-bold text-[#1e3a8a]">{ref}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "settings" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
+          {[
+            ["Verification SLA", "7 working days", "Maximum review period for pending NGO, corporate, and project queues."],
+            ["Escalation Threshold", "3 reminders", "Automatic escalation to state office after repeated unresolved compliance notices."],
+            ["Report Retention", "8 years", "Audit and evidence records retained for statutory and administrative review."],
+            ["Access Mode", "Super Admin only", "Government configuration pages are restricted to platform administrators."]
+          ].map(([label, value, detail]) => (
+            <Card key={label}>
+              <CardContent className="p-5 flex flex-col gap-2">
+                <span className="text-[10px] font-bold uppercase text-slate-500">{label}</span>
+                <span className="text-xl font-extrabold text-slate-900">{value}</span>
+                <p className="text-xs text-slate-600">{detail}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "reports" && (
+        <Card className="animate-fadeIn max-w-3xl">
+          <CardHeader>
+            <h3 className="govt-section-header">
+              <FileDown size={20} />
+              Official Reports Desk
+            </h3>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              "District CSR Utilization Report",
+              "Verification Backlog Summary",
+              "CSR Funding and Tranche Register",
+              "Annual State Impact Statement"
+            ].map((report) => (
+              <Button key={report} variant="outline" className="justify-between py-3">
+                <span>{report}</span>
+                <Download size={14} />
+              </Button>
+            ))}
           </CardContent>
         </Card>
       )}

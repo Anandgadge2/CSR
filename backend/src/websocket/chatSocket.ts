@@ -1,6 +1,7 @@
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import prisma from "../config/db";
+import { getJwtSecret } from "../config/env";
 
 interface SocketUser {
   id: string;
@@ -17,7 +18,7 @@ export const registerChatSocket = (io: Server) => {
       return next(new Error("Authentication error: Token required"));
     }
 
-    jwt.verify(token, process.env.JWT_SECRET || "mahacsr_super_secret_jwt_sign_key_2026", (err: any, decoded: any) => {
+    jwt.verify(token, getJwtSecret(), (err: any, decoded: any) => {
       if (err) {
         return next(new Error("Authentication error: Invalid token"));
       }

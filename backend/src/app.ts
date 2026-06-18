@@ -4,9 +4,11 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Server } from "socket.io";
+import { assertProductionEnv, getAllowedOrigins } from "./config/env";
 
 // Configurations
 dotenv.config();
+assertProductionEnv();
 
 // Routes
 import authRoutes from "./routes/authRoutes";
@@ -16,6 +18,12 @@ import projectRoutes from "./routes/projectRoutes";
 import matchingRoutes from "./routes/matchingRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
+import chatRoutes from "./routes/chatRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import auditRoutes from "./routes/auditRoutes";
+import documentRoutes from "./routes/documentRoutes";
+import reportRoutes from "./routes/reportRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 // Middlewares
 import { errorHandler } from "./middlewares/errorMiddleware";
@@ -26,8 +34,8 @@ const server = http.createServer(app);
 
 // CORS setup
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : ["http://localhost:3000", "http://127.0.0.1:3000", "https://csr-seven.vercel.app","https://csr-backend-five.vercel.app"];
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : getAllowedOrigins();
 
 const corsOptions = {
   origin: allowedOrigins,
@@ -53,6 +61,12 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/matching", matchingRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/chats", chatRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/audit-logs", auditRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Base route
 app.get("/", (req, res) => {

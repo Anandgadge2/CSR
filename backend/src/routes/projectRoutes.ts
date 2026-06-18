@@ -8,7 +8,7 @@ import {
   submitMilestoneEvidence,
   releaseMilestoneFunding
 } from "../controllers/projectController";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
 import { Role } from "@prisma/client";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { z } from "zod";
@@ -44,10 +44,16 @@ const milestonesSchema = z.object({
   })
 });
 
-router.get("/", authenticateToken, getProjects);
-router.get("/:id", authenticateToken, getProjectById);
+const statusSchema = z.object({
+  body: z.object({
+    status: z.enum(["DRAFT", "SUBMITTED", "UNDER_REVIEW", "APPROVED", "REJECTED", "FUNDED", "COMPLETED"])
+  })
+});
+
+router.get("/", optionalAuthenticateToken, getProjects);
+router.get("/:id", optionalAuthenticateToken, getProjectById);
 router.post("/", authenticateToken, validateRequest(projectCreateSchema), createProject);
-router.patch("/:id/status", authenticateToken, updateProjectStatus);
+router.patch("/:id/status", authenticateToken, validateRequest(statusSchema), updateProjectStatus);
 router.post("/:id/milestones", authenticateToken, validateRequest(milestonesSchema), addProjectMilestones);
 router.patch("/milestones/:milestoneId/submit", authenticateToken, submitMilestoneEvidence);
 router.patch("/milestones/:milestoneId/approve", authenticateToken, releaseMilestoneFunding);

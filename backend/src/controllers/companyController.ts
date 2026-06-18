@@ -37,6 +37,13 @@ export const getCompanyById = async (req: AuthenticatedRequest, res: Response, n
       return res.status(404).json({ error: "Company not found" });
     }
 
+    const canViewRestrictedProfile =
+      req.user?.role === Role.SUPER_ADMIN || req.user?.companyId === company.id;
+
+    if (company.status !== VerificationStatus.VERIFIED && !canViewRestrictedProfile) {
+      return res.status(404).json({ error: "Company not found" });
+    }
+
     return res.json(company);
   } catch (error) {
     next(error);
@@ -48,7 +55,8 @@ export const updateCompany = async (req: AuthenticatedRequest, res: Response, ne
     const { id } = req.params;
     const { name, csrBudget, focusAreas, contactInfo, csrPolicyUrl } = req.body;
 
-    if (req.user?.role === Role.COMPANY_ADMIN && req.user.companyId !== id) {
+    const canUpdateCompany = req.user?.role === Role.SUPER_ADMIN || req.user?.companyId === id;
+    if (!canUpdateCompany) {
       return res.status(403).json({ error: "Forbidden: You do not own this profile" });
     }
 

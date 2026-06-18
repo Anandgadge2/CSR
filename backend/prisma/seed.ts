@@ -1,12 +1,13 @@
 import { PrismaClient, Role, VerificationStatus, ProjectStatus, MilestoneStatus } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-// Pre-hashed bcrypt string for "Password123"
-const DEFAULT_PASSWORD_HASH = "$2b$10$Epjvit763f7A56sKp6W1euK6R5rNfT6P9/Z1Nf6t.GkF8z7X.B6d2";
+const DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || "Password123";
 
 async function main() {
   console.log("Starting database seed...");
+  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
   await prisma.$transaction(async (tx) => {
     // 1. Clean Database
@@ -29,7 +30,7 @@ async function main() {
     const superAdmin = await tx.user.create({
       data: {
         email: "admin@mahacsr.gov.in",
-        passwordHash: DEFAULT_PASSWORD_HASH,
+        passwordHash: defaultPasswordHash,
         role: Role.SUPER_ADMIN,
         isVerified: true,
       },
@@ -69,7 +70,7 @@ async function main() {
     const ngoAdmin = await tx.user.create({
       data: {
         email: "contact@sahyadrieco.org",
-        passwordHash: DEFAULT_PASSWORD_HASH,
+        passwordHash: defaultPasswordHash,
         role: Role.NGO_ADMIN,
         isVerified: true,
         ngoId: ngo.id,
@@ -99,7 +100,7 @@ async function main() {
     const companyAdmin = await tx.user.create({
       data: {
         email: "csr@sahyadritech.com",
-        passwordHash: DEFAULT_PASSWORD_HASH,
+        passwordHash: defaultPasswordHash,
         role: Role.COMPANY_ADMIN,
         isVerified: true,
         companyId: company.id,

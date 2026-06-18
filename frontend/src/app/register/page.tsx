@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ShieldAlert, FileCheck, Landmark, Building2, UserCircle2, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -81,7 +82,7 @@ export default function RegisterPage() {
         }
       };
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://csr-backend-five.vercel.app/api"}/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -108,7 +109,7 @@ export default function RegisterPage() {
     setSuccessMsg("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://csr-backend-five.vercel.app/api"}/auth/verify-otp`, {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -254,7 +255,7 @@ export default function RegisterPage() {
                     value={formData.password} 
                     onChange={handleChange} 
                     minLength={6} 
-                    placeholder="•••••••• (Min 6 chars)" 
+                    placeholder="Password (min 6 chars)" 
                     className="govt-input !pr-10" 
                   />
                   <button

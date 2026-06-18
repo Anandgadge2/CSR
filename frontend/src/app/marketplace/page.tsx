@@ -10,6 +10,7 @@ import {
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { apiFetch } from "@/lib/api";
 
 type DirectoryTab = "projects" | "ngos" | "companies";
 
@@ -195,12 +196,80 @@ const mockCompanies: Company[] = [
 export default function ProjectMarketplace({ params }: { params?: { tab?: string } }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DirectoryTab>("projects");
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [ngos, setNgos] = useState<NGO[]>(mockNGOs);
+  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
 
   useEffect(() => {
     if (params?.tab) {
       setActiveTab(params.tab as DirectoryTab);
     }
   }, [params?.tab]);
+
+  useEffect(() => {
+    const loadDirectories = async () => {
+      try {
+        const [projectRows, ngoRows, companyRows] = await Promise.all([
+          apiFetch<any[]>("/projects"),
+          apiFetch<any[]>("/ngos"),
+          apiFetch<any[]>("/companies")
+        ]);
+
+        if (projectRows.length > 0) {
+          setProjects(projectRows.map((project) => ({
+            id: project.id,
+            title: project.title,
+            description: project.description,
+            focusArea: project.focusArea,
+            sdgGoal: project.sdgGoal,
+            beneficiaryCount: project.beneficiaryCount,
+            budgetRequested: Number(project.budgetRequested),
+            district: project.district,
+            taluka: project.taluka,
+            ngoName: project.ngo?.name || project.ngoName || "Verified NGO",
+            ngoRating: 4.5,
+            matchScore: 0,
+            status: project.status
+          })));
+        }
+
+        if (ngoRows.length > 0) {
+          setNgos(ngoRows.map((ngo) => ({
+            id: ngo.id,
+            name: ngo.name,
+            darpanId: ngo.darpanNumber,
+            csr1Status: ngo.status,
+            rating: 4.5,
+            district: ngo.district,
+            taluka: ngo.taluka,
+            category: ngo.impactStatistics?.category || "Verified NGO",
+            projectsCount: ngo.projects?.length || 0,
+            totalFundingReceived: Number(ngo.impactStatistics?.totalFundingReceived || 0),
+            contact: ngo.website || "Not published"
+          })));
+        }
+
+        if (companyRows.length > 0) {
+          setCompanies(companyRows.map((company) => ({
+            id: company.id,
+            name: company.name,
+            focusArea: company.focusAreas?.join(", ") || "CSR",
+            csrBudget: Number(company.csrBudget),
+            district: company.contactInfo?.district || "Maharashtra",
+            policyLink: company.csrPolicyUrl || "#",
+            projectsFunded: 0,
+            industry: company.contactInfo?.industry || "Corporate"
+          })));
+        }
+      } catch {
+        setProjects(mockProjects);
+        setNgos(mockNGOs);
+        setCompanies(mockCompanies);
+      }
+    };
+
+    loadDirectories();
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("All");
   const [selectedFocus, setSelectedFocus] = useState("All");
@@ -215,7 +284,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
   const [selectedNgoDetail, setSelectedNgoDetail] = useState<NGO | null>(null);
   const [selectedCompanyDetail, setSelectedCompanyDetail] = useState<Company | null>(null);
 
-  const filteredProjects = mockProjects.filter((proj) => {
+  const filteredProjects = projects.filter((proj) => {
     const matchesSearch = proj.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           proj.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           proj.ngoName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -225,7 +294,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
     return matchesSearch && matchesDistrict && matchesFocus && matchesBudget;
   });
 
-  const filteredNGOs = mockNGOs.filter((ngo) => {
+  const filteredNGOs = ngos.filter((ngo) => {
     const matchesSearch = ngo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           ngo.darpanId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDistrict = selectedDistrict === "All" || ngo.district === selectedDistrict;
@@ -233,7 +302,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
     return matchesSearch && matchesDistrict && matchesCategory;
   });
 
-  const filteredCompanies = mockCompanies.filter((comp) => {
+  const filteredCompanies = companies.filter((comp) => {
     const matchesSearch = comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           comp.industry.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDistrict = selectedDistrict === "All" || comp.district === selectedDistrict;
@@ -261,7 +330,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
     }
   };
 
-  const comparedProjects = mockProjects.filter(p => compareIds.includes(p.id));
+  const comparedProjects = projects.filter(p => compareIds.includes(p.id));
 
   return (
     <div className="px-6 md:px-12 py-10 max-w-7xl mx-auto flex flex-col gap-8 bg-slate-950 text-slate-100 min-h-screen">

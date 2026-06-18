@@ -43,6 +43,12 @@ export const getNgoById = async (req: AuthenticatedRequest, res: Response, next:
       return res.status(404).json({ error: "NGO not found" });
     }
 
+    const canViewRestrictedProfile = req.user?.role === Role.SUPER_ADMIN || req.user?.ngoId === ngo.id;
+
+    if (ngo.status !== VerificationStatus.VERIFIED && !canViewRestrictedProfile) {
+      return res.status(404).json({ error: "NGO not found" });
+    }
+
     return res.json(ngo);
   } catch (error) {
     next(error);
@@ -54,8 +60,8 @@ export const updateNgo = async (req: AuthenticatedRequest, res: Response, next: 
     const { id } = req.params;
     const { name, website, socialLinks, address, district, taluka, village, impactStatistics } = req.body;
 
-    // Check ownership: NGO Admin can only edit their own profile
-    if (req.user?.role === Role.NGO_ADMIN && req.user.ngoId !== id) {
+    const canUpdateNgo = req.user?.role === Role.SUPER_ADMIN || req.user?.ngoId === id;
+    if (!canUpdateNgo) {
       return res.status(403).json({ error: "Forbidden: You do not own this profile" });
     }
 

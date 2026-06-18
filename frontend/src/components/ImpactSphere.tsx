@@ -136,14 +136,25 @@ export default function ImpactSphere() {
 
     // Subtle Core Globe Structure
     const coreGeo = new THREE.IcosahedronGeometry(7, 2);
-    const coreMat = new THREE.MeshBasicMaterial({
-      color: 0x1e3a8a,
+    
+    // Solid colored inner core
+    const coreSolidMat = new THREE.MeshBasicMaterial({
+      color: 0x3b82f6, // Vibrant blue
+      transparent: true,
+      opacity: 0.15,
+    });
+    const coreSolidMesh = new THREE.Mesh(coreGeo, coreSolidMat);
+    scene.add(coreSolidMesh);
+
+    // Wireframe overlay
+    const coreWireMat = new THREE.MeshBasicMaterial({
+      color: 0x60a5fa, // Lighter blue wireframe
       wireframe: true,
       transparent: true,
-      opacity: 0.05,
+      opacity: 0.35,
     });
-    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-    scene.add(coreMesh);
+    const coreWireMesh = new THREE.Mesh(coreGeo, coreWireMat);
+    scene.add(coreWireMesh);
 
     // Mouse interactive controls
     let targetX = 0;
@@ -180,7 +191,8 @@ export default function ImpactSphere() {
       lines.rotation.y = particleSystem.rotation.y;
       lines.rotation.x = particleSystem.rotation.x;
 
-      coreMesh.rotation.y -= 0.0006;
+      coreSolidMesh.rotation.y -= 0.0006;
+      coreWireMesh.rotation.y -= 0.0006;
 
       // Mouse inertia rotation
       particleSystem.rotation.y += (targetX - particleSystem.rotation.y) * 0.05;
@@ -203,7 +215,8 @@ export default function ImpactSphere() {
       lineGeometry.dispose();
       lineMaterial.dispose();
       coreGeo.dispose();
-      coreMat.dispose();
+      coreSolidMat.dispose();
+      coreWireMat.dispose();
     };
   }, []);
 
