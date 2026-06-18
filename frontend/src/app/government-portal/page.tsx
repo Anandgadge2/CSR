@@ -120,11 +120,11 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
         <span className="text-[#f97316] font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
           <ShieldAlert size={14} /> Maharashtra CSR Authority (महाराष्ट्र शासन)
         </span>
-        <h1 className="font-heading font-extrabold text-2xl text-slate-900 tracking-tight">Government Audit Portal</h1>
+        <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">Government Audit Portal</h1>
       </div>
 
       {/* Gov Sub-Tabs Switches */}
-      <div className="flex gap-1 border-b border-slate-200 pb-px overflow-x-auto bg-white rounded-t-lg px-2 pt-1">
+      <div className="flex gap-1 border-b border-gray-200 pb-px overflow-x-auto bg-gray-50/70 rounded-t-xl px-3 pt-2">
         {[
           { id: "statewide", label: "Statewide Monitor", icon: Layers },
           { id: "district", label: "District Grids", icon: MapPin },
@@ -142,8 +142,8 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
               onClick={() => handleTabChange(tab.id as GovTab)}
               className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold border-b-2 transition-all shrink-0 ${
                 isActive 
-                  ? "border-[#f97316] text-[#f97316] bg-orange-50/30" 
-                  : "border-transparent text-slate-500 hover:text-[#f97316] hover:bg-slate-55"
+                  ? "border-[#f97316] text-[#f97316] bg-white rounded-t-lg shadow-sm" 
+                  : "border-transparent text-gray-500 hover:text-[#f97316] hover:bg-gray-100/50"
               }`}
             >
               <tab.icon size={13} />

@@ -70,11 +70,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex-grow flex items-center justify-center px-6 py-16 bg-[#f8fafc] text-slate-900 min-h-screen relative">
+    <div className="flex-grow flex items-center justify-center px-6 py-16 bg-slate-955 text-slate-200 min-h-screen relative">
       <div className="absolute top-1/3 left-1/3 w-80 h-80 bg-blue-600/5 rounded-full filter blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-orange-600/5 rounded-full filter blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-white border border-slate-200 p-8 rounded-2xl flex flex-col gap-6 relative shadow-xl">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl flex flex-col gap-6 relative shadow-xl">
         
         {/* Logo & Title */}
         <div className="flex flex-col gap-2 text-center items-center">
@@ -84,8 +84,8 @@ export default function LoginPage() {
             <path d="M42,80 L58,80" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
           <div className="flex flex-col mt-2">
-            <h1 className="font-heading font-extrabold text-xl text-slate-900 tracking-tight">MahaCSR Portal Sign In</h1>
-            <p className="text-slate-500 text-[9px] mt-0.5 font-bold uppercase tracking-wider">Enterprise Collaboration Workspace</p>
+            <h1 className="font-heading font-extrabold text-xl text-slate-50 tracking-tight">MahaCSR Portal Sign In</h1>
+            <p className="text-slate-400 text-[9px] mt-0.5 font-bold uppercase tracking-wider">Enterprise Collaboration Workspace</p>
           </div>
         </div>
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
           
           {/* Email input */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-700 text-xs font-semibold">Corporate / NGO Email</label>
+            <label className="text-slate-100 text-xs font-semibold">Corporate / NGO Email</label>
             <div className="relative">
               <input 
                 type="email" 
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. contact@ngo.org"
                 disabled={loading}
-                className="w-full bg-white border border-slate-300 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-800 focus:outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a]/20 transition-all placeholder-slate-400 disabled:opacity-50"
+                className="govt-input pl-10"
               />
               <Mail size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
             </div>
@@ -118,7 +118,7 @@ export default function LoginPage() {
 
           {/* Password input */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-700 text-xs font-semibold">Password</label>
+            <label className="text-slate-100 text-xs font-semibold">Password</label>
             <div className="relative">
               <input 
                 type="password" 
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="w-full bg-white border border-slate-300 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-800 focus:outline-none focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a]/20 transition-all placeholder-slate-400 disabled:opacity-50"
+                className="govt-input pl-10"
               />
               <Lock size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
             </div>
@@ -136,16 +136,16 @@ export default function LoginPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#1e3a8a] hover:bg-[#1e40af] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-2 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full bg-indigo-700 hover:bg-indigo-650 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-2 transition-all disabled:opacity-50 shadow-sm"
           >
             {loading ? "Authenticating..." : <><LogIn size={18} /> Sign In</>}
           </button>
         </form>
 
         {/* Footer Link */}
-        <div className="text-center text-xs text-slate-500 mt-2 font-medium">
+        <div className="text-center text-xs text-slate-400 mt-2 font-medium">
           Don't have an account?{" "}
-          <Link href="/register" className="text-[#1e3a8a] hover:underline font-bold">
+          <Link href="/register" className="text-indigo-700 hover:underline font-bold">
             Register your organization
           </Link>
         </div>

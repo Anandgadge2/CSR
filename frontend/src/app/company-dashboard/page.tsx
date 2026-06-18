@@ -131,11 +131,11 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
       {/* Header */}
       <div className="flex flex-col gap-1">
         <span className="text-[#f97316] font-bold text-[11px] uppercase tracking-widest">Sahyadri Technology Ventures Ltd</span>
-        <h1 className="font-heading font-extrabold text-2xl text-slate-900 tracking-tight">Company Console</h1>
+        <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">Company Console</h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200 pb-px overflow-x-auto bg-white rounded-t-lg px-2 pt-1">
+      <div className="flex gap-1 border-b border-gray-200 pb-px overflow-x-auto bg-gray-50/70 rounded-t-xl px-3 pt-2">
         {[
           { id: "overview", label: "Overview Workspace", icon: Layers },
           { id: "budget", label: "Budget Allocations", icon: Sliders },
@@ -151,8 +151,8 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
               onClick={() => handleTabChange(tab.id as CompanyTab)}
               className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold border-b-2 transition-all shrink-0 ${
                 isActive 
-                  ? "border-[#1e3a8a] text-[#1e3a8a] bg-blue-50/50" 
-                  : "border-transparent text-slate-500 hover:text-[#1e3a8a] hover:bg-slate-50"
+                  ? "border-[#1e3a8a] text-[#1e3a8a] bg-white rounded-t-lg shadow-sm" 
+                  : "border-transparent text-gray-500 hover:text-[#1e3a8a] hover:bg-gray-100/50"
               }`}
             >
               <tab.icon size={13} />
@@ -187,8 +187,8 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                       <div key={idx} className="flex items-center gap-3">
                         <span className="w-3.5 h-3.5 rounded-sm" style={{ backgroundColor: COLORS[idx] }} />
                         <div className="flex flex-col">
-                          <span className="text-slate-500">{item.name}</span>
-                          <span className="text-slate-800 font-bold">₹{item.value.toLocaleString("en-IN")}</span>
+                          <span className="text-gray-500">{item.name}</span>
+                          <span className="text-gray-900 font-bold">₹{item.value.toLocaleString("en-IN")}</span>
                         </div>
                       </div>
                     ))}
@@ -206,13 +206,13 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
                 {matches.slice(0, 1).map((m) => (
-                  <div key={m.id} className="bg-blue-50 border border-blue-200 p-5 rounded-lg flex flex-col gap-3">
+                  <div key={m.id} className="bg-blue-50/50 border border-blue-200 p-5 rounded-lg flex flex-col gap-3">
                     <div className="flex justify-between items-center text-xs font-semibold text-[#f97316]">
                       <span className="govt-badge govt-badge-pending">{m.score}% Match</span>
-                      <span className="text-slate-500">{m.district}</span>
+                      <span className="text-gray-500">{m.district}</span>
                     </div>
-                    <h4 className="font-heading font-bold text-sm text-slate-900 leading-tight">{m.title}</h4>
-                    <span className="text-xs text-slate-500 font-medium">NGO: {m.ngo}</span>
+                    <h4 className="font-heading font-bold text-sm text-gray-900 leading-tight">{m.title}</h4>
+                    <span className="text-xs text-gray-500 font-medium font-sans">NGO: {m.ngo}</span>
                     <Button variant="primary" size="sm" onClick={() => handleTabChange("recommendations")} className="w-full mt-1">
                       Evaluate Match
                     </Button>
@@ -231,15 +231,15 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
             <h3 className="govt-section-header">Set Sector Investment Allocations</h3>
           </CardHeader>
           <CardContent className="flex flex-col gap-8 max-w-2xl">
-            <div className="flex flex-col gap-2 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs font-medium text-slate-500">
-              <span className="text-slate-800 font-bold">Total Budget Cap:</span>
+            <div className="flex flex-col gap-2 bg-gray-50 p-5 rounded-xl border border-gray-200 text-xs font-medium">
+              <span className="text-gray-900 font-bold">Total Budget Cap:</span>
               <input 
                 type="number"
                 value={totalBudget}
                 onChange={(e) => setTotalBudget(Number(e.target.value))}
                 className="govt-input font-bold text-base max-w-sm" 
               />
-              <span className="text-[10px] text-slate-400 mt-1 uppercase">Adjust total budget limits to re-scale investments</span>
+              <span className="text-[10px] text-gray-500 mt-1 uppercase font-semibold">Adjust total budget limits to re-scale investments</span>
             </div>
 
             <div className="flex flex-col gap-6">
@@ -250,7 +250,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 { key: "environment", label: "Urban Afforestation", color: "#64748b" }
               ].map((sec) => (
                 <div key={sec.key} className="flex flex-col gap-2">
-                  <div className="flex justify-between text-xs font-bold text-slate-700">
+                  <div className="flex justify-between text-xs font-bold text-gray-800">
                     <span className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: sec.color }} />
                       {sec.label}
@@ -269,7 +269,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
               ))}
             </div>
 
-            <div className="flex justify-between items-center text-xs font-bold border-t border-slate-200 pt-4 text-slate-500">
+            <div className="flex justify-between items-center text-xs font-bold border-t border-gray-200 pt-4 text-gray-700">
               <span>Combined Allocation: {totalAllocatedPercentage}%</span>
               <span className={totalAllocatedPercentage > 100 ? "text-rose-600 animate-pulse" : "text-emerald-600"}>
                 {totalAllocatedPercentage > 100 ? "Limit Exceeded (Over 100%)" : "Within Cap Limit"}
@@ -293,13 +293,13 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 <div className="flex flex-col gap-3">
                   <div className="flex justify-between items-center text-xs font-semibold">
                     <span className="govt-badge govt-badge-pending">{item.score}% Match</span>
-                    <span className="text-slate-500 font-medium">NGO: {item.ngo}</span>
+                    <span className="text-gray-500 font-medium">NGO: {item.ngo}</span>
                   </div>
-                  <h4 className="font-heading font-bold text-lg text-slate-900 leading-tight">{item.title}</h4>
-                  <p className="text-slate-500 text-xs">Target Focus Area: {item.focus} | Location: {item.district}</p>
+                  <h4 className="font-heading font-bold text-lg text-gray-900 leading-tight">{item.title}</h4>
+                  <p className="text-gray-600 text-xs font-sans">Target Focus Area: {item.focus} | Location: {item.district}</p>
                 </div>
                 <div className="flex justify-between items-center text-xs font-bold">
-                  <span className="text-slate-700">Budget: ₹{item.budget.toLocaleString("en-IN")}</span>
+                  <span className="text-gray-900">Budget: ₹{item.budget.toLocaleString("en-IN")}</span>
                   <Button variant="accent" size="sm" onClick={() => alert("Proposal accepted for funding escrow.")}>Accept for Escrow</Button>
                 </div>
               </Card>
@@ -329,8 +329,8 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 <tbody>
                   {milestones.map((m) => (
                     <tr key={m.id}>
-                      <td className="font-bold text-slate-800">{m.project}</td>
-                      <td className="text-slate-500">{m.name}</td>
+                      <td className="font-bold text-gray-900">{m.project}</td>
+                      <td className="text-gray-600">{m.name}</td>
                       <td>{m.ngo}</td>
                       <td>₹{m.amount.toLocaleString("en-IN")}</td>
                       <td className="text-right">
@@ -381,7 +381,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 <tbody>
                   {meetings.map((meet) => (
                     <tr key={meet.id}>
-                      <td className="font-bold text-slate-800">{meet.ngo}</td>
+                      <td className="font-bold text-gray-900">{meet.ngo}</td>
                       <td>{meet.date} at {meet.time}</td>
                       <td>{meet.topic}</td>
                     </tr>
@@ -396,9 +396,9 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
               <h3 className="govt-section-header text-base">Schedule Meeting</h3>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddMeeting} className="flex flex-col gap-4 text-xs font-semibold text-slate-600">
+              <form onSubmit={handleAddMeeting} className="flex flex-col gap-4 text-xs font-semibold text-gray-600">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Target NGO Partner:</label>
+                  <label className="text-gray-800">Target NGO Partner:</label>
                   <select 
                     value={mNgo} 
                     onChange={(e) => setMNgo(e.target.value)}
@@ -411,7 +411,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-700">Meeting Date:</label>
+                    <label className="text-gray-800">Meeting Date:</label>
                     <input 
                       type="date" 
                       value={mDate} 
@@ -421,7 +421,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-700">Meeting Time:</label>
+                    <label className="text-gray-800">Meeting Time:</label>
                     <input 
                       type="text" 
                       value={mTime} 
@@ -433,7 +433,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Agenda / Topic:</label>
+                  <label className="text-gray-800">Agenda / Topic:</label>
                   <input 
                     type="text" 
                     value={mTopic} 
@@ -443,7 +443,7 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                     required 
                   />
                 </div>
-                <Button type="submit" className="py-2.5">Schedule Meet</Button>
+                <Button type="submit" variant="primary" className="py-2.5">Schedule Meet</Button>
               </form>
             </CardContent>
           </Card>
@@ -474,8 +474,8 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
               <tbody>
                 {auditLogs.map((log, index) => (
                   <tr key={index}>
-                    <td className="text-slate-500">{log.date}</td>
-                    <td className="font-bold text-slate-800">{log.project}</td>
+                    <td className="text-gray-500">{log.date}</td>
+                    <td className="font-bold text-gray-900">{log.project}</td>
                     <td>{log.type}</td>
                     <td>₹{log.amount.toLocaleString("en-IN")}</td>
                     <td className="text-right"><span className="govt-badge govt-badge-verified">{log.status}</span></td>

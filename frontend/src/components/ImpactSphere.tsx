@@ -25,17 +25,18 @@ export default function ImpactSphere() {
     containerRef.current.appendChild(renderer.domElement);
 
     // 2. Create Glowing Particles
-    const count = 300;
+    const count = 200; // Optimal count for performance and visibility
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
 
+    // Government palette - high visibility on light background
     const colorPalette = [
-      new THREE.Color("#6366f1"), // Indigo
-      new THREE.Color("#8b5cf6"), // Violet
-      new THREE.Color("#ec4899"), // Pink Glow
-      new THREE.Color("#0ea5e9"), // Sky Blue
+      new THREE.Color("#1e3a8a"), // Navy Blue
+      new THREE.Color("#f97316"), // Saffron Accent
+      new THREE.Color("#10b981"), // Emerald Green
+      new THREE.Color("#2563eb"), // Royal Blue
     ];
 
     for (let i = 0; i < count; i++) {
@@ -44,7 +45,7 @@ export default function ImpactSphere() {
       const v = Math.random();
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
-      const r = 9 + Math.random() * 2.5; // Radius
+      const r = 8 + Math.random() * 3.0; // Radius
 
       const x = r * Math.sin(phi) * Math.cos(theta);
       const y = r * Math.sin(phi) * Math.sin(theta);
@@ -61,7 +62,7 @@ export default function ImpactSphere() {
       colors[i * 3 + 2] = color.b;
 
       // Random sizes
-      sizes[i] = 1.0 + Math.random() * 2.5;
+      sizes[i] = 2.0 + Math.random() * 3.5;
     }
 
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -69,37 +70,77 @@ export default function ImpactSphere() {
 
     // Particle texture (Circle particle shader representation)
     const canvas = document.createElement("canvas");
-    canvas.width = 16;
-    canvas.height = 16;
+    canvas.width = 32;
+    canvas.height = 32;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+      const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
       grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(0.3, "rgba(240,240,255,0.9)");
       grad.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 16, 16);
+      ctx.beginPath();
+      ctx.arc(16, 16, 16, 0, Math.PI * 2);
+      ctx.fill();
     }
     const texture = new THREE.CanvasTexture(canvas);
 
     const material = new THREE.PointsMaterial({
-      size: 0.6,
+      size: 1.2,
       map: texture,
       vertexColors: true,
       transparent: true,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending, // Normal blending to prevent washing out on white bg
       depthWrite: false,
     });
 
     const particleSystem = new THREE.Points(geometry, material);
     scene.add(particleSystem);
 
-    // Subtle Core Sphere
-    const coreGeo = new THREE.IcosahedronGeometry(6, 1);
+    // 3. Create Connection Network Lines
+    const linePositions: number[] = [];
+    const lineColors: number[] = [];
+    
+    // Find adjacent nodes and generate lines
+    for (let i = 0; i < count; i++) {
+      for (let j = i + 1; j < count; j++) {
+        const dx = positions[i * 3] - positions[j * 3];
+        const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
+        const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        
+        // Connect if close to simulate collaborative nodes network
+        if (dist < 4.2) {
+          linePositions.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
+          linePositions.push(positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2]);
+          
+          lineColors.push(0.11, 0.22, 0.54); // Subtle Navy R, G, B
+          lineColors.push(0.11, 0.22, 0.54);
+        }
+      }
+    }
+    
+    const lineGeometry = new THREE.BufferGeometry();
+    lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
+    lineGeometry.setAttribute("color", new THREE.Float32BufferAttribute(lineColors, 3));
+    
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0x1e3a8a,
+      transparent: true,
+      opacity: 0.12, // Subtle light-gray/blue connections mesh
+      blending: THREE.NormalBlending
+    });
+    
+    const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+    scene.add(lines);
+
+    // Subtle Core Globe Structure
+    const coreGeo = new THREE.IcosahedronGeometry(7, 2);
     const coreMat = new THREE.MeshBasicMaterial({
-      color: 0x6366f1,
+      color: 0x1e3a8a,
       wireframe: true,
       transparent: true,
-      opacity: 0.08,
+      opacity: 0.05,
     });
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     scene.add(coreMesh);
@@ -111,8 +152,8 @@ export default function ImpactSphere() {
     const windowHalfY = height / 2;
 
     const onMouseMove = (event: MouseEvent) => {
-      targetX = (event.clientX - windowHalfX) * 0.001;
-      targetY = (event.clientY - windowHalfY) * 0.001;
+      targetX = (event.clientX - windowHalfX) * 0.0008;
+      targetY = (event.clientY - windowHalfY) * 0.0008;
     };
     window.addEventListener("mousemove", onMouseMove);
 
@@ -132,11 +173,14 @@ export default function ImpactSphere() {
     const animate = () => {
       animationId = requestAnimationFrame(animate);
 
-      // Auto rotation
-      particleSystem.rotation.y += 0.002;
-      particleSystem.rotation.x += 0.0005;
+      // Slow rotation
+      particleSystem.rotation.y += 0.001;
+      particleSystem.rotation.x += 0.0003;
 
-      coreMesh.rotation.y -= 0.0015;
+      lines.rotation.y = particleSystem.rotation.y;
+      lines.rotation.x = particleSystem.rotation.x;
+
+      coreMesh.rotation.y -= 0.0006;
 
       // Mouse inertia rotation
       particleSystem.rotation.y += (targetX - particleSystem.rotation.y) * 0.05;
@@ -156,6 +200,8 @@ export default function ImpactSphere() {
       }
       geometry.dispose();
       material.dispose();
+      lineGeometry.dispose();
+      lineMaterial.dispose();
       coreGeo.dispose();
       coreMat.dispose();
     };
@@ -164,7 +210,7 @@ export default function ImpactSphere() {
   return (
     <div className="relative w-full h-[500px] flex items-center justify-center">
       {/* Decorative Blur Ring background */}
-      <div className="absolute w-72 h-72 rounded-full bg-primary/20 filter blur-3xl pointer-events-none" />
+      <div className="absolute w-72 h-72 rounded-full bg-blue-50 filter blur-3xl pointer-events-none" />
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
     </div>
   );

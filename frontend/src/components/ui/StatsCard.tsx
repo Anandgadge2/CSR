@@ -17,8 +17,8 @@ export function StatsCard({ label, value, icon: Icon, trend, className }: StatsC
   return (
     <Card className={cn("flex justify-between items-center", className)}>
       <div className="flex flex-col gap-2">
-        <span className="text-slate-500 font-semibold text-[11px] uppercase tracking-wider">{label}</span>
-        <span className="font-heading font-extrabold text-3xl text-slate-900 tracking-tight leading-none">{value}</span>
+        <span className="text-gray-500 font-semibold text-[11px] uppercase tracking-wider">{label}</span>
+        <span className="font-heading font-extrabold text-3xl text-gray-900 tracking-tight leading-none">{value}</span>
         
         {trend && (
           <span className={cn(

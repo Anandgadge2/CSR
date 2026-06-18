@@ -150,7 +150,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const dashboardNavigationItems = getSidebarItems();
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f8fafc] text-slate-900 font-sans">
+    <div className="flex flex-col min-h-screen bg-[#f8fafc] text-slate-100 font-sans">
       
       {/* Tri-color Top Ribbon */}
       <div className="fixed top-0 left-0 right-0 h-1 z-[60] bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
@@ -176,10 +176,10 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
               <path d="M42,80 L58,80" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" />
             </svg>
             <div className="flex flex-col leading-none">
-              <span className="font-heading font-extrabold text-lg tracking-tight text-slate-900">
+              <span className="font-heading font-extrabold text-lg tracking-tight text-[#1e3a8a]">
                 Maha<span className="text-[#f97316]">CSR</span>
               </span>
-              <span className="text-[8px] text-slate-500 tracking-wider font-extrabold mt-0.5 uppercase">
+              <span className="text-[8px] text-gray-500 tracking-wider font-extrabold mt-0.5 uppercase">
                 Govt. of Maharashtra | महाराष्ट्र शासन
               </span>
             </div>
@@ -188,7 +188,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
         {/* Public Navigation */}
         {!isDashboard && (
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-500">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-gray-600">
             <Link href="/" className="hover:text-[#1e3a8a] transition-colors">Home</Link>
             <Link href="/about" className="hover:text-[#1e3a8a] transition-colors">About Mandate</Link>
             <Link href="/marketplace" className="hover:text-[#1e3a8a] transition-colors">Directories</Link>
@@ -241,7 +241,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 {notificationsOpen && (
                   <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 rounded-xl p-4 shadow-lg z-50 flex flex-col gap-3">
                     <div className="flex justify-between items-center pb-2 border-b border-slate-200">
-                      <span className="text-xs font-extrabold text-slate-800">Notifications</span>
+                      <span className="text-xs font-extrabold text-slate-100">Notifications</span>
                       <span className="text-[10px] text-[#1e3a8a] font-bold cursor-pointer hover:underline">Clear all</span>
                     </div>
                     <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
@@ -272,30 +272,30 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 {userDropdownOpen && (
                   <div className="absolute right-0 mt-3 w-52 bg-white border border-slate-200 rounded-xl py-2 shadow-lg z-50">
                     <div className="px-4 py-2.5 border-b border-slate-100 flex flex-col">
-                      <span className="text-xs font-bold text-slate-800">User Account</span>
-                      <span className="text-[10px] text-slate-500 truncate">user@mahacsr.gov.in</span>
+                      <span className="text-xs font-bold text-slate-100">User Account</span>
+                      <span className="text-[10px] text-slate-400 truncate">user@mahacsr.gov.in</span>
                     </div>
                     <button 
                       onClick={() => router.push("/ngo-dashboard")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2 mt-1"
+                      className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2 mt-1"
                     >
                       <Landmark size={14} /> NGO Dashboard
                     </button>
                     <button 
                       onClick={() => router.push("/company-dashboard")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2"
                     >
                       <Building2 size={14} /> Corporate Dashboard
                     </button>
                     <button 
                       onClick={() => router.push("/government-portal")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2"
                     >
                       <ShieldAlert size={14} /> Government Portal
                     </button>
                     <button 
                       onClick={() => router.push("/admin")}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-50 hover:text-[#1e3a8a] transition-colors flex items-center gap-2"
                     >
                       <ShieldCheck size={14} /> Admin Console
                     </button>
@@ -311,7 +311,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             </>
           ) : (
             <div className="flex items-center gap-3">
-              <Link href="/login" className="text-xs text-slate-500 hover:text-[#1e3a8a] font-semibold px-2">
+              <Link href="/login" className="text-xs text-slate-350 hover:text-[#1e3a8a] font-semibold px-2">
                 Login
               </Link>
               <Link href="/register" className="bg-[#1e3a8a] hover:bg-[#1e40af] text-white text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-sm">
@@ -329,7 +329,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         {/* Desktop Sidebar */}
         {isDashboard && (
           <aside 
-            className={`hidden lg:flex flex-col border-r border-slate-200 bg-white shrink-0 transition-all duration-300 relative justify-between py-4 ${
+            className={`hidden lg:flex flex-col border-r border-slate-800 bg-[#0b1329] shrink-0 transition-all duration-300 relative justify-between py-4 ${
               sidebarCollapsed ? "w-[68px]" : "w-60"
             }`}
           >
@@ -347,11 +347,11 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                     href={item.href}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all group relative ${
                       isActive 
-                        ? "bg-[#1e3a8a] text-white shadow-sm" 
-                        : "text-slate-600 hover:text-[#1e3a8a] hover:bg-slate-50"
+                        ? "bg-[#1e3a8a] text-white shadow-sm border-l-4 border-l-[#f97316] pl-2" 
+                        : "text-gray-300 hover:text-white hover:bg-white/10"
                     }`}
                   >
-                    <item.icon size={15} className={isActive ? "text-white" : "text-slate-400 group-hover:text-[#1e3a8a]"} />
+                    <item.icon size={15} className={isActive ? "text-white" : "text-gray-400 group-hover:text-white"} />
                     {!sidebarCollapsed && <span>{item.label}</span>}
                     
                     {sidebarCollapsed && (
@@ -368,7 +368,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             <div className="px-2 pt-2">
               <button 
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="w-full flex items-center justify-center p-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-[#1e3a8a] transition-colors"
+                className="w-full flex items-center justify-center p-2 border border-slate-800 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
               >
                 {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
@@ -378,12 +378,12 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
         {/* Mobile Sidebar */}
         {isDashboard && mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 flex lg:hidden bg-black/30 backdrop-blur-sm animate-fadeIn">
-            <div className="w-64 bg-white p-5 flex flex-col justify-between h-full border-r border-slate-200 shadow-xl">
+          <div className="fixed inset-0 z-50 flex lg:hidden bg-black/40 backdrop-blur-sm animate-fadeIn">
+            <div className="w-64 bg-[#0b1329] p-5 flex flex-col justify-between h-full border-r border-slate-800 shadow-xl">
               <div className="flex flex-col gap-4">
-                <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                  <span className="font-heading font-extrabold text-slate-900 text-sm">Navigation</span>
-                  <button onClick={() => setMobileMenuOpen(false)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+                <div className="flex justify-between items-center pb-3 border-b border-slate-800">
+                  <span className="font-heading font-extrabold text-white text-sm">Navigation</span>
+                  <button onClick={() => setMobileMenuOpen(false)} className="text-gray-400 hover:text-white"><X size={18} /></button>
                 </div>
                 <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[calc(100vh-160px)]">
                   {dashboardNavigationItems.map((item) => {
@@ -396,21 +396,21 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                         href={item.href}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                           isActive 
-                            ? "bg-[#1e3a8a] text-white" 
-                            : "text-slate-600 hover:text-[#1e3a8a] hover:bg-slate-50"
+                            ? "bg-[#1e3a8a] text-white border-l-4 border-l-[#f97316] pl-2" 
+                            : "text-gray-300 hover:text-white hover:bg-white/10"
                         }`}
                       >
-                        <item.icon size={16} />
+                        <item.icon size={16} className={isActive ? "text-white" : "text-gray-400"} />
                         <span>{item.label}</span>
                       </Link>
                     );
                   })}
                 </div>
               </div>
-              <div className="flex flex-col gap-2 pt-3 border-t border-slate-200">
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-800">
                 <button 
                   onClick={handleLogout}
-                  className="w-full text-left px-3 py-2.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-3 transition-all"
+                  className="w-full text-left px-3 py-2.5 text-xs text-rose-400 hover:bg-rose-950/30 rounded-lg flex items-center gap-3 transition-all"
                 >
                   <LogOut size={16} />
                   <span>Log Out</span>
@@ -427,7 +427,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
           </main>
           
           {/* Government Footer */}
-          <footer className="border-t border-slate-200 bg-white py-5 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500 font-medium shrink-0">
+          <footer className="border-t border-slate-200 bg-white py-5 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-350 font-medium shrink-0">
             <div className="flex items-center gap-2">
               <span className="font-heading font-extrabold text-[#1e3a8a] text-sm tracking-tight">MahaCSR</span>
               <span>• Government of Maharashtra Enterprise CSR Platform. Approved under MCA Section 135.</span>

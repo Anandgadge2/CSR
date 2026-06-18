@@ -77,11 +77,11 @@ export default function AdminPanel({ params }: { params?: { tab?: string } }) {
         <span className="text-[#f97316] font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
           <ShieldAlert size={14} /> SUPER ADMIN CONTROL CABINET (Super Admin)
         </span>
-        <h1 className="font-heading font-extrabold text-2xl text-slate-900 tracking-tight">Super Admin Portal</h1>
+        <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">Super Admin Portal</h1>
       </div>
 
       {/* Admin Tab Swapper */}
-      <div className="flex gap-1 border-b border-slate-200 pb-px overflow-x-auto bg-white rounded-t-lg px-2 pt-1">
+      <div className="flex gap-1 border-b border-gray-200 pb-px overflow-x-auto bg-gray-50/70 rounded-t-xl px-3 pt-2">
         {[
           { id: "dashboard", label: "System Status", icon: Server },
           { id: "users", label: "User Accounts", icon: Users },
@@ -96,8 +96,8 @@ export default function AdminPanel({ params }: { params?: { tab?: string } }) {
               onClick={() => handleTabChange(tab.id as AdminTab)}
               className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold border-b-2 transition-all shrink-0 ${
                 isActive 
-                  ? "border-[#f97316] text-[#f97316] bg-orange-50/30" 
-                  : "border-transparent text-slate-500 hover:text-[#f97316] hover:bg-slate-50"
+                  ? "border-[#f97316] text-[#f97316] bg-white rounded-t-lg shadow-sm" 
+                  : "border-transparent text-gray-500 hover:text-[#f97316] hover:bg-gray-100/50"
               }`}
             >
               <tab.icon size={13} />

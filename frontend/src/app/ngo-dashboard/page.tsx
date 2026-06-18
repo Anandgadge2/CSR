@@ -150,8 +150,8 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex flex-col gap-1">
-          <span className="text-[#f97316] font-bold text-[11px] uppercase tracking-widest">Sahyadri Eco Foundation</span>
-          <h1 className="font-heading font-extrabold text-2xl text-slate-900 tracking-tight">NGO Console</h1>
+          <span className="text-[#f97316] font-bold text-[11px] uppercase tracking-widest font-heading">Sahyadri Eco Foundation</span>
+          <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">NGO Console</h1>
         </div>
 
         <div className="flex gap-3">
@@ -175,7 +175,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-200 pb-px overflow-x-auto bg-white rounded-t-lg px-2 pt-1">
+      <div className="flex gap-1 border-b border-gray-200 pb-px overflow-x-auto bg-gray-50/70 rounded-t-xl px-3 pt-2">
         {[
           { id: "overview", label: "Overview", icon: Layers },
           { id: "profile", label: "Org Profile", icon: Landmark },
@@ -195,8 +195,8 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               onClick={() => handleTabChange(tab.id as DashboardTab)}
               className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold border-b-2 transition-all shrink-0 ${
                 isActive 
-                  ? "border-[#1e3a8a] text-[#1e3a8a] bg-blue-50/50" 
-                  : "border-transparent text-slate-500 hover:text-[#1e3a8a] hover:bg-slate-50"
+                  ? "border-[#1e3a8a] text-[#1e3a8a] bg-white rounded-t-lg shadow-sm" 
+                  : "border-transparent text-gray-500 hover:text-[#1e3a8a] hover:bg-gray-100/50"
               }`}
             >
               <tab.icon size={13} />
@@ -236,8 +236,8 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                       }`}
                     >
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-bold text-sm text-slate-900">{alert.title}</span>
-                        <span className="text-xs text-slate-500">Expiry Target: {alert.expiry}</span>
+                        <span className="font-bold text-sm text-slate-100">{alert.title}</span>
+                        <span className="text-xs text-slate-300 font-sans">Expiry Target: {alert.expiry}</span>
                       </div>
                       <span className={`govt-badge ${
                         alert.severity === "danger" ? "govt-badge-rejected" : "govt-badge-pending"
@@ -270,7 +270,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                     <tbody>
                       {projects.slice(0, 3).map((proj) => (
                         <tr key={proj.id}>
-                          <td className="font-bold text-slate-800">{proj.title}</td>
+                          <td className="font-bold text-slate-200">{proj.title}</td>
                           <td>{proj.district}</td>
                           <td>₹{proj.budget.toLocaleString("en-IN")}</td>
                           <td><span className={getStatusBadge(proj.status)}>{proj.status}</span></td>
@@ -290,9 +290,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                 </h3>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <div className="bg-slate-50 border border-slate-200 p-5 rounded-lg flex flex-col gap-3">
+                <div className="bg-slate-55 bg-slate-955 border border-slate-800 p-5 rounded-lg flex flex-col gap-3">
                   <div className="flex justify-between items-center text-xs font-semibold">
-                    <span className="text-slate-500">Milestone 2 progress:</span>
+                    <span className="text-slate-300">Milestone 2 progress:</span>
                     <span className="text-[#f97316] font-bold">40% Complete</span>
                   </div>
                   <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -307,11 +307,11 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
                     <div className="text-lg font-extrabold text-[#1e3a8a]">36</div>
-                    <div className="text-[10px] font-semibold text-slate-500 uppercase">Districts Covered</div>
+                    <div className="text-[10px] font-semibold text-slate-300 uppercase">Districts Covered</div>
                   </div>
                   <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
                     <div className="text-lg font-extrabold text-[#f97316]">4</div>
-                    <div className="text-[10px] font-semibold text-slate-500 uppercase">SDG Goals Mapped</div>
+                    <div className="text-[10px] font-semibold text-slate-300 uppercase">SDG Goals Mapped</div>
                   </div>
                 </div>
               </CardContent>
@@ -328,28 +328,28 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] font-bold uppercase">NGO Darpan ID</span>
-                <span className="text-slate-900 font-bold">MH/2024/0398492</span>
+              <div className="p-4 bg-slate-955 border border-slate-800 rounded-lg flex flex-col gap-1">
+                <span className="text-slate-300 text-[10px] font-bold uppercase">NGO Darpan ID</span>
+                <span className="text-slate-100 font-bold">MH/2024/0398492</span>
               </div>
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] font-bold uppercase">CSR-1 Status</span>
+                <span className="text-slate-300 text-[10px] font-bold uppercase">CSR-1 Status</span>
                 <span className="text-emerald-700 font-bold flex items-center gap-1"><ShieldCheck size={14} /> Verified</span>
               </div>
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] font-bold uppercase">12A & 80G Audited</span>
+                <span className="text-slate-300 text-[10px] font-bold uppercase">12A & 80G Audited</span>
                 <span className="text-emerald-700 font-bold flex items-center gap-1"><ShieldCheck size={14} /> Active</span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="p-4 bg-white border border-slate-200 rounded-lg flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] font-bold uppercase">Registered Address</span>
-                <span className="text-slate-700 text-sm">401, Sahyadri Complex, FC Road, Pune - 411005</span>
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-lg flex flex-col gap-1">
+                <span className="text-slate-350 text-[10px] font-bold uppercase">Registered Address</span>
+                <span className="text-slate-200 text-sm">401, Sahyadri Complex, FC Road, Pune - 411005</span>
               </div>
-              <div className="p-4 bg-white border border-slate-200 rounded-lg flex flex-col gap-1">
-                <span className="text-slate-500 text-[10px] font-bold uppercase">Primary Contact</span>
-                <span className="text-slate-700 text-sm">Dr. Anand Kulkarni, Executive Director</span>
+              <div className="p-4 bg-slate-900 border border-slate-800 rounded-lg flex flex-col gap-1">
+                <span className="text-slate-355 text-[10px] font-bold uppercase">Primary Contact</span>
+                <span className="text-slate-200 text-sm">Dr. Anand Kulkarni, Executive Director</span>
               </div>
             </div>
           </CardContent>
@@ -376,7 +376,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               <tbody>
                 {projects.map((proj) => (
                   <tr key={proj.id}>
-                    <td className="font-bold text-slate-800">{proj.title}</td>
+                    <td className="font-bold text-slate-200">{proj.title}</td>
                     <td>{proj.district}, {proj.taluka}</td>
                     <td>₹{proj.budget.toLocaleString("en-IN")}</td>
                     <td>₹{proj.funded.toLocaleString("en-IN")}</td>
@@ -396,9 +396,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
             <h3 className="govt-section-header">Build Project Proposal</h3>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateProject} className="flex flex-col gap-4 text-xs font-medium text-slate-600">
+            <form onSubmit={handleCreateProject} className="flex flex-col gap-4 text-xs font-medium text-slate-300">
               <div className="flex flex-col gap-1.5">
-                <label className="font-semibold text-slate-700">Initiative Title:</label>
+                <label className="font-semibold text-slate-100">Initiative Title:</label>
                 <input 
                   type="text" 
                   value={newTitle} 
@@ -410,7 +410,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-slate-700">Target District:</label>
+                  <label className="font-semibold text-slate-100">Target District:</label>
                   <select 
                     value={newDistrict} 
                     onChange={(e) => setNewDistrict(e.target.value)}
@@ -427,7 +427,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-slate-700">Taluka Name:</label>
+                  <label className="font-semibold text-slate-100">Taluka Name:</label>
                   <input 
                     type="text" 
                     value={newTaluka} 
@@ -440,7 +440,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-slate-700">Required Budget (INR):</label>
+                  <label className="font-semibold text-slate-100">Required Budget (INR):</label>
                   <input 
                     type="number" 
                     value={newBudget} 
@@ -451,7 +451,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-slate-700">Focus Sector (Schedule VII):</label>
+                  <label className="font-semibold text-slate-100">Focus Sector (Schedule VII):</label>
                   <select 
                     value={newFocus} 
                     onChange={(e) => setNewFocus(e.target.value)}
@@ -484,14 +484,14 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
             {evidenceSubmitted ? (
               <div className="text-center p-8 bg-emerald-50 border border-emerald-200 rounded-lg flex flex-col items-center gap-3">
                 <CheckCircle2 size={36} className="text-emerald-500" />
-                <span className="font-bold text-sm text-slate-800">Evidence File Submitted Successfully!</span>
-                <span className="text-xs text-slate-500">Government auditor and Corporate trust officers have been notified.</span>
+                <span className="font-bold text-sm text-slate-100">Evidence File Submitted Successfully!</span>
+                <span className="text-xs text-slate-300">Government auditor and Corporate trust officers have been notified.</span>
                 <Button variant="outline" onClick={() => setEvidenceSubmitted(false)} className="mt-2">Upload another file</Button>
               </div>
             ) : (
-              <div className="flex flex-col gap-4 text-xs font-semibold text-slate-600">
+              <div className="flex flex-col gap-4 text-xs font-semibold text-slate-300">
                 <div className="flex flex-col gap-1.5">
-                  <label className="font-semibold text-slate-700">Select Active Project:</label>
+                  <label className="font-semibold text-slate-100">Select Active Project:</label>
                   <select 
                     value={selectedMilestoneProject} 
                     onChange={(e) => setSelectedMilestoneProject(e.target.value)}
@@ -505,14 +505,14 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
 
                 <div className="border-2 border-dashed border-[#1e3a8a]/30 p-8 rounded-lg flex flex-col items-center gap-3 bg-blue-50/30">
                   <UploadCloud size={32} className="text-[#1e3a8a]/50" />
-                  <span className="text-slate-500 text-xs">Drag and drop ZIP archive containing site photos and beneficiary logs</span>
+                  <span className="text-slate-300 text-xs">Drag and drop ZIP archive containing site photos and beneficiary logs</span>
                   <input 
                     type="file" 
                     onChange={(e) => setEvidenceFile(e.target.files?.[0]?.name || "dam_progress_logs.zip")}
                     className="hidden" 
                     id="evidence-uploader" 
                   />
-                  <label htmlFor="evidence-uploader" className="cursor-pointer bg-white hover:bg-slate-50 border border-slate-300 py-2 px-4 rounded-lg text-slate-600 font-semibold transition-colors">
+                  <label htmlFor="evidence-uploader" className="cursor-pointer bg-slate-900 border border-slate-800 py-2 px-4 rounded-lg text-slate-205 font-semibold transition-colors">
                     {evidenceFile ? evidenceFile : "Choose File"}
                   </label>
                 </div>
@@ -551,14 +551,14 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               <tbody>
                 <tr>
                   <td className="font-bold text-[#1e3a8a]">TXN-902840</td>
-                  <td>Gadchiroli Watershed & Reforestation</td>
+                  <td className="text-slate-200">Gadchiroli Watershed & Reforestation</td>
                   <td>₹5,00,000</td>
                   <td>June 08, 2026</td>
                   <td className="text-right"><span className="govt-badge govt-badge-verified">Cleared</span></td>
                 </tr>
                 <tr>
                   <td className="font-bold text-[#1e3a8a]">TXN-859182</td>
-                  <td>Gadchiroli Watershed & Reforestation</td>
+                  <td className="text-slate-200">Gadchiroli Watershed & Reforestation</td>
                   <td>₹7,00,000</td>
                   <td>June 15, 2026</td>
                   <td className="text-right"><span className="govt-badge govt-badge-verified">Cleared</span></td>
@@ -590,10 +590,10 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                 <tbody>
                   {beneficiaries.map((b) => (
                     <tr key={b.id}>
-                      <td className="font-bold text-slate-800">{b.name}</td>
-                      <td>{b.location}</td>
+                      <td className="font-bold text-slate-200">{b.name}</td>
+                      <td className="text-slate-300">{b.location}</td>
                       <td><span className="govt-badge govt-badge-funded">{b.sector}</span></td>
-                      <td className="text-right">{b.verifiedDate}</td>
+                      <td className="text-right text-slate-300">{b.verifiedDate}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -606,9 +606,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               <h3 className="govt-section-header text-base">Register Beneficiary</h3>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddBeneficiary} className="flex flex-col gap-4 text-xs font-semibold text-slate-600">
+              <form onSubmit={handleAddBeneficiary} className="flex flex-col gap-4 text-xs font-semibold text-slate-300">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Beneficiary Name:</label>
+                  <label className="text-slate-100">Beneficiary Name:</label>
                   <input 
                     type="text" 
                     value={bName} 
@@ -619,7 +619,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Location (Taluka, District):</label>
+                  <label className="text-slate-100">Location (Taluka, District):</label>
                   <input 
                     type="text" 
                     value={bLoc} 
@@ -630,7 +630,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Benefit Sector:</label>
+                  <label className="text-slate-100">Benefit Sector:</label>
                   <select 
                     value={bSec} 
                     onChange={(e) => setBSec(e.target.value)}
@@ -670,9 +670,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                 <tbody>
                   {volunteers.map((v) => (
                     <tr key={v.id}>
-                      <td className="font-bold text-slate-800">{v.name}</td>
-                      <td>{v.role}</td>
-                      <td className="text-right font-bold">{v.hours} Hours</td>
+                      <td className="font-bold text-slate-200">{v.name}</td>
+                      <td className="text-slate-300">{v.role}</td>
+                      <td className="text-right font-bold text-slate-100">{v.hours} Hours</td>
                     </tr>
                   ))}
                 </tbody>
@@ -685,9 +685,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               <h3 className="govt-section-header text-base">Enroll Volunteer</h3>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddVolunteer} className="flex flex-col gap-4 text-xs font-semibold text-slate-600">
+              <form onSubmit={handleAddVolunteer} className="flex flex-col gap-4 text-xs font-semibold text-slate-300">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Volunteer Full Name:</label>
+                  <label className="text-slate-100">Volunteer Full Name:</label>
                   <input 
                     type="text" 
                     value={vName} 
@@ -698,7 +698,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Designated Role:</label>
+                  <label className="text-slate-100">Designated Role:</label>
                   <select 
                     value={vRole} 
                     onChange={(e) => setVRole(e.target.value)}
@@ -726,7 +726,7 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               <BarChart2 className="text-[#1e3a8a]" /> Annual Reports Desk
             </h3>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-xs font-semibold text-slate-500">
+          <CardContent className="flex flex-col gap-4 text-xs font-semibold text-slate-300">
             <span>Generate boardroom-ready CSR spending summaries for corporate and state submission.</span>
             <div className="flex flex-col gap-3 mt-2">
               <Button variant="primary" onClick={() => alert("PDF Annual Report generated. Download complete.")} className="flex justify-between items-center py-3 px-5">
@@ -748,14 +748,14 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
           
           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-5">
             {galleryImages.map((img, idx) => (
-              <div key={idx} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div key={idx} className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <div className="h-40 w-full bg-gradient-to-tr from-[#1e3a8a]/10 to-[#f97316]/10 flex items-center justify-center relative">
-                  <ImageIcon size={28} className="text-slate-300" />
-                  <span className="absolute top-3 right-3 bg-white border border-slate-200 text-[10px] font-bold text-slate-500 px-2 py-0.5 rounded-md shadow-sm">{img.size}</span>
+                  <ImageIcon size={28} className="text-slate-400" />
+                  <span className="absolute top-3 right-3 bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md shadow-sm">{img.size}</span>
                 </div>
-                <div className="p-4 flex flex-col gap-1 border-t border-slate-100">
+                <div className="p-4 flex flex-col gap-1 border-t border-slate-800">
                   <span className="text-[9px] text-slate-400 font-bold">{img.date}</span>
-                  <h4 className="font-heading font-bold text-sm text-slate-800 mt-0.5 leading-tight">{img.title}</h4>
+                  <h4 className="font-heading font-bold text-sm text-slate-100 mt-0.5 leading-tight">{img.title}</h4>
                 </div>
               </div>
             ))}
@@ -766,9 +766,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
               <h3 className="govt-section-header text-base">Upload Project Image</h3>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAddGalleryImage} className="flex flex-col gap-4 text-xs font-semibold text-slate-600">
+              <form onSubmit={handleAddGalleryImage} className="flex flex-col gap-4 text-xs font-semibold text-slate-300">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-slate-700">Image Caption:</label>
+                  <label className="text-slate-100">Image Caption:</label>
                   <input 
                     type="text" 
                     value={newImageTitle} 
@@ -778,9 +778,9 @@ export default function NgoDashboard({ params }: { params?: { tab?: string } }) 
                     required 
                   />
                 </div>
-                <div className="border-2 border-dashed border-slate-300 p-6 rounded-lg flex flex-col items-center gap-2 bg-slate-50">
+                <div className="border-2 border-dashed border-slate-800 p-6 rounded-lg flex flex-col items-center gap-2 bg-slate-955">
                   <ImageIcon size={24} className="text-slate-400" />
-                  <span className="text-[10px] text-slate-500">JPG or PNG (max 5MB)</span>
+                  <span className="text-[10px] text-slate-300">JPG or PNG (max 5MB)</span>
                 </div>
                 <Button type="submit" className="py-2.5">Upload Image</Button>
               </form>
