@@ -37,9 +37,9 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     setUserDropdownOpen(false);
   }, [pathname]);
 
-  const toggleLanguage = () => {
-    setActiveLanguage(prev => prev === "EN" ? "MH" : "EN");
-  };
+  // const toggleLanguage = () => {
+  //   setActiveLanguage(prev => prev === "EN" ? "MH" : "EN");
+  // };
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -213,12 +213,12 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         <div className="flex items-center gap-4">
           
           {/* Language Switcher */}
-          <button 
+          {/* <button 
             onClick={toggleLanguage}
             className="text-[10px] font-bold border border-slate-300 hover:border-[#1e3a8a] bg-white px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-[#1e3a8a] transition-colors"
           >
             {activeLanguage === "EN"}
-          </button>
+          </button> */}
 
           {isDashboard ? (
             <>

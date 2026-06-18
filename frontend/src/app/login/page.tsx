@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
+import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -102,7 +103,7 @@ export default function LoginPage() {
           
           {/* Email input */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-100 text-xs font-semibold">Corporate / NGO Email</label>
+            <label className="text-[#1e3a8a] text-xs font-bold">Corporate / NGO Email</label>
             <div className="relative">
               <input 
                 type="email" 
@@ -110,25 +111,32 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="e.g. contact@ngo.org"
                 disabled={loading}
-                className="govt-input pl-10"
+                className="govt-input !pl-10"
               />
-              <Mail size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
+              <Mail size={16} className="absolute left-3.5 top-[11px] text-slate-400" />
             </div>
           </div>
 
           {/* Password input */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-slate-100 text-xs font-semibold">Password</label>
+            <label className="text-[#1e3a8a] text-xs font-bold">Password</label>
             <div className="relative">
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="govt-input pl-10"
+                className="govt-input !pl-10 !pr-10"
               />
-              <Lock size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
+              <Lock size={16} className="absolute left-3.5 top-[11px] text-slate-400" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-[11px] text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
@@ -136,7 +144,7 @@ export default function LoginPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-indigo-700 hover:bg-indigo-650 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-2 transition-all disabled:opacity-50 shadow-sm"
+            className="w-full bg-[#1e3a8a] hover:bg-[#1e40af] text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 mt-2 transition-all disabled:opacity-50 shadow-sm"
           >
             {loading ? "Authenticating..." : <><LogIn size={18} /> Sign In</>}
           </button>
@@ -145,7 +153,7 @@ export default function LoginPage() {
         {/* Footer Link */}
         <div className="text-center text-xs text-slate-400 mt-2 font-medium">
           Don't have an account?{" "}
-          <Link href="/register" className="text-indigo-700 hover:underline font-bold">
+          <Link href="/register" className="text-[#1e3a8a] hover:underline font-bold">
             Register your organization
           </Link>
         </div>

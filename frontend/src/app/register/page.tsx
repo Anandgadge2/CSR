@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShieldAlert, FileCheck, Landmark, Building2, UserCircle2, ArrowRight, AlertCircle } from "lucide-react";
+import { ShieldAlert, FileCheck, Landmark, Building2, UserCircle2, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -234,64 +235,82 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-slate-100 text-xs font-semibold">Organization Name</label>
+                <label className="text-gray-800 text-xs font-bold">Organization Name</label>
                 <input required name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Sahyadri Foundation" className="govt-input" />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-slate-100 text-xs font-semibold">Corporate / NGO Email</label>
+                <label className="text-gray-800 text-xs font-bold">Corporate / NGO Email</label>
                 <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="e.g. contact@domain.org" className="govt-input" />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-slate-100 text-xs font-semibold">Password</label>
-                <input required type="password" name="password" value={formData.password} onChange={handleChange} minLength={6} placeholder="•••••••• (Min 6 chars)" className="govt-input" />
+                <label className="text-gray-800 text-xs font-bold">Password</label>
+                <div className="relative">
+                  <input 
+                    required 
+                    type={showPassword ? "text" : "password"} 
+                    name="password" 
+                    value={formData.password} 
+                    onChange={handleChange} 
+                    minLength={6} 
+                    placeholder="•••••••• (Min 6 chars)" 
+                    className="govt-input !pr-10" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-[11px] text-slate-400 hover:text-slate-650 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-slate-100 text-xs font-semibold">PAN Card Number</label>
+                <label className="text-gray-800 text-xs font-bold">PAN Card Number</label>
                 <input required name="pan" value={formData.pan} onChange={handleChange} maxLength={10} minLength={10} placeholder="ABCDE1234F" className="govt-input" />
               </div>
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-slate-100 text-xs font-semibold">Registered Office Address</label>
+                <label className="text-gray-800 text-xs font-bold">Registered Office Address</label>
                 <input required name="address" value={formData.address} onChange={handleChange} minLength={5} placeholder="e.g. Plot No 42, Bandra East, Mumbai" className="govt-input" />
               </div>
 
               {role === "NGO" ? (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-100 text-xs font-semibold">NGO Registration Number</label>
+                    <label className="text-gray-800 text-xs font-bold">NGO Registration Number</label>
                     <input required name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} placeholder="MH/MUM/123/2026" className="govt-input" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-100 text-xs font-semibold">CSR-1 Registry Code</label>
+                    <label className="text-gray-800 text-xs font-bold">CSR-1 Registry Code</label>
                     <input required name="csr1Number" value={formData.csr1Number} onChange={handleChange} placeholder="CSR00012345" className="govt-input" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-100 text-xs font-semibold">NGO Darpan ID</label>
+                    <label className="text-gray-800 text-xs font-bold">NGO Darpan ID</label>
                     <input required name="darpanNumber" value={formData.darpanNumber} onChange={handleChange} placeholder="MH/2021/012345" className="govt-input" />
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-100 text-xs font-semibold">Corporate CIN Code</label>
+                    <label className="text-gray-800 text-xs font-bold">Corporate CIN Code</label>
                     <input required name="cin" value={formData.cin} onChange={handleChange} placeholder="L72200MH2018PLC309876" className="govt-input" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-100 text-xs font-semibold">GST Registration Number</label>
+                    <label className="text-gray-800 text-xs font-bold">GST Registration Number</label>
                     <input required name="gst" value={formData.gst} onChange={handleChange} placeholder="27AAAAA1111A1Z1" className="govt-input" />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-100 text-xs font-semibold">CSR Funding Budget (INR)</label>
+                    <label className="text-gray-800 text-xs font-bold">CSR Funding Budget (INR)</label>
                     <input required type="number" name="csrBudget" value={formData.csrBudget} onChange={handleChange} placeholder="e.g. 5000000" className="govt-input" />
                   </div>
                 </>
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-slate-100 text-xs font-semibold">District (Maharashtra)</label>
+                <label className="text-gray-800 text-xs font-bold">District (Maharashtra)</label>
                 <select name="district" value={formData.district} onChange={handleChange} className="govt-input">
                   <option>Pune</option>
                   <option>Nagpur</option>
@@ -304,7 +323,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-slate-100 text-xs font-semibold">Taluka</label>
+                <label className="text-gray-800 text-xs font-bold">Taluka</label>
                 <input required name="taluka" value={formData.taluka} onChange={handleChange} placeholder="e.g. Haveli" className="govt-input" />
               </div>
             </div>
@@ -314,14 +333,14 @@ export default function RegisterPage() {
                 type="button" 
                 disabled={loading}
                 onClick={() => setStep(1)}
-                className="w-1/3 bg-slate-955 border border-slate-800 text-slate-200 hover:bg-slate-800 py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
+                className="w-1/3 bg-[#f8fafc] border border-gray-300 text-gray-700 hover:bg-gray-100 py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
               >
                 Back
               </button>
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-2/3 bg-indigo-700 hover:bg-indigo-650 text-white py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
+                className="w-2/3 bg-[#1e3a8a] hover:bg-[#1e40af] text-white py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {loading ? "Registering..." : "Submit & Verify OTP"}
               </button>
@@ -332,8 +351,8 @@ export default function RegisterPage() {
         {step === 3 && (
           <form onSubmit={handleVerifyOtp} className="flex flex-col gap-6">
             <div className="flex flex-col gap-1 text-center">
-              <h1 className="font-heading font-extrabold text-xl text-slate-50 tracking-tight">Enter OTP Code</h1>
-              <p className="text-slate-300 text-xs">We sent a 6-digit OTP code to your registered email <strong className="text-indigo-700">{formData.email}</strong></p>
+              <h1 className="font-heading font-extrabold text-xl text-gray-900 tracking-tight">Enter OTP Code</h1>
+              <p className="text-gray-500 text-xs font-semibold">We sent a 6-digit OTP code to your registered email <strong className="text-[#1e3a8a]">{formData.email}</strong></p>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -344,14 +363,14 @@ export default function RegisterPage() {
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="123456" 
                 disabled={loading}
-                className="w-full text-center bg-slate-900 border border-slate-850 rounded-xl py-4 text-2xl font-bold tracking-widest text-indigo-700 focus:outline-none focus:border-indigo-700 transition-all disabled:opacity-50" 
+                className="w-full text-center bg-white border border-gray-250 rounded-xl py-4 text-2xl font-bold tracking-widest text-[#1e3a8a] focus:outline-none focus:border-[#1e3a8a] transition-all disabled:opacity-50" 
               />
             </div>
 
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full bg-indigo-700 hover:bg-indigo-650 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
+              className="w-full bg-[#1e3a8a] hover:bg-[#1e40af] text-white font-bold py-3.5 rounded-xl transition-all shadow-sm disabled:opacity-50"
             >
               {loading ? "Verifying..." : "Verify Account"}
             </button>
@@ -362,7 +381,7 @@ export default function RegisterPage() {
         {step < 3 && (
           <div className="text-center text-xs text-slate-400 mt-2 font-medium">
             Already have an account?{" "}
-            <Link href="/login" className="text-indigo-700 hover:underline font-bold">
+            <Link href="/login" className="text-[#1e3a8a] hover:underline font-bold">
               Sign In
             </Link>
           </div>
