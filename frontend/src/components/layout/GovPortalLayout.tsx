@@ -123,6 +123,10 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
   const isCompanyRole = ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role);
   const isPublic = role === "PUBLIC" || (!isAdminRole && !isNgoRole && !isCompanyRole);
 
+  if (!isPublic) {
+    return <>{children}</>;
+  }
+
   const shouldShowSidebar = showSidebar ?? !isPublic;
 
   // Filter nav groups based on user role

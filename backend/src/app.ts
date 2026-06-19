@@ -4,7 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Server } from "socket.io";
-import { assertProductionEnv, getAllowedOrigins } from "./config/env";
+import { assertProductionEnv } from "./config/env";
+import { applyCorsHeaders, corsOriginDelegate } from "./config/cors";
 
 // Configurations
 dotenv.config();
@@ -33,43 +34,22 @@ import { registerChatSocket } from "./websocket/chatSocket";
 const app = express();
 const server = http.createServer(app);
 
-// CORS setup
-const configuredOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
-  : getAllowedOrigins();
-
-const defaultAllowedOrigins = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "https://csr-seven.vercel.app"
-];
-
 const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // allow requests with no origin (like mobile apps, curl, or server-to-server)
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-    
-    const isAllowed = 
-      configuredOrigins.includes(origin) ||
-      defaultAllowedOrigins.includes(origin) ||
-      origin.endsWith(".vercel.app") ||
-      /^https?:\/\/localhost(:\d+)?$/.test(origin) ||
-      /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
-      
-    if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS request blocked for origin: ${origin}`);
-      callback(null, false);
-    }
-  },
+  origin: corsOriginDelegate,
   credentials: true,
   methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "Cookie"]
+  allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+  optionsSuccessStatus: 204
 };
+
+app.use((req, res, next) => {
+  applyCorsHeaders(req, res);
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());

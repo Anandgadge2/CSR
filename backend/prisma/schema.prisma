@@ -1,14 +1,620 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                   String                    @id @default(uuid())
+  email                String                    @unique
+  passwordHash         String
+  role                 Role                      @default(NGO_MEMBER)
+  isVerified           Boolean                   @default(false)
+  otpCode              String?
+  otpExpiresAt         DateTime?
+  refreshToken         String?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  ngoId                String?
+  companyId            String?
+  auditLogs            AuditLog[]
+  fundReleasesApproved FundRelease[]             @relation("FundReleasesApproved")
+  messages             Message[]
+  documentsUploaded    NgoDocument[]             @relation("DocumentsUploaded")
+  documentsVerified    NgoDocument[]             @relation("DocumentsVerified")
+  notifications        Notification[]
+  assignedApplications OnboardingApplication[]   @relation("AssignedApplications")
+  queriesRaised        OnboardingQuery[]         @relation("QueriesRaised")
+  statusChanges        OnboardingStatusHistory[] @relation("StatusChanges")
+  paymentOrdersCreated PaymentOrder[]            @relation("PaymentOrdersCreated")
+  queryResponses       QueryResponse[]           @relation("QueryResponses")
+  reportsCreated       Report[]
+  riskFlagsResolved    RiskFlag[]                @relation("RiskFlagsResolved")
+  riskScoresCalculated RiskScore[]               @relation("RiskScoresCalculated")
+  company              Company?                  @relation(fields: [companyId], references: [id])
+  ngo                  NGO?                      @relation(fields: [ngoId], references: [id])
+  verificationsDone    VerificationCheck[]       @relation("VerificationsDone")
+}
+
+model NGO {
+  id                    String                 @id @default(uuid())
+  name                  String
+  registrationNumber    String                 @unique
+  darpanNumber          String?
+  csr1Number            String?
+  pan                   String                 @unique
+  certificate12AUrl     String?
+  certificate80GUrl     String?
+  address               String
+  state                 String                 @default("Maharashtra")
+  district              String
+  taluka                String
+  village               String?
+  website               String?
+  socialLinks           Json?
+  impactStatistics      Json?
+  status                VerificationStatus     @default(PENDING)
+  rejectionReason       String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  areasOfOperation      String[]
+  city                  String?
+  csrSectors            String[]
+  displayName           String?
+  officialEmail         String?
+  officialPhone         String?
+  organizationType      OrganizationType?
+  pincode               String?
+  registrationAuthority String?
+  registrationDate      DateTime?
+  yearEstablished       Int?
+  bankAccounts          BankAccount[]
+  chats                 Chat[]
+  documents             Document[]
+  governanceMembers     GovernanceMember[]
+  ngoContacts           NgoContact[]
+  ngoDocuments          NgoDocument[]
+  onboardingApplication OnboardingApplication?
+  projects              Project[]
+  reports               Report[]
+  riskScores            RiskScore[]
+  users                 User[]
+}
+
+model Company {
+  id              String             @id @default(uuid())
+  name            String
+  cin             String             @unique
+  gst             String             @unique
+  pan             String             @unique
+  csrBudget       Decimal
+  csrPolicyUrl    String?
+  focusAreas      String[]
+  contactInfo     Json
+  status          VerificationStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  chats           Chat[]
+  documents       Document[]
+  matchScores     MatchScore[]
+  reports         Report[]
+  users           User[]
+}
+
+model Project {
+  id               String        @id @default(uuid())
+  ngoId            String
+  title            String
+  description      String
+  focusArea        String
+  sdgGoal          String
+  beneficiaryCount Int
+  budgetRequested  Decimal
+  budgetFunded     Decimal       @default(0)
+  state            String        @default("Maharashtra")
+  district         String
+  taluka           String
+  village          String?
+  startDate        DateTime
+  endDate          DateTime
+  status           ProjectStatus @default(DRAFT)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  chats            Chat[]
+  documents        Document[]
+  matchScores      MatchScore[]
+  milestones       Milestone[]
+  ngo              NGO           @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+}
+
+model Milestone {
+  id                 String          @id @default(uuid())
+  projectId          String
+  name               String
+  description        String
+  amount             Decimal
+  dueDate            DateTime
+  status             MilestoneStatus @default(PENDING)
+  completionEvidence String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  project            Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Chat {
+  id        String     @id @default(uuid())
+  projectId String?
+  ngoId     String
+  companyId String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ngo       NGO        @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  project   Project?   @relation(fields: [projectId], references: [id])
+  documents Document[]
+  messages  Message[]
+
+  @@unique([ngoId, companyId, projectId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  chatId    String
+  senderId  String
+  text      String?
+  fileUrl   String?
+  fileType  String?
+  readBy    String[]
+  createdAt DateTime @default(now())
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id])
+}
+
+model Document {
+  id         String    @id @default(uuid())
+  title      String
+  fileUrl    String
+  fileType   String
+  expiryDate DateTime?
+  ngoId      String?
+  companyId  String?
+  projectId  String?
+  chatId     String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  chat       Chat?     @relation(fields: [chatId], references: [id])
+  company    Company?  @relation(fields: [companyId], references: [id])
+  ngo        NGO?      @relation(fields: [ngoId], references: [id])
+  project    Project?  @relation(fields: [projectId], references: [id])
+}
+
+model MatchScore {
+  id        String   @id @default(uuid())
+  companyId String
+  projectId String
+  score     Int
+  factors   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, projectId])
+}
+
+model Report {
+  id          String     @id @default(uuid())
+  title       String
+  type        ReportType
+  content     Json
+  fileUrl     String?
+  createdById String
+  ngoId       String?
+  companyId   String?
+  createdAt   DateTime   @default(now())
+  company     Company?   @relation(fields: [companyId], references: [id])
+  createdBy   User       @relation(fields: [createdById], references: [id])
+  ngo         NGO?       @relation(fields: [ngoId], references: [id])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  type      NotificationType @default(IN_APP)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  details   Json
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model OnboardingApplication {
+  id                      String                    @id @default(uuid())
+  ngoId                   String                    @unique
+  legalName               String
+  displayName             String?
+  organizationType        OrganizationType
+  registrationNumber      String
+  registrationDate        DateTime
+  registrationAuthority   String
+  stateOfRegistration     String
+  panNumber               String
+  ngoDarpanId             String?
+  csr1RegistrationNumber  String?
+  yearEstablished         Int
+  officialEmail           String
+  officialPhone           String
+  website                 String?
+  headOfficeAddress       String
+  state                   String
+  district                String
+  city                    String
+  pincode                 String
+  areasOfOperation        String[]
+  csrSectors              String[]
+  csr1Status              Boolean                   @default(false)
+  has12A                  Boolean                   @default(false)
+  has80G                  Boolean                   @default(false)
+  gstRegistered           Boolean                   @default(false)
+  gstin                   String?
+  fcraStatus              String?
+  fcraRegistrationNumber  String?
+  founderDetails          Json?
+  trusteesDirectors       Json?
+  authorizedSignatory     Json?
+  bankAccountHolder       String?
+  bankName                String?
+  bankBranch              String?
+  bankAccountNumber       String?
+  ifscCode                String?
+  accountType             String?
+  auditorName             String?
+  auditorFirm             String?
+  auditorContact          String?
+  annualTurnover          Json?
+  yearsOfOperation        Int?
+  previousProjects        Json?
+  beneficiaryCountLastFY  Int?
+  staffCount              Int?
+  volunteerCount          Int?
+  blacklistDeclaration    Boolean                   @default(false)
+  litigationDeclaration   Boolean                   @default(false)
+  conflictOfInterest      Boolean                   @default(false)
+  relatedPartyDeclaration Boolean                   @default(false)
+  dataPrivacyConsent      Boolean                   @default(false)
+  verificationConsent     Boolean                   @default(false)
+  status                  OnboardingStatus          @default(DRAFT)
+  completenessPercentage  Int                       @default(0)
+  submittedAt             DateTime?
+  reviewedAt              DateTime?
+  approvedAt              DateTime?
+  rejectedAt              DateTime?
+  assignedReviewerId      String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  assignedReviewer        User?                     @relation("AssignedApplications", fields: [assignedReviewerId], references: [id])
+  ngo                     NGO                       @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  queries                 OnboardingQuery[]
+  statusHistory           OnboardingStatusHistory[]
+  verificationChecks      VerificationCheck[]
+}
+
+model OnboardingStatusHistory {
+  id            String                @id @default(uuid())
+  applicationId String
+  fromStatus    OnboardingStatus?
+  toStatus      OnboardingStatus
+  changedById   String?
+  reason        String?
+  notes         String?
+  createdAt     DateTime              @default(now())
+  application   OnboardingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  changedBy     User?                 @relation("StatusChanges", fields: [changedById], references: [id])
+}
+
+model OnboardingQuery {
+  id            String                @id @default(uuid())
+  applicationId String
+  raisedById    String
+  queryText     String
+  documentType  DocumentType?
+  fieldName     String?
+  status        QueryStatus           @default(OPEN)
+  priority      String?
+  dueDate       DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  application   OnboardingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  raisedBy      User                  @relation("QueriesRaised", fields: [raisedById], references: [id])
+  responses     QueryResponse[]
+}
+
+model QueryResponse {
+  id             String          @id @default(uuid())
+  queryId        String
+  respondedById  String
+  responseText   String
+  attachmentUrls String[]
+  createdAt      DateTime        @default(now())
+  query          OnboardingQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  respondedBy    User            @relation("QueryResponses", fields: [respondedById], references: [id])
+}
+
+model VerificationCheck {
+  id            String                @id @default(uuid())
+  applicationId String
+  checkType     String
+  checkStatus   String
+  checkResult   Json?
+  verifiedById  String?
+  verifiedAt    DateTime?
+  notes         String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  application   OnboardingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  verifiedBy    User?                 @relation("VerificationsDone", fields: [verifiedById], references: [id])
+}
+
+model NgoDocument {
+  id                String         @id @default(uuid())
+  ngoId             String
+  documentType      DocumentType
+  title             String
+  description       String?
+  fileUrl           String
+  fileName          String
+  fileSize          Int
+  fileType          String
+  fileHash          String?
+  status            DocumentStatus @default(UPLOADED)
+  expiryDate        DateTime?
+  issueDate         DateTime?
+  issuingAuthority  String?
+  documentNumber    String?
+  verifiedById      String?
+  verifiedAt        DateTime?
+  verificationNotes String?
+  rejectionReason   String?
+  version           Int            @default(1)
+  parentDocumentId  String?
+  uploadedById      String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  ngo               NGO            @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  parentDocument    NgoDocument?   @relation("DocumentVersions", fields: [parentDocumentId], references: [id])
+  childDocuments    NgoDocument[]  @relation("DocumentVersions")
+  uploadedBy        User?          @relation("DocumentsUploaded", fields: [uploadedById], references: [id])
+  verifiedBy        User?          @relation("DocumentsVerified", fields: [verifiedById], references: [id])
+
+  @@index([ngoId, documentType])
+  @@index([status])
+  @@index([expiryDate])
+}
+
+model NgoContact {
+  id          String   @id @default(uuid())
+  ngoId       String
+  contactType String
+  name        String
+  designation String?
+  email       String
+  phone       String
+  mobile      String?
+  isPrimary   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ngo         NGO      @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+}
+
+model GovernanceMember {
+  id              String    @id @default(uuid())
+  ngoId           String
+  memberType      String
+  name            String
+  designation     String
+  email           String?
+  mobile          String?
+  panNumber       String?
+  aadhaarMasked   String?
+  tenureStartDate DateTime?
+  tenureEndDate   DateTime?
+  isActive        Boolean   @default(true)
+  idProofUrl      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  ngo             NGO       @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+}
+
+model BankAccount {
+  id                 String         @id @default(uuid())
+  ngoId              String
+  accountHolderName  String
+  bankName           String
+  branchName         String
+  accountNumber      String
+  ifscCode           String
+  accountType        String
+  isPrimary          Boolean        @default(false)
+  isVerified         Boolean        @default(false)
+  verificationMethod String?
+  verifiedAt         DateTime?
+  cancelledChequeUrl String?
+  bankStatementUrl   String?
+  verificationNotes  String?
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  ngo                NGO            @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  fundReleases       FundRelease[]
+  paymentOrders      PaymentOrder[]
+
+  @@index([ngoId])
+  @@index([accountNumber])
+}
+
+model RiskScore {
+  id                     String     @id @default(uuid())
+  ngoId                  String
+  overallScore           Int
+  riskLevel              RiskLevel
+  legalRegistrationScore Int        @default(0)
+  identitySignatoryScore Int        @default(0)
+  financialScore         Int        @default(0)
+  complianceScore        Int        @default(0)
+  governanceScore        Int        @default(0)
+  documentQualityScore   Int        @default(0)
+  paymentBankScore       Int        @default(0)
+  scoreBreakdown         Json?
+  calculatedAt           DateTime   @default(now())
+  calculatedById         String?
+  riskFlags              RiskFlag[]
+  calculatedBy           User?      @relation("RiskScoresCalculated", fields: [calculatedById], references: [id])
+  ngo                    NGO        @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+
+  @@index([ngoId])
+  @@index([riskLevel])
+}
+
+model RiskFlag {
+  id              String    @id @default(uuid())
+  riskScoreId     String
+  flagType        String
+  severity        String
+  description     String
+  recommendation  String?
+  isResolved      Boolean   @default(false)
+  resolvedAt      DateTime?
+  resolvedById    String?
+  resolutionNotes String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  resolvedBy      User?     @relation("RiskFlagsResolved", fields: [resolvedById], references: [id])
+  riskScore       RiskScore @relation(fields: [riskScoreId], references: [id], onDelete: Cascade)
+}
+
+model PaymentOrder {
+  id               String               @id @default(uuid())
+  orderNumber      String               @unique
+  ngoId            String?
+  companyId        String?
+  projectId        String?
+  bankAccountId    String?
+  amount           Decimal
+  currency         String               @default("INR")
+  purpose          String
+  description      String?
+  status           PaymentStatus        @default(CREATED)
+  gatewayName      String?
+  gatewayOrderId   String?
+  gatewayPaymentId String?
+  gatewaySignature String?
+  idempotencyKey   String               @unique
+  metadata         Json?
+  createdById      String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  fundReleases     FundRelease[]
+  bankAccount      BankAccount?         @relation(fields: [bankAccountId], references: [id])
+  createdBy        User?                @relation("PaymentOrdersCreated", fields: [createdById], references: [id])
+  transactions     PaymentTransaction[]
+  webhookLogs      PaymentWebhookLog[]
+
+  @@index([orderNumber])
+  @@index([status])
+  @@index([gatewayOrderId])
+}
+
+model PaymentTransaction {
+  id                   String        @id @default(uuid())
+  paymentOrderId       String
+  transactionId        String        @unique
+  gatewayTransactionId String?
+  amount               Decimal
+  currency             String        @default("INR")
+  status               PaymentStatus
+  paymentMethod        String?
+  paymentDetails       Json?
+  utrNumber            String?
+  failureReason        String?
+  failureCode          String?
+  processedAt          DateTime?
+  settledAt            DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  paymentOrder         PaymentOrder  @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId])
+  @@index([status])
+  @@index([utrNumber])
+}
+
+model PaymentWebhookLog {
+  id               String        @id @default(uuid())
+  paymentOrderId   String?
+  gatewayName      String
+  eventType        String
+  webhookPayload   Json
+  webhookSignature String?
+  isSignatureValid Boolean?
+  processedAt      DateTime?
+  processingStatus String?
+  processingError  String?
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime      @default(now())
+  paymentOrder     PaymentOrder? @relation(fields: [paymentOrderId], references: [id])
+
+  @@index([gatewayName, eventType])
+  @@index([createdAt])
+}
+
+model FundRelease {
+  id              String            @id @default(uuid())
+  paymentOrderId  String
+  ngoId           String?
+  projectId       String?
+  milestoneId     String?
+  bankAccountId   String
+  amount          Decimal
+  currency        String            @default("INR")
+  status          FundReleaseStatus @default(PENDING)
+  approvedById    String?
+  approvedAt      DateTime?
+  releasedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  approvedBy      User?             @relation("FundReleasesApproved", fields: [approvedById], references: [id])
+  bankAccount     BankAccount       @relation(fields: [bankAccountId], references: [id])
+  paymentOrder    PaymentOrder      @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([ngoId])
+  @@index([projectId])
 }
 
 enum Role {
   SUPER_ADMIN
+  COMPANY_ADMIN
+  COMPANY_MEMBER
+  NGO_ADMIN
+  NGO_MEMBER
   PORTAL_ADMIN
   CSR_ADMIN
   ANALYST_REVIEWER
@@ -16,11 +622,7 @@ enum Role {
   FINANCE_USER
   APPROVER
   AUDITOR
-  COMPANY_ADMIN
-  COMPANY_MEMBER
-  NGO_ADMIN
   AUTHORIZED_SIGNATORY
-  NGO_MEMBER
 }
 
 enum VerificationStatus {
@@ -166,709 +768,3 @@ enum NotificationType {
   SMS
   IN_APP
 }
-
-model User {
-  id                 String          @id @default(uuid())
-  email              String          @unique
-  passwordHash       String
-  role               Role            @default(NGO_MEMBER)
-  isVerified         Boolean         @default(false)
-  otpCode            String?
-  otpExpiresAt       DateTime?
-  refreshToken       String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  
-  // Relations
-  ngoId              String?
-  ngo                NGO?            @relation(fields: [ngoId], references: [id])
-  companyId          String?
-  company            Company?        @relation(fields: [companyId], references: [id])
-  messages           Message[]
-  notifications      Notification[]
-  auditLogs          AuditLog[]
-  reportsCreated     Report[]
-  
-  // Onboarding & Verification Relations
-  assignedApplications  OnboardingApplication[] @relation("AssignedApplications")
-  statusChanges         OnboardingStatusHistory[] @relation("StatusChanges")
-  queriesRaised         OnboardingQuery[]  @relation("QueriesRaised")
-  queryResponses        QueryResponse[]    @relation("QueryResponses")
-  verificationsDone     VerificationCheck[] @relation("VerificationsDone")
-  documentsVerified     NgoDocument[]      @relation("DocumentsVerified")
-  documentsUploaded     NgoDocument[]      @relation("DocumentsUploaded")
-  riskScoresCalculated  RiskScore[]        @relation("RiskScoresCalculated")
-  riskFlagsResolved     RiskFlag[]         @relation("RiskFlagsResolved")
-  paymentOrdersCreated  PaymentOrder[]     @relation("PaymentOrdersCreated")
-  fundReleasesApproved  FundRelease[]      @relation("FundReleasesApproved")
-}
-
-model NGO {
-  id                 String             @id @default(uuid())
-  name               String
-  displayName        String?
-  organizationType   OrganizationType?
-  registrationNumber String             @unique
-  registrationDate   DateTime?
-  registrationAuthority String?
-  darpanNumber       String?
-  csr1Number         String?
-  pan                String             @unique
-  yearEstablished    Int?
-  officialEmail      String?
-  officialPhone      String?
-  certificate12AUrl  String?
-  certificate80GUrl  String?
-  address            String
-  state              String             @default("Maharashtra")
-  district           String
-  taluka             String
-  village            String?
-  pincode            String?
-  city               String?
-  website            String?
-  socialLinks        Json?              // { twitter, facebook, linkedin }
-  areasOfOperation   String[]
-  csrSectors         String[]
-  impactStatistics   Json?              // { beneficiariesServed, projectsCompleted }
-  status             VerificationStatus @default(PENDING)
-  rejectionReason    String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  // Relations
-  users              User[]
-  projects           Project[]
-  chats              Chat[]
-  documents          Document[]
-  reports            Report[]
-  onboardingApplication OnboardingApplication?
-  ngoContacts        NgoContact[]
-  governanceMembers  GovernanceMember[]
-  bankAccounts       BankAccount[]
-  ngoDocuments       NgoDocument[]
-  riskScores         RiskScore[]
-}
-
-model Company {
-  id                 String             @id @default(uuid())
-  name               String
-  cin                String             @unique
-  gst                String             @unique
-  pan                String             @unique
-  csrBudget          Decimal
-  csrPolicyUrl       String?
-  focusAreas         String[]           // Array of categories, e.g., ["Education", "Healthcare"]
-  contactInfo        Json               // { phone, alternateEmail }
-  status             VerificationStatus @default(PENDING)
-  rejectionReason    String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  // Relations
-  users              User[]
-  chats              Chat[]
-  documents          Document[]
-  matchScores        MatchScore[]
-  reports            Report[]
-}
-
-model Project {
-  id                 String             @id @default(uuid())
-  ngoId              String
-  ngo                NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  title              String
-  description        String
-  focusArea          String
-  sdgGoal            String
-  beneficiaryCount   Int
-  budgetRequested    Decimal
-  budgetFunded       Decimal            @default(0)
-  state              String             @default("Maharashtra")
-  district           String
-  taluka             String
-  village            String?
-  startDate          DateTime
-  endDate            DateTime
-  status             ProjectStatus      @default(DRAFT)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  // Relations
-  milestones         Milestone[]
-  documents          Document[]
-  chats              Chat[]
-  matchScores        MatchScore[]
-}
-
-model Milestone {
-  id                 String             @id @default(uuid())
-  projectId          String
-  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name               String
-  description        String
-  amount             Decimal
-  dueDate            DateTime
-  status             MilestoneStatus    @default(PENDING)
-  completionEvidence String?            // S3 document link for proof
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-}
-
-model Chat {
-  id                 String             @id @default(uuid())
-  projectId          String?
-  project            Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  ngoId              String
-  ngo                NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  companyId          String
-  company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  // Relations
-  messages           Message[]
-  documents          Document[]
-
-  @@unique([ngoId, companyId, projectId])
-}
-
-model Message {
-  id                 String             @id @default(uuid())
-  chatId             String
-  chat               Chat               @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  senderId           String
-  sender             User               @relation(fields: [senderId], references: [id])
-  text               String?
-  fileUrl            String?
-  fileType           String?
-  readBy             String[]           // Array of User IDs who read the message
-  createdAt          DateTime           @default(now())
-}
-
-model Document {
-  id                 String             @id @default(uuid())
-  title              String
-  fileUrl            String
-  fileType           String
-  expiryDate         DateTime?
-  ngoId              String?
-  ngo                NGO?               @relation(fields: [ngoId], references: [id])
-  companyId          String?
-  company            Company?           @relation(fields: [companyId], references: [id])
-  projectId          String?
-  project            Project?           @relation(fields: [projectId], references: [id])
-  chatId             String?
-  chat               Chat?              @relation(fields: [chatId], references: [id])
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-}
-
-model MatchScore {
-  id                 String             @id @default(uuid())
-  companyId          String
-  company            Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  projectId          String
-  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  score              Int                // 0 - 100
-  factors            Json               // Breakdown details, e.g. { locationMatch: true, budgetFit: 0.8 }
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  @@unique([companyId, projectId])
-}
-
-model Report {
-  id                 String             @id @default(uuid())
-  title              String
-  type               ReportType
-  content            Json               // Analytical structure of the report
-  fileUrl            String?            // S3 PDF/Excel export URL
-  createdById        String
-  createdBy          User               @relation(fields: [createdById], references: [id])
-  ngoId              String?
-  ngo                NGO?               @relation(fields: [ngoId], references: [id])
-  companyId          String?
-  company            Company?           @relation(fields: [companyId], references: [id])
-  createdAt          DateTime           @default(now())
-}
-
-model Notification {
-  id                 String             @id @default(uuid())
-  userId             String
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title              String
-  message            String
-  isRead             Boolean            @default(false)
-  type               NotificationType   @default(IN_APP)
-  createdAt          DateTime           @default(now())
-}
-
-model AuditLog {
-  id                 String             @id @default(uuid())
-  userId             String?
-  user               User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action             String
-  details            Json
-  ipAddress          String?
-  createdAt          DateTime           @default(now())
-}
-
-
-// ============================================
-// NGO ONBOARDING & VERIFICATION MODELS
-// ============================================
-
-model OnboardingApplication {
-  id                    String             @id @default(uuid())
-  ngoId                 String             @unique
-  ngo                   NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  
-  // Step 2: Organization Details
-  legalName             String
-  displayName           String?
-  organizationType      OrganizationType
-  registrationNumber    String
-  registrationDate      DateTime
-  registrationAuthority String
-  stateOfRegistration   String
-  panNumber             String
-  ngoDarpanId           String?
-  csr1RegistrationNumber String?
-  yearEstablished       Int
-  officialEmail         String
-  officialPhone         String
-  website               String?
-  headOfficeAddress     String
-  state                 String
-  district              String
-  city                  String
-  pincode               String
-  areasOfOperation      String[]
-  csrSectors            String[]
-  
-  // Step 3: Legal & Statutory Details
-  csr1Status            Boolean            @default(false)
-  has12A                Boolean            @default(false)
-  has80G                Boolean            @default(false)
-  gstRegistered         Boolean            @default(false)
-  gstin                 String?
-  fcraStatus            String?            // NOT_APPLICABLE, REGISTERED, PRIOR_PERMISSION, EXPIRED, SUSPENDED, CANCELLED
-  fcraRegistrationNumber String?
-  
-  // Step 4: Governance (stored as JSON for flexibility)
-  founderDetails        Json?
-  trusteesDirectors     Json?              // Array of governance members
-  authorizedSignatory   Json?
-  
-  // Step 5: Financial Details
-  bankAccountHolder     String?
-  bankName              String?
-  bankBranch            String?
-  bankAccountNumber     String?
-  ifscCode              String?
-  accountType           String?
-  auditorName           String?
-  auditorFirm           String?
-  auditorContact        String?
-  annualTurnover        Json?              // Last 3 years
-  
-  // Step 6: Experience & Impact
-  yearsOfOperation      Int?
-  previousProjects      Json?              // Array of previous CSR projects
-  beneficiaryCountLastFY Int?
-  staffCount            Int?
-  volunteerCount        Int?
-  
-  // Step 7: Declarations
-  blacklistDeclaration  Boolean            @default(false)
-  litigationDeclaration Boolean            @default(false)
-  conflictOfInterest    Boolean            @default(false)
-  relatedPartyDeclaration Boolean          @default(false)
-  dataPrivacyConsent    Boolean            @default(false)
-  verificationConsent   Boolean            @default(false)
-  
-  // Workflow
-  status                OnboardingStatus   @default(DRAFT)
-  completenessPercentage Int               @default(0)
-  submittedAt           DateTime?
-  reviewedAt            DateTime?
-  approvedAt            DateTime?
-  rejectedAt            DateTime?
-  assignedReviewerId    String?
-  assignedReviewer      User?              @relation("AssignedApplications", fields: [assignedReviewerId], references: [id], onDelete: SetNull)
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  // Relations
-  statusHistory         OnboardingStatusHistory[]
-  queries               OnboardingQuery[]
-  verificationChecks    VerificationCheck[]
-}
-
-model OnboardingStatusHistory {
-  id                    String             @id @default(uuid())
-  applicationId         String
-  application           OnboardingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  fromStatus            OnboardingStatus?
-  toStatus              OnboardingStatus
-  changedById           String?
-  changedBy             User?              @relation("StatusChanges", fields: [changedById], references: [id], onDelete: SetNull)
-  reason                String?
-  notes                 String?
-  createdAt             DateTime           @default(now())
-}
-
-model OnboardingQuery {
-  id                    String             @id @default(uuid())
-  applicationId         String
-  application           OnboardingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  raisedById            String
-  raisedBy              User               @relation("QueriesRaised", fields: [raisedById], references: [id])
-  queryText             String
-  documentType          DocumentType?
-  fieldName             String?
-  status                QueryStatus        @default(OPEN)
-  priority              String?            // LOW, MEDIUM, HIGH, CRITICAL
-  dueDate               DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  // Relations
-  responses             QueryResponse[]
-}
-
-model QueryResponse {
-  id                    String             @id @default(uuid())
-  queryId               String
-  query                 OnboardingQuery    @relation(fields: [queryId], references: [id], onDelete: Cascade)
-  respondedById         String
-  respondedBy           User               @relation("QueryResponses", fields: [respondedById], references: [id])
-  responseText          String
-  attachmentUrls        String[]
-  createdAt             DateTime           @default(now())
-}
-
-model VerificationCheck {
-  id                    String             @id @default(uuid())
-  applicationId         String
-  application           OnboardingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  checkType             String             // PAN_VERIFICATION, GST_VERIFICATION, BANK_VERIFICATION, etc.
-  checkStatus           String             // PENDING, PASSED, FAILED, MANUAL_REVIEW
-  checkResult           Json?
-  verifiedById          String?
-  verifiedBy            User?              @relation("VerificationsDone", fields: [verifiedById], references: [id], onDelete: SetNull)
-  verifiedAt            DateTime?
-  notes                 String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-}
-
-// ============================================
-// NGO DOCUMENT MANAGEMENT
-// ============================================
-
-model NgoDocument {
-  id                    String             @id @default(uuid())
-  ngoId                 String
-  ngo                   NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  documentType          DocumentType
-  title                 String
-  description           String?
-  fileUrl               String
-  fileName              String
-  fileSize              Int
-  fileType              String
-  fileHash              String?            // For tamper detection
-  status                DocumentStatus     @default(UPLOADED)
-  expiryDate            DateTime?
-  issueDate             DateTime?
-  issuingAuthority      String?
-  documentNumber        String?
-  
-  // Verification
-  verifiedById          String?
-  verifiedBy            User?              @relation("DocumentsVerified", fields: [verifiedById], references: [id], onDelete: SetNull)
-  verifiedAt            DateTime?
-  verificationNotes     String?
-  rejectionReason       String?
-  
-  // Version control
-  version               Int                @default(1)
-  parentDocumentId      String?
-  parentDocument        NgoDocument?       @relation("DocumentVersions", fields: [parentDocumentId], references: [id], onDelete: SetNull)
-  childDocuments        NgoDocument[]      @relation("DocumentVersions")
-  
-  uploadedById          String?
-  uploadedBy            User?              @relation("DocumentsUploaded", fields: [uploadedById], references: [id], onDelete: SetNull)
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  @@index([ngoId, documentType])
-  @@index([status])
-  @@index([expiryDate])
-}
-
-// ============================================
-// NGO CONTACTS & GOVERNANCE
-// ============================================
-
-model NgoContact {
-  id                    String             @id @default(uuid())
-  ngoId                 String
-  ngo                   NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  contactType           String             // PRIMARY, AUTHORIZED_SIGNATORY, FINANCE, TECHNICAL
-  name                  String
-  designation           String?
-  email                 String
-  phone                 String
-  mobile                String?
-  isPrimary             Boolean            @default(false)
-  isActive              Boolean            @default(true)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-}
-
-model GovernanceMember {
-  id                    String             @id @default(uuid())
-  ngoId                 String
-  ngo                   NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  memberType            String             // FOUNDER, TRUSTEE, DIRECTOR, GOVERNING_BODY_MEMBER
-  name                  String
-  designation           String
-  email                 String?
-  mobile                String?
-  panNumber             String?
-  aadhaarMasked         String?            // Last 4 digits only
-  tenureStartDate       DateTime?
-  tenureEndDate         DateTime?
-  isActive              Boolean            @default(true)
-  idProofUrl            String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-}
-
-// ============================================
-// BANK ACCOUNT & VERIFICATION
-// ============================================
-
-model BankAccount {
-  id                    String             @id @default(uuid())
-  ngoId                 String
-  ngo                   NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  accountHolderName     String
-  bankName              String
-  branchName            String
-  accountNumber         String
-  ifscCode              String
-  accountType           String             // SAVINGS, CURRENT, FCRA
-  isPrimary             Boolean            @default(false)
-  isVerified            Boolean            @default(false)
-  verificationMethod    String?            // PENNY_DROP, BANK_STATEMENT, CANCELLED_CHEQUE
-  verifiedAt            DateTime?
-  cancelledChequeUrl    String?
-  bankStatementUrl      String?
-  verificationNotes     String?
-  isActive              Boolean            @default(true)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  // Relations
-  paymentOrders         PaymentOrder[]
-  fundReleases          FundRelease[]
-  
-  @@index([ngoId])
-  @@index([accountNumber])
-}
-
-// ============================================
-// RISK SCORING & FLAGS
-// ============================================
-
-model RiskScore {
-  id                    String             @id @default(uuid())
-  ngoId                 String
-  ngo                   NGO                @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-  overallScore          Int                // 0-100
-  riskLevel             RiskLevel
-  
-  // Category scores
-  legalRegistrationScore Int               @default(0)
-  identitySignatoryScore Int               @default(0)
-  financialScore        Int                @default(0)
-  complianceScore       Int                @default(0)
-  governanceScore       Int                @default(0)
-  documentQualityScore  Int                @default(0)
-  paymentBankScore      Int                @default(0)
-  
-  // Detailed breakdown
-  scoreBreakdown        Json?
-  
-  calculatedAt          DateTime           @default(now())
-  calculatedById        String?
-  calculatedBy          User?              @relation("RiskScoresCalculated", fields: [calculatedById], references: [id], onDelete: SetNull)
-  
-  // Relations
-  riskFlags             RiskFlag[]
-  
-  @@index([ngoId])
-  @@index([riskLevel])
-}
-
-model RiskFlag {
-  id                    String             @id @default(uuid())
-  riskScoreId           String
-  riskScore             RiskScore          @relation(fields: [riskScoreId], references: [id], onDelete: Cascade)
-  flagType              String             // CSR1_MISSING, PAN_MISMATCH, BANK_DUPLICATE, etc.
-  severity              String             // LOW, MEDIUM, HIGH, CRITICAL
-  description           String
-  recommendation        String?
-  isResolved            Boolean            @default(false)
-  resolvedAt            DateTime?
-  resolvedById          String?
-  resolvedBy            User?              @relation("RiskFlagsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
-  resolutionNotes       String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-}
-
-// ============================================
-// PAYMENT GATEWAY FOUNDATION
-// ============================================
-
-model PaymentOrder {
-  id                    String             @id @default(uuid())
-  orderNumber           String             @unique
-  ngoId                 String?
-  companyId             String?
-  projectId             String?
-  bankAccountId         String?
-  bankAccount           BankAccount?       @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
-  
-  amount                Decimal
-  currency              String             @default("INR")
-  purpose               String
-  description           String?
-  
-  status                PaymentStatus      @default(CREATED)
-  
-  // Gateway details
-  gatewayName           String?            // RAZORPAY, CASHFREE, PAYU, etc.
-  gatewayOrderId        String?
-  gatewayPaymentId      String?
-  gatewaySignature      String?
-  
-  // Idempotency
-  idempotencyKey        String             @unique
-  
-  // Metadata
-  metadata              Json?
-  
-  createdById           String?
-  createdBy             User?              @relation("PaymentOrdersCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  // Relations
-  transactions          PaymentTransaction[]
-  webhookLogs           PaymentWebhookLog[]
-  fundReleases          FundRelease[]
-  
-  @@index([orderNumber])
-  @@index([status])
-  @@index([gatewayOrderId])
-}
-
-model PaymentTransaction {
-  id                    String             @id @default(uuid())
-  paymentOrderId        String
-  paymentOrder          PaymentOrder       @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
-  
-  transactionId         String             @unique
-  gatewayTransactionId  String?
-  
-  amount                Decimal
-  currency              String             @default("INR")
-  status                PaymentStatus
-  
-  paymentMethod         String?            // UPI, NETBANKING, CARD, WALLET
-  paymentDetails        Json?
-  
-  utrNumber             String?            // For bank transfers
-  
-  failureReason         String?
-  failureCode           String?
-  
-  processedAt           DateTime?
-  settledAt             DateTime?
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  @@index([transactionId])
-  @@index([status])
-  @@index([utrNumber])
-}
-
-model PaymentWebhookLog {
-  id                    String             @id @default(uuid())
-  paymentOrderId        String?
-  paymentOrder          PaymentOrder?      @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
-  
-  gatewayName           String
-  eventType             String
-  webhookPayload        Json
-  webhookSignature      String?
-  isSignatureValid      Boolean?
-  
-  processedAt           DateTime?
-  processingStatus      String?            // PENDING, PROCESSED, FAILED
-  processingError       String?
-  
-  ipAddress             String?
-  userAgent             String?
-  
-  createdAt             DateTime           @default(now())
-  
-  @@index([gatewayName, eventType])
-  @@index([createdAt])
-}
-
-model FundRelease {
-  id                    String             @id @default(uuid())
-  paymentOrderId        String
-  paymentOrder          PaymentOrder       @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
-  
-  ngoId                 String?
-  projectId             String?
-  milestoneId           String?
-  
-  bankAccountId         String
-  bankAccount           BankAccount        @relation(fields: [bankAccountId], references: [id])
-  
-  amount                Decimal
-  currency              String             @default("INR")
-  
-  status                FundReleaseStatus  @default(PENDING)
-  
-  approvedById          String?
-  approvedBy            User?              @relation("FundReleasesApproved", fields: [approvedById], references: [id], onDelete: SetNull)
-  approvedAt            DateTime?
-  
-  releasedAt            DateTime?
-  
-  rejectionReason       String?
-  
-  notes                 String?
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
-  @@index([status])
-  @@index([ngoId])
-  @@index([projectId])
-}
-

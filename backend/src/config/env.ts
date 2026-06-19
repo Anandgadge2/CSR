@@ -1,10 +1,7 @@
 const requiredInProduction = [
   "DATABASE_URL",
   "JWT_SECRET",
-  "JWT_REFRESH_SECRET",
-  "CLOUDINARY_CLOUD_NAME",
-  "CLOUDINARY_API_KEY",
-  "CLOUDINARY_API_SECRET"
+  "JWT_REFRESH_SECRET"
 ];
 
 export const isProduction = process.env.NODE_ENV === "production";
@@ -42,7 +39,9 @@ export const getAllowedOrigins = () => {
 
   return [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
     "https://csr-seven.vercel.app"
   ];
 };
