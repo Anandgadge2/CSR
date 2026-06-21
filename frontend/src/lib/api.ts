@@ -5,7 +5,33 @@ export const getAccessToken = () => {
   return localStorage.getItem("accessToken");
 };
 
+// In-memory cache to make page rendering and API fetches instant like a single-page app
+interface CacheEntry {
+  data: any;
+  timestamp: number;
+}
+const apiCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 60 * 1000; // 1-minute TTL for cached API data
+
+export const clearApiCache = () => {
+  apiCache.clear();
+};
+
 export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
+  const method = init.method || "GET";
+  const isCacheable = method === "GET";
+  
+  // Return cached result if valid
+  if (isCacheable) {
+    const cached = apiCache.get(path);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data as T;
+    }
+  } else {
+    // Invalidate cache immediately on mutation
+    apiCache.clear();
+  }
+
   const token = getAccessToken();
   const headers = new Headers(init.headers);
 
@@ -34,6 +60,14 @@ export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise
 
   if (!response.ok) {
     throw new Error(data?.error || "Request failed");
+  }
+
+  // Cache successful GET requests
+  if (isCacheable) {
+    apiCache.set(path, {
+      data,
+      timestamp: Date.now()
+    });
   }
 
   return data as T;

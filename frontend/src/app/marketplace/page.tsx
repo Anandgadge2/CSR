@@ -61,6 +61,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
   const [projects, setProjects] = useState<Project[]>([]);
   const [ngos, setNgos] = useState<NGO[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (params?.tab) {
@@ -70,6 +71,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
   useEffect(() => {
     const loadDirectories = async () => {
+      setLoading(true);
       try {
         const [projectRows, ngoRows, companyRows] = await Promise.all([
           apiFetch<any[]>("/projects"),
@@ -119,6 +121,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
             csrBudget: Number(company.csrBudget),
             district: company.contactInfo?.district || "Maharashtra",
             policyLink: company.csrPolicyUrl || "#",
+            shadowMatches: 0,
             projectsFunded: 0,
             industry: company.contactInfo?.industry || "Corporate"
           })));
@@ -127,6 +130,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
         setProjects([]);
         setNgos([]);
         setCompanies([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -330,7 +335,13 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
           </div>
 
           {/* Directory Listings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4 w-full bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <div className="w-12 h-12 rounded-full border-4 border-[#f97316] border-t-transparent animate-spin" />
+              <span className="text-sm text-slate-500 font-semibold">Loading public directories...</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* 1. Projects View */}
             {activeTab === "projects" && filteredProjects.map((project) => {
@@ -461,6 +472,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
             )}
 
           </div>
+          )}
         </div>
 
       </div>

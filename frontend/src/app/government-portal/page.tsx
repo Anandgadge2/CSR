@@ -36,9 +36,17 @@ type GovTab =
   | "project-verify" | "monitoring" | "compliance" | "impact" | "heatmaps" 
   | "circulars" | "knowledge" | "feedback" | "audit" | "settings" | "reports";
 
+const TableLoader = ({ message }: { message: string }) => (
+  <div className="flex flex-col items-center justify-center py-16 gap-4 w-full bg-white rounded-xl border border-slate-100">
+    <div className="w-10 h-10 rounded-full border-4 border-[#1e3a8a] border-t-transparent animate-spin" />
+    <span className="text-xs text-slate-500 font-semibold">{message}</span>
+  </div>
+);
+
 export default function GovernmentPortal({ params }: { params?: { tab?: string } }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<GovTab>("statewide");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (params?.tab) {
@@ -52,6 +60,7 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
   };
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
       apiFetch<any[]>("/ngos?status=PENDING"),
       apiFetch<any[]>("/companies?status=PENDING"),
@@ -83,7 +92,8 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
           ngo: project.ngo?.name || "Registered NGO"
         })));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   // Mock NGO registrations awaiting verification
@@ -349,14 +359,22 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
                 </h3>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <span className="text-xs font-semibold text-slate-600">NGO Registrations Pending</span>
-                  <span className="text-[#f97316] font-bold text-sm">{ngos.length} Requests</span>
-                </div>
-                <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <span className="text-xs font-semibold text-slate-600">Project Listings Pending</span>
-                  <span className="text-[#f97316] font-bold text-sm">{projects.length} Proposals</span>
-                </div>
+                {loading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="w-6 h-6 rounded-full border-2 border-[#1e3a8a] border-t-transparent animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <span className="text-xs font-semibold text-slate-600">NGO Registrations Pending</span>
+                      <span className="text-[#f97316] font-bold text-sm">{ngos.length} Requests</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                      <span className="text-xs font-semibold text-slate-600">Project Listings Pending</span>
+                      <span className="text-[#f97316] font-bold text-sm">{projects.length} Proposals</span>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -429,7 +447,9 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
             </h3>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            {ngos.length > 0 ? (
+            {loading ? (
+              <TableLoader message="Retrieving pending NGO registrations from server..." />
+            ) : ngos.length > 0 ? (
               <table className="govt-table">
                 <thead>
                   <tr>
@@ -472,7 +492,9 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
             </h3>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            {companies.length > 0 ? (
+            {loading ? (
+              <TableLoader message="Retrieving corporate registrations from server..." />
+            ) : companies.length > 0 ? (
               <table className="govt-table">
                 <thead>
                   <tr>
@@ -515,7 +537,9 @@ export default function GovernmentPortal({ params }: { params?: { tab?: string }
             </h3>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            {projects.length > 0 ? (
+            {loading ? (
+              <TableLoader message="Retrieving pending project proposals from server..." />
+            ) : projects.length > 0 ? (
               <table className="govt-table">
                 <thead>
                   <tr>

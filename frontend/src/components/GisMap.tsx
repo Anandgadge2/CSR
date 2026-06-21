@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Coins, FolderCheck, HeartHandshake, TrendingUp, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -53,7 +53,7 @@ const districts: DistrictData[] = [
   { name: "Kolhapur", funding: 18, projects: 12, ngos: 10, beneficiaries: 21000, level: "mid", coords: { x: 135, y: 355, w: 82, h: 38 } },
 ];
 
-export default function GisMap() {
+export default memo(function GisMap() {
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictData>(
     districts.find((district) => district.name === "Pune") || districts[0]
   );
@@ -165,7 +165,7 @@ export default function GisMap() {
       </div>
     </div>
   );
-}
+})
 
 function Metric({
   icon: Icon,

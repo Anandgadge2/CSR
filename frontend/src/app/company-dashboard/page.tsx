@@ -46,9 +46,17 @@ type CompanyTab =
   | "compliance" | "reports" | "analytics" | "coverage" | "sdg" 
   | "notifications" | "audit" | "settings";
 
+const SectionLoader = ({ message }: { message: string }) => (
+  <div className="flex flex-col items-center justify-center py-16 gap-4 w-full bg-white rounded-xl border border-gray-150">
+    <div className="w-10 h-10 rounded-full border-4 border-[#1e3a8a] border-t-transparent animate-spin" />
+    <span className="text-xs text-gray-500 font-semibold">{message}</span>
+  </div>
+);
+
 export default function CompanyDashboard({ params }: { params?: { tab?: string } }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<CompanyTab>("overview");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (params?.tab) {
@@ -79,17 +87,39 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
   // DB and Fallback Mock Data State
   const [projectsList, setProjectsList] = useState<any[]>([]);
   const [ngosList, setNgosList] = useState<any[]>([]);
+  const [matches, setMatches] = useState([
+    { id: "p-2", title: "Pune Zilla Parishad Smart Digital-Classrooms", ngo: "Sahyadri Eco Foundation", score: 95, budget: 3500000, focus: "Education & Literacy", district: "Pune" },
+    { id: "p-1", title: "Gadchiroli Watershed & Reforestation Initiative", ngo: "Sahyadri Eco Foundation", score: 85, budget: 2500000, focus: "Water Conservation", district: "Gadchiroli" }
+  ]);
 
   useEffect(() => {
-    // Fetch live projects
-    apiFetch<any[]>("/projects")
-      .then((data) => setProjectsList(data))
-      .catch(() => {});
-
-    // Fetch live NGOs
-    apiFetch<any[]>("/ngos")
-      .then((data) => setNgosList(data))
-      .catch(() => {});
+    setLoading(true);
+    Promise.all([
+      apiFetch<any[]>("/projects").catch(() => []),
+      apiFetch<any[]>("/ngos").catch(() => []),
+      apiFetch<any[]>("/matching").catch(() => [])
+    ])
+      .then(([projectsData, ngosData, matchingData]) => {
+        if (projectsData && projectsData.length > 0) {
+          setProjectsList(projectsData);
+        }
+        if (ngosData && ngosData.length > 0) {
+          setNgosList(ngosData);
+        }
+        if (matchingData && matchingData.length > 0) {
+          setMatches(matchingData.map((match) => ({
+            id: match.projectId,
+            title: match.projectTitle,
+            ngo: match.ngoName,
+            score: match.score,
+            budget: Number(match.budgetRequested),
+            focus: match.focusArea,
+            district: match.district
+          })));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const mockProjects = [
@@ -126,28 +156,6 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
     const matchesBudget = Number(p.budgetRequested || p.budget) <= filterBudget;
     return matchesSearch && matchesFocus && matchesDistrict && matchesBudget;
   });
-
-  const [matches, setMatches] = useState([
-    { id: "p-2", title: "Pune Zilla Parishad Smart Digital-Classrooms", ngo: "Sahyadri Eco Foundation", score: 95, budget: 3500000, focus: "Education & Literacy", district: "Pune" },
-    { id: "p-1", title: "Gadchiroli Watershed & Reforestation Initiative", ngo: "Sahyadri Eco Foundation", score: 85, budget: 2500000, focus: "Water Conservation", district: "Gadchiroli" }
-  ]);
-
-  useEffect(() => {
-    apiFetch<any[]>("/matching")
-      .then((rows) => {
-        if (rows.length === 0) return;
-        setMatches(rows.map((match) => ({
-          id: match.projectId,
-          title: match.projectTitle,
-          ngo: match.ngoName,
-          score: match.score,
-          budget: Number(match.budgetRequested),
-          focus: match.focusArea,
-          district: match.district
-        })));
-      })
-      .catch(() => {});
-  }, []);
 
   const [milestones, setMilestones] = useState([
     { id: "m-1", project: "Gadchiroli Watershed Initiative", name: "Milestone 2: Completion of Check Dam #2", amount: 400000, status: "Pending Approval", evidence: "evidence_dam2.zip", ngo: "Sahyadri Eco Foundation" }
@@ -300,19 +308,27 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
                 </h3>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                {matches.slice(0, 1).map((m) => (
-                  <div key={m.id} className="bg-blue-50/50 border border-blue-200 p-5 rounded-lg flex flex-col gap-3">
-                    <div className="flex justify-between items-center text-xs font-semibold text-[#f97316]">
-                      <span className="govt-badge govt-badge-pending">{m.score}% Match</span>
-                      <span className="text-gray-500">{m.district}</span>
-                    </div>
-                    <h4 className="font-heading font-bold text-sm text-gray-900 leading-tight">{m.title}</h4>
-                    <span className="text-xs text-gray-500 font-medium font-sans">NGO: {m.ngo}</span>
-                    <Button variant="primary" size="sm" onClick={() => handleTabChange("recommendations")} className="w-full mt-1">
-                      Evaluate Match
-                    </Button>
+                {loading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="w-6 h-6 rounded-full border-2 border-[#1e3a8a] border-t-transparent animate-spin" />
                   </div>
-                ))}
+                ) : matches.length > 0 ? (
+                  matches.slice(0, 1).map((m) => (
+                    <div key={m.id} className="bg-blue-50/50 border border-blue-200 p-5 rounded-lg flex flex-col gap-3">
+                      <div className="flex justify-between items-center text-xs font-semibold text-[#f97316]">
+                        <span className="govt-badge govt-badge-pending">{m.score}% Match</span>
+                        <span className="text-gray-500">{m.district}</span>
+                      </div>
+                      <h4 className="font-heading font-bold text-sm text-gray-900 leading-tight">{m.title}</h4>
+                      <span className="text-xs text-gray-500 font-medium font-sans">NGO: {m.ngo}</span>
+                      <Button variant="primary" size="sm" onClick={() => handleTabChange("recommendations")} className="w-full mt-1">
+                        Evaluate Match
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-gray-500 text-center py-6">No matching proposals found</div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -445,7 +461,9 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
           </div>
 
           {/* Projects Grid */}
-          {filteredProjectsList.length > 0 ? (
+          {loading ? (
+            <SectionLoader message="Retrieving active project directory..." />
+          ) : filteredProjectsList.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredProjectsList.map((p) => (
                 <Card key={p.id} className="flex flex-col justify-between hover:shadow-md hover:border-[#1e3a8a]/30 transition-all border border-gray-200">
@@ -518,24 +536,28 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
             AI Proposal Recommendations
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {matches.map((item) => (
-              <Card key={item.id} className="flex flex-col justify-between gap-5 border border-gray-200">
-                <div className="flex flex-col gap-3">
-                  <div className="flex justify-between items-center text-xs font-semibold">
-                    <span className="govt-badge govt-badge-pending">{item.score}% Match</span>
-                    <span className="text-gray-500 font-medium">NGO: {item.ngo}</span>
+          {loading ? (
+            <SectionLoader message="Calculating AI proposal recommendations..." />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {matches.map((item) => (
+                <Card key={item.id} className="flex flex-col justify-between gap-5 border border-gray-200">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex justify-between items-center text-xs font-semibold">
+                      <span className="govt-badge govt-badge-pending">{item.score}% Match</span>
+                      <span className="text-gray-500 font-medium">NGO: {item.ngo}</span>
+                    </div>
+                    <h4 className="font-heading font-bold text-lg text-gray-900 leading-tight">{item.title}</h4>
+                    <p className="text-gray-600 text-xs font-sans">Target Focus Area: {item.focus} | Location: {item.district}</p>
                   </div>
-                  <h4 className="font-heading font-bold text-lg text-gray-900 leading-tight">{item.title}</h4>
-                  <p className="text-gray-600 text-xs font-sans">Target Focus Area: {item.focus} | Location: {item.district}</p>
-                </div>
-                <div className="flex justify-between items-center text-xs font-bold">
-                  <span className="text-gray-900">Budget: ₹{item.budget.toLocaleString("en-IN")}</span>
-                  <Button variant="accent" size="sm" onClick={() => alert("Proposal accepted for funding escrow.")}>Accept for Escrow</Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-gray-900">Budget: ₹{item.budget.toLocaleString("en-IN")}</span>
+                    <Button variant="accent" size="sm" onClick={() => alert("Proposal accepted for funding escrow.")}>Accept for Escrow</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -547,57 +569,61 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
             Funded Projects
           </h3>
 
-          <div className="flex flex-col gap-6">
-            {displayProjects.slice(0, 2).map((p) => {
-              const total = Number(p.budgetRequested || p.budget);
-              const funded = total * 0.4; // assume 40% disbursed so far
-              const progressPercent = 40;
+          {loading ? (
+            <SectionLoader message="Loading funded projects and escrow statuses..." />
+          ) : (
+            <div className="flex flex-col gap-6">
+              {displayProjects.slice(0, 2).map((p) => {
+                const total = Number(p.budgetRequested || p.budget);
+                const funded = total * 0.4; // assume 40% disbursed so far
+                const progressPercent = 40;
 
-              return (
-                <Card key={p.id} className="border border-gray-200">
-                  <CardContent className="p-6 flex flex-col gap-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-                      <div>
-                        <h4 className="font-heading font-extrabold text-lg text-gray-900 leading-snug">{p.title}</h4>
-                        <span className="text-xs text-gray-500 font-bold">Partner NGO: {p.ngo?.name}</span>
+                return (
+                  <Card key={p.id} className="border border-gray-200">
+                    <CardContent className="p-6 flex flex-col gap-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
+                        <div>
+                          <h4 className="font-heading font-extrabold text-lg text-gray-900 leading-snug">{p.title}</h4>
+                          <span className="text-xs text-gray-500 font-bold">Partner NGO: {p.ngo?.name}</span>
+                        </div>
+                        <span className="govt-badge govt-badge-verified text-xs px-3 py-1">Active Escrow</span>
                       </div>
-                      <span className="govt-badge govt-badge-verified text-xs px-3 py-1">Active Escrow</span>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs text-gray-500 font-semibold uppercase">Escrow Funding Progress</span>
-                        <div className="flex items-center gap-3">
-                          <div className="w-full bg-gray-100 rounded-full h-3.5 border border-gray-200 overflow-hidden">
-                            <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex flex-col gap-2">
+                          <span className="text-xs text-gray-500 font-semibold uppercase">Escrow Funding Progress</span>
+                          <div className="flex items-center gap-3">
+                            <div className="w-full bg-gray-100 rounded-full h-3.5 border border-gray-200 overflow-hidden">
+                              <div className="bg-emerald-500 h-full rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
+                            </div>
+                            <span className="text-xs font-bold text-gray-800">{progressPercent}%</span>
                           </div>
-                          <span className="text-xs font-bold text-gray-800">{progressPercent}%</span>
+                          <div className="flex justify-between text-[11px] font-bold text-gray-600 mt-1">
+                            <span>Disbursed: ₹{funded.toLocaleString("en-IN")}</span>
+                            <span>Cap: ₹{total.toLocaleString("en-IN")}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-[11px] font-bold text-gray-600 mt-1">
-                          <span>Disbursed: ₹{funded.toLocaleString("en-IN")}</span>
-                          <span>Cap: ₹{total.toLocaleString("en-IN")}</span>
+
+                        <div className="flex flex-col gap-1.5 text-xs text-gray-600 font-semibold justify-center">
+                          <div>• Active Milestones: <span className="text-[#1e3a8a] font-bold">3 pending</span></div>
+                          <div>• Target District: <span className="text-gray-900 font-bold">{p.district}</span></div>
+                        </div>
+
+                        <div className="flex items-center gap-3 justify-start md:justify-end">
+                          <Button variant="outline" size="sm" onClick={() => handleTabChange("milestones")}>
+                            Milestones Escrow Queue
+                          </Button>
+                          <Button variant="primary" size="sm" onClick={() => alert(`Drawdown agreement pdf downloaded for project ${p.id}.`)}>
+                            Drawdown Policy
+                          </Button>
                         </div>
                       </div>
-
-                      <div className="flex flex-col gap-1.5 text-xs text-gray-600 font-semibold justify-center">
-                        <div>• Active Milestones: <span className="text-[#1e3a8a] font-bold">3 pending</span></div>
-                        <div>• Target District: <span className="text-gray-900 font-bold">{p.district}</span></div>
-                      </div>
-
-                      <div className="flex items-center gap-3 justify-start md:justify-end">
-                        <Button variant="outline" size="sm" onClick={() => handleTabChange("milestones")}>
-                          Milestones Escrow Queue
-                        </Button>
-                        <Button variant="primary" size="sm" onClick={() => alert(`Drawdown agreement pdf downloaded for project ${p.id}.`)}>
-                          Drawdown Policy
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -702,34 +728,38 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
             </h3>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
-            <table className="govt-table">
-              <thead>
-                <tr>
-                  <th>NGO Name</th>
-                  <th>Darpan Verification</th>
-                  <th>MCA CSR-1 ID</th>
-                  <th>Base District</th>
-                  <th>Legality Check</th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayNgos.map((n) => (
-                  <tr key={n.id}>
-                    <td className="font-bold text-gray-950">
-                      <a href={n.website || "#"} target="_blank" rel="noreferrer" className="text-[#1e3a8a] hover:underline flex items-center gap-1.5">
-                        {n.name} <ArrowUpRight size={12} />
-                      </a>
-                    </td>
-                    <td className="text-gray-600 font-medium text-xs">{n.darpanNumber || "MH/2021/012345-DARPAN"}</td>
-                    <td className="text-[#f97316] font-bold text-xs">{n.csr1Number || "CSR00012345"}</td>
-                    <td className="text-gray-700 font-medium">{n.district}</td>
-                    <td>
-                      <span className="govt-badge govt-badge-verified">MCA Approved</span>
-                    </td>
+            {loading ? (
+              <SectionLoader message="Retrieving verified NGO register..." />
+            ) : (
+              <table className="govt-table">
+                <thead>
+                  <tr>
+                    <th>NGO Name</th>
+                    <th>Darpan Verification</th>
+                    <th>MCA CSR-1 ID</th>
+                    <th>Base District</th>
+                    <th>Legality Check</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {displayNgos.map((n) => (
+                    <tr key={n.id}>
+                      <td className="font-bold text-gray-955">
+                        <a href={n.website || "#"} target="_blank" rel="noreferrer" className="text-[#1e3a8a] hover:underline flex items-center gap-1.5">
+                          {n.name} <ArrowUpRight size={12} />
+                        </a>
+                      </td>
+                      <td className="text-gray-600 font-medium text-xs">{n.darpanNumber || "MH/2021/012345-DARPAN"}</td>
+                      <td className="text-[#f97316] font-bold text-xs">{n.csr1Number || "CSR00012345"}</td>
+                      <td className="text-gray-700 font-medium">{n.district}</td>
+                      <td>
+                        <span className="govt-badge govt-badge-verified">MCA Approved</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </CardContent>
         </Card>
       )}
