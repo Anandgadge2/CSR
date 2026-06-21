@@ -63,7 +63,7 @@ export default function KnowledgeCenter() {
   ];
 
   return (
-    <GovPortalLayout userRole="PUBLIC">
+    <>
       <GovPageHeader
         breadcrumb="Home / Knowledge Center"
         title="Compliance Hub & Help Center"
@@ -315,7 +315,7 @@ export default function KnowledgeCenter() {
           </GovCard>
         </div>
       </div>
-    </GovPortalLayout>
+    </>
   );
 }
 

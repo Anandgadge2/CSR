@@ -35,7 +35,7 @@ export default function AboutPage({ params }: { params?: { tab?: string } }) {
   ];
 
   return (
-    <GovPortalLayout userRole="PUBLIC">
+    <>
       <GovPageHeader
         breadcrumb="Home / About"
         title="About MahaCSR Portal"
@@ -248,7 +248,7 @@ export default function AboutPage({ params }: { params?: { tab?: string } }) {
           </div>
         </div>
       )}
-    </GovPortalLayout>
+    </>
   );
 }
 
