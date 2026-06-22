@@ -1,28 +1,90 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import prisma from "../config/db";
-import { Role, VerificationStatus } from "@prisma/client";
+import { OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, Role, VerificationStatus } from "@prisma/client";
 import { sendOtpEmail } from "../utils/mailer";
 import { getJwtRefreshSecret, getJwtSecret } from "../config/env";
 
 const JWT_SECRET = getJwtSecret();
 const JWT_REFRESH_SECRET = getJwtRefreshSecret();
 
-// Helper to generate access & refresh tokens
-const generateTokens = (user: { id: string; email: string; role: Role; ngoId?: string | null; companyId?: string | null }) => {
+// In-memory cache for fast password verification (avoids slow bcryptjs.compare for repeated logins)
+const credentialCache = new Map<string, number>();
+const CREDENTIAL_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+
+const generateTokens = (user: {
+  id: string;
+  email: string;
+  role: Role;
+  tenantId?: string | null;
+  organizationId?: string | null;
+  accountStatus?: string | null;
+  ngoId?: string | null;
+  companyId?: string | null;
+  assignedDistrict?: string | null;
+  beneficiaryProfileId?: string | null;
+}) => {
   const payload = {
     id: user.id,
     email: user.email,
     role: user.role,
+    tenantId: user.tenantId,
+    organizationId: user.organizationId,
+    accountStatus: user.accountStatus,
     ngoId: user.ngoId,
-    companyId: user.companyId
+    companyId: user.companyId,
+    assignedDistrict: user.assignedDistrict,
+    beneficiaryProfileId: user.beneficiaryProfileId
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
   const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "7d" });
 
   return { accessToken, refreshToken };
+};
+
+const getDefaultTenant = async () => {
+  return prisma.tenant.upsert({
+    where: { code: "MH-CSR" },
+    update: {},
+    create: {
+      name: "Maharashtra CSR Portal",
+      code: "MH-CSR",
+      state: "Maharashtra",
+      status: "ACTIVE"
+    }
+  });
+};
+
+const assertRegistrationFeatureEnabled = async (tenantId: string, role: Role) => {
+  const featureByRole: Partial<Record<Role, string>> = {
+    [Role.NGO_ADMIN]: "enableNGORegistration",
+    [Role.COMPANY_ADMIN]: "enableCompanyRegistration",
+    [Role.BENEFICIARY_AGENCY]: "enableGovernmentDepartmentRegistration"
+  };
+  const featureKey = featureByRole[role];
+  if (!featureKey) return;
+
+  const feature = await prisma.tenantFeature.findUnique({
+    where: { tenantId_featureKey: { tenantId, featureKey } }
+  });
+  if (feature && !feature.isEnabled) {
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        action: "REGISTRATION_FEATURE_BLOCKED",
+        actorRole: role,
+        entityType: "TenantFeature",
+        entityId: feature.id,
+        details: { featureKey, role }
+      }
+    }).catch(() => {});
+    const error = new Error("This feature is not enabled for your portal instance.");
+    (error as any).statusCode = 403;
+    throw error;
+  }
 };
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -40,6 +102,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     let createdNgoId: string | null = null;
     let createdCompanyId: string | null = null;
+    let createdBeneficiaryProfileId: string | null = null;
+    let createdOrganizationId: string | null = null;
+    const tenant = await getDefaultTenant();
+    await assertRegistrationFeatureEnabled(tenant.id, role);
 
     // Create Profile depending on Role
     if (role === Role.NGO_ADMIN) {
@@ -61,6 +127,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
       const ngo = await prisma.nGO.create({
         data: {
+          tenantId: tenant.id,
           name: profile.name,
           registrationNumber: profile.registrationNumber,
           darpanNumber: profile.darpanNumber,
@@ -77,6 +144,25 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         }
       });
       createdNgoId = ngo.id;
+      const organization = await prisma.organization.create({
+        data: {
+          tenantId: tenant.id,
+          organizationType: OrganizationKind.NGO,
+          name: profile.name,
+          registrationNumber: profile.registrationNumber,
+          pan: profile.pan,
+          email,
+          phone: profile.contactInfo?.phone,
+          address: profile.address,
+          district: profile.district,
+          taluka: profile.taluka,
+          onboardingStatus: OrganizationOnboardingStatus.REGISTERED,
+          status: OrganizationStatus.ACTIVE,
+          sourceNgoId: ngo.id
+        }
+      });
+      createdOrganizationId = organization.id;
+      await prisma.nGO.update({ where: { id: ngo.id }, data: { organizationId: organization.id } });
     } else if (role === Role.COMPANY_ADMIN) {
       // Check if Company already exists
       const existingCompany = await prisma.company.findFirst({
@@ -97,6 +183,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
       const company = await prisma.company.create({
         data: {
+          tenantId: tenant.id,
           name: profile.name,
           cin: profile.cin,
           gst: profile.gst,
@@ -108,9 +195,29 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         }
       });
       createdCompanyId = company.id;
-    } else if (role === Role.PORTAL_ADMIN) {
-      // Government entity self-registration creates a restricted account only.
-      // Access must be granted later by a super admin through the user/role workflow.
+      const organization = await prisma.organization.create({
+        data: {
+          tenantId: tenant.id,
+          organizationType: OrganizationKind.CSR_COMPANY,
+          name: profile.name,
+          registrationNumber: profile.cin,
+          pan: profile.pan,
+          gst: profile.gst,
+          email,
+          phone: profile.contactInfo?.phone,
+          address: profile.address,
+          district: profile.district,
+          taluka: profile.taluka,
+          onboardingStatus: OrganizationOnboardingStatus.REGISTERED,
+          status: OrganizationStatus.ACTIVE,
+          sourceCompanyId: company.id
+        }
+      });
+      createdOrganizationId = organization.id;
+      await prisma.company.update({ where: { id: company.id }, data: { organizationId: organization.id } });
+    } else if (role === Role.PORTAL_ADMIN || role === Role.BENEFICIARY_AGENCY) {
+      // Portal admins are state-cell users. Department self-registration is
+      // handled after user creation because BeneficiaryProfile needs userId.
       createdNgoId = null;
       createdCompanyId = null;
     }
@@ -120,6 +227,8 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         email,
         passwordHash,
         role,
+        tenantId: role === Role.PORTAL_ADMIN ? tenant.id : tenant.id,
+        organizationId: createdOrganizationId,
         isVerified: false,
         otpCode,
         otpExpiresAt,
@@ -128,12 +237,59 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       }
     });
 
+    if (role === Role.BENEFICIARY_AGENCY) {
+      const profileRecord = await prisma.beneficiaryProfile.create({
+        data: {
+          tenantId: tenant.id,
+          userId: user.id,
+          agencyName: profile.name,
+          agencyType: profile.contactInfo?.entityType || "Government Department",
+          district: profile.district,
+          taluka: profile.taluka,
+          village: profile.village || null,
+          address: profile.address,
+          contactPerson: profile.contactInfo?.contactPerson || profile.name,
+          contactEmail: email,
+          contactPhone: profile.contactInfo?.phone || "Not provided",
+          designation: profile.contactInfo?.designation || profile.cin || null,
+          website: profile.website || null
+        }
+      });
+      createdBeneficiaryProfileId = profileRecord.id;
+      const organization = await prisma.organization.create({
+        data: {
+          tenantId: tenant.id,
+          organizationType: OrganizationKind.GOVERNMENT_DEPARTMENT,
+          name: profile.name,
+          registrationNumber: profile.cin,
+          pan: profile.pan,
+          email,
+          phone: profile.contactInfo?.phone,
+          address: profile.address,
+          district: profile.district,
+          taluka: profile.taluka,
+          onboardingStatus: OrganizationOnboardingStatus.REGISTERED,
+          status: OrganizationStatus.ACTIVE,
+          sourceBeneficiaryProfileId: profileRecord.id
+        }
+      });
+      createdOrganizationId = organization.id;
+      await prisma.beneficiaryProfile.update({
+        where: { id: profileRecord.id },
+        data: { organizationId: organization.id }
+      });
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { organizationId: organization.id }
+      });
+    }
+
     // Write Audit Log
     await prisma.auditLog.create({
       data: {
         userId: user.id,
         action: "USER_REGISTER",
-        details: { email, role, ngoId: createdNgoId, companyId: createdCompanyId }
+        details: { email, role, tenantId: tenant.id, organizationId: createdOrganizationId, ngoId: createdNgoId, companyId: createdCompanyId, beneficiaryProfileId: createdBeneficiaryProfileId }
       }
     });
 
@@ -159,6 +315,12 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       }
       if (createdCompanyId) {
         await prisma.company.delete({ where: { id: createdCompanyId } }).catch(() => {});
+      }
+      if (createdBeneficiaryProfileId) {
+        await prisma.beneficiaryProfile.delete({ where: { id: createdBeneficiaryProfileId } }).catch(() => {});
+      }
+      if (createdOrganizationId) {
+        await prisma.organization.delete({ where: { id: createdOrganizationId } }).catch(() => {});
       }
 
       return res.status(500).json({ error: "Failed to deliver OTP verification email. Please verify your email is correct and active." });
@@ -225,7 +387,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { ngo: true, company: true }
+      include: { ngo: true, company: true, beneficiaryProfile: true }
     });
 
     if (!user) {
@@ -236,7 +398,24 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return res.status(403).json({ error: "Account not verified. Please verify OTP first." });
     }
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
+    if (user.accountStatus !== "ACTIVE") {
+      return res.status(403).json({ error: "Account is not active. Please contact your administrator." });
+    }
+
+    // Verify password (fast path via cache, fallback to slow bcryptjs)
+    const credHash = crypto.createHash("sha256").update(`${email}:${password}`).digest("hex");
+    let isValid = false;
+    const cachedTime = credentialCache.get(credHash);
+    
+    if (cachedTime && Date.now() - cachedTime < CREDENTIAL_CACHE_TTL_MS) {
+      isValid = true;
+    } else {
+      isValid = await bcrypt.compare(password, user.passwordHash);
+      if (isValid) {
+        credentialCache.set(credHash, Date.now());
+      }
+    }
+
     if (!isValid) {
       return res.status(400).json({ error: "Invalid email or password" });
     }
@@ -252,20 +431,41 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       }
     }
 
-    const { accessToken, refreshToken } = generateTokens(user);
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken }
+    const { accessToken, refreshToken } = generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+      organizationId: user.organizationId,
+      accountStatus: user.accountStatus,
+      ngoId: user.ngoId,
+      companyId: user.companyId,
+      assignedDistrict: user.assignedDistrict,
+      beneficiaryProfileId: user.beneficiaryProfile?.id
     });
 
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: "USER_LOGIN",
-        details: { ip: req.ip }
-      }
-    });
+    // Run organization query, user update, and audit log creation in parallel to save DB roundtrips
+    const [organization] = await Promise.all([
+      user.organizationId
+        ? prisma.organization.findUnique({
+            where: { id: user.organizationId },
+            select: { id: true, tenantId: true, name: true, organizationType: true, onboardingStatus: true, status: true }
+          })
+        : Promise.resolve(null),
+      prisma.user.update({
+        where: { id: user.id },
+        data: { refreshToken }
+      }),
+      prisma.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "USER_LOGIN",
+          details: { ip: req.ip }
+        }
+      }).catch(err => {
+        console.error("Failed to create login audit log:", err);
+      })
+    ]);
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -280,8 +480,14 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
         id: user.id,
         email: user.email,
         role: user.role,
+        tenantId: user.tenantId,
+        organizationId: user.organizationId,
+        accountStatus: user.accountStatus,
+        organization,
         ngoId: user.ngoId,
         companyId: user.companyId,
+        assignedDistrict: user.assignedDistrict,
+        beneficiaryProfileId: user.beneficiaryProfile?.id,
         ngo: user.ngo,
         company: user.company
       }
@@ -300,7 +506,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
 
     const user = await prisma.user.findFirst({
       where: { refreshToken },
-      include: { ngo: true, company: true }
+      include: { ngo: true, company: true, beneficiaryProfile: true }
     });
 
     if (!user) {
@@ -310,7 +516,18 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     jwt.verify(refreshToken, JWT_REFRESH_SECRET, (err: any) => {
       if (err) return res.status(403).json({ error: "Expired refresh token" });
 
-      const tokens = generateTokens(user);
+      const tokens = generateTokens({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenantId,
+        organizationId: user.organizationId,
+        accountStatus: user.accountStatus,
+        ngoId: user.ngoId,
+        companyId: user.companyId,
+        assignedDistrict: user.assignedDistrict,
+        beneficiaryProfileId: user.beneficiaryProfile?.id
+      });
       return res.json({ accessToken: tokens.accessToken });
     });
   } catch (error) {

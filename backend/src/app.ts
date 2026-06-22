@@ -25,7 +25,25 @@ import auditRoutes from "./routes/auditRoutes";
 import documentRoutes from "./routes/documentRoutes";
 import reportRoutes from "./routes/reportRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import masterRoutes from "./routes/masterRoutes";
+import organizationRoutes from "./routes/organizationRoutes";
+import platformRoutes from "./routes/platformRoutes";
 import onboardingRoutes from "./routes/onboardingRoutes";
+import csrRequirementRoutes from "./routes/csrRequirementRoutes";
+import ngoApplicationRoutes from "./routes/ngoApplicationRoutes";
+import companyInterestRoutes from "./routes/companyInterestRoutes";
+import agreementRoutes from "./routes/agreementRoutes";
+import csrFundRoutes from "./routes/csrFundRoutes";
+import progressRoutes from "./routes/progressRoutes";
+import completionRoutes from "./routes/completionRoutes";
+import csrDashboardRoutes from "./routes/csrDashboardRoutes";
+import governmentDepartmentRoutes from "./routes/governmentDepartmentRoutes";
+import marketplaceRoutes from "./routes/marketplaceRoutes";
+import publicRoutes from "./routes/publicRoutes";
+import districtRoutes from "./routes/districtRoutes";
+import companyPortalRoutes from "./routes/companyPortalRoutes";
+import ngoPortalRoutes from "./routes/ngoPortalRoutes";
+import csrLifecycleRoutes from "./routes/csrLifecycleRoutes";
 
 // Middlewares
 import { errorHandler } from "./middlewares/errorMiddleware";
@@ -74,7 +92,26 @@ app.use("/api/audit-logs", auditRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/master", masterRoutes);
+app.use("/api/org", organizationRoutes);
+app.use("/api/platform", platformRoutes);
 app.use("/api/onboarding", onboardingRoutes);
+app.use("/api/csr-requirements", csrRequirementRoutes);
+app.use("/api/requirements", csrRequirementRoutes);
+app.use("/api/government-departments", governmentDepartmentRoutes);
+app.use("/api/marketplace", marketplaceRoutes);
+app.use("/api/public", publicRoutes);
+app.use("/api/district", districtRoutes);
+app.use("/api/company", companyPortalRoutes);
+app.use("/api/ngo", ngoPortalRoutes);
+app.use("/api", csrLifecycleRoutes);
+app.use("/api/ngo-applications", ngoApplicationRoutes);
+app.use("/api/company-interests", companyInterestRoutes);
+app.use("/api/agreements", agreementRoutes);
+app.use("/api/csr-funds", csrFundRoutes);
+app.use("/api/progress-reports", progressRoutes);
+app.use("/api/completions", completionRoutes);
+app.use("/api/csr-dashboard", csrDashboardRoutes);
 
 // Base route
 app.get("/", (req, res) => {

@@ -7,7 +7,7 @@ import {
   Building2, Landmark, Search, Bell, Mail, ChevronLeft, ChevronRight,
   Layers, Sparkles, Award, Coins, Compass, FileText, BarChart2,
   HelpCircle, Menu, X, LogOut, ShieldCheck, BookOpen, ShieldAlert,
-  Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone
+  Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone, CheckCircle2
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { apiFetch, getStoredUser } from "@/lib/api";
@@ -25,10 +25,19 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; isRead: boolean }>>([]);
   const [userEmail, setUserEmail] = useState("user@mahacsr.gov.in");
+  const [tenantFeatures, setTenantFeatures] = useState<Record<string, boolean>>({});
 
   const isDashboard = pathname.startsWith("/ngo-dashboard") || 
                       pathname.startsWith("/company-dashboard") || 
                       pathname.startsWith("/government-portal") ||
+                      pathname.startsWith("/department") ||
+                      pathname.startsWith("/company/") ||
+                      pathname === "/company" ||
+                      pathname.startsWith("/ngo/") ||
+                      pathname === "/ngo" ||
+                      pathname.startsWith("/district") ||
+                      pathname.startsWith("/organization") ||
+                      pathname.startsWith("/master") ||
                       pathname.startsWith("/dashboard") ||
                       pathname.startsWith("/onboarding") ||
                       pathname.startsWith("/queries") ||
@@ -41,6 +50,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       pathname.startsWith("/settings") ||
                       pathname.startsWith("/chat") || 
                       pathname.startsWith("/analytics") || 
+                      pathname.startsWith("/beneficiary") ||
                       pathname.startsWith("/admin");
 
   useEffect(() => {
@@ -66,8 +76,14 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     const allowed =
       (pathname.startsWith("/ngo-dashboard") && ["NGO_ADMIN", "NGO_MEMBER"].includes(role)) ||
       (pathname.startsWith("/company-dashboard") && ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) ||
-      (pathname.startsWith("/government-portal") && ["SUPER_ADMIN", "PORTAL_ADMIN"].includes(role)) ||
-      (pathname.startsWith("/admin") && role === "SUPER_ADMIN") ||
+      (pathname.startsWith("/government-portal") && ["MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "DISTRICT_ADMIN"].includes(role)) ||
+      ((pathname === "/company" || pathname.startsWith("/company/")) && ["MASTER_ADMIN", "COMPANY_ADMIN", "COMPANY_MEMBER", "SUPER_ADMIN"].includes(role)) ||
+      ((pathname === "/ngo" || pathname.startsWith("/ngo/")) && ["MASTER_ADMIN", "NGO_ADMIN", "NGO_MEMBER", "SUPER_ADMIN"].includes(role)) ||
+      (pathname.startsWith("/district") && ["MASTER_ADMIN", "DISTRICT_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
+      (pathname.startsWith("/organization") && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+      (pathname.startsWith("/master") && role === "MASTER_ADMIN") ||
+      (pathname.startsWith("/admin") && ["MASTER_ADMIN", "SUPER_ADMIN", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
+      ((pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "SUPER_ADMIN"].includes(role)) ||
       pathname.startsWith("/dashboard") ||
       pathname.startsWith("/onboarding") ||
       pathname.startsWith("/queries") ||
@@ -82,10 +98,13 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       pathname.startsWith("/analytics");
 
     if (!allowed) {
-      if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) router.push("/ngo-dashboard");
-      else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) router.push("/company-dashboard");
+      if (role === "MASTER_ADMIN") router.push("/master/dashboard");
+      else if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) router.push("/ngo/dashboard");
+      else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) router.push("/company/dashboard");
       else if (role === "SUPER_ADMIN") router.push("/admin");
+      else if (role === "DISTRICT_ADMIN") router.push("/district/dashboard");
       else if (role === "PORTAL_ADMIN") router.push("/government-portal");
+      else if (role === "BENEFICIARY_AGENCY") router.push("/department/dashboard");
       else router.push("/");
     }
   }, [isDashboard, pathname, router]);
@@ -98,13 +117,133 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       .catch(() => setNotifications([]));
   }, [isDashboard, pathname]);
 
+  useEffect(() => {
+    if (!isDashboard) return;
+    const user = getStoredUser();
+    if (!user || user.role === "MASTER_ADMIN") {
+      setTenantFeatures({});
+      return;
+    }
+    apiFetch<{ features: Record<string, boolean> }>("/platform/features")
+      .then((data) => setTenantFeatures(data.features || {}))
+      .catch(() => setTenantFeatures({}));
+  }, [isDashboard, pathname]);
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
     router.push("/login");
   };
 
+  const storedUser = typeof window !== "undefined" ? getStoredUser() : null;
+  const storedRole = storedUser?.role as string | undefined;
+  const storedOrganizationType = storedUser?.organization?.organizationType as string | undefined;
+
   const getSidebarItems = () => {
+    const departmentItems = [
+      { label: "Dashboard", href: "/department/dashboard", icon: Layers },
+      { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
+      { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
+      { label: "Create Requirement", href: "/department/requirements/create", icon: Sparkles, featureKey: "enableRequirementCreation" },
+      { label: "My Requirements", href: "/department/requirements", icon: Compass, featureKey: "enableRequirementCreation" },
+      { label: "Company Interest", href: "/department/interests", icon: Compass, featureKey: "enableCompanyInterest" },
+      { label: "Projects", href: "/department/projects", icon: ShieldCheck },
+      { label: "Handover", href: "/department/handover", icon: Layers },
+      { label: "Reports", href: "/department/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+      { label: "Users", href: "/organization/users", icon: Users },
+      { label: "Roles", href: "/organization/roles", icon: ShieldAlert },
+      { label: "Settings", href: "/organization/settings", icon: ShieldCheck }
+    ];
+
+    const companyItems = [
+      { label: "Dashboard", href: "/company/dashboard", icon: Layers },
+      { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
+      { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
+      { label: "Project Marketplace", href: "/company/marketplace", icon: Compass, featureKey: "enableCSRMarketplace" },
+      { label: "My Interests", href: "/company/interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
+      { label: "Funded Projects", href: "/company/projects", icon: ShieldCheck },
+      { label: "Fund Releases", href: "/company/funds", icon: Coins, featureKey: "enableFundDisbursement" },
+      { label: "Reports", href: "/company/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+      { label: "Users", href: "/organization/users", icon: Users },
+      { label: "Roles", href: "/organization/roles", icon: ShieldAlert },
+      { label: "Settings", href: "/organization/settings", icon: ShieldCheck }
+    ];
+
+    const ngoOrganizationItems = [
+      { label: "Dashboard", href: "/ngo/dashboard", icon: Layers },
+      { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
+      { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
+      { label: "Proposal Requests", href: "/ngo/proposal-requests", icon: Compass, featureKey: "enableCSRMarketplace" },
+      { label: "Assigned Projects", href: "/ngo/assigned-projects", icon: ShieldCheck },
+      { label: "Milestones", href: "/ngo/milestones", icon: Award, featureKey: "enableMilestoneMonitoring" },
+      { label: "Fund Releases", href: "/ngo/funds", icon: Coins, featureKey: "enableFundDisbursement" },
+      { label: "Reports", href: "/ngo/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+      { label: "Users", href: "/organization/users", icon: Users },
+      { label: "Roles", href: "/organization/roles", icon: ShieldAlert },
+      { label: "Settings", href: "/organization/settings", icon: ShieldCheck }
+    ];
+
+    if (pathname.startsWith("/master")) {
+      return [
+        { label: "Dashboard", href: "/master/dashboard", icon: Layers },
+        { label: "Tenants", href: "/master/tenants", icon: Globe2 },
+        { label: "Create Tenant", href: "/master/tenants/create", icon: Sparkles },
+        { label: "Organizations", href: "/master/organizations", icon: Landmark },
+        { label: "Users", href: "/master/users", icon: Users },
+        { label: "Audit Logs", href: "/master/audit-logs", icon: FileText },
+        { label: "Settings", href: "/master/settings", icon: ShieldCheck }
+      ];
+    }
+
+    if (pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) {
+      return departmentItems;
+    }
+
+    if (pathname === "/company" || pathname.startsWith("/company/")) {
+      return companyItems;
+    }
+
+    if (pathname === "/ngo" || pathname.startsWith("/ngo/")) {
+      return ngoOrganizationItems;
+    }
+
+    if (pathname.startsWith("/organization")) {
+      if (
+        pathname.startsWith("/organization/onboarding/department") ||
+        storedRole === "BENEFICIARY_AGENCY" ||
+        storedOrganizationType === "GOVERNMENT_DEPARTMENT"
+      ) {
+        return departmentItems;
+      }
+      if (
+        pathname.startsWith("/organization/onboarding/company") ||
+        ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(storedRole || "") ||
+        storedOrganizationType === "CSR_COMPANY"
+      ) {
+        return companyItems;
+      }
+      if (["NGO_ADMIN", "NGO_MEMBER"].includes(storedRole || "") || storedOrganizationType === "NGO") {
+        return ngoOrganizationItems;
+      }
+      return [
+        { label: "Onboarding", href: "/organization/onboarding", icon: Landmark },
+        { label: "Status", href: "/organization/onboarding/status", icon: Clock },
+        { label: "Users", href: "/organization/users", icon: Users },
+        { label: "Roles", href: "/organization/roles", icon: ShieldAlert },
+        { label: "Settings", href: "/organization/settings", icon: ShieldCheck }
+      ];
+    }
+
+    if (pathname.startsWith("/district")) {
+      return [
+        { label: "Dashboard", href: "/district/dashboard", icon: Layers },
+        { label: "Requirements", href: "/district/requirements", icon: Compass },
+        { label: "Projects", href: "/district/projects", icon: ShieldCheck },
+        { label: "Inspections", href: "/district/inspections", icon: Landmark, featureKey: "enableMilestoneMonitoring" },
+        { label: "Reports", href: "/district/reports", icon: BarChart2, featureKey: "enableReportsExport" }
+      ];
+    }
+
     if (
       pathname.startsWith("/dashboard") ||
       pathname.startsWith("/onboarding") ||
@@ -173,10 +312,17 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       return [
         { label: "Dashboard", href: "/admin/dashboard", icon: Layers },
         { label: "Users", href: "/admin/users-roles", icon: Users },
+        { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", icon: ShieldCheck },
+        { label: "Organizations", href: "/admin/organizations", icon: Landmark },
         { label: "NGO Registry", href: "/admin/ngo-registry", icon: Landmark },
         { label: "Companies", href: "/admin/companies", icon: Building2 },
+        { label: "Requirements Pending", href: "/admin/requirements/pending", icon: Clock, featureKey: "enableRequirementCreation" },
+        { label: "Company Interests", href: "/admin/company-interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
+        { label: "NGO Selection", href: "/admin/ngo-selection", icon: Award, featureKey: "enableNGOSelection" },
+        { label: "Fund Monitoring", href: "/admin/fund-monitoring", icon: Coins, featureKey: "enableFundDisbursement" },
         { label: "Projects", href: "/admin/projects", icon: Compass },
         { label: "Verification Queue", href: "/admin/applications", icon: Clock },
+        { label: "Executive Dashboard", href: "/admin/executive-dashboard", icon: BarChart2 },
         { label: "Reports", href: "/admin/reports", icon: BarChart2 },
         { label: "Audit Trail", href: "/admin/audit-trail", icon: FileText }
       ];
@@ -191,7 +337,28 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     ];
   };
 
-  const dashboardNavigationItems = getSidebarItems();
+  const dashboardNavigationItems = getSidebarItems().filter((item) => !("featureKey" in item) || !item.featureKey || tenantFeatures[item.featureKey] !== false);
+  const routeFeatureKey =
+    pathname.includes("/requirements") ? "enableRequirementCreation" :
+    pathname.includes("/marketplace") ? "enableCSRMarketplace" :
+    pathname.includes("/interests") ? "enableCompanyInterest" :
+    pathname.includes("/funds") ? "enableFundDisbursement" :
+    pathname.includes("/milestones") || pathname.includes("/inspections") ? "enableMilestoneMonitoring" :
+    pathname.includes("/reports") ? "enableReportsExport" :
+    null;
+  const isRouteFeatureDisabled = Boolean(
+    isDashboard &&
+    routeFeatureKey &&
+    storedRole !== "MASTER_ADMIN" &&
+    tenantFeatures[routeFeatureKey] === false
+  );
+  const dashboardContent = isRouteFeatureDisabled ? (
+    <div className="mx-auto max-w-3xl border border-amber-200 bg-amber-50 p-6 text-amber-950 shadow-sm">
+      <div className="text-sm font-extrabold uppercase tracking-widest text-amber-700">Feature Disabled</div>
+      <h1 className="mt-2 text-2xl font-extrabold text-gov-navy">This feature is not enabled for your portal instance.</h1>
+      <p className="mt-2 text-sm leading-6">Contact your Portal Admin or Master Admin to enable this module for your State Portal.</p>
+    </div>
+  ) : children;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f6f8fb] text-slate-900 font-sans">
@@ -492,7 +659,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         {/* Main Content */}
         <div className="flex-grow flex flex-col min-w-0">
           <main id="main-content" className={`flex-grow ${isDashboard ? "px-6 py-6 md:px-10 md:py-8" : ""}`}>
-            {children}
+            {dashboardContent}
           </main>
           {isDashboard ? (
             <footer className="border-t border-gov-line bg-white py-5 px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gov-muted font-medium shrink-0">

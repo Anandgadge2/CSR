@@ -8,8 +8,13 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: Role;
+    tenantId?: string | null;
+    organizationId?: string | null;
+    accountStatus?: string | null;
     ngoId?: string | null;
     companyId?: string | null;
+    assignedDistrict?: string | null;
+    beneficiaryProfileId?: string | null;
   };
 }
 

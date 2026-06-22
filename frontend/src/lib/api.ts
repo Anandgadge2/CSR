@@ -49,7 +49,7 @@ export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise
     credentials: "include"
   });
 
-  if (response.status === 401 || response.status === 403) {
+  if (response.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
@@ -59,7 +59,10 @@ export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.error || "Request failed");
+    const error = new Error(data?.error || "Request failed") as Error & { validationErrors?: string[]; status?: number };
+    error.validationErrors = data?.validationErrors;
+    error.status = response.status;
+    throw error;
   }
 
   // Cache successful GET requests

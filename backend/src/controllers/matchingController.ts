@@ -33,3 +33,31 @@ export const recalculateMatches = async (req: AuthenticatedRequest, res: Respons
     next(error);
   }
 };
+
+import { CSRMatchingService } from "../services/csrMatchingService";
+
+export const getCompanyRecommendedRequirements = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ error: "User is not linked to any company" });
+    }
+    const matches = await CSRMatchingService.getMatchesForCompany(companyId);
+    return res.json(matches);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getNGORecommendedRequirements = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const ngoId = req.user?.ngoId;
+    if (!ngoId) {
+      return res.status(400).json({ error: "User is not linked to any NGO" });
+    }
+    const matches = await CSRMatchingService.getMatchesForNGO(ngoId);
+    return res.json(matches);
+  } catch (error) {
+    next(error);
+  }
+};

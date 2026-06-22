@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
@@ -15,6 +15,11 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Warm up the serverless database connection in the background on mount
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/public/requirements?limit=1`).catch(() => {});
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,14 +67,21 @@ function LoginForm() {
       }
 
       const userRole = data.user.role;
-      if (userRole === "NGO_ADMIN" || userRole === "NGO_MEMBER") {
-        router.push(data.user.ngo?.status === "VERIFIED" ? "/ngo-dashboard" : "/onboarding");
+      const onboardingStatus = data.user.organization?.onboardingStatus;
+      if (userRole === "MASTER_ADMIN") {
+        router.push("/master/dashboard");
+      } else if (onboardingStatus && onboardingStatus !== "APPROVED" && !["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN"].includes(userRole)) {
+        router.push("/organization/onboarding/status");
+      } else if (userRole === "NGO_ADMIN" || userRole === "NGO_MEMBER") {
+        router.push("/ngo/dashboard");
       } else if (userRole === "COMPANY_ADMIN" || userRole === "COMPANY_MEMBER") {
-        router.push("/company-dashboard");
+        router.push("/company/dashboard");
       } else if (userRole === "SUPER_ADMIN") {
-        router.push("/admin");
+        router.push("/admin/dashboard");
+      } else if (userRole === "BENEFICIARY_AGENCY") {
+        router.push("/department/dashboard");
       } else if (userRole === "PORTAL_ADMIN") {
-        router.push("/government-portal");
+        router.push("/admin/dashboard");
       } else {
         router.push("/");
       }

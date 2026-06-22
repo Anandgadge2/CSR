@@ -6,6 +6,8 @@ interface UserProfile {
   role: string;
   ngoId?: string | null;
   companyId?: string | null;
+  assignedDistrict?: string | null;
+  beneficiaryProfileId?: string | null;
   ngo?: any;
   company?: any;
 }

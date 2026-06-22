@@ -3,12 +3,25 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { VerificationStatus, Role } from "@prisma/client";
 
+const getRequestTenantId = async (req: AuthenticatedRequest) => {
+  const tenantContextId = (req as any).tenantContext?.tenantId || req.user?.tenantId;
+  if (tenantContextId) return tenantContextId;
+  if (req.user?.role === Role.MASTER_ADMIN || req.user?.role === Role.SUPER_ADMIN) return null;
+  const tenant = await prisma.tenant.findUnique({ where: { code: "MH-CSR" } });
+  return tenant?.id || null;
+};
+
+const isGlobalAdmin = (req: AuthenticatedRequest) =>
+  req.user?.role === Role.MASTER_ADMIN || req.user?.role === Role.SUPER_ADMIN;
+
 export const getCompanies = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const status = req.query.status as VerificationStatus | undefined;
+    const tenantId = await getRequestTenantId(req);
 
     let filter: any = {};
-    if (req.user?.role !== Role.SUPER_ADMIN) {
+    if (tenantId) filter.tenantId = tenantId;
+    if (!isGlobalAdmin(req)) {
       filter.status = VerificationStatus.VERIFIED;
     } else if (status) {
       filter.status = status;
@@ -38,7 +51,12 @@ export const getCompanyById = async (req: AuthenticatedRequest, res: Response, n
     }
 
     const canViewRestrictedProfile =
-      req.user?.role === Role.SUPER_ADMIN || req.user?.companyId === company.id;
+      isGlobalAdmin(req) || req.user?.companyId === company.id;
+    const tenantId = await getRequestTenantId(req);
+
+    if (tenantId && company.tenantId && company.tenantId !== tenantId && !isGlobalAdmin(req)) {
+      return res.status(404).json({ error: "Company not found" });
+    }
 
     if (company.status !== VerificationStatus.VERIFIED && !canViewRestrictedProfile) {
       return res.status(404).json({ error: "Company not found" });
@@ -55,9 +73,15 @@ export const updateCompany = async (req: AuthenticatedRequest, res: Response, ne
     const { id } = req.params;
     const { name, csrBudget, focusAreas, contactInfo, csrPolicyUrl } = req.body;
 
-    const canUpdateCompany = req.user?.role === Role.SUPER_ADMIN || req.user?.companyId === id;
+    const existingCompany = await prisma.company.findUnique({ where: { id } });
+    if (!existingCompany) return res.status(404).json({ error: "Company not found" });
+    const tenantId = await getRequestTenantId(req);
+    const canUpdateCompany = isGlobalAdmin(req) || req.user?.companyId === id;
     if (!canUpdateCompany) {
       return res.status(403).json({ error: "Forbidden: You do not own this profile" });
+    }
+    if (tenantId && existingCompany.tenantId && existingCompany.tenantId !== tenantId && !isGlobalAdmin(req)) {
+      return res.status(403).json({ error: "Cannot update a company outside your portal instance" });
     }
 
     const updatedCompany = await prisma.company.update({
@@ -73,8 +97,13 @@ export const updateCompany = async (req: AuthenticatedRequest, res: Response, ne
 
     await prisma.auditLog.create({
       data: {
+        tenantId: existingCompany.tenantId || tenantId,
         userId: req.user?.id,
+        actorUserId: req.user?.id,
+        actorRole: req.user?.role,
         action: "COMPANY_UPDATE",
+        entityType: "COMPANY",
+        entityId: id,
         details: { companyId: id }
       }
     });
@@ -92,6 +121,13 @@ export const verifyCompany = async (req: AuthenticatedRequest, res: Response, ne
 
     if (!Object.values(VerificationStatus).includes(status)) {
       return res.status(400).json({ error: "Invalid status value" });
+    }
+
+    const existingCompany = await prisma.company.findUnique({ where: { id } });
+    if (!existingCompany) return res.status(404).json({ error: "Company not found" });
+    const tenantId = await getRequestTenantId(req);
+    if (tenantId && existingCompany.tenantId && existingCompany.tenantId !== tenantId && !isGlobalAdmin(req)) {
+      return res.status(403).json({ error: "Cannot verify a company outside your portal instance" });
     }
 
     const company = await prisma.company.update({
@@ -116,8 +152,15 @@ export const verifyCompany = async (req: AuthenticatedRequest, res: Response, ne
 
     await prisma.auditLog.create({
       data: {
+        tenantId: company.tenantId || tenantId,
         userId: req.user?.id,
+        actorUserId: req.user?.id,
+        actorRole: req.user?.role,
         action: "COMPANY_VERIFY",
+        entityType: "COMPANY",
+        entityId: id,
+        oldValueJson: { status: existingCompany.status, rejectionReason: existingCompany.rejectionReason },
+        newValueJson: { status, rejectionReason: status === VerificationStatus.REJECTED ? rejectionReason : null },
         details: { companyId: id, status, rejectionReason }
       }
     });

@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [otp, setOtp] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -50,6 +51,13 @@ export default function RegisterPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const copy = { ...prev };
+        delete copy[name];
+        return copy;
+      });
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -57,6 +65,7 @@ export default function RegisterPage() {
     setLoading(true);
     setErrorMsg("");
     setSuccessMsg("");
+    setFieldErrors({});
 
     try {
       const isNgo = role === "NGO";
@@ -64,7 +73,7 @@ export default function RegisterPage() {
       const payload = {
         email: formData.email,
         password: formData.password,
-        role: isNgo ? "NGO_ADMIN" : isGovEntity ? "PORTAL_ADMIN" : "COMPANY_ADMIN",
+        role: isNgo ? "NGO_ADMIN" : isGovEntity ? "BENEFICIARY_AGENCY" : "COMPANY_ADMIN",
         profile: {
           name: formData.name,
           pan: formData.pan.toUpperCase(),
@@ -94,6 +103,14 @@ export default function RegisterPage() {
 
       const data = await response.json();
       if (!response.ok) {
+        if (data.details && Array.isArray(data.details)) {
+          const errors: Record<string, string> = {};
+          data.details.forEach((err: any) => {
+            const cleanKey = err.field.replace(/^body\.profile\./, "").replace(/^body\./, "");
+            errors[cleanKey] = err.message;
+          });
+          setFieldErrors(errors);
+        }
         throw new Error(data.error || "Failed to register");
       }
 
@@ -127,9 +144,9 @@ export default function RegisterPage() {
         throw new Error(data.error || "Failed to verify OTP code");
       }
 
-      setSuccessMsg("Email verified. Please login to continue onboarding and submit documents for admin approval.");
+      setSuccessMsg("Email verified. Please login to continue.");
       setTimeout(() => {
-        const nextPath = role === "NGO" ? "/onboarding" : role === "COMPANY" ? "/company-dashboard" : "/login";
+        const nextPath = role === "NGO" ? "/onboarding" : role === "COMPANY" ? "/company-dashboard" : "/department/dashboard";
         router.push(`/login?next=${encodeURIComponent(nextPath)}`);
       }, 1500);
     } catch (err: any) {
@@ -233,8 +250,8 @@ export default function RegisterPage() {
                   <ShieldAlert size={20} />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="font-heading font-bold text-base text-slate-900">Government Entity</span>
-                  <span className="text-xs text-slate-600 leading-relaxed">Register a department or local body for restricted review access after administrator approval.</span>
+                  <span className="font-heading font-bold text-base text-slate-900">Government Department</span>
+                  <span className="text-xs text-slate-600 leading-relaxed">Register a department or local body to create CSR requirements, track company interest, and confirm delivery.</span>
                 </div>
               </div>
             </div>
@@ -257,13 +274,30 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-gray-800 text-xs font-bold">Organization Name</label>
-                <input required name="name" value={formData.name} onChange={handleChange} placeholder="e.g. Sahyadri Foundation" className="govt-input" />
+                <label className="text-gray-800 text-xs font-bold">{role === "GOV_ENTITY" ? "Department / Local Body Name" : "Organization Name"}</label>
+                <input 
+                  required 
+                  name="name" 
+                  value={formData.name} 
+                  onChange={handleChange} 
+                  placeholder="e.g. Sahyadri Foundation" 
+                  className={`govt-input ${fieldErrors.name ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                />
+                {fieldErrors.name && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.name}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-gray-800 text-xs font-bold">Corporate / NGO Email</label>
-                <input required type="email" name="email" value={formData.email} onChange={handleChange} placeholder="e.g. contact@domain.org" className="govt-input" />
+                <label className="text-gray-800 text-xs font-bold">{role === "GOV_ENTITY" ? "Official Department Email" : "Corporate / NGO Email"}</label>
+                <input 
+                  required 
+                  type="email" 
+                  name="email" 
+                  value={formData.email} 
+                  onChange={handleChange} 
+                  placeholder="e.g. contact@domain.org" 
+                  className={`govt-input ${fieldErrors.email ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                />
+                {fieldErrors.email && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.email}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
@@ -277,7 +311,7 @@ export default function RegisterPage() {
                     onChange={handleChange} 
                     minLength={6} 
                     placeholder="Password (min 6 chars)" 
-                    className="govt-input !pr-10" 
+                    className={`govt-input !pr-10 ${fieldErrors.password ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
                   />
                   <button
                     type="button"
@@ -287,64 +321,154 @@ export default function RegisterPage() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {fieldErrors.password && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.password}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">PAN Card Number</label>
-                <input required name="pan" value={formData.pan} onChange={handleChange} maxLength={10} minLength={10} placeholder="ABCDE1234F" className="govt-input" />
+                <input 
+                  required 
+                  name="pan" 
+                  value={formData.pan} 
+                  onChange={handleChange} 
+                  maxLength={10} 
+                  minLength={10} 
+                  placeholder="ABCDE1234F" 
+                  className={`govt-input ${fieldErrors.pan ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                />
+                {fieldErrors.pan && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.pan}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <label className="text-gray-800 text-xs font-bold">Registered Office Address</label>
-                <input required name="address" value={formData.address} onChange={handleChange} minLength={5} placeholder="e.g. Plot No 42, Bandra East, Mumbai" className="govt-input" />
+                <input 
+                  required 
+                  name="address" 
+                  value={formData.address} 
+                  onChange={handleChange} 
+                  minLength={5} 
+                  placeholder="e.g. Plot No 42, Bandra East, Mumbai" 
+                  className={`govt-input ${fieldErrors.address ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                />
+                {fieldErrors.address && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.address}</span>}
               </div>
 
               {role === "NGO" ? (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">NGO Registration Number</label>
-                    <input required name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} placeholder="MH/MUM/123/2026" className="govt-input" />
+                    <input 
+                      required 
+                      name="registrationNumber" 
+                      value={formData.registrationNumber} 
+                      onChange={handleChange} 
+                      placeholder="MH/MUM/123/2026" 
+                      className={`govt-input ${fieldErrors.registrationNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.registrationNumber && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.registrationNumber}</span>}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">CSR-1 Registry Code</label>
-                    <input required name="csr1Number" value={formData.csr1Number} onChange={handleChange} placeholder="CSR00012345" className="govt-input" />
+                    <input 
+                      required 
+                      name="csr1Number" 
+                      value={formData.csr1Number} 
+                      onChange={handleChange} 
+                      placeholder="CSR00012345" 
+                      className={`govt-input ${fieldErrors.csr1Number ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.csr1Number && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.csr1Number}</span>}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">NGO Darpan ID</label>
-                    <input required name="darpanNumber" value={formData.darpanNumber} onChange={handleChange} placeholder="MH/2021/012345" className="govt-input" />
+                    <input 
+                      required 
+                      name="darpanNumber" 
+                      value={formData.darpanNumber} 
+                      onChange={handleChange} 
+                      placeholder="MH/2021/012345" 
+                      className={`govt-input ${fieldErrors.darpanNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.darpanNumber && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.darpanNumber}</span>}
                   </div>
                 </>
               ) : role === "GOV_ENTITY" ? (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">Department / Local Body Code</label>
-                    <input required name="registrationNumber" value={formData.registrationNumber} onChange={handleChange} placeholder="e.g. ZP-PUNE-CSR" className="govt-input" />
+                    <input 
+                      required 
+                      name="registrationNumber" 
+                      value={formData.registrationNumber} 
+                      onChange={handleChange} 
+                      placeholder="e.g. ZP-PUNE-CSR" 
+                      className={`govt-input ${fieldErrors.registrationNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.registrationNumber && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.registrationNumber}</span>}
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-gray-800 text-xs font-bold">Official Designation</label>
-                    <input required name="cin" value={formData.cin} onChange={handleChange} placeholder="e.g. District CSR Nodal Officer" className="govt-input" />
+                    <label className="text-gray-800 text-xs font-bold">Nodal Officer Designation</label>
+                    <input 
+                      required 
+                      name="cin" 
+                      value={formData.cin} 
+                      onChange={handleChange} 
+                      placeholder="e.g. District CSR Nodal Officer" 
+                      className={`govt-input ${fieldErrors.cin ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.cin && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.cin}</span>}
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">Corporate CIN Code</label>
-                    <input required name="cin" value={formData.cin} onChange={handleChange} placeholder="L72200MH2018PLC309876" className="govt-input" />
+                    <input 
+                      required 
+                      name="cin" 
+                      value={formData.cin} 
+                      onChange={handleChange} 
+                      placeholder="L72200MH2018PLC309876" 
+                      className={`govt-input ${fieldErrors.cin ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.cin && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.cin}</span>}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">GST Registration Number</label>
-                    <input required name="gst" value={formData.gst} onChange={handleChange} placeholder="27AAAAA1111A1Z1" className="govt-input" />
+                    <input 
+                      required 
+                      name="gst" 
+                      value={formData.gst} 
+                      onChange={handleChange} 
+                      placeholder="27AAAAA1111A1Z1" 
+                      className={`govt-input ${fieldErrors.gst ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.gst && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.gst}</span>}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">CSR Funding Budget (INR)</label>
-                    <input required type="number" name="csrBudget" value={formData.csrBudget} onChange={handleChange} placeholder="e.g. 5000000" className="govt-input" />
+                    <input 
+                      required 
+                      type="number" 
+                      name="csrBudget" 
+                      value={formData.csrBudget} 
+                      onChange={handleChange} 
+                      placeholder="e.g. 5000000" 
+                      className={`govt-input ${fieldErrors.csrBudget ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    />
+                    {fieldErrors.csrBudget && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.csrBudget}</span>}
                   </div>
                 </>
               )}
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">District (Maharashtra)</label>
-                <select name="district" value={formData.district} onChange={handleChange} className="govt-input">
+                <select 
+                  name="district" 
+                  value={formData.district} 
+                  onChange={handleChange} 
+                  className={`govt-input ${fieldErrors.district ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
+                >
                   <option>Pune</option>
                   <option>Nagpur</option>
                   <option>Thane</option>
@@ -353,11 +477,20 @@ export default function RegisterPage() {
                   <option>Mumbai City</option>
                   <option>Mumbai Suburban</option>
                 </select>
+                {fieldErrors.district && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.district}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">Taluka</label>
-                <input required name="taluka" value={formData.taluka} onChange={handleChange} placeholder="e.g. Haveli" className="govt-input" />
+                <input 
+                  required 
+                  name="taluka" 
+                  value={formData.taluka} 
+                  onChange={handleChange} 
+                  placeholder="e.g. Haveli" 
+                  className={`govt-input ${fieldErrors.taluka ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                />
+                {fieldErrors.taluka && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.taluka}</span>}
               </div>
             </div>
 

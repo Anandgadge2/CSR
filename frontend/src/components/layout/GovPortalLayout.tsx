@@ -19,6 +19,19 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
+    title: "Government Department",
+    roles: ["BENEFICIARY_AGENCY"],
+    links: [
+      { label: "Dashboard", to: "/department/dashboard" },
+      { label: "Create Requirement", to: "/department/requirements/create" },
+      { label: "My Requirements", to: "/department/requirements" },
+      { label: "Company Interest", to: "/department/interests" },
+      { label: "Active Projects", to: "/department/projects" },
+      { label: "Asset Handover", to: "/department/handover" },
+      { label: "Reports", to: "/department/reports" },
+    ],
+  },
+  {
     title: "NGO Portal",
     roles: ["NGO_ADMIN", "NGO_MEMBER"],
     links: [
@@ -71,6 +84,7 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
     if (path.startsWith("/admin")) return "SUPER_ADMIN";
     if (path.startsWith("/dashboard") || path.startsWith("/ngo-dashboard") || path.startsWith("/onboarding")) return "NGO_ADMIN";
     if (path.startsWith("/company-dashboard") || path.startsWith("/company")) return "COMPANY_ADMIN";
+    if (path.startsWith("/department")) return "BENEFICIARY_AGENCY";
     return "PUBLIC";
   };
 
@@ -121,7 +135,8 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
   const isAdminRole = ["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role);
   const isNgoRole = ["NGO_ADMIN", "NGO_MEMBER"].includes(role);
   const isCompanyRole = ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role);
-  const isPublic = role === "PUBLIC" || (!isAdminRole && !isNgoRole && !isCompanyRole);
+  const isDepartmentRole = role === "BENEFICIARY_AGENCY";
+  const isPublic = role === "PUBLIC" || (!isAdminRole && !isNgoRole && !isCompanyRole && !isDepartmentRole);
 
   if (!isPublic) {
     return <>{children}</>;
