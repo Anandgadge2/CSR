@@ -148,7 +148,7 @@ export default function ConvergenceProjectDetailPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>
           {[
             { label: "Approved Budget", value: fmtCurrency(project.approvedBudget) },
-            { label: "Amount Utilized", value: fmtCurrency(project.utilizedAmount) },
+            { label: "Amount Utilised", value: fmtCurrency(project.utilizedAmount) },
             { label: "Physical Progress", value: `${project.physicalProgressPercent}%` },
             { label: "Nodal Officer", value: project.nodalOfficerUser?.email?.split("@")[0] || "—" },
             { label: "Implementing Agency", value: project.implementingAgencyUser?.email?.split("@")[0] || "—" },
@@ -181,7 +181,7 @@ export default function ConvergenceProjectDetailPage() {
                 textTransform: "capitalize",
               }}
             >
-              {tab === "uc" ? "Utilization Certificates" : tab}
+              {tab === "uc" ? "Utilisation Certificates" : tab}
             </button>
           ))}
         </div>
@@ -253,7 +253,7 @@ export default function ConvergenceProjectDetailPage() {
                         <th>Milestone</th>
                         <th>Work Type</th>
                         <th>Status</th>
-                        <th>Funds Utilized</th>
+                        <th>Funds Utilised</th>
                         <th>Photos</th>
                         <th>Verification</th>
                       </tr>
@@ -282,14 +282,14 @@ export default function ConvergenceProjectDetailPage() {
 
           {activeTab === "uc" && (
             <GovCard>
-              <GovCardHeader><GovCardTitle>Utilization Certificates</GovCardTitle></GovCardHeader>
+              <GovCardHeader><GovCardTitle>Utilisation Certificates</GovCardTitle></GovCardHeader>
               <GovCardBody style={{ padding: 0 }}>
                 <div className="gov-table-container">
                   <table className="gov-table">
                     <thead>
                       <tr>
                         <th>Uploaded At</th>
-                        <th>Amount Utilized</th>
+                        <th>Amount Utilised</th>
                         <th>Status</th>
                         <th>Uploaded By</th>
                         <th>Verified By</th>
@@ -298,7 +298,7 @@ export default function ConvergenceProjectDetailPage() {
                     </thead>
                     <tbody>
                       {(project.utilizationCertificates || []).length === 0 ? (
-                        <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--gov-text-muted)" }}>No utilization certificates uploaded.</td></tr>
+                        <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--gov-text-muted)" }}>No Utilisation Certificates uploaded.</td></tr>
                       ) : (
                         project.utilizationCertificates!.map((uc) => (
                           <tr key={uc.id}>

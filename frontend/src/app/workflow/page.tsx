@@ -21,10 +21,51 @@ const guarantees = [
 
 const implementationSteps = [
   ["Sub-Login", "Corporates using their own NGO or foundation can use an implementing-agency sub-login. The agency updates progress while the corporate remains accountable."],
-  ["Simple Statuses", "Every deliverable uses only Not Started, In Progress, or Completed."],
+  ["Simple Statuses", "Every deliverable uses only NOT STARTED, IN PROGRESS, or COMPLETED."],
   ["Evidence", "Against each milestone, the agency records funds utilized and attaches geo-tagged photo evidence."],
-  ["UC and Verification", "The agency uploads the Utilization Certificate. The District Nodal Officer verifies completion and UC evidence."],
+  ["UC and Verification", "The agency uploads the Utilisation Certificate. The District Nodal Officer verifies completion and UC evidence."],
   ["Optional M&E", "Independent third-party monitoring and evaluation reports can be linked as supporting documents."],
+];
+
+const governmentPitchSteps = [
+  ["1", "Government Pitch Form", "Name & Details of Official, Service Class, OTP-verified Mobile & Email, District & Location, CSR Requirement, Estimated Cost, Govt Fund Declaration, Geo-tagged Site Photos, and Certification."],
+  ["2", "Relationship Manager Verification", "The Relationship Manager verifies genuineness, Schedule VII eligibility, and government-fund non-availability within the same 5-3-2 day escalation timeline."],
+  ["3", "JS Approval & Public Listing", "A verification report goes to the JS. On JS approval, the pitch is onboarded and made PUBLIC on the portal."],
+  ["4", "I am Interested", "An interested corporate clicks I am Interested and submits the crisp pop-up form with Pitch Reference ID, CIN, contact, budget, timeline, implementation mode, and declaration."],
+  ["5", "Coordination, MoU & Tracking", "The Relationship Manager coordinates between the government official and corporate, brings in the District Nodal Officer, and on MoU signing the project is onboarded for tracking."],
+];
+
+const governmentPitchFields = [
+  ["Name & Details of Official", "Name, designation, department, office", "Mandatory"],
+  ["Service Class", "Class-1 / Class-2 / below Class-2", "Mandatory"],
+  ["Mobile & Email", "Contact details", "OTP verification"],
+  ["District & Location", "District, taluka, exact location", "Mandatory"],
+  ["CSR Requirement", "The development need", "200 words max"],
+  ["Estimated Cost", "Approximate cost", "Mandatory"],
+  ["Govt Fund Declaration", "Declaration that the work cannot be funded through available government funds", "Mandatory declaration"],
+  ["Geo-tagged Site Photos", "Photos of the actual site", "Min 2, geo-tagged"],
+  ["Certification", "Self (Class-2 & above) OR HOD certification (below Class-2)", "Conditional on rank"],
+];
+
+const interestFields = [
+  ["Pitch Reference ID", "The ID of the pitch they are interested in", "Auto-filled by portal"],
+  ["Company Name", "Name of the interested corporate", "Mandatory"],
+  ["MCA21 CIN", "Corporate Identity Number", "Mandatory"],
+  ["Contact Person & Designation", "Who to coordinate with", "Mandatory"],
+  ["Mobile Number", "Contact mobile", "OTP verification"],
+  ["Email", "Contact email", "OTP verification"],
+  ["Indicative Budget", "How much CSR they can commit to this need", "Mandatory"],
+  ["Preferred Start Timeline", "When they would like to begin", "Dropdown (this quarter / next quarter / this FY)"],
+  ["Implementation Mode", "How they will implement", "Self / Own Foundation / NGO Partner"],
+  ["Message to Government", "Optional short note", "Optional, max 100 words"],
+  ["Declaration", "Genuine interest; authorise State CSR Cell to contact", "Mandatory checkbox"],
+];
+
+const grievanceRows = [
+  ["Raise", "Corporate / Implementing Agency", "Instant acknowledgement", "Raised from dashboard; auto-acknowledgement with grievance ID via SMS + Email"],
+  ["Level 1", "District Nodal Officer", "15 days", "First responder for all project-level issues"],
+  ["Level 2", "State CSR Cell", "30 days", "Escalated if Nodal Officer does not resolve in 15 days; inter-departmental coordination"],
+  ["Final", "JS / Planning Secretary", "Senior review", "For issues unresolved at Level 2; binding resolution"],
 ];
 
 const slaRows = [
@@ -39,11 +80,11 @@ const assessmentFields = [
   ["Report Reference & Date", "Auto-generated"],
   ["Corporate Tracking ID", "Unique ID from enquiry"],
   ["Company Name & CIN", "MCA21-verified"],
-  ["Sector & Contact", "From enquiry form, OTP-verified"],
-  ["Proposed CSR Work", "Relationship Manager summary"],
+  ["Sector & Contact (verified)", "From enquiry form, OTP-verified"],
+  ["Proposed CSR Work (summary)", "Relationship Manager's summary"],
   ["Proposed Location / District", "Where the corporate wants to work"],
   ["Indicative Budget", "If provided"],
-  ["Development Need Addressed", "Genuine, verified need addressed"],
+  ["Development Need Addressed", "The genuine, verified need the project addresses"],
   ["Date of First Contact", "Confirms the 5-day response time was met"],
   ["Summary of Interaction", "Brief dialogue record"],
   ["Feasibility Result", "FEASIBLE / PROCEED WITH CONDITIONS / NOT FEASIBLE"],
@@ -53,15 +94,15 @@ const assessmentFields = [
 
 const feasibilityChecklist = [
   [1, "Mandate & Legal [C]", "Activity falls within Schedule VII of the Companies Act", "Yes / No"],
-  [2, "Mandate & Legal [C]", "Not a prohibited CSR activity", "Yes / No"],
+  [2, "Mandate & Legal [C]", "Not a prohibited CSR activity (not employee-only, not political, not normal course of business)", "Yes / No"],
   [3, "Need & Alignment [C]", "Addresses a genuine, verified development need", "Yes / No"],
-  [4, "Need & Alignment [C]", "Does NOT duplicate an existing government scheme or project in the same location", "Yes / No"],
-  [5, "Site & Govt Support [C]", "Site/land is available, clear, and in government ownership/control for construction/renovation", "Yes / No / NA"],
+  [4, "Need & Alignment [C]", "Does NOT duplicate an existing government scheme or ongoing project in the same location", "Yes / No"],
+  [5, "Site & Govt Support [C]", "For construction/renovation: site/land is available, clear, and in government ownership/control", "Yes / No / NA"],
   [6, "Site & Govt Support [C]", "Required permissions/clearances are obtainable within a reasonable time", "Yes / No"],
-  [7, "Site & Govt Support [C]", "Required government support/personnel/access is confirmed", "Yes / No"],
+  [7, "Site & Govt Support [C]", "Required government support (personnel, access) is confirmed", "Yes / No"],
   [8, "Financial", "Indicative budget is adequate for the proposed scope", "Yes / No"],
-  [9, "Financial", "Cost estimate is realistic and benchmarked against similar works", "Yes / No"],
-  [10, "Implementation", "Implementing capacity exists", "Yes / No"],
+  [9, "Financial", "Cost estimate is realistic (benchmarked against similar works)", "Yes / No"],
+  [10, "Implementation", "Implementing capacity exists (corporate/foundation/NGO is capable)", "Yes / No"],
   [11, "Implementation", "Timeline is realistic for the scope", "Yes / No"],
   [12, "Sustainability [C]", "Post-completion ownership of the asset is clear", "Yes / No"],
   [13, "Sustainability [C]", "Maintenance / recurring-cost responsibility is identified", "Yes / No"],
@@ -73,9 +114,9 @@ export default function WorkflowPage() {
       <div className="gov-public-main">
         <div className="gov-page-header">
           <div className="gov-breadcrumb">Home / Workflow</div>
-          <h1 className="gov-page-title">Corporate CSR Partnership Flow</h1>
+          <h1 className="gov-page-title">Maharashtra CSR Portal — Complete End-to-End Workflow</h1>
           <p className="gov-page-description">
-            The red-carpet journey for corporates partnering with Maharashtra, from enquiry to tracking, assessment, MoU and project onboarding.
+            A single view of both entry points, time-bound escalations, and the common implementation and tracking flow into which both paths converge.
           </p>
         </div>
 
@@ -163,6 +204,118 @@ export default function WorkflowPage() {
                 <div style={{ marginTop: 6, fontSize: 13, color: "var(--gov-text-secondary)", lineHeight: 1.6 }}>
                   Open <strong>/convergence-projects</strong>, select a project, then click <strong>Milestone Tracking</strong>. Direct tracking URLs use the format <strong>/projects/&lt;project-id&gt;/tracking</strong>.
                 </div>
+              </div>
+            </GovCardBody>
+          </GovCard>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Government Pitch Flow (Pitch a Development Need)</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              <div style={{ display: "grid", gap: 12 }}>
+                {governmentPitchSteps.map(([number, title, detail]) => (
+                  <div
+                    key={number}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "56px minmax(0, 1fr)",
+                      gap: 14,
+                      padding: 14,
+                      border: "1px solid var(--gov-border)",
+                      borderLeft: "4px solid var(--gov-saffron)",
+                      background: number === "3" || number === "5" ? "#ecfdf5" : "#fff7ed",
+                    }}
+                  >
+                    <div style={{ fontWeight: 800, color: "var(--gov-warning)" }}>Step {number}</div>
+                    <div>
+                      <div style={{ fontWeight: 800 }}>{title}</div>
+                      <div style={{ marginTop: 4, color: "var(--gov-text-secondary)", fontSize: 13, lineHeight: 1.55 }}>{detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="gov-section-title" style={{ marginTop: 18 }}>9.1 The Government Pitch Form</h3>
+              <div className="gov-table-container">
+                <table className="gov-table">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Description</th>
+                      <th>Validation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {governmentPitchFields.map(([field, description, validation]) => (
+                      <tr key={field}>
+                        <td style={{ fontWeight: 700 }}>{field}</td>
+                        <td>{description}</td>
+                        <td>{validation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 className="gov-section-title" style={{ marginTop: 18 }}>9.3 The I am Interested Pop-Up Form</h3>
+              <div className="gov-table-container">
+                <table className="gov-table">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Description</th>
+                      <th>Validation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {interestFields.map(([field, description, validation]) => (
+                      <tr key={field}>
+                        <td style={{ fontWeight: 700 }}>{field}</td>
+                        <td>{description}</td>
+                        <td>{validation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ marginTop: 14, padding: 14, border: "1px solid var(--gov-border)", background: "#ecfdf5", fontSize: 13, lineHeight: 1.65 }}>
+                On submission, a Unique Tracking ID is generated and SMS + Email are sent, exactly as in the corporate enquiry flow. The Relationship Manager then coordinates between the two parties.
+              </div>
+            </GovCardBody>
+          </GovCard>
+        </div>
+
+        <div style={{ marginTop: 18 }}>
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Grievance Redressal Mechanism</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              <div className="gov-table-container">
+                <table className="gov-table">
+                  <thead>
+                    <tr>
+                      <th>Level</th>
+                      <th>Authority</th>
+                      <th>Resolution Time</th>
+                      <th>Scope</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grievanceRows.map(([level, authority, time, scope]) => (
+                      <tr key={level}>
+                        <td style={{ fontWeight: 700 }}>{level}</td>
+                        <td>{authority}</td>
+                        <td>{time}</td>
+                        <td>{scope}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </GovCardBody>
           </GovCard>

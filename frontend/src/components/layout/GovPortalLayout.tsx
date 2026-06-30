@@ -83,7 +83,7 @@ const navGroups: NavGroup[] = [
     roles: ["CORPORATE_USER", "CORPORATE_PARTNER"],
     links: [
       { label: "Dashboard", to: "/partner/dashboard" },
-      { label: "Public Needs", to: "/public-development-needs" },
+      { label: "Public Development Needs (Live)", to: "/public-development-needs" },
       { label: "My Enquiries", to: "/partner/enquiries" },
       { label: "Convergence Projects", to: "/convergence-projects" },
       { label: "Grievances", to: "/grievances" },
@@ -126,7 +126,7 @@ const navGroups: NavGroup[] = [
       { label: "My Projects", to: "/csr-projects" },
       { label: "Convergence Projects", to: "/convergence-projects" },
       { label: "Grievances", to: "/grievances" },
-      { label: "Public Development Needs", to: "/public-development-needs" },
+      { label: "Public Development Needs (Live)", to: "/public-development-needs" },
     ],
   },
   {
@@ -150,7 +150,7 @@ const navGroups: NavGroup[] = [
     roles: ["COMPANY_ADMIN", "COMPANY_MEMBER"],
     links: [
       { label: "Dashboard", to: "/company-dashboard" },
-      { label: "Public Development Needs", to: "/public-development-needs" },
+      { label: "Public Development Needs (Live)", to: "/public-development-needs" },
       { label: "Convergence Projects", to: "/convergence-projects" },
       { label: "Grievances", to: "/grievances" },
       { label: "Track Status", to: "/track" },

@@ -15,17 +15,17 @@ import { Building2, FileText, Upload, CheckCircle, Loader2, MapPin, Camera } fro
 
 const SERVICE_CLASSES = [
   { value: "", label: "Select Service Class" },
-  { value: "CLASS_1", label: "Class I (Gazetted)" },
-  { value: "CLASS_2", label: "Class II (Non-Gazetted)" },
-  { value: "BELOW_CLASS_2", label: "Below Class II" },
+  { value: "CLASS_1", label: "Class-1" },
+  { value: "CLASS_2", label: "Class-2" },
+  { value: "BELOW_CLASS_2", label: "below Class-2" },
 ];
 
 const getCertificationOptions = (serviceClass: string) => {
   if (serviceClass === "CLASS_1" || serviceClass === "CLASS_2") {
-    return [{ value: "SELF", label: "Self Certification" }];
+    return [{ value: "SELF", label: "Self certification" }];
   }
   if (serviceClass === "BELOW_CLASS_2") {
-    return [{ value: "HOD", label: "Head of Department Certification" }];
+    return [{ value: "HOD", label: "HOD certification" }];
   }
   return [{ value: "", label: "Select Service Class first" }];
 };
@@ -178,11 +178,11 @@ export default function PitchDevelopmentNeedPage() {
     }
 
     if ((form.serviceClass === "CLASS_1" || form.serviceClass === "CLASS_2") && form.certificationType !== "SELF") {
-      newErrors.certificationType = "Class I and Class II officials must use self certification";
+      newErrors.certificationType = "Class-1 and Class-2 officials must use self certification";
     }
 
     if (form.serviceClass === "BELOW_CLASS_2" && form.certificationType !== "HOD") {
-      newErrors.certificationType = "Below Class II officials must upload HOD certification";
+      newErrors.certificationType = "below Class-2 officials must upload HOD certification";
     }
 
     if (form.certificationType === "HOD" && !form.hodDocument) {
@@ -307,7 +307,7 @@ export default function PitchDevelopmentNeedPage() {
             </div>
             <h1 className="gov-page-title flex items-center gap-3">
               <Building2 size={28} className="text-[#d97706]" />
-              Pitch Submitted Successfully
+              Government Pitch Submitted Successfully
             </h1>
           </div>
 
@@ -320,7 +320,7 @@ export default function PitchDevelopmentNeedPage() {
                 Your development pitch has been submitted
               </h2>
               <p className="text-slate-600 mb-6">
-                Your pitch will be reviewed by the District Collector and Joint Secretary.
+                The Relationship Manager verifies the pitch and submits a verification report to the Joint Secretary.
               </p>
 
               <div className="bg-slate-50 border border-slate-200 rounded p-4 mb-6">
@@ -350,14 +350,14 @@ export default function PitchDevelopmentNeedPage() {
       <div className="gov-public-main">
         <div className="gov-page-header">
           <div className="gov-breadcrumb">
-            Home / Pitch Development Need
+            Home / Pitch a Development Need
           </div>
           <h1 className="gov-page-title flex items-center gap-3">
             <Building2 size={28} className="text-[#d97706]" />
-            Pitch Development Need
+            Pitch a Development Need
           </h1>
           <p className="gov-page-description">
-            Government officers can submit development needs for CSR funding consideration.
+            Government officials can pitch genuine, unfunded development needs for CSR support.
           </p>
         </div>
 
@@ -375,7 +375,7 @@ export default function PitchDevelopmentNeedPage() {
                 <GovCardHeader>
                   <GovCardTitle className="flex items-center gap-2">
                     <Building2 size={18} />
-                    Official Information
+                    Name & Details of Official
                   </GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>
@@ -475,7 +475,7 @@ export default function PitchDevelopmentNeedPage() {
 
                     <div className="relative md:col-span-2">
                       <GovInput
-                        label="Email Address"
+                      label="Email"
                         type="email"
                         required
                         value={form.email}
@@ -501,7 +501,7 @@ export default function PitchDevelopmentNeedPage() {
                 <GovCardHeader>
                   <GovCardTitle className="flex items-center gap-2">
                     <MapPin size={18} />
-                    Location Details
+                    District & Location
                   </GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>
@@ -565,7 +565,7 @@ export default function PitchDevelopmentNeedPage() {
                 <GovCardHeader>
                   <GovCardTitle className="flex items-center gap-2">
                     <FileText size={18} />
-                    CSR Requirement Details
+                    CSR Requirement
                   </GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>
@@ -585,7 +585,7 @@ export default function PitchDevelopmentNeedPage() {
                     />
 
                     <GovInput
-                      label="Estimated Cost (INR)"
+                      label="Estimated Cost"
                       type="number"
                       required
                       value={form.estimatedCost}
@@ -607,7 +607,7 @@ export default function PitchDevelopmentNeedPage() {
                 <GovCardHeader>
                   <GovCardTitle className="flex items-center gap-2">
                     <Upload size={18} />
-                    Certification & Documents
+                    Govt Fund Declaration, Site Photos & Certification
                   </GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>
@@ -623,10 +623,9 @@ export default function PitchDevelopmentNeedPage() {
                         className="mt-1"
                       />
                       <div>
-                        <p className="font-medium text-sm">Government Fund Declaration</p>
+                        <p className="font-medium text-sm">Govt Fund Declaration</p>
                         <p className="text-xs text-slate-500">
-                          I confirm that no government funds are available for this requirement and
-                          CSR funding is being sought.
+                          I declare that the work cannot be funded through available government funds.
                         </p>
                       </div>
                     </label>
@@ -635,7 +634,7 @@ export default function PitchDevelopmentNeedPage() {
                     )}
 
                     <GovSelect
-                      label="Certification Type"
+                      label="Certification"
                       required
                       value={form.certificationType}
                       onChange={(e) => {
@@ -655,7 +654,7 @@ export default function PitchDevelopmentNeedPage() {
                     {form.certificationType === "HOD" && (
                       <div className="gov-document-box">
                         <label className="block text-sm font-bold text-[#12325a] mb-2">
-                          HOD Certification Document
+                          HOD certification document
                           <span className="gov-required">*</span>
                         </label>
                         <input
@@ -681,7 +680,7 @@ export default function PitchDevelopmentNeedPage() {
                     <div className="gov-document-box">
                       <label className="block text-sm font-bold text-[#12325a] mb-2">
                         <Camera size={16} className="inline mr-2" />
-                        Geo-tagged Photos
+                        Geo-tagged Site Photos
                         <span className="gov-required">*</span>
                         <span className="text-xs font-normal text-slate-500 ml-2">
                           (Minimum 2 required)
@@ -739,7 +738,7 @@ export default function PitchDevelopmentNeedPage() {
                     {uploading ? "Uploading files..." : "Submitting..."}
                   </>
                 ) : (
-                  "Submit Development Pitch"
+                  "Submit Government Pitch"
                 )}
               </GovButton>
               <p className="text-xs text-slate-500 mt-3">

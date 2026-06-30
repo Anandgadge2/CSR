@@ -257,7 +257,7 @@ export default function PartnerWithMaharashtraPage() {
                 Your enquiry has been received
               </h2>
               <p className="text-slate-600 mb-6">
-                We will review your proposal and contact you within 5 working days.
+                A dedicated CSR Relationship Manager will respond, understand the need, and guide you within 5 days.
               </p>
 
               <div className="bg-slate-50 border border-slate-200 rounded p-4 mb-6">
@@ -440,12 +440,12 @@ export default function PartnerWithMaharashtraPage() {
                     />
 
                     <GovInput
-                      label="Indicative Budget (INR)"
+                      label="Budget"
                       type="number"
                       value={form.indicativeBudget}
                       onChange={(e) => setForm({ ...form, indicativeBudget: e.target.value })}
                       placeholder="e.g., 5000000"
-                      help="Optional - approximate CSR budget"
+                      help="Optional - indicative CSR budget"
                     />
                   </div>
                 </GovCardBody>
@@ -456,7 +456,7 @@ export default function PartnerWithMaharashtraPage() {
             <div className="gov-field full">
               <GovCard>
                 <GovCardHeader>
-                  <GovCardTitle>Preferred Districts</GovCardTitle>
+                <GovCardTitle>Geography</GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>
                   {errors.preferredDistricts && (
@@ -485,7 +485,7 @@ export default function PartnerWithMaharashtraPage() {
                     ))}
                   </div>
                   <p className="text-xs text-slate-500 mt-3">
-                    Selected: {form.preferredDistricts.length} district(s)
+                    Preferred district(s)/region. Selected: {form.preferredDistricts.length} district(s)
                   </p>
                 </GovCardBody>
               </GovCard>
@@ -531,7 +531,7 @@ export default function PartnerWithMaharashtraPage() {
 
                     <div className="relative">
                       <GovInput
-                        label="Email Address"
+                      label="Email"
                         type="email"
                         required
                         value={form.email}
@@ -555,7 +555,7 @@ export default function PartnerWithMaharashtraPage() {
             <div className="gov-field full">
               <GovCard>
                 <GovCardHeader>
-                  <GovCardTitle>CSR Proposal</GovCardTitle>
+                <GovCardTitle>Proposed CSR Work</GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>
                   <GovTextarea
@@ -584,7 +584,7 @@ export default function PartnerWithMaharashtraPage() {
                     Submitting...
                   </>
                 ) : (
-                  "Submit CSR Enquiry"
+                "Submit Corporate Enquiry"
                 )}
               </GovButton>
               <p className="text-xs text-slate-500 mt-3">

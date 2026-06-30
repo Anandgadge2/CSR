@@ -217,7 +217,7 @@ export default function LandingPage() {
                 bulletColor: "bg-indigo-600"
               },
               {
-                title: "Public Development Needs",
+                title: "Public Development Needs (Live)",
                 description: "Government pitches approved and made public — open for any corporate to fund.",
                 href: "/public-development-needs",
                 bulletColor: "bg-sky-600"

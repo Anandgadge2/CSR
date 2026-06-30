@@ -7,7 +7,7 @@ import {
   Building2, Landmark, Search, Bell, Mail, ChevronLeft, ChevronRight,
   Layers, Sparkles, Award, Coins, Compass, FileText, BarChart2,
   HelpCircle, Menu, X, LogOut, ShieldCheck, BookOpen, ShieldAlert,
-  Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone, CheckCircle2
+  Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone, CheckCircle2, Handshake
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { apiFetch, getStoredUser } from "@/lib/api";
@@ -15,6 +15,56 @@ import { apiFetch, getStoredUser } from "@/lib/api";
 interface SaaSLayoutProps {
   children: React.ReactNode;
 }
+
+const publicNavGroups = [
+  {
+    label: "About",
+    href: "/about",
+    links: [
+      { label: "Framework & Policy Information", href: "/framework-policy" },
+      { label: "CSR Policy", href: "/csr-policy" },
+      { label: "Convergence Framework", href: "/convergence" },
+      { label: "Workflow Explainer", href: "/workflow" },
+    ],
+  },
+  {
+    label: "Projects",
+    href: "/public-development-needs",
+    links: [
+      { label: "Public Development Needs (Live)", href: "/public-development-needs" },
+      { label: "Completed Projects Gallery", href: "/completed-projects" },
+      { label: "Success Stories & Case Studies", href: "/success-stories" },
+      { label: "Project Directory", href: "/marketplace" },
+    ],
+  },
+  {
+    label: "Documents",
+    href: "/document-library",
+    links: [
+      { label: "Document Library", href: "/document-library" },
+      { label: "Resources", href: "/resources" },
+      { label: "Circulars", href: "/circulars" },
+      { label: "Knowledge Center", href: "/knowledge" },
+    ],
+  },
+  {
+    label: "Updates",
+    href: "/news",
+    links: [
+      { label: "News", href: "/news" },
+      { label: "CSR Summits & Events", href: "/csr-events" },
+      { label: "FAQs, News & Recognition", href: "/faq-news-recognition" },
+    ],
+  },
+  {
+    label: "Contact",
+    href: "/contact",
+    links: [
+      { label: "Directory", href: "/directory" },
+      { label: "Contact Us", href: "/contact" },
+    ],
+  },
+];
 
 export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const pathname = usePathname();
@@ -91,31 +141,37 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     const token = localStorage.getItem("accessToken");
     const user = getStoredUser();
 
+    const cleanPath = pathname.endsWith("/") && pathname !== "/" ? pathname.slice(0, -1) : pathname;
+
+    const publicPrefixes = [
+      "/about",
+      "/partner-with-maharashtra",
+      "/framework-policy",
+      "/document-library",
+      "/workflow",
+      "/success-stories",
+      "/csr-events",
+      "/directory",
+      "/completed-projects",
+      "/public-development-needs",
+      "/faq-news-recognition",
+      "/knowledge",
+      "/marketplace",
+      "/circulars",
+      "/news",
+      "/contact",
+      "/csr-policy",
+      "/convergence",
+      "/resources",
+      "/reports",
+      "/help"
+    ];
+
     const isPublicRoute = 
-      pathname === "/" ||
-      pathname === "/login" ||
-      pathname === "/register" ||
-      pathname === "/about" ||
-      pathname === "/partner-with-maharashtra" ||
-      pathname === "/framework-policy" ||
-      pathname === "/document-library" ||
-      pathname === "/workflow" ||
-      pathname === "/success-stories" ||
-      pathname === "/csr-events" ||
-      pathname === "/directory" ||
-      pathname === "/completed-projects" ||
-      pathname === "/public-development-needs" ||
-      pathname === "/faq-news-recognition" ||
-      pathname === "/knowledge" ||
-      pathname === "/marketplace" ||
-      pathname.startsWith("/circulars") ||
-      pathname === "/news" ||
-      pathname === "/contact" ||
-      pathname === "/csr-policy" ||
-      pathname === "/convergence" ||
-      pathname === "/resources" ||
-      pathname === "/reports" ||
-      pathname === "/help";
+      cleanPath === "/" ||
+      cleanPath === "/login" ||
+      cleanPath === "/register" ||
+      publicPrefixes.some(prefix => cleanPath === prefix || cleanPath.startsWith(prefix + "/"));
 
     // 1. Enforce login for non-public routes
     if (!isPublicRoute) {
@@ -388,7 +444,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
     return [
       { label: "Overview Console", href: "/ngo-dashboard", icon: Layers },
-      { label: "Directories", href: "/marketplace", icon: Compass },
+      { label: "Directory", href: "/directory", icon: Compass },
       { label: "Collaboration Hub", href: "/chat", icon: Mail },
       { label: "Knowledge Center", href: "/knowledge", icon: BookOpen },
       { label: "About Mandate", href: "/about", icon: HelpCircle }
@@ -659,30 +715,49 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   </svg>
                 </Link>
 
-                {/* Menu links */}
+                {/* Menu links with government-style dropdowns */}
                 <nav className="hidden lg:flex items-center h-full text-xs font-bold text-white/95">
-                  {[
-                    { label: "About Us", href: "/about" },
-                    { label: "Partner with Maharashtra", href: "/partner-with-maharashtra" },
-                    { label: "Directories", href: "/marketplace" },
-                    { label: "Projects", href: "/public-development-needs" },
-                    { label: "Knowledge Center", href: "/knowledge" },
-                    { label: "News & Events", href: "/news" },
-                    { label: "Contact Us", href: "/contact" },
-                  ].map((link) => {
-                    const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+                  <Link
+                    href="/partner-with-maharashtra"
+                    className={`px-4 h-[48px] flex items-center border-b-[3px] transition-all hover:bg-white/5 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50 ${
+                      pathname === "/partner-with-maharashtra"
+                        ? "border-[#FF9933] text-white font-extrabold bg-white/10"
+                        : "border-transparent text-white/90 hover:text-white"
+                    }`}
+                  >
+                    Partner with Maharashtra
+                  </Link>
+                  {publicNavGroups.map((group) => {
+                    const isActive = pathname === group.href || group.links.some((link) => pathname === link.href || pathname.startsWith(link.href + "/"));
                     return (
-                      <Link
-                        key={link.label}
-                        href={link.href}
-                        className={`px-4 h-[48px] flex items-center border-b-[3px] transition-all hover:bg-white/5 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50 ${
-                          isActive
-                            ? "border-[#FF9933] text-white font-extrabold bg-white/10"
-                            : "border-transparent text-white/90 hover:text-white"
-                        }`}
-                      >
-                        {link.label}
-                      </Link>
+                      <div key={group.label} className="group relative h-[48px]">
+                        <Link
+                          href={group.href}
+                          className={`px-4 h-[48px] flex items-center gap-1 border-b-[3px] transition-all hover:bg-white/5 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50 ${
+                            isActive
+                              ? "border-[#FF9933] text-white font-extrabold bg-white/10"
+                              : "border-transparent text-white/90 hover:text-white"
+                          }`}
+                        >
+                          {group.label}
+                          <ChevronDown size={13} aria-hidden="true" />
+                        </Link>
+                        <div className="invisible absolute left-0 top-[48px] z-[70] w-[280px] translate-y-1 border border-[#cfdcf0] bg-white py-2 opacity-0 shadow-[0_18px_42px_rgba(15,35,70,0.22)] transition-all duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                          {group.links.map((link) => (
+                            <Link
+                              key={link.href}
+                              href={link.href}
+                              className={`block border-l-4 px-4 py-3 text-[12px] font-extrabold leading-5 hover:bg-[#f5f8fd] hover:no-underline ${
+                                pathname === link.href || pathname.startsWith(link.href + "/")
+                                  ? "border-[#FF9933] bg-[#f8fbff] text-[#12325a]"
+                                  : "border-transparent text-[#344b68]"
+                              }`}
+                            >
+                              {link.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     );
                   })}
                 </nav>
@@ -767,9 +842,12 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[calc(100vh-160px)]">
                   {(isDashboard ? dashboardNavigationItems : [
                     { label: "Home", href: "/", icon: Layers },
-                    { label: "About Mandate", href: "/about", icon: HelpCircle },
-                    { label: "Directories", href: "/marketplace", icon: Compass },
-                    { label: "Knowledge Center", href: "/knowledge", icon: BookOpen }
+                    { label: "Partner with Maharashtra", href: "/partner-with-maharashtra", icon: Handshake },
+                    ...publicNavGroups.flatMap((group) => group.links.map((link) => ({
+                      label: link.label,
+                      href: link.href,
+                      icon: group.label === "About" ? HelpCircle : group.label === "Projects" ? Compass : group.label === "Documents" ? BookOpen : group.label === "Updates" ? FileText : Phone,
+                    }))),
                   ]).map((item) => {
                     const isActive = pathname === item.href || 
                                      (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
@@ -863,7 +941,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   <div className="mt-4 flex flex-col gap-3 text-sm text-blue-100">
                     <Link href="/about" className="text-blue-100 hover:text-white">About MahaCSR</Link>
                     <Link href="/partner-with-maharashtra" className="text-blue-100 hover:text-white">Partner with Maharashtra</Link>
-                    <Link href="/public-development-needs" className="text-blue-100 hover:text-white">Public Development Needs</Link>
+                    <Link href="/public-development-needs" className="text-blue-100 hover:text-white">Public Development Needs (Live)</Link>
                     <Link href="/workflow" className="text-blue-100 hover:text-white">Workflow</Link>
                     <Link href="/knowledge" className="text-blue-100 hover:text-white">Knowledge Center</Link>
                     {/* <Link href="/reports" className="text-blue-100 hover:text-white">Reports & Data</Link> */}

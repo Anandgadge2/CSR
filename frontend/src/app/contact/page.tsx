@@ -1,108 +1,89 @@
 "use client";
 
 import React, { useState } from "react";
-import { Landmark, Mail, Phone, MapPin, Send, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Mail, MapPin, Phone, Send } from "lucide-react";
+import GovButton from "@/components/gov/GovButton";
+import GovInput from "@/components/gov/GovInput";
+import GovTextarea from "@/components/gov/GovTextarea";
+import GovPortalLayout from "@/components/layout/GovPortalLayout";
+import { GovCard, GovCardBody, GovCardHeader, GovCardTitle } from "@/components/gov/GovCard";
+import GovAlert from "@/components/gov/GovAlert";
 
 export default function ContactPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !email || !message) return;
-    setSending(true);
-    setTimeout(() => {
-      alert("Message Sent! Our support desks will reply to your registered email within 24 hours.");
-      setName("");
-      setEmail("");
-      setMessage("");
-      setSending(false);
-    }, 1200);
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setSent(true);
+    setForm({ name: "", email: "", subject: "", message: "" });
+    setTimeout(() => setSent(false), 4000);
   };
 
   return (
-    <div className="px-6 md:px-12 py-12 max-w-5xl mx-auto flex flex-col gap-10 bg-slate-950 text-slate-100 min-h-screen">
-      <div className="flex flex-col gap-2 border-b border-slate-800 pb-6">
-        <span className="text-[#f97316] font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
-          <Landmark size={14} /> महाराष्ट्र शासन • DIRECT CONTACT CHANNEL
-        </span>
-        <h1 className="font-heading font-extrabold text-4xl text-slate-100 tracking-tight">Contact Us</h1>
-        <p className="text-slate-400 text-sm">Reach out to the CSR Commissionerate, Industries Department, or file support requests regarding the portal.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-stretch">
-        
-        {/* Contact info */}
-        <div className="flex flex-col gap-8">
-          <div className="glass-card p-6 rounded-3xl border border-slate-800 flex flex-col gap-5">
-            <h3 className="font-heading font-bold text-lg text-slate-200">State CSR Office (Pune)</h3>
-            <div className="flex flex-col gap-4 text-xs font-semibold text-slate-400">
-              <div className="flex items-center gap-3"><MapPin size={16} className="text-[#f97316]" /> <span>CSR Commissionerate Office, YASHADA campus, Raj Bhavan Road, Pune - 411007</span></div>
-              <div className="flex items-center gap-3"><Phone size={16} className="text-[#f97316]" /> <span>+91 20 2560 1350</span></div>
-              <div className="flex items-center gap-3"><Mail size={16} className="text-[#f97316]" /> <span>commissioner.csr@maharashtra.gov.in</span></div>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 rounded-3xl border border-slate-800 flex flex-col gap-5">
-            <h3 className="font-heading font-bold text-lg text-slate-200">Main Industries Desk (Mumbai)</h3>
-            <div className="flex flex-col gap-4 text-xs font-semibold text-slate-400">
-              <div className="flex items-center gap-3"><MapPin size={16} className="text-indigo-650" /> <span>Department of Industries, Mantralaya, Nariman Point, Mumbai - 400032</span></div>
-              <div className="flex items-center gap-3"><Phone size={16} className="text-indigo-650" /> <span>+91 22 2202 5000</span></div>
-              <div className="flex items-center gap-3"><Mail size={16} className="text-indigo-650" /> <span>sec.industries@maharashtra.gov.in</span></div>
-            </div>
-          </div>
+    <GovPortalLayout showSidebar={false}>
+      <div className="gov-public-main">
+        <div className="gov-page-header">
+          <div className="gov-breadcrumb">Home / Contact Us</div>
+          <h1 className="gov-page-title">Contact Us</h1>
+          <p className="gov-page-description">Reach the MahaCSR public helpdesk, CSR Relationship Manager desk, State CSR Cell or district coordination channel.</p>
         </div>
 
-        {/* Message form */}
-        <div className="glass-panel p-8 rounded-3xl border border-slate-800 flex flex-col gap-5">
-          <h3 className="font-heading font-bold text-xl text-slate-100 flex items-center gap-2">
-            <MessageSquare size={18} className="text-[#f97316]" />
-            Send Support Query
-          </h3>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs font-medium text-slate-400">
-            <div className="flex flex-col gap-1.5">
-              <span>Full Name:</span>
-              <input 
-                type="text" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none focus:border-violet-500" 
-                required 
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span>Registered Email Address:</span>
-              <input 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none focus:border-violet-500" 
-                required 
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <span>Description / Query:</span>
-              <textarea 
-                value={message} 
-                onChange={(e) => setMessage(e.target.value)}
-                className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 h-28 focus:outline-none focus:border-violet-500" 
-                required 
-              />
-            </div>
-            <Button 
-              type="submit" 
-              disabled={sending} 
-              className="flex items-center justify-center gap-2 mt-2 py-3 shadow-md"
-            >
-              <Send size={14} /> {sending ? "Sending..." : "Submit Message"}
-            </Button>
-          </form>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+          {[
+            ["State CSR Cell", "State-level CSR coordination, escalated grievances and inter-departmental support.", "statecell.user@mahacsr.gov.in", "022-2202 1234"],
+            ["CSR Relationship Manager Desk", "Corporate enquiry, government pitch verification and coordination support.", "rm.user@mahacsr.gov.in", "022-2202 1240"],
+            ["Public Helpdesk", "Static page query, document guidance, registration and tracking support.", "helpdesk@mahacsr.gov.in", "1800-123-4567"],
+          ].map(([title, detail, email, phone]) => (
+            <GovCard key={title}>
+              <GovCardBody>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "var(--gov-primary-dark)" }}>{title}</h2>
+                <p style={{ minHeight: 48, margin: "8px 0 14px", color: "var(--gov-text-secondary)", fontSize: 13, lineHeight: 1.6 }}>{detail}</p>
+                <div style={{ display: "grid", gap: 8, fontSize: 13, color: "var(--gov-text)" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Mail size={15} /> {email}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}><Phone size={15} /> {phone}</span>
+                </div>
+              </GovCardBody>
+            </GovCard>
+          ))}
         </div>
 
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(280px, 0.8fr)", gap: 16, marginTop: 16 }}>
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Send Support Query</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              {sent && <GovAlert variant="success">Message registered. The helpdesk will respond as per the applicable SLA.</GovAlert>}
+              <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                  <GovInput label="Full Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  <GovInput label="Email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                </div>
+                <GovInput label="Subject" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+                <GovTextarea label="Description / Query" required rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+                <div>
+                  <GovButton type="submit"><Send size={16} /> Submit Message</GovButton>
+                </div>
+              </form>
+            </GovCardBody>
+          </GovCard>
+
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Office Reference</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              <div style={{ display: "grid", gap: 14, fontSize: 13, lineHeight: 1.65, color: "var(--gov-text-secondary)" }}>
+                <span style={{ display: "inline-flex", gap: 8 }}><MapPin className="mt-1" size={15} /> Maharashtra CSR Authority, Mantralaya Annexe, Mumbai - 400032.</span>
+                <div><strong>Corporate enquiry SLA:</strong> Relationship Manager response within 5 days.</div>
+                <div><strong>Static helpdesk SLA:</strong> Public query response within 2 days.</div>
+                <div><strong>Grievance route:</strong> District Nodal Officer - State CSR Cell - JS / Planning Secretary.</div>
+              </div>
+            </GovCardBody>
+          </GovCard>
+        </div>
       </div>
-    </div>
+    </GovPortalLayout>
   );
 }

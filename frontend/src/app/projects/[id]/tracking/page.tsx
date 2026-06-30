@@ -158,7 +158,7 @@ export default function ProjectTrackingPage() {
           remarks: form.remarks || undefined,
         }),
       });
-      setActionMessage("Utilization Certificate uploaded for verification.");
+      setActionMessage("Utilisation Certificate uploaded for verification.");
       await fetchProject();
     } catch (err: unknown) {
       setActionMessage(err instanceof Error ? err.message : "Failed to upload UC.");
@@ -216,7 +216,7 @@ export default function ProjectTrackingPage() {
   const allUCsVerified = milestones.every((m) => m.utilizationCertificates?.some((uc) => uc.verificationStatus === "VERIFIED"));
   lifecycleSteps.push({
     label: "UC Verification",
-    description: allUCsVerified ? "All utilization certificates verified" : "Pending verification",
+    description: allUCsVerified ? "All Utilisation Certificates verified" : "Pending verification",
     status: allUCsVerified ? "completed" : "pending",
   });
   lifecycleSteps.push({
@@ -243,7 +243,7 @@ export default function ProjectTrackingPage() {
           {[
             { label: "Overall Progress", value: `${project.physicalProgressPercent}%`, color: "var(--gov-primary)" },
             { label: "Budget", value: fmtCurrency(project.approvedBudget), color: "var(--gov-text)" },
-            { label: "Utilized", value: fmtCurrency(project.utilizedAmount), color: "var(--gov-link)" },
+            { label: "Utilised", value: fmtCurrency(project.utilizedAmount), color: "var(--gov-link)" },
             { label: "Milestones Completed", value: `${completedCount} / ${milestones.length}`, color: "var(--gov-success)" },
           ].map((k) => (
             <GovCard key={k.label}>
@@ -283,7 +283,7 @@ export default function ProjectTrackingPage() {
                         {m.description && <div style={{ fontSize: 13, color: "var(--gov-text-secondary)", marginBottom: 8 }}>{m.description}</div>}
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, fontSize: 13 }}>
                           <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Work Type: </span>{m.workType.replace(/_/g, " ")}</div>
-                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Funds: </span>{fmtCurrency(m.fundsUtilized)}</div>
+                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Funds Utilised: </span>{fmtCurrency(m.fundsUtilized)}</div>
                           <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Photos: </span>{m.geoTaggedPhotoUrls?.length || 0}</div>
                           <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>UC: </span>{m.utilizationCertificates?.[0]?.verificationStatus || "PENDING"}</div>
                           <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Verification: </span>{m.verifiedAt ? "✓ Verified" : "Pending"}</div>
@@ -309,7 +309,7 @@ export default function ProjectTrackingPage() {
                             </select>
                           </label>
                           <label className="gov-field">
-                            <span className="gov-label">Funds Utilized</span>
+                            <span className="gov-label">Funds Utilised</span>
                             <input
                               className="gov-input"
                               type="number"
@@ -346,7 +346,7 @@ export default function ProjectTrackingPage() {
                         </div>
 
                         <div style={{ padding: 12, background: "var(--gov-surface-muted)", border: "1px solid var(--gov-border)" }}>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--gov-primary)", marginBottom: 10 }}>Utilization Certificate</div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--gov-primary)", marginBottom: 10 }}>Utilisation Certificate</div>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
                             <label className="gov-field">
                               <span className="gov-label">UC Document URL</span>
@@ -358,7 +358,7 @@ export default function ProjectTrackingPage() {
                               />
                             </label>
                             <label className="gov-field">
-                              <span className="gov-label">Amount Utilized</span>
+                              <span className="gov-label">Amount Utilised</span>
                               <input
                                 className="gov-input"
                                 type="number"

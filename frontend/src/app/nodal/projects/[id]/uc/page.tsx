@@ -52,7 +52,7 @@ export default function NodalUCPage() {
         body: JSON.stringify({ verificationStatus, remarks }),
       }),
     onSuccess: () => {
-      setSuccess("Utilization Certificate verification successfully saved");
+      setSuccess("Utilisation Certificate verification successfully saved");
       refetch();
       setSelectedUC(null);
       setRemarks("");
@@ -81,7 +81,7 @@ export default function NodalUCPage() {
   if (isLoading) {
     return (
       <GovPortalLayout userRole="DISTRICT_NODAL_OFFICER">
-        <div style={{ padding: 100, textAlign: "center", color: "var(--gov-text-muted)" }}>Loading Utilization Certificates...</div>
+        <div style={{ padding: 100, textAlign: "center", color: "var(--gov-text-muted)" }}>Loading Utilisation Certificates...</div>
       </GovPortalLayout>
     );
   }
@@ -95,8 +95,8 @@ export default function NodalUCPage() {
         </Link>
 
         <GovPageHeader
-          title="Utilization Certificates (UCs)"
-          description="Review financial utilization logs. Nodal Officers must audit UC invoices and document signatures."
+          title="Utilisation Certificates (UCs)"
+          description="Review fund utilisation logs. Nodal Officers must audit UC invoices and document signatures."
           breadcrumb="Home / Projects / UCs"
         />
 
@@ -107,7 +107,7 @@ export default function NodalUCPage() {
           {/* UCs List */}
           <GovCard>
             <GovCardHeader>
-              <GovCardTitle>Utilization Logs</GovCardTitle>
+              <GovCardTitle>Utilisation Logs</GovCardTitle>
             </GovCardHeader>
             <GovCardBody style={{ padding: 0 }}>
               <div className="gov-table-container">
@@ -115,7 +115,7 @@ export default function NodalUCPage() {
                   <thead>
                     <tr>
                       <th>Uploaded Date</th>
-                      <th>Amount Utilized</th>
+                      <th>Amount Utilised</th>
                       <th>Uploaded By</th>
                       <th>Status</th>
                       <th>Actions</th>

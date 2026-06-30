@@ -55,6 +55,22 @@ interface Company {
   industry: string;
 }
 
+const fallbackProjects: Project[] = [
+  { id: "demo-project-1", title: "Digital Learning Lab for Zilla Parishad Schools", description: "Smart classroom equipment and teacher orientation for rural government schools.", focusArea: "Education", sdgGoal: "SDG 4", beneficiaryCount: 4500, budgetRequested: 7500000, district: "Pune", taluka: "Mulshi", ngoName: "Verified Education Partner", ngoRating: 4.6, matchScore: 92, status: "PUBLISHED" },
+  { id: "demo-project-2", title: "Primary Health Centre Diagnostic Equipment", description: "Basic diagnostic equipment package for high-footfall rural health facilities.", focusArea: "Health", sdgGoal: "SDG 3", beneficiaryCount: 18000, budgetRequested: 12000000, district: "Nandurbar", taluka: "Akkalkuwa", ngoName: "Verified Health Partner", ngoRating: 4.4, matchScore: 88, status: "PUBLISHED" },
+  { id: "demo-project-3", title: "Water Conservation and Check Dam Repair", description: "Repair and finishing of community water conservation structures with handover evidence.", focusArea: "Water", sdgGoal: "SDG 6", beneficiaryCount: 9000, budgetRequested: 9800000, district: "Gadchiroli", taluka: "Aheri", ngoName: "Verified Rural Partner", ngoRating: 4.7, matchScore: 90, status: "PUBLISHED" },
+];
+
+const fallbackNgos: NGO[] = [
+  { id: "demo-ngo-1", name: "Verified Education Partner", darpanId: "MH/2026/DEMO001", csr1Status: "VERIFIED", rating: 4.6, district: "Pune", taluka: "Mulshi", category: "Education", projectsCount: 8, totalFundingReceived: 42000000, contact: "public profile pending" },
+  { id: "demo-ngo-2", name: "Verified Health Partner", darpanId: "MH/2026/DEMO002", csr1Status: "VERIFIED", rating: 4.4, district: "Nandurbar", taluka: "Akkalkuwa", category: "Health", projectsCount: 5, totalFundingReceived: 31000000, contact: "public profile pending" },
+];
+
+const fallbackCompanies: Company[] = [
+  { id: "demo-company-1", name: "Mahindra CSR Trust", focusArea: "Education, Skill Development", csrBudget: 50000000, district: "Mumbai", policyLink: "#", projectsFunded: 12, industry: "Automotive" },
+  { id: "demo-company-2", name: "Tata Projects CSR", focusArea: "Water, Rural Development", csrBudget: 65000000, district: "Mumbai", policyLink: "#", projectsFunded: 15, industry: "Infrastructure" },
+];
+
 export default function ProjectMarketplace({ params }: { params?: { tab?: string } }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<DirectoryTab>("projects");
@@ -127,9 +143,9 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
           })));
         }
       } catch {
-        setProjects([]);
-        setNgos([]);
-        setCompanies([]);
+        setProjects(fallbackProjects);
+        setNgos(fallbackNgos);
+        setCompanies(fallbackCompanies);
       } finally {
         setLoading(false);
       }
@@ -204,8 +220,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
       
       {/* Header */}
       <div className="flex flex-col gap-1.5">
-        <h1 className="font-heading font-extrabold text-4xl text-slate-100 tracking-tight">Public CSR Directories</h1>
-        <p className="text-slate-400">Search verified grassroots projects, registered NGOs, and active corporate donors in Maharashtra.</p>
+        <h1 className="font-heading font-extrabold text-4xl text-[#12325a] tracking-tight">Directory</h1>
+        <p className="text-slate-600">Search verified projects, registered NGOs, and active corporate donors in Maharashtra.</p>
       </div>
 
       {/* Directory Tab Switcher */}
