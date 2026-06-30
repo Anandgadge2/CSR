@@ -169,6 +169,82 @@ export default function LandingPage() {
         </section>
 
         <section className="rounded-lg border border-[#d8e2ef] bg-white p-4 shadow-[0_8px_26px_rgba(15,35,70,0.06)] sm:p-5 md:p-6">
+          <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#456aa4]">Public Information Directory</div>
+          <h2 className="mt-1 break-words text-xl font-extrabold leading-tight text-[#102c60] sm:text-2xl">MahaCSR Setu Resources</h2>
+          
+          <div className="mt-6 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: "Framework & Policy Information",
+                description: "The State's CSR convergence framework explained simply; benefits to corporates. Marathi & English.",
+                href: "/framework-policy",
+                bulletColor: "bg-[#12325a]"
+              },
+              {
+                title: "Document Library",
+                description: "CSR Rules 2014 & MCA amendments; Schedule VII; State GRs; progress formats; checklists.",
+                href: "/document-library",
+                bulletColor: "bg-[#FF9933]"
+              },
+              {
+                title: "Workflow Explainer",
+                description: "Simple visual guide showing exactly how the partnership works, step by step, with timelines.",
+                href: "/workflow",
+                bulletColor: "bg-[#138808]"
+              },
+              {
+                title: "Success Stories & Case Studies",
+                description: "Completed projects with photos, investment, beneficiaries, corporate name. Builds confidence through proof.",
+                href: "/success-stories",
+                bulletColor: "bg-[#008080]"
+              },
+              {
+                title: "CSR Summits & Events",
+                description: "Past summit reports and videos; upcoming events; registration links.",
+                href: "/csr-events",
+                bulletColor: "bg-[#d97706]"
+              },
+              {
+                title: "Directory",
+                description: "Contact details of the State CSR Cell, the CSR Relationship Managers, and all District Nodal Officers.",
+                href: "/directory",
+                bulletColor: "bg-red-600"
+              },
+              {
+                title: "Completed Projects Gallery",
+                description: "Permanent, searchable public record of all portal projects — by district, sector, corporate, year.",
+                href: "/completed-projects",
+                bulletColor: "bg-indigo-600"
+              },
+              {
+                title: "Public Development Needs",
+                description: "Government pitches approved and made public — open for any corporate to fund.",
+                href: "/public-development-needs",
+                bulletColor: "bg-sky-600"
+              },
+              {
+                title: "FAQs, News & Recognition",
+                description: "Common questions; portal updates; CSR awards and recognition of corporate partners.",
+                href: "/faq-news-recognition",
+                bulletColor: "bg-teal-600"
+              }
+            ].map((item) => (
+              <Link 
+                key={item.title} 
+                href={item.href}
+                className="flex items-start gap-3 rounded-md border border-[#d8e2ef] bg-white p-4 hover:border-blue-200 transition-colors shadow-[0_4px_12px_rgba(0,0,0,0.01)] hover:shadow-md hover:no-underline group"
+              >
+                <span className={`h-3 w-3 rounded-sm ${item.bulletColor} shrink-0 mt-1.5`} />
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-800 leading-snug group-hover:text-[#245ddc] transition-colors">{item.title}</h3>
+                  <p className="mt-1.5 text-[11px] font-semibold leading-relaxed text-slate-500">{item.description}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-lg border border-[#d8e2ef] bg-white p-4 shadow-[0_8px_26px_rgba(15,35,70,0.06)] sm:p-5 md:p-6">
           <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#456aa4]">MahaCSR at a Glance</div>
           <div className="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {stats.map(([value, label, delta], index) => (

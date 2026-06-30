@@ -97,8 +97,15 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       pathname === "/register" ||
       pathname === "/about" ||
       pathname === "/partner-with-maharashtra" ||
-      pathname === "/public-development-needs" ||
+      pathname === "/framework-policy" ||
+      pathname === "/document-library" ||
       pathname === "/workflow" ||
+      pathname === "/success-stories" ||
+      pathname === "/csr-events" ||
+      pathname === "/directory" ||
+      pathname === "/completed-projects" ||
+      pathname === "/public-development-needs" ||
+      pathname === "/faq-news-recognition" ||
       pathname === "/knowledge" ||
       pathname === "/marketplace" ||
       pathname.startsWith("/circulars") ||
