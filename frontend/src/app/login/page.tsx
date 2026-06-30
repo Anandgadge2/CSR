@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, LogIn, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, clearApiCache } from "@/lib/api";
 
 function LoginForm() {
   const router = useRouter();
@@ -63,6 +63,7 @@ function LoginForm() {
       useAuthStore.getState().login(user);
 
       // Save credentials in localStorage for session preservation
+      clearApiCache();
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("user", JSON.stringify(user));
 
@@ -77,6 +78,18 @@ function LoginForm() {
       const onboardingStatus = user.organization?.onboardingStatus;
       if (userRole === "MASTER_ADMIN") {
         router.push("/master/dashboard");
+      } else if (userRole === "CSR_RELATIONSHIP_MANAGER") {
+        router.push("/rm/dashboard");
+      } else if (userRole === "JOINT_SECRETARY") {
+        router.push("/js/dashboard");
+      } else if (userRole === "PLANNING_SECRETARY") {
+        router.push("/secretary/escalations");
+      } else if (userRole === "DISTRICT_NODAL_OFFICER") {
+        router.push("/nodal/dashboard");
+      } else if (userRole === "IMPLEMENTING_AGENCY_USER") {
+        router.push("/convergence-projects");
+      } else if (userRole === "CORPORATE_USER") {
+        router.push("/partner/dashboard");
       } else if (onboardingStatus && onboardingStatus !== "APPROVED" && !["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN"].includes(userRole)) {
         router.push("/organization/onboarding/status");
       } else if (userRole === "NGO_ADMIN" || userRole === "NGO_MEMBER") {

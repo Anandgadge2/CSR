@@ -2,7 +2,8 @@
 
 import { ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { clearApiCache } from "@/lib/api";
 import "../../styles/gov-theme.css";
 
 interface NavLink {
@@ -18,6 +19,88 @@ interface NavGroup {
 }
 
 const navGroups: NavGroup[] = [
+  {
+    title: "CSR Relationship Manager",
+    roles: ["CSR_RELATIONSHIP_MANAGER"],
+    links: [
+      { label: "Dashboard", to: "/rm/dashboard" },
+      { label: "Corporate Enquiries", to: "/rm/enquiries" },
+      { label: "Government Pitches", to: "/rm/government-pitches" },
+      { label: "Corporate Interests", to: "/rm/interests" },
+      { label: "Feasibility Reports", to: "/rm/assessments" },
+      { label: "Company Directory", to: "/rm/companies" },
+      { label: "Communication Log", to: "/rm/communications" },
+      { label: "Reports", to: "/rm/reports" },
+    ],
+  },
+  {
+    title: "Joint Secretary",
+    roles: ["JOINT_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"],
+    links: [
+      { label: "JS Dashboard", to: "/js/dashboard" },
+      { label: "Assessment Reports", to: "/js/assessments" },
+      { label: "Government Pitch Approvals", to: "/js/government-pitches" },
+      { label: "Nodal Appointments", to: "/js/nodal-appointments" },
+      { label: "RM Escalations", to: "/js/escalations" },
+    ],
+  },
+  {
+    title: "Planning Secretary",
+    roles: ["PLANNING_SECRETARY"],
+    links: [
+      { label: "Escalations", to: "/secretary/escalations" },
+      { label: "Dashboard", to: "/secretary/dashboard" },
+      { label: "Final Decisions", to: "/secretary/decisions" },
+      { label: "JS Dashboard", to: "/js/dashboard" },
+      { label: "Feasibility Assessments", to: "/js/assessments" },
+      { label: "Final Grievance Review", to: "/state-cell/grievances" },
+    ],
+  },
+  {
+    title: "State CSR Cell",
+    roles: ["STATE_CSR_CELL"],
+    links: [
+      { label: "Dashboard", to: "/state-cell/dashboard" },
+      { label: "Grievance Queue", to: "/state-cell/grievances" },
+      { label: "Escalations", to: "/state-cell/escalations" },
+      { label: "Convergence Projects", to: "/convergence-projects" },
+    ],
+  },
+  {
+    title: "District Nodal Officer",
+    roles: ["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"],
+    links: [
+      { label: "Dashboard", to: "/nodal/dashboard" },
+      { label: "Assigned Projects", to: "/nodal/projects" },
+      { label: "Convergence Projects", to: "/convergence-projects" },
+      { label: "Field Inspections", to: "/nodal/inspections" },
+      { label: "Project Handover", to: "/nodal/handover" },
+      { label: "Grievance Queue", to: "/nodal/grievances" },
+    ],
+  },
+  {
+    title: "Corporate Partner",
+    roles: ["CORPORATE_USER", "CORPORATE_PARTNER"],
+    links: [
+      { label: "Dashboard", to: "/partner/dashboard" },
+      { label: "Public Needs", to: "/public-development-needs" },
+      { label: "My Enquiries", to: "/partner/enquiries" },
+      { label: "Convergence Projects", to: "/convergence-projects" },
+      { label: "Grievances", to: "/grievances" },
+      { label: "Track Status", to: "/track" },
+    ],
+  },
+  {
+    title: "Implementing Agency",
+    roles: ["IMPLEMENTING_AGENCY_USER"],
+    links: [
+      { label: "Dashboard", to: "/agency/dashboard" },
+      { label: "Assigned Projects", to: "/agency/projects" },
+      { label: "Milestone Tracking", to: "/agency/projects" },
+      { label: "Grievances", to: "/agency/grievances" },
+      { label: "Track Status", to: "/track" },
+    ],
+  },
   {
     title: "Government Department",
     roles: ["BENEFICIARY_AGENCY"],
@@ -41,7 +124,9 @@ const navGroups: NavGroup[] = [
       { label: "Documents", to: "/onboarding/documents" },
       { label: "Queries", to: "/queries" },
       { label: "My Projects", to: "/csr-projects" },
-      { label: "Marketplace", to: "/marketplace" },
+      { label: "Convergence Projects", to: "/convergence-projects" },
+      { label: "Grievances", to: "/grievances" },
+      { label: "Public Development Needs", to: "/public-development-needs" },
     ],
   },
   {
@@ -53,6 +138,8 @@ const navGroups: NavGroup[] = [
       { label: "NGO Registry", to: "/admin/ngo-registry" },
       { label: "Companies", to: "/admin/companies" },
       { label: "Projects", to: "/admin/projects" },
+      { label: "Convergence Projects", to: "/convergence-projects" },
+      { label: "Grievances", to: "/state-cell/grievances" },
       { label: "Verification Queue", to: "/admin/applications" },
       { label: "Reports", to: "/admin/reports" },
       { label: "Audit Trail", to: "/admin/audit-trail" },
@@ -63,9 +150,10 @@ const navGroups: NavGroup[] = [
     roles: ["COMPANY_ADMIN", "COMPANY_MEMBER"],
     links: [
       { label: "Dashboard", to: "/company-dashboard" },
-      { label: "Browse Projects", to: "/marketplace" },
-      { label: "Funded Projects", to: "/company/funded-projects" },
-      { label: "Payments", to: "/company/payments" },
+      { label: "Public Development Needs", to: "/public-development-needs" },
+      { label: "Convergence Projects", to: "/convergence-projects" },
+      { label: "Grievances", to: "/grievances" },
+      { label: "Track Status", to: "/track" },
       { label: "Reports", to: "/company/reports" },
     ],
   },
@@ -79,12 +167,26 @@ interface GovPortalLayoutProps {
 
 export default function GovPortalLayout({ children, userRole, showSidebar }: GovPortalLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const getDefaultRoleFromPath = (path: string): string => {
     if (path.startsWith("/admin")) return "SUPER_ADMIN";
+    if (path.startsWith("/rm")) return "CSR_RELATIONSHIP_MANAGER";
+    if (path.startsWith("/js")) return "JOINT_SECRETARY";
+    if (path.startsWith("/secretary")) return "PLANNING_SECRETARY";
+    if (path.startsWith("/nodal")) return "DISTRICT_NODAL_OFFICER";
+    if (path.startsWith("/state-cell")) return "STATE_CSR_CELL";
+    if (path.startsWith("/agency")) return "IMPLEMENTING_AGENCY_USER";
+    if (path.startsWith("/partner")) return "CORPORATE_USER";
     if (path.startsWith("/dashboard") || path.startsWith("/ngo-dashboard") || path.startsWith("/onboarding")) return "NGO_ADMIN";
     if (path.startsWith("/company-dashboard") || path.startsWith("/company")) return "COMPANY_ADMIN";
     if (path.startsWith("/department")) return "BENEFICIARY_AGENCY";
+    // Shared routes — read role from localStorage, default to PUBLIC
+    if (path.startsWith("/grievances") || path.startsWith("/convergence-projects") || path.startsWith("/projects")) {
+      if (typeof window !== "undefined") {
+        try { const u = JSON.parse(localStorage.getItem("user") || "{}"); if (u.role) return u.role; } catch { /* ignore */ }
+      }
+    }
     return "PUBLIC";
   };
 
@@ -113,22 +215,28 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
   }, [userRole]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const user = localStorage.getItem("user");
-      if (user) {
-        try {
-          const userData = JSON.parse(user);
-          if (userData.email) {
-            setUserEmail(userData.email);
-            const initials = userData.name 
-              ? userData.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
-              : userData.email.substring(0, 2).toUpperCase();
-            setUserInitials(initials || "U");
-          }
-        } catch (e) {
-          console.error("Error parsing user data", e);
-        }
+    if (typeof window === "undefined") return;
+
+    const user = localStorage.getItem("user");
+    if (!user) return;
+
+    try {
+      const userData = JSON.parse(user);
+      if (userData.email) {
+        setUserEmail(userData.email);
       }
+
+      const displayName = userData.name || userData.email || "";
+      const initials = displayName.includes(" ")
+        ? displayName
+            .split(" ")
+            .map((part: string) => part[0])
+            .join("")
+        : displayName.substring(0, 2);
+
+      setUserInitials(initials.toUpperCase() || "U");
+    } catch (e) {
+      console.error("Error parsing user data", e);
     }
   }, []);
 
@@ -136,13 +244,27 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
   const isNgoRole = ["NGO_ADMIN", "NGO_MEMBER"].includes(role);
   const isCompanyRole = ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role);
   const isDepartmentRole = role === "BENEFICIARY_AGENCY";
-  const isPublic = role === "PUBLIC" || (!isAdminRole && !isNgoRole && !isCompanyRole && !isDepartmentRole);
-
-  if (!isPublic) {
-    return <>{children}</>;
-  }
+  const isRMRole = role === "CSR_RELATIONSHIP_MANAGER";
+  const isJSRole = role === "JOINT_SECRETARY";
+  const isSecretaryRole = role === "PLANNING_SECRETARY";
+  const isNodalRole = role === "DISTRICT_NODAL_OFFICER" || role === "NODAL_OFFICER";
+  const isCorporatePartnerRole = role === "CORPORATE_USER" || role === "CORPORATE_PARTNER";
+  const isStateCellRole = role === "STATE_CSR_CELL";
+  const isIARole = role === "IMPLEMENTING_AGENCY_USER";
+  const isGovOfficerRole = role === "GOVERNMENT_OFFICER";
+  const isPublic = role === "PUBLIC" || (!isAdminRole && !isNgoRole && !isCompanyRole && !isDepartmentRole && !isRMRole && !isJSRole && !isSecretaryRole && !isNodalRole && !isCorporatePartnerRole && !isStateCellRole && !isIARole && !isGovOfficerRole);
 
   const shouldShowSidebar = showSidebar ?? !isPublic;
+  const roleLabel = role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      clearApiCache();
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+    }
+    router.push("/login");
+  };
 
   // Filter nav groups based on user role
   const filteredNavGroups = navGroups.filter((group) => {
@@ -152,135 +274,29 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
 
   return (
     <div className="gov-page">
-      {/* Top Strip */}
-      <div className="gov-top-strip">
-        <div className="gov-container gov-top-strip-inner">
-          <div>Maharashtra CSR Facilitation & Monitoring Portal</div>
-          <div className="gov-accessibility">
-            <button type="button" title="Skip to main content">Skip to main</button>
-            <button type="button" title="Screen reader access">Screen Reader</button>
-            <button type="button" title="Decrease font size">A-</button>
-            <button type="button" title="Normal font size">A</button>
-            <button type="button" title="Increase font size">A+</button>
-            <button type="button" title="Switch to Hindi">Hindi</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Header */}
-      <header className="gov-header">
-        <div className="gov-container gov-header-inner">
-          <Link href="/" className="gov-brand" style={{ textDecoration: "none", color: "inherit" }}>
-            <div className="gov-emblem">IND</div>
-            <div>
-              <h1 className="gov-brand-title">CSR Facilitation & Monitoring Portal</h1>
-              <p className="gov-brand-subtitle">
-                Corporate Social Responsibility | NGO Verification | Project Monitoring
-              </p>
-            </div>
+      {shouldShowSidebar && (
+        <header className="gov-auth-header">
+          <Link href="/" className="gov-auth-brand" aria-label="MahaCSR home">
+            <span className="gov-auth-emblem" aria-hidden="true">IND</span>
+            <span>
+              <span className="gov-auth-title">MahaCSR Portal</span>
+              <span className="gov-auth-subtitle">Government of Maharashtra</span>
+            </span>
           </Link>
 
-          <div className="gov-accessibility">
-            <div style={{ textAlign: "right", fontSize: 13 }}>
-              <div>Helpdesk: 1800-123-4567</div>
-              <div style={{ opacity: 0.8 }}>Last login: {new Date().toLocaleDateString()}</div>
+          <div className="gov-auth-actions">
+            <div className="gov-auth-role">
+              <span>{roleLabel}</span>
+              <small>{userEmail}</small>
             </div>
-            
-            {/* User Dropdown */}
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={() => {
-                  const dropdown = document.getElementById("user-dropdown");
-                  if (dropdown) {
-                    dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
-                  }
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: "linear-gradient(135deg, #12325a, #d97706)",
-                  color: "white",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  fontSize: 14,
-                }}
-              >
-                {userInitials}
-              </button>
-              
-              <div
-                id="user-dropdown"
-                style={{
-                  display: "none",
-                  position: "absolute",
-                  right: 0,
-                  marginTop: 8,
-                  width: 200,
-                  background: "white",
-                  border: "1px solid var(--gov-border)",
-                  borderRadius: "var(--gov-radius)",
-                  boxShadow: "var(--gov-shadow)",
-                  zIndex: 1000,
-                }}
-              >
-                <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--gov-border)" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-text)" }}>User Account</div>
-                  <div style={{ fontSize: 10, color: "var(--gov-text-muted)", marginTop: 2 }}>{userEmail}</div>
-                </div>
-                
-                <a
-                  href="/profile"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    color: "var(--gov-text)",
-                    textDecoration: "none",
-                    borderBottom: "1px solid var(--gov-border)",
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = "#f8fafc"}
-                  onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
-                >
-                  <span aria-hidden="true">AC</span>
-                  <span>Account</span>
-                </a>
-                
-                <button
-                  onClick={() => {
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("user");
-                    window.location.href = "/login";
-                  }}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "10px 16px",
-                    fontSize: 13,
-                    color: "#b91c1c",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.background = "#fee2e2"}
-                  onMouseOut={(e) => e.currentTarget.style.background = "transparent"}
-                >
-                  <span aria-hidden="true">LO</span>
-                  <span>Log Out</span>
-                </button>
-              </div>
-            </div>
+            <div className="gov-auth-avatar" aria-hidden="true">{userInitials}</div>
+            <button type="button" className="gov-auth-logout" onClick={handleLogout}>
+              Log Out
+            </button>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      {/* Main Layout */}
       <div className={shouldShowSidebar ? "gov-layout" : "gov-layout gov-layout-no-sidebar"}>
         {/* Sidebar Navigation */}
         {shouldShowSidebar && (

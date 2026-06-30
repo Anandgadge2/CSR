@@ -12,15 +12,15 @@ import { applyCorsHeaders, corsOriginDelegate } from "./config/cors";
 dotenv.config();
 assertProductionEnv();
 
-// Routes
+// LEGACY NGO MARKETPLACE FLOW DISABLED FOR MAHA CSR CONVERGENCE MODEL
+// Feature flag to control legacy routes - set to true to re-enable legacy NGO marketplace
+const ENABLE_LEGACY_NGO_MARKETPLACE = process.env.ENABLE_LEGACY_NGO_MARKETPLACE === "true";
+
+// Routes - CORE (always enabled)
 import authRoutes from "./routes/authRoutes";
-import ngoRoutes from "./routes/ngoRoutes";
 import companyRoutes from "./routes/companyRoutes";
-import projectRoutes from "./routes/projectRoutes";
-import matchingRoutes from "./routes/matchingRoutes";
 import analyticsRoutes from "./routes/analyticsRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
-import chatRoutes from "./routes/chatRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import auditRoutes from "./routes/auditRoutes";
 import documentRoutes from "./routes/documentRoutes";
@@ -29,22 +29,42 @@ import adminRoutes from "./routes/adminRoutes";
 import masterRoutes from "./routes/masterRoutes";
 import organizationRoutes from "./routes/organizationRoutes";
 import platformRoutes from "./routes/platformRoutes";
-import onboardingRoutes from "./routes/onboardingRoutes";
-import csrRequirementRoutes from "./routes/csrRequirementRoutes";
-import ngoApplicationRoutes from "./routes/ngoApplicationRoutes";
-import companyInterestRoutes from "./routes/companyInterestRoutes";
-import agreementRoutes from "./routes/agreementRoutes";
-import csrFundRoutes from "./routes/csrFundRoutes";
-import progressRoutes from "./routes/progressRoutes";
-import completionRoutes from "./routes/completionRoutes";
-import csrDashboardRoutes from "./routes/csrDashboardRoutes";
 import governmentDepartmentRoutes from "./routes/governmentDepartmentRoutes";
-import marketplaceRoutes from "./routes/marketplaceRoutes";
 import publicRoutes from "./routes/publicRoutes";
 import districtRoutes from "./routes/districtRoutes";
 import companyPortalRoutes from "./routes/companyPortalRoutes";
-import ngoPortalRoutes from "./routes/ngoPortalRoutes";
 import csrLifecycleRoutes from "./routes/csrLifecycleRoutes";
+import otpRoutes from "./routes/otpRoutes";
+import trackingRoutes from "./routes/trackingRoutes";
+
+// LEGACY NGO MARKETPLACE ROUTES - Commented out for MahaCSR Convergence Framework
+// These routes are disabled as per the Maharashtra CSR Portal framework
+// which replaces NGO-marketplace matchmaking with State-led, District-executed convergence
+// import ngoRoutes from "./routes/ngoRoutes"; // LEGACY: NGO marketplace browsing
+// import projectRoutes from "./routes/projectRoutes"; // LEGACY: NGO project marketplace
+// import matchingRoutes from "./routes/matchingRoutes"; // LEGACY: NGO-company matching
+// import chatRoutes from "./routes/chatRoutes"; // LEGACY: NGO-company direct chat (replaced by structured interactions)
+// import onboardingRoutes from "./routes/onboardingRoutes"; // LEGACY: NGO onboarding flow
+// import ngoApplicationRoutes from "./routes/ngoApplicationRoutes"; // LEGACY: NGO application
+// import ngoPortalRoutes from "./routes/ngoPortalRoutes"; // LEGACY: NGO portal
+// import marketplaceRoutes from "./routes/marketplaceRoutes"; // LEGACY: Marketplace - replaced by Public Development Needs
+// import csrRequirementRoutes from "./routes/csrRequirementRoutes"; // LEGACY: Replaced by GovernmentPitch
+// import companyInterestRoutes from "./routes/companyInterestRoutes"; // LEGACY: Replaced by CorporatePitchInterest
+// import agreementRoutes from "./routes/agreementRoutes"; // LEGACY: Replaced by StandardMou
+// import csrFundRoutes from "./routes/csrFundRoutes"; // LEGACY: Replaced by ConvergenceProject financials
+// import progressRoutes from "./routes/progressRoutes"; // LEGACY: Replaced by ProjectDeliverableMilestone
+// import completionRoutes from "./routes/completionRoutes"; // LEGACY: Replaced by ConvergenceProject completion
+// import csrDashboardRoutes from "./routes/csrDashboardRoutes"; // LEGACY: Replaced by role-specific dashboards
+
+// MAHA CSR CONVERGENCE FRAMEWORK - New Routes
+import corporateEnquiryRoutes from "./routes/corporateEnquiryRoutes";
+import relationshipManagerRoutes from "./routes/relationshipManagerRoutes";
+import feasibilityAssessmentRoutes from "./routes/feasibilityAssessmentRoutes";
+import governmentPitchRoutes from "./routes/governmentPitchRoutes";
+import nodalOfficerRoutes from "./routes/nodalOfficerRoutes";
+import convergenceProjectRoutes from "./routes/convergenceProjectRoutes";
+import grievanceRoutes from "./routes/grievanceRoutes";
+import jsRoutes from "./routes/jsRoutes";
 
 // Middlewares
 import { errorHandler } from "./middlewares/errorMiddleware";
@@ -84,15 +104,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// API Routes
+// ============================================
+// API Routes - MahaCSR Convergence Framework
+// ============================================
+
+// Core Routes (always active)
 app.use("/api/auth", authRoutes);
-app.use("/api/ngos", ngoRoutes);
 app.use("/api/companies", companyRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/matching", matchingRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/upload", uploadRoutes);
-app.use("/api/chats", chatRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/audit-logs", auditRoutes);
 app.use("/api/documents", documentRoutes);
@@ -101,23 +121,48 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/master", masterRoutes);
 app.use("/api/org", organizationRoutes);
 app.use("/api/platform", platformRoutes);
-app.use("/api/onboarding", onboardingRoutes);
-app.use("/api/csr-requirements", csrRequirementRoutes);
-app.use("/api/requirements", csrRequirementRoutes);
 app.use("/api/government-departments", governmentDepartmentRoutes);
-app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/district", districtRoutes);
 app.use("/api/company", companyPortalRoutes);
-app.use("/api/ngo", ngoPortalRoutes);
 app.use("/api", csrLifecycleRoutes);
-app.use("/api/ngo-applications", ngoApplicationRoutes);
-app.use("/api/company-interests", companyInterestRoutes);
-app.use("/api/agreements", agreementRoutes);
-app.use("/api/csr-funds", csrFundRoutes);
-app.use("/api/progress-reports", progressRoutes);
-app.use("/api/completions", completionRoutes);
-app.use("/api/csr-dashboard", csrDashboardRoutes);
+app.use("/api/otp", otpRoutes);
+app.use("/api/tracking", trackingRoutes);
+
+// MAHA CSR CONVERGENCE FRAMEWORK - New Routes
+app.use("/api/corporate-enquiries", corporateEnquiryRoutes);
+app.use("/api/rm", relationshipManagerRoutes);
+app.use("/api/feasibility", feasibilityAssessmentRoutes);
+app.use("/api/government-pitches", governmentPitchRoutes);
+app.use("/api/nodal", nodalOfficerRoutes);
+app.use("/api/convergence-projects", convergenceProjectRoutes);
+app.use("/api/grievances", grievanceRoutes);
+app.use("/api/js", jsRoutes);
+
+// LEGACY NGO MARKETPLACE ROUTES - DISABLED FOR MAHA CSR CONVERGENCE MODEL
+// These routes are commented out as per the Maharashtra CSR Portal framework
+// which replaces NGO-marketplace matchmaking with State-led, District-executed convergence
+// To re-enable, set ENABLE_LEGACY_NGO_MARKETPLACE=true in environment
+if (ENABLE_LEGACY_NGO_MARKETPLACE) {
+  // LEGACY: Import and use legacy routes only if explicitly enabled
+  // app.use("/api/ngos", ngoRoutes);
+  // app.use("/api/projects", projectRoutes);
+  // app.use("/api/matching", matchingRoutes);
+  // app.use("/api/chats", chatRoutes);
+  // app.use("/api/onboarding", onboardingRoutes);
+  // app.use("/api/csr-requirements", csrRequirementRoutes);
+  // app.use("/api/requirements", csrRequirementRoutes);
+  // app.use("/api/marketplace", marketplaceRoutes);
+  // app.use("/api/ngo", ngoPortalRoutes);
+  // app.use("/api/ngo-applications", ngoApplicationRoutes);
+  // app.use("/api/company-interests", companyInterestRoutes);
+  // app.use("/api/agreements", agreementRoutes);
+  // app.use("/api/csr-funds", csrFundRoutes);
+  // app.use("/api/progress-reports", progressRoutes);
+  // app.use("/api/completions", completionRoutes);
+  // app.use("/api/csr-dashboard", csrDashboardRoutes);
+}
+// Note: Legacy NGO marketplace flow disabled by default per MahaCSR Convergence Framework
 
 // Base route
 app.get("/", (req, res) => {
@@ -133,11 +178,17 @@ app.get("/health", (req, res) => {
 app.use(errorHandler);
 
 // Socket.io initialization
+// LEGACY: Chat socket disabled for MahaCSR Convergence Framework
+// Real-time communication replaced by structured interaction logs
 const io = new Server(server, {
   cors: corsOptions
 });
 
-registerChatSocket(io);
+// registerChatSocket(io); // LEGACY NGO MARKETPLACE FLOW DISABLED
+// TODO: Implement notification socket for status updates instead
+// if (ENABLE_LEGACY_NGO_MARKETPLACE) {
+//   registerChatSocket(io);
+// }
 
 // Server startup
 const PORT = process.env.PORT || 5000;

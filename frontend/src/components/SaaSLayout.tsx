@@ -34,6 +34,24 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
   const isLoggedIn = mounted && typeof window !== "undefined" && !!localStorage.getItem("accessToken");
 
+  const usesGovPortalShell =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/rm") ||
+    pathname.startsWith("/js") ||
+    pathname.startsWith("/secretary") ||
+    pathname.startsWith("/nodal") ||
+    pathname.startsWith("/state-cell") ||
+    pathname.startsWith("/agency") ||
+    pathname === "/partner" ||
+    pathname.startsWith("/partner/") ||
+    pathname.startsWith("/grievances") ||
+    pathname.startsWith("/convergence-projects") ||
+    pathname.startsWith("/projects") ||
+    pathname.startsWith("/pitch-development-need") ||
+    pathname.startsWith("/track");
+
   const isDashboard = pathname.startsWith("/ngo-dashboard") || 
                       pathname.startsWith("/company-dashboard") || 
                       pathname.startsWith("/government-portal") ||
@@ -68,54 +86,79 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   }, [pathname]);
 
   useEffect(() => {
-    if (!isDashboard) return;
+    if (!mounted) return;
 
     const token = localStorage.getItem("accessToken");
     const user = getStoredUser();
 
-    if (!token || !user) {
-      router.push(`/login?next=${encodeURIComponent(pathname)}`);
-      return;
+    const isPublicRoute = 
+      pathname === "/" ||
+      pathname === "/login" ||
+      pathname === "/register" ||
+      pathname === "/about" ||
+      pathname === "/partner-with-maharashtra" ||
+      pathname === "/public-development-needs" ||
+      pathname === "/workflow" ||
+      pathname === "/knowledge" ||
+      pathname === "/marketplace" ||
+      pathname.startsWith("/circulars") ||
+      pathname === "/news" ||
+      pathname === "/contact" ||
+      pathname === "/csr-policy" ||
+      pathname === "/convergence" ||
+      pathname === "/resources" ||
+      pathname === "/reports" ||
+      pathname === "/help";
+
+    // 1. Enforce login for non-public routes
+    if (!isPublicRoute) {
+      if (!token || !user) {
+        router.push(`/login?next=${encodeURIComponent(pathname)}`);
+        return;
+      }
     }
 
-    setUserEmail(user.email || "user@mahacsr.gov.in");
+    // 2. Enforce roles permissions for dashboard routes
+    if (token && user && isDashboard) {
+      setUserEmail(user.email || "user@mahacsr.gov.in");
 
-    const role = user.role as string;
-    const allowed =
-      (pathname.startsWith("/ngo-dashboard") && ["NGO_ADMIN", "NGO_MEMBER"].includes(role)) ||
-      (pathname.startsWith("/company-dashboard") && ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) ||
-      (pathname.startsWith("/government-portal") && ["MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "DISTRICT_ADMIN"].includes(role)) ||
-      ((pathname === "/company" || pathname.startsWith("/company/")) && ["MASTER_ADMIN", "COMPANY_ADMIN", "COMPANY_MEMBER", "SUPER_ADMIN"].includes(role)) ||
-      ((pathname === "/ngo" || pathname.startsWith("/ngo/")) && ["MASTER_ADMIN", "NGO_ADMIN", "NGO_MEMBER", "SUPER_ADMIN"].includes(role)) ||
-      (pathname.startsWith("/district") && ["MASTER_ADMIN", "DISTRICT_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
-      (pathname.startsWith("/organization") && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"].includes(role)) ||
-      (pathname.startsWith("/master") && role === "MASTER_ADMIN") ||
-      (pathname.startsWith("/admin") && ["MASTER_ADMIN", "SUPER_ADMIN", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
-      ((pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "SUPER_ADMIN"].includes(role)) ||
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/onboarding") ||
-      pathname.startsWith("/queries") ||
-      pathname.startsWith("/csr-projects") ||
-      pathname.startsWith("/payments") ||
-      pathname.startsWith("/fund-releases") ||
-      pathname.startsWith("/reports") ||
-      pathname.startsWith("/audit-logs") ||
-      pathname.startsWith("/profile") ||
-      pathname.startsWith("/settings") ||
-      pathname.startsWith("/chat") ||
-      pathname.startsWith("/analytics");
+      const role = user.role as string;
+      const allowed =
+        (pathname.startsWith("/ngo-dashboard") && ["NGO_ADMIN", "NGO_MEMBER"].includes(role)) ||
+        (pathname.startsWith("/company-dashboard") && ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) ||
+        (pathname.startsWith("/government-portal") && ["MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "DISTRICT_ADMIN"].includes(role)) ||
+        ((pathname === "/company" || pathname.startsWith("/company/")) && ["MASTER_ADMIN", "COMPANY_ADMIN", "COMPANY_MEMBER", "SUPER_ADMIN"].includes(role)) ||
+        ((pathname === "/ngo" || pathname.startsWith("/ngo/")) && ["MASTER_ADMIN", "NGO_ADMIN", "NGO_MEMBER", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/district") && ["MASTER_ADMIN", "DISTRICT_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/organization") && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/master") && role === "MASTER_ADMIN") ||
+        (pathname.startsWith("/admin") && ["MASTER_ADMIN", "SUPER_ADMIN", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
+        ((pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "SUPER_ADMIN"].includes(role)) ||
+        pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/onboarding") ||
+        pathname.startsWith("/queries") ||
+        pathname.startsWith("/csr-projects") ||
+        pathname.startsWith("/payments") ||
+        pathname.startsWith("/fund-releases") ||
+        pathname.startsWith("/reports") ||
+        pathname.startsWith("/audit-logs") ||
+        pathname.startsWith("/profile") ||
+        pathname.startsWith("/settings") ||
+        pathname.startsWith("/chat") ||
+        pathname.startsWith("/analytics");
 
-    if (!allowed) {
-      if (role === "MASTER_ADMIN") router.push("/master/dashboard");
-      else if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) router.push("/ngo/dashboard");
-      else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) router.push("/company/dashboard");
-      else if (role === "SUPER_ADMIN") router.push("/admin");
-      else if (role === "DISTRICT_ADMIN") router.push("/district/dashboard");
-      else if (role === "PORTAL_ADMIN") router.push("/government-portal");
-      else if (role === "BENEFICIARY_AGENCY") router.push("/department/dashboard");
-      else router.push("/");
+      if (!allowed) {
+        if (role === "MASTER_ADMIN") router.push("/master/dashboard");
+        else if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) router.push("/ngo/dashboard");
+        else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) router.push("/company/dashboard");
+        else if (role === "SUPER_ADMIN") router.push("/admin");
+        else if (role === "DISTRICT_ADMIN") router.push("/district/dashboard");
+        else if (role === "PORTAL_ADMIN") router.push("/government-portal");
+        else if (role === "BENEFICIARY_AGENCY") router.push("/department/dashboard");
+        else router.push("/");
+      }
     }
-  }, [isDashboard, pathname, router]);
+  }, [mounted, isDashboard, pathname, router]);
 
   useEffect(() => {
     if (!isDashboard) return;
@@ -368,6 +411,10 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     </div>
   ) : children;
 
+  if (usesGovPortalShell && isLoggedIn) {
+    return <>{children}</>;
+  }
+
   if (isDashboard && !mounted) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f6f8fb]">
@@ -382,75 +429,55 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
       {isDashboard && <div className="fixed top-0 left-0 right-0 h-1 z-[60] bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />}
 
-      <header
-        className={
-          isDashboard
-            ? "fixed top-1 left-0 right-0 h-[68px] z-50 bg-white border-b border-gov-line flex justify-between items-center px-6 md:px-10 shadow-sm"
-            : "sticky top-0 z-50 border-b border-[#d8e2ef] bg-white shadow-sm"
-        }
-      >
-        <div className={isDashboard ? "contents" : "mx-auto flex h-[80px] max-w-[1380px] items-center justify-between gap-3 px-4 sm:px-6 md:px-8"}>
-        {/* Brand Logo */}
-        <div className="flex items-center gap-4">
-          <button 
-            className="lg:hidden text-slate-500 hover:text-slate-700 focus:outline-none"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Toggle Navigation Menu"
-          >
-            <Menu size={20} />
-          </button>
-          
-          <Link href="/" className="flex min-w-0 items-center gap-3 hover:no-underline">
-            <svg viewBox="0 0 100 100" className={isDashboard ? "w-9 h-9" : "h-10 w-10 sm:h-12 sm:w-12"} fill="none" stroke="currentColor">
-              <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="#1e3a8a" strokeWidth="4.5" fill="#eff6ff" />
-              <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
-              <path d="M42,80 L58,80" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" />
-            </svg>
-            <div className="flex min-w-0 flex-col leading-none">
-              <span className={isDashboard ? "font-heading font-extrabold text-lg tracking-tight text-[#1e3a8a]" : "font-heading text-[22px] font-extrabold tracking-tight text-[#1e3a8a] sm:text-[28px]"}>
-                Maha<span className="text-[#f97316]">CSR</span>
-              </span>
-              <span className={isDashboard ? "text-[8px] text-gray-500 tracking-wider font-extrabold mt-0.5 uppercase" : "mt-1 hidden text-[11px] font-semibold leading-4 text-[#607086] min-[380px]:block"}>
-                {isDashboard ? "Government of Maharashtra" : "Corporate Social Responsibility Portal"}
-                {!isDashboard && <span className="block">Government of Maharashtra</span>}
-              </span>
+      {isDashboard ? (
+        <header
+          className="fixed top-1 left-0 right-0 h-[68px] z-50 bg-white border-b border-gov-line flex justify-between items-center px-6 md:px-10 shadow-sm"
+        >
+          <div className="contents">
+            {/* Brand Logo */}
+            <div className="flex items-center gap-4">
+              <button 
+                className="lg:hidden text-slate-500 hover:text-slate-700 focus:outline-none"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Toggle Navigation Menu"
+              >
+                <Menu size={20} />
+              </button>
+              
+              <Link href="/" className="flex min-w-0 items-center gap-3 hover:no-underline">
+                <svg viewBox="0 0 100 100" className="w-9 h-9" fill="none" stroke="currentColor">
+                  <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="#1e3a8a" strokeWidth="4.5" fill="#eff6ff" />
+                  <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
+                  <path d="M42,80 L58,80" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+                <div className="flex min-w-0 flex-col leading-none">
+                  <span className="font-heading font-extrabold text-lg tracking-tight text-[#1e3a8a]">
+                    Maha<span className="text-[#f97316]">CSR</span> Setu
+                  </span>
+                  <span className="text-[8px] text-gray-500 tracking-wider font-extrabold mt-0.5 uppercase">
+                    Government of Maharashtra | महाराष्ट्र शासन
+                  </span>
+                </div>
+              </Link>
             </div>
-          </Link>
-        </div>
 
-        {/* Public Navigation */}
-        {!isDashboard && (
-          <nav className="hidden items-center gap-4 text-xs font-extrabold text-[#283d5c] lg:flex xl:gap-6">
-            <Link href="/" className=" px-1 py-8 text-[#245ddc] hover:no-underline">Home</Link>
-            <Link href="/about" className="inline-flex items-center gap-1 py-8 hover:text-[#245ddc] hover:no-underline">About MahaCSR <ChevronDown size={13} /></Link>
-            <Link href="/marketplace" className="inline-flex items-center gap-1 py-8 hover:text-[#245ddc] hover:no-underline">Directories <ChevronDown size={13} /></Link>
-            <Link href="/knowledge" className="inline-flex items-center gap-1 py-8 hover:text-[#245ddc] hover:no-underline">Knowledge Center <ChevronDown size={13} /></Link>
-            {/* <Link href="/reports" className="inline-flex items-center gap-1 py-8 hover:text-[#245ddc] hover:no-underline">Reports & Data <ChevronDown size={13} /></Link> */}
-          </nav>
-        )}
-
-        {/* Dashboard Search */}
-        {isDashboard && (
-          <div className="hidden md:flex items-center gap-2 max-w-sm w-full relative">
-            <input 
-              type="text" 
-              placeholder="Search proposals, NGOs, or metrics..." 
-              className="govt-input pr-10 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all font-sans"
-              style={{ paddingLeft: "2.5rem" }}
-            />
-            <Search size={14} className="absolute left-3 text-slate-400" />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none text-[10px] font-extrabold text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md">
-              <span>Ctrl</span>
-              <span>K</span>
+            {/* Dashboard Search */}
+            <div className="hidden md:flex items-center gap-2 max-w-sm w-full relative">
+              <input 
+                type="text" 
+                placeholder="Search proposals, NGOs, or metrics..." 
+                className="govt-input pr-10 focus:ring-2 focus:ring-[#1e3a8a] focus:border-[#1e3a8a] transition-all font-sans"
+                style={{ paddingLeft: "2.5rem" }}
+              />
+              <Search size={14} className="absolute left-3 text-slate-400" />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none text-[10px] font-extrabold text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded-md">
+                <span>Ctrl</span>
+                <span>K</span>
+              </div>
             </div>
-          </div>
-        )}
 
-
-        {/* Right Actions */}
-        <div className="flex items-center gap-4">
-          {isDashboard ? (
-            <>
+            {/* Right Actions */}
+            <div className="flex items-center gap-4">
               {/* Messages */}
               <Link href="/chat" className="text-slate-400 hover:text-[#1e3a8a] transition-colors relative">
                 <Mail size={18} />
@@ -537,21 +564,136 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   </div>
                 )}
               </div>
-            </>
-          ) : (
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <Link href="/login" className="inline-flex min-h-10 items-center rounded-md border border-[#245ddc] px-4 text-xs font-extrabold text-[#1e3a8a] hover:bg-blue-50 hover:no-underline sm:px-5">
-                Login
-              </Link>
-              <Link href="/register" className="hidden min-h-10 items-center rounded-md bg-[#062a5d] px-5 text-xs font-extrabold text-white shadow-sm hover:bg-[#0b3a78] hover:no-underline sm:inline-flex">
-                Register
-              </Link>
             </div>
-          )}
+          </div>
+        </header>
+      ) : (
+        <header className="sticky top-0 z-50 border-b border-[#d8e2ef] bg-white shadow-sm flex flex-col w-full">
+          {/* Tier 1: Top Bar (White) */}
+          <div className="bg-white border-b border-[#e2e8f0] h-[76px] sm:h-[84px] flex items-center justify-between px-4 sm:px-6 md:px-8 max-w-[1380px] w-full mx-auto">
+            {/* Left Block: Government Seal & MahaCSR Setu Brand */}
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              {/* Gov Seal Logo */}
+              <Link href="/" className="flex items-center gap-2 hover:no-underline shrink-0">
+                <img 
+                  src="/maharashtra_seal.png" 
+                  alt="Government of Maharashtra Seal" 
+                  className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
+                />
+                <div className="flex flex-col text-[11px] sm:text-xs font-bold leading-tight text-slate-800 tracking-tight">
+                  <span>Government of Maharashtra</span>
+                  <span className="text-slate-500">महाराष्ट्र शासन</span>
+                </div>
+              </Link>
 
-        </div>
-        </div>
-      </header>
+              {/* Vertical Divider */}
+              <div className="hidden min-[480px]:block h-8 w-[1px] bg-slate-300 shrink-0" />
+
+              {/* Brand Logo */}
+              <Link href="/" className="hidden min-h-0 min-[480px]:flex flex-col leading-none hover:no-underline shrink-0">
+                <span className="font-heading font-black text-lg sm:text-[22px] tracking-tight text-[#12325a]">
+                  Maha<span className="text-[#f97316]">CSR</span> Setu
+                </span>
+                <span className="text-[10px] font-bold text-[#d97706] tracking-wider mt-0.5">
+                  महाराष्ट्र CSR सेतु
+                </span>
+              </Link>
+
+              {/* Vertical Divider */}
+              <div className="hidden lg:block h-8 w-[1px] bg-slate-300 shrink-0" />
+
+              {/* Subtitle taglines */}
+              <div className="hidden lg:flex flex-col text-[11px] leading-tight font-extrabold text-slate-500 shrink-0">
+                <span className="text-[#12325a]">Converging Initiatives.</span>
+                <span className="text-[#d97706]">Transforming Maharashtra.</span>
+              </div>
+            </div>
+
+            {/* Right Block: Accessibility, Language, and Auth Actions */}
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+             
+
+             
+
+              {/* Login & Register buttons */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Link href="/login" className="inline-flex min-h-10 items-center justify-center rounded-md border border-[#12325a]/25 px-4 text-xs font-extrabold text-[#12325a] hover:bg-slate-50 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50">
+                  Login
+                </Link>
+                <Link href="/register" className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#008080] px-4 sm:px-5 text-xs font-extrabold text-white shadow-sm hover:bg-[#0d9488] hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50">
+                  Register
+                </Link>
+              </div>
+
+              {/* Mobile Hamburger menu */}
+              <button 
+                className="lg:hidden text-slate-500 hover:text-slate-700 focus:outline-none"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Toggle Navigation Menu"
+              >
+                <Menu size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Tier 2: Navigation Bar (Deep Navy Blue) */}
+          <div className="bg-[#12325a] h-[48px] w-full shadow-sm flex items-center justify-between px-4 sm:px-6 md:px-8">
+            <div className="max-w-[1380px] w-full mx-auto flex items-center justify-between h-full">
+              {/* Left side: Home button and Menu links */}
+              <div className="flex items-center h-full">
+                {/* Home Icon button */}
+                <Link 
+                  href="/" 
+                  className="bg-white/10 hover:bg-white/20 h-[48px] w-[54px] flex items-center justify-center border-r border-white/10 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50"
+                  aria-label="Home"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                  </svg>
+                </Link>
+
+                {/* Menu links */}
+                <nav className="hidden lg:flex items-center h-full text-xs font-bold text-white/95">
+                  {[
+                    { label: "About Us", href: "/about" },
+                    { label: "Partner with Maharashtra", href: "/partner-with-maharashtra" },
+                    { label: "Directories", href: "/marketplace" },
+                    { label: "Projects", href: "/public-development-needs" },
+                    { label: "Knowledge Center", href: "/knowledge" },
+                    { label: "News & Events", href: "/news" },
+                    { label: "Contact Us", href: "/contact" },
+                  ].map((link) => {
+                    const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+                    return (
+                      <Link
+                        key={link.label}
+                        href={link.href}
+                        className={`px-4 h-[48px] flex items-center border-b-[3px] transition-all hover:bg-white/5 hover:no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-gov-saffron/50 ${
+                          isActive
+                            ? "border-[#FF9933] text-white font-extrabold bg-white/10"
+                            : "border-transparent text-white/90 hover:text-white"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Right side: Search bar */}
+              {/* <div className="relative max-w-[200px] sm:max-w-[240px] w-full flex items-center">
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  className="w-full h-8 bg-white/12 border border-white/25 rounded-md px-3 pr-8 text-xs text-black placeholder-black/60 focus:outline-none focus:bg-white focus:text-[#12325a] focus:placeholder-[#12325a]/60 transition-all focus-visible:ring-2 focus-visible:ring-gov-saffron/50"
+                />
+                <Search size={14} className="absolute right-2.5 text-white/70 pointer-events-none" />
+              </div> */}
+            </div>
+          </div>
+        </header>
+      )}
 
       {/* Main Workspace */}
       <div className={isDashboard ? "flex flex-1 pt-[72px]" : "flex flex-1"}>
@@ -713,7 +855,9 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   <h3 className="text-sm font-extrabold">Quick Links</h3>
                   <div className="mt-4 flex flex-col gap-3 text-sm text-blue-100">
                     <Link href="/about" className="text-blue-100 hover:text-white">About MahaCSR</Link>
-                    <Link href="/marketplace" className="text-blue-100 hover:text-white">Directories</Link>
+                    <Link href="/partner-with-maharashtra" className="text-blue-100 hover:text-white">Partner with Maharashtra</Link>
+                    <Link href="/public-development-needs" className="text-blue-100 hover:text-white">Public Development Needs</Link>
+                    <Link href="/workflow" className="text-blue-100 hover:text-white">Workflow</Link>
                     <Link href="/knowledge" className="text-blue-100 hover:text-white">Knowledge Center</Link>
                     {/* <Link href="/reports" className="text-blue-100 hover:text-white">Reports & Data</Link> */}
                     <Link href="/help" className="text-blue-100 hover:text-white">Helpdesk</Link>

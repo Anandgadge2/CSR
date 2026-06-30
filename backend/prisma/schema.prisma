@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "./generated-client2"
 }
 
 datasource db {
@@ -45,62 +46,85 @@ model User {
   beneficiaryProfile   BeneficiaryProfile?
   organizationRoles    UserOrganizationRole[]
 
+  // MAHA CSR CONVERGENCE FRAMEWORK - New Relations
+  rmEnquiries              CorporateEnquiry[]            @relation("RMEnquiries")
+  rmAssessments            FeasibilityAssessment[]       @relation("RMAssessments")
+  rmPitches                GovernmentPitch[]             @relation("RMPitches")
+  jsAssessments            FeasibilityAssessment[]       @relation("JSAssessments")
+  jsNodalAppointments      NodalOfficerAppointment[]     @relation("JSNodalAppointments")
+  nodalOfficerAppointments NodalOfficerAppointment[]     @relation("NodalOfficerAppointments")
+  nodalOfficerProjects     ConvergenceProject[]          @relation("NodalOfficerProjects")
+  iaProjects               ConvergenceProject[]          @relation("IaProjects")
+  enquiryInteractions      CorporateEnquiryInteraction[]
+  milestoneVerifications   ProjectDeliverableMilestone[] @relation("MilestoneVerifications")
+  ucUploads                UtilizationCertificate[]      @relation("UCUploads")
+  ucVerifications          UtilizationCertificate[]      @relation("UCVerifications")
+  ucVerificationsOld       UtilizationCertificate[]      @relation("UCVerificationsOld")
+  grievancesRaised         Grievance[]                   @relation("GrievancesRaised")
+  grievancesNodal          Grievance[]                   @relation("GrievancesNodal")
+  grievancesStateCell      Grievance[]                   @relation("GrievancesStateCell")
+  grievancesFinalAuthority Grievance[]                   @relation("GrievancesFinalAuthority")
+  grievanceActionLogs      GrievanceActionLog[]
+  slaResponsible           SLAEscalation[]               @relation("SLAResponsible")
+  slaEscalatedTo           SLAEscalation[]               @relation("SLAEscalatedTo")
+  nodalInspections         ConvergenceProjectInspection[]
+
   @@index([tenantId])
   @@index([organizationId])
 }
 
 model NGO {
-  id                    String                 @id @default(uuid())
-  tenantId              String?
-  organizationId        String?
-  name                  String
-  registrationNumber    String                 @unique
-  darpanNumber          String?
-  csr1Number            String?
-  pan                   String                 @unique
-  certificate12AUrl     String?
-  certificate80GUrl     String?
-  fcraDetails           String?
-  address               String
-  state                 String                 @default("Maharashtra")
-  district              String
-  taluka                String
-  village               String?
-  website               String?
-  socialLinks           Json?
-  impactStatistics      Json?
-  status                VerificationStatus     @default(PENDING)
-  empanelmentStatus     NGOEmpanelmentStatus   @default(PROFILE_INCOMPLETE)
-  empanelmentRemarks    String?
-  rejectionReason       String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  areasOfOperation      String[]
-  city                  String?
-  csrSectors            String[]
-  displayName           String?
-  officialEmail         String?
-  officialPhone         String?
-  organizationType      OrganizationType?
-  pincode               String?
-  registrationAuthority String?
-  registrationDate      DateTime?
-  yearEstablished       Int?
-  bankAccounts          BankAccount[]
-  chats                 Chat[]
-  documents             Document[]
-  governanceMembers     GovernanceMember[]
-  ngoContacts           NgoContact[]
-  ngoDocuments          NgoDocument[]
-  onboardingApplication OnboardingApplication?
-  projects              Project[]
-  reports               Report[]
-  riskScores            RiskScore[]
-  users                 User[]
-  ngoApplications       NGOApplication[]
-  csrProjects           CSRProject[]
-  csrFundReleases       CSRFundRelease[]
-  utilizationCertificates UtilizationCertificate[]
+  id                      String                   @id @default(uuid())
+  tenantId                String?
+  organizationId          String?
+  name                    String
+  registrationNumber      String                   @unique
+  darpanNumber            String?
+  csr1Number              String?
+  pan                     String                   @unique
+  certificate12AUrl       String?
+  certificate80GUrl       String?
+  fcraDetails             String?
+  address                 String
+  state                   String                   @default("Maharashtra")
+  district                String
+  taluka                  String
+  village                 String?
+  website                 String?
+  socialLinks             Json?
+  impactStatistics        Json?
+  status                  VerificationStatus       @default(PENDING)
+  empanelmentStatus       NGOEmpanelmentStatus     @default(PROFILE_INCOMPLETE)
+  empanelmentRemarks      String?
+  rejectionReason         String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  areasOfOperation        String[]
+  city                    String?
+  csrSectors              String[]
+  displayName             String?
+  officialEmail           String?
+  officialPhone           String?
+  organizationType        OrganizationType?
+  pincode                 String?
+  registrationAuthority   String?
+  registrationDate        DateTime?
+  yearEstablished         Int?
+  bankAccounts            BankAccount[]
+  chats                   Chat[]
+  documents               Document[]
+  governanceMembers       GovernanceMember[]
+  ngoContacts             NgoContact[]
+  ngoDocuments            NgoDocument[]
+  onboardingApplication   OnboardingApplication?
+  projects                Project[]
+  reports                 Report[]
+  riskScores              RiskScore[]
+  users                   User[]
+  ngoApplications         NGOApplication[]
+  csrProjects             CSRProject[]
+  csrFundReleases         CSRFundRelease[]
+  utilizationCertificates UtilizationCertificate[] @relation("NgoUC")
 
   @@index([tenantId])
   @@index([organizationId])
@@ -227,23 +251,23 @@ model Message {
 }
 
 model Document {
-  id         String    @id @default(uuid())
-  tenantId   String?
+  id             String    @id @default(uuid())
+  tenantId       String?
   organizationId String?
-  title      String
-  fileUrl    String
-  fileType   String
-  expiryDate DateTime?
-  ngoId      String?
-  companyId  String?
-  projectId  String?
-  chatId     String?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  chat       Chat?     @relation(fields: [chatId], references: [id])
-  company    Company?  @relation(fields: [companyId], references: [id])
-  ngo        NGO?      @relation(fields: [ngoId], references: [id])
-  project    Project?  @relation(fields: [projectId], references: [id])
+  title          String
+  fileUrl        String
+  fileType       String
+  expiryDate     DateTime?
+  ngoId          String?
+  companyId      String?
+  projectId      String?
+  chatId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  chat           Chat?     @relation(fields: [chatId], references: [id])
+  company        Company?  @relation(fields: [companyId], references: [id])
+  ngo            NGO?      @relation(fields: [ngoId], references: [id])
+  project        Project?  @relation(fields: [projectId], references: [id])
 
   @@index([tenantId])
   @@index([organizationId])
@@ -445,19 +469,19 @@ model VerificationCheck {
 }
 
 model Tenant {
-  id             String       @id @default(uuid())
+  id             String             @id @default(uuid())
   name           String
-  code           String       @unique
+  code           String             @unique
   state          String
-  status         TenantStatus @default(ACTIVE)
+  status         TenantStatus       @default(ACTIVE)
   domain         String?
   logo           String?
   primaryColor   String?
   secondaryColor String?
-  isHidden       Boolean      @default(false)
+  isHidden       Boolean            @default(false)
   configJson     Json?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
   features       TenantFeature[]
   organizations  Organization[]
   roles          OrganizationRole[]
@@ -481,53 +505,53 @@ model TenantFeature {
 }
 
 model Organization {
-  id                   String                       @id @default(uuid())
-  tenantId             String
-  organizationType     OrganizationKind
-  name                 String
-  legalName            String?
-  displayName          String?
-  registrationNumber   String?
-  cin                  String?
-  llpin                String?
-  pan                  String?
-  gst                  String?
-  gstin                String?
-  departmentCode       String?
-  parentDepartment     String?
-  email                String?
-  officialEmail        String?
-  phone                String?
-  officialPhone        String?
-  website              String?
-  address              String?
-  stateId              String?
-  districtId           String?
-  talukaId             String?
-  villageId            String?
-  district             String?
-  taluka               String?
-  onboardingStatus     OrganizationOnboardingStatus @default(REGISTERED)
-  verificationStatus   DocumentVerificationStatus    @default(UPLOADED)
-  status               OrganizationStatus           @default(ACTIVE)
-  approvedBy           String?
-  approvedAt           DateTime?
-  rejectedBy           String?
-  rejectedAt           DateTime?
-  rejectionReason      String?
-  clarificationRemarks String?
-  sourceNgoId          String?
-  sourceCompanyId      String?
-  sourceBeneficiaryProfileId String?
-  createdAt            DateTime                     @default(now())
-  updatedAt            DateTime                     @updatedAt
-  tenant               Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  documents            OrganizationDocument[]
-  csrCompanyProfile    CSRCompanyProfile?
+  id                          String                       @id @default(uuid())
+  tenantId                    String
+  organizationType            OrganizationKind
+  name                        String
+  legalName                   String?
+  displayName                 String?
+  registrationNumber          String?
+  cin                         String?
+  llpin                       String?
+  pan                         String?
+  gst                         String?
+  gstin                       String?
+  departmentCode              String?
+  parentDepartment            String?
+  email                       String?
+  officialEmail               String?
+  phone                       String?
+  officialPhone               String?
+  website                     String?
+  address                     String?
+  stateId                     String?
+  districtId                  String?
+  talukaId                    String?
+  villageId                   String?
+  district                    String?
+  taluka                      String?
+  onboardingStatus            OrganizationOnboardingStatus @default(REGISTERED)
+  verificationStatus          DocumentVerificationStatus   @default(UPLOADED)
+  status                      OrganizationStatus           @default(ACTIVE)
+  approvedBy                  String?
+  approvedAt                  DateTime?
+  rejectedBy                  String?
+  rejectedAt                  DateTime?
+  rejectionReason             String?
+  clarificationRemarks        String?
+  sourceNgoId                 String?
+  sourceCompanyId             String?
+  sourceBeneficiaryProfileId  String?
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  tenant                      Tenant                       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents                   OrganizationDocument[]
+  csrCompanyProfile           CSRCompanyProfile?
   governmentDepartmentProfile GovernmentDepartmentProfile?
-  onboardingReviews    OnboardingReview[]
-  roles                OrganizationRole[]
-  userRoles            UserOrganizationRole[]
+  onboardingReviews           OnboardingReview[]
+  roles                       OrganizationRole[]
+  userRoles                   UserOrganizationRole[]
 
   @@index([tenantId])
   @@index([organizationType])
@@ -559,113 +583,113 @@ model OrganizationDocument {
 }
 
 model CSRCompanyProfile {
-  id                         String   @id @default(uuid())
-  organizationId             String   @unique
-  tenantId                   String
-  companyType                String?
-  yearOfIncorporation        Int?
-  mcaVerificationStatus      String?
-  companyStatus              String?
-  registeredOfficeAddress    String?
-  corporateOfficeAddress     String?
-  officialEmailDomain        String?
-  csrApplicable              Boolean  @default(false)
-  financialYear              String?
-  netWorth                   Decimal?
-  turnover                   Decimal?
-  netProfit                  Decimal?
-  averageNetProfit           Decimal?
-  csrObligationAmount        Decimal?
-  twoPercentCsrObligation    Decimal?
-  currentYearCsrBudget       Decimal?
-  unspentCsrAmount           Decimal?
-  ongoingProjectAmount       Decimal?
-  csrCommitteeApplicable     Boolean  @default(false)
-  csrCommitteeDetails        Json?
-  csrCommitteeConstitutionDate DateTime?
-  csrPolicyApprovalDate      DateTime?
-  boardApprovalStatus        String?
-  csrHeadName                String?
-  csrHeadDesignation         String?
-  csrHeadEmail               String?
-  csrHeadMobile              String?
-  financeOfficerName         String?
-  financeOfficerDesignation  String?
-  financeOfficerEmail        String?
-  authorizedSignatoryName    String?
+  id                             String       @id @default(uuid())
+  organizationId                 String       @unique
+  tenantId                       String
+  companyType                    String?
+  yearOfIncorporation            Int?
+  mcaVerificationStatus          String?
+  companyStatus                  String?
+  registeredOfficeAddress        String?
+  corporateOfficeAddress         String?
+  officialEmailDomain            String?
+  csrApplicable                  Boolean      @default(false)
+  financialYear                  String?
+  netWorth                       Decimal?
+  turnover                       Decimal?
+  netProfit                      Decimal?
+  averageNetProfit               Decimal?
+  csrObligationAmount            Decimal?
+  twoPercentCsrObligation        Decimal?
+  currentYearCsrBudget           Decimal?
+  unspentCsrAmount               Decimal?
+  ongoingProjectAmount           Decimal?
+  csrCommitteeApplicable         Boolean      @default(false)
+  csrCommitteeDetails            Json?
+  csrCommitteeConstitutionDate   DateTime?
+  csrPolicyApprovalDate          DateTime?
+  boardApprovalStatus            String?
+  csrHeadName                    String?
+  csrHeadDesignation             String?
+  csrHeadEmail                   String?
+  csrHeadMobile                  String?
+  financeOfficerName             String?
+  financeOfficerDesignation      String?
+  financeOfficerEmail            String?
+  authorizedSignatoryName        String?
   authorizedSignatoryDesignation String?
-  authorizedSignatoryEmail   String?
-  authorizedSignatoryMobile  String?
-  authorizationReferenceNumber String?
-  csrPolicyDocumentId        String?
-  boardResolutionDocumentId  String?
-  preferredDistricts         String[]
-  preferredTalukas           String[]
-  preferredSectors           String[]
-  preferredProjectSize       String?
-  preferredBeneficiaryGroups String[]
-  scheduleVIIFocusAreas      String[]
-  sdgFocusAreas              String[]
-  esgFocusAreas              String[]
-  minFundingAmount           Decimal?
-  maxFundingAmount           Decimal?
-  fundingPreference          String?
-  implementationPreference   String?
-  declarationAccepted        Boolean  @default(false)
-  declarationAcceptedAt      DateTime?
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
-  organization               Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  authorizedSignatoryEmail       String?
+  authorizedSignatoryMobile      String?
+  authorizationReferenceNumber   String?
+  csrPolicyDocumentId            String?
+  boardResolutionDocumentId      String?
+  preferredDistricts             String[]
+  preferredTalukas               String[]
+  preferredSectors               String[]
+  preferredProjectSize           String?
+  preferredBeneficiaryGroups     String[]
+  scheduleVIIFocusAreas          String[]
+  sdgFocusAreas                  String[]
+  esgFocusAreas                  String[]
+  minFundingAmount               Decimal?
+  maxFundingAmount               Decimal?
+  fundingPreference              String?
+  implementationPreference       String?
+  declarationAccepted            Boolean      @default(false)
+  declarationAcceptedAt          DateTime?
+  createdAt                      DateTime     @default(now())
+  updatedAt                      DateTime     @updatedAt
+  organization                   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
 
 model GovernmentDepartmentProfile {
-  id                         String   @id @default(uuid())
-  organizationId             String   @unique
-  tenantId                   String
-  departmentType             String?
-  parentDepartment           String?
-  departmentCode             String?
-  villageOrCity              String?
-  officeWebsite              String?
-  officialEmailDomain        String?
-  officePhone                String?
-  governmentOfficeIdentifier String?
-  nodalOfficerName           String?
-  nodalOfficerDesignation    String?
-  nodalOfficerDepartment     String?
-  nodalOfficerEmail          String?
-  nodalOfficerMobile         String?
-  nodalOfficerOfficePhone    String?
-  nodalOfficerEmployeeId     String?
-  reportingOfficerName       String?
-  reportingOfficerDesignation String?
-  reportingOfficerEmail      String?
-  authorizationLetterNumber  String?
-  authorizationLetterDate    DateTime?
-  issuingAuthorityName       String?
-  issuingAuthorityDesignation String?
-  canCreateRequirements      Boolean  @default(false)
-  canConfirmHandover         Boolean  @default(false)
-  canUploadOfficialDocuments Boolean  @default(false)
-  departmentApprovalRequired Boolean  @default(false)
-  internalApprovalReference  String?
-  jurisdictionType           String?
-  allowedDistrictIds         String[]
-  allowedTalukaIds           String[]
-  allowedVillageIds          String[]
-  allowedSectors             String[]
-  canCreateStateLevelRequirement Boolean @default(false)
-  canCreateDistrictLevelRequirement Boolean @default(false)
-  canCreateLocalBodyLevelRequirement Boolean @default(false)
-  requiresDistrictVerification Boolean @default(false)
-  requirementPermissionSectors String[]
-  declarationAccepted        Boolean  @default(false)
-  declarationAcceptedAt      DateTime?
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
-  organization               Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                                 String       @id @default(uuid())
+  organizationId                     String       @unique
+  tenantId                           String
+  departmentType                     String?
+  parentDepartment                   String?
+  departmentCode                     String?
+  villageOrCity                      String?
+  officeWebsite                      String?
+  officialEmailDomain                String?
+  officePhone                        String?
+  governmentOfficeIdentifier         String?
+  nodalOfficerName                   String?
+  nodalOfficerDesignation            String?
+  nodalOfficerDepartment             String?
+  nodalOfficerEmail                  String?
+  nodalOfficerMobile                 String?
+  nodalOfficerOfficePhone            String?
+  nodalOfficerEmployeeId             String?
+  reportingOfficerName               String?
+  reportingOfficerDesignation        String?
+  reportingOfficerEmail              String?
+  authorizationLetterNumber          String?
+  authorizationLetterDate            DateTime?
+  issuingAuthorityName               String?
+  issuingAuthorityDesignation        String?
+  canCreateRequirements              Boolean      @default(false)
+  canConfirmHandover                 Boolean      @default(false)
+  canUploadOfficialDocuments         Boolean      @default(false)
+  departmentApprovalRequired         Boolean      @default(false)
+  internalApprovalReference          String?
+  jurisdictionType                   String?
+  allowedDistrictIds                 String[]
+  allowedTalukaIds                   String[]
+  allowedVillageIds                  String[]
+  allowedSectors                     String[]
+  canCreateStateLevelRequirement     Boolean      @default(false)
+  canCreateDistrictLevelRequirement  Boolean      @default(false)
+  canCreateLocalBodyLevelRequirement Boolean      @default(false)
+  requiresDistrictVerification       Boolean      @default(false)
+  requirementPermissionSectors       String[]
+  declarationAccepted                Boolean      @default(false)
+  declarationAcceptedAt              DateTime?
+  createdAt                          DateTime     @default(now())
+  updatedAt                          DateTime     @updatedAt
+  organization                       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
@@ -686,27 +710,27 @@ model OnboardingReview {
 }
 
 model Permission {
-  id          String   @id @default(uuid())
-  key         String   @unique
-  description String?
-  module      String
-  createdAt   DateTime @default(now())
+  id              String                       @id @default(uuid())
+  key             String                       @unique
+  description     String?
+  module          String
+  createdAt       DateTime                     @default(now())
   rolePermissions OrganizationRolePermission[]
 }
 
 model OrganizationRole {
-  id             String       @id @default(uuid())
-  tenantId       String?
-  organizationId String?
-  name           String
-  description    String?
-  scope          RoleScope
-  isSystemRole   Boolean      @default(false)
-  createdBy      String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  tenant         Tenant?      @relation(fields: [tenantId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  id              String                       @id @default(uuid())
+  tenantId        String?
+  organizationId  String?
+  name            String
+  description     String?
+  scope           RoleScope
+  isSystemRole    Boolean                      @default(false)
+  createdBy       String?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  tenant          Tenant?                      @relation(fields: [tenantId], references: [id])
+  organization    Organization?                @relation(fields: [organizationId], references: [id])
   rolePermissions OrganizationRolePermission[]
   userRoles       UserOrganizationRole[]
 
@@ -726,15 +750,15 @@ model OrganizationRolePermission {
 }
 
 model UserOrganizationRole {
-  id             String   @id @default(uuid())
+  id             String           @id @default(uuid())
   userId         String
   roleId         String
   organizationId String?
   tenantId       String?
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   role           OrganizationRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organization   Organization?    @relation(fields: [organizationId], references: [id])
 
   @@unique([userId, roleId, organizationId])
   @@index([tenantId])
@@ -998,6 +1022,15 @@ enum Role {
   APPROVER
   AUDITOR
   AUTHORIZED_SIGNATORY
+  // MAHA CSR CONVERGENCE FRAMEWORK - NEW ROLES
+  CSR_RELATIONSHIP_MANAGER
+  JOINT_SECRETARY
+  PLANNING_SECRETARY
+  DISTRICT_NODAL_OFFICER
+  STATE_CSR_CELL
+  CORPORATE_USER
+  IMPLEMENTING_AGENCY_USER
+  GOVERNMENT_OFFICER
 }
 
 enum UserAccountStatus {
@@ -1178,6 +1211,86 @@ enum FundReleaseStatus {
   ON_HOLD
 }
 
+// ============================================
+// MAHA CSR CONVERGENCE FRAMEWORK - NEW ENUMS
+// ============================================
+
+enum CorporateEnquiryStatus {
+  SUBMITTED
+  TRACKING_ID_GENERATED
+  RM_ASSIGNED
+  RM_CONTACTED
+  ASSESSMENT_PENDING
+  ASSESSMENT_SUBMITTED_TO_JS
+  JS_APPROVED
+  JS_REJECTED
+  NODAL_OFFICER_APPOINTED
+  MOU_PENDING
+  MOU_SIGNED
+  PROJECT_ONBOARDED
+  EXECUTION_STARTED
+  COMPLETED
+  CLOSED
+}
+
+enum GovernmentPitchStatus {
+  DRAFT
+  SUBMITTED
+  RM_VERIFICATION_PENDING
+  RM_VERIFIED
+  JS_APPROVAL_PENDING
+  JS_APPROVED
+  JS_REJECTED
+  PUBLIC_LISTED
+  CORPORATE_INTEREST_RECEIVED
+  NODAL_OFFICER_ASSIGNED
+  MOU_PENDING
+  MOU_SIGNED
+  PROJECT_ONBOARDED
+  COMPLETED
+  CLOSED
+}
+
+enum FeasibilityResult {
+  FEASIBLE
+  PROCEED_WITH_CONDITIONS
+  NOT_FEASIBLE
+}
+
+enum ChecklistAnswer {
+  YES
+  NO
+  NA
+}
+
+enum SLAStage {
+  RM_RESPONSE
+  JS_DECISION
+  SECRETARY_ESCALATION
+  GOVERNMENT_PITCH_VERIFICATION
+  GRIEVANCE_LEVEL_1
+  GRIEVANCE_LEVEL_2
+  STATIC_HELPDESK
+}
+
+enum GrievanceStatus {
+  RAISED
+  ACKNOWLEDGED
+  LEVEL_1_REVIEW
+  LEVEL_1_RESOLVED
+  ESCALATED_TO_STATE_CELL
+  LEVEL_2_RESOLVED
+  ESCALATED_TO_JS_SECRETARY
+  CLOSED
+  REJECTED
+}
+
+enum SimpleMilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
 enum ProjectStatus {
   DRAFT
   SUBMITTED
@@ -1323,27 +1436,27 @@ enum ProgressReportStatus {
 // =============================================
 
 model BeneficiaryProfile {
-  id              String   @id @default(uuid())
-  tenantId        String?
-  organizationId  String?
-  userId          String   @unique
-  agencyName      String
-  agencyType      String   // ZP, Municipal Corporation, Gram Panchayat, Government Hospital, Government School, etc.
-  district        String
-  taluka          String
-  village         String?
-  city            String?
-  address         String
-  pincode         String?
-  contactPerson   String
-  contactEmail    String
-  contactPhone    String
-  designation     String?
-  website         String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(uuid())
+  tenantId       String?
+  organizationId String?
+  userId         String   @unique
+  agencyName     String
+  agencyType     String // ZP, Municipal Corporation, Gram Panchayat, Government Hospital, Government School, etc.
+  district       String
+  taluka         String
+  village        String?
+  city           String?
+  address        String
+  pincode        String?
+  contactPerson  String
+  contactEmail   String
+  contactPhone   String
+  designation    String?
+  website        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   csrRequirements CSRRequirement[]
   csrProjects     CSRProject[]
   assetHandovers  AssetHandover[]
@@ -1354,54 +1467,54 @@ model BeneficiaryProfile {
 }
 
 model CSRRequirement {
-  id                    String               @id @default(uuid())
-  tenantId              String?
-  beneficiaryProfileId  String
-  title                 String
-  category              CSRCategory
-  description           String
-  district              String
-  taluka                String
-  village               String?
-  city                  String?
-  address               String?
-  geoLatitude           Float?
-  geoLongitude          Float?
-  estimatedCost         Decimal
-  beneficiaryCount      Int
-  expectedImpact        String
-  priorityLevel         PriorityLevel        @default(MEDIUM)
-  completionTimeline    String?              // e.g. "6 months", "1 year"
-  contactPersonName     String?
-  contactPersonPhone    String?
-  contactPersonEmail    String?
-  agencyType            String?              // Redundant from profile but useful for display
-  sdgGoals              String[]
-  declarationAccepted   Boolean              @default(false)
-  status                CSRRequirementStatus @default(DRAFT)
-  verificationRemarks   String?
-  rejectionReason       String?
-  verifiedById          String?
-  verifiedAt            DateTime?
+  id                     String               @id @default(uuid())
+  tenantId               String?
+  beneficiaryProfileId   String
+  title                  String
+  category               CSRCategory
+  description            String
+  district               String
+  taluka                 String
+  village                String?
+  city                   String?
+  address                String?
+  geoLatitude            Float?
+  geoLongitude           Float?
+  estimatedCost          Decimal
+  beneficiaryCount       Int
+  expectedImpact         String
+  priorityLevel          PriorityLevel        @default(MEDIUM)
+  completionTimeline     String? // e.g. "6 months", "1 year"
+  contactPersonName      String?
+  contactPersonPhone     String?
+  contactPersonEmail     String?
+  agencyType             String? // Redundant from profile but useful for display
+  sdgGoals               String[]
+  declarationAccepted    Boolean              @default(false)
+  status                 CSRRequirementStatus @default(DRAFT)
+  verificationRemarks    String?
+  rejectionReason        String?
+  verifiedById           String?
+  verifiedAt             DateTime?
   fieldVerificationNotes String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
 
-  beneficiaryProfile    BeneficiaryProfile   @relation(fields: [beneficiaryProfileId], references: [id], onDelete: Cascade)
-  documents             CSRRequirementDocument[]
-  ngoApplications       NGOApplication[]
-  companyInterests      CompanyInterest[]
-  agreements            Agreement[]
-  csrProjects           CSRProject[]
-  csrFundReleases       CSRFundRelease[]
-  fundMilestones        CSRFundMilestone[]
-  progressReports       ProgressReport[]
-  utilizationCertificates UtilizationCertificate[]
-  assetHandovers        AssetHandover[]
-  projectInspections    ProjectInspection[]
-  impactMetrics         ImpactMetric[]
-  completionReport      CompletionReport?
-  impactReport          ImpactReport?
+  beneficiaryProfile      BeneficiaryProfile       @relation(fields: [beneficiaryProfileId], references: [id], onDelete: Cascade)
+  documents               CSRRequirementDocument[]
+  ngoApplications         NGOApplication[]
+  companyInterests        CompanyInterest[]
+  agreements              Agreement[]
+  csrProjects             CSRProject[]
+  csrFundReleases         CSRFundRelease[]
+  fundMilestones          CSRFundMilestone[]
+  progressReports         ProgressReport[]
+  assetHandovers          AssetHandover[]
+  projectInspections      ProjectInspection[]
+  impactMetrics           ImpactMetric[]
+  completionReport        CompletionReport?
+  impactReport            ImpactReport?
+  utilizationCertificates UtilizationCertificate[] @relation("RequirementUC")
 
   @@index([district])
   @@index([category])
@@ -1417,39 +1530,39 @@ model CSRRequirementDocument {
   title            String
   fileUrl          String
   fileName         String
-  fileType         String   // image, pdf, doc
+  fileType         String // image, pdf, doc
   fileSize         Int?
-  documentCategory String   // supporting_document, project_image, certificate, etc.
+  documentCategory String // supporting_document, project_image, certificate, etc.
   uploadedById     String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  csrRequirement   CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([csrRequirementId])
   @@index([tenantId])
 }
 
 model NGOApplication {
-  id                     String              @id @default(uuid())
-  tenantId               String?
-  csrRequirementId       String
-  ngoId                  String
-  proposedPlan           String
-  proposedTimeline       String
-  estimatedCost          Decimal
-  teamDetails            String?
-  pastExperience         String?
-  proposalDocumentUrl    String?
-  remarks                String?
-  status                 NGOApplicationStatus @default(NGO_APPLIED)
-  rejectionReason        String?
-  matchScore             Int?
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
+  id                  String               @id @default(uuid())
+  tenantId            String?
+  csrRequirementId    String
+  ngoId               String
+  proposedPlan        String
+  proposedTimeline    String
+  estimatedCost       Decimal
+  teamDetails         String?
+  pastExperience      String?
+  proposalDocumentUrl String?
+  remarks             String?
+  status              NGOApplicationStatus @default(NGO_APPLIED)
+  rejectionReason     String?
+  matchScore          Int?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
-  csrRequirement         CSRRequirement      @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
-  ngo                    NGO                 @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  ngo            NGO            @relation(fields: [ngoId], references: [id], onDelete: Cascade)
 
   @@unique([csrRequirementId, ngoId])
   @@index([csrRequirementId])
@@ -1459,25 +1572,25 @@ model NGOApplication {
 }
 
 model CompanyInterest {
-  id                    String               @id @default(uuid())
-  tenantId              String?
-  csrRequirementId      String
-  companyId             String
-  fundingAmount         Decimal
-  fundingType           String               // FULL_FUNDING, PARTIAL_FUNDING
-  preferredNgoId        String?
-  focusAlignmentNotes   String?
-  discussionMessage     String?
-  expectedTimeline      String?
-  companyRemarks        String?
-  status                CompanyInterestStatus @default(INTEREST_SUBMITTED)
-  selectedNgoId         String?
-  selectedAt            DateTime?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  id                  String                @id @default(uuid())
+  tenantId            String?
+  csrRequirementId    String
+  companyId           String
+  fundingAmount       Decimal
+  fundingType         String // FULL_FUNDING, PARTIAL_FUNDING
+  preferredNgoId      String?
+  focusAlignmentNotes String?
+  discussionMessage   String?
+  expectedTimeline    String?
+  companyRemarks      String?
+  status              CompanyInterestStatus @default(INTEREST_SUBMITTED)
+  selectedNgoId       String?
+  selectedAt          DateTime?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
-  csrRequirement        CSRRequirement       @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
-  company               Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([csrRequirementId, companyId])
   @@index([csrRequirementId])
@@ -1487,25 +1600,25 @@ model CompanyInterest {
 }
 
 model Agreement {
-  id                    String          @id @default(uuid())
-  tenantId              String?
-  csrRequirementId      String
-  companyId             String
-  ngoId                 String
-  beneficiaryProfileId  String?
-  fundingAmount         Decimal
-  milestonePlan         Json?
-  expectedStartDate     DateTime?
+  id                     String          @id @default(uuid())
+  tenantId               String?
+  csrRequirementId       String
+  companyId              String
+  ngoId                  String
+  beneficiaryProfileId   String?
+  fundingAmount          Decimal
+  milestonePlan          Json?
+  expectedStartDate      DateTime?
   expectedCompletionDate DateTime?
-  termsAndConditions    String?
-  signedDocumentUrl     String?
-  status                AgreementStatus @default(DRAFT_GENERATED)
-  rejectionReason       String?
-  revisionNotes         String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  termsAndConditions     String?
+  signedDocumentUrl      String?
+  status                 AgreementStatus @default(DRAFT_GENERATED)
+  rejectionReason        String?
+  revisionNotes          String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 
-  csrRequirement        CSRRequirement  @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([csrRequirementId])
   @@index([status])
@@ -1513,22 +1626,22 @@ model Agreement {
 }
 
 model CSRFundMilestone {
-  id                    String                 @id @default(uuid())
-  tenantId              String?
-  csrRequirementId      String
-  milestoneName         String
-  milestonePercentage   Decimal
-  amount                Decimal
-  dueDate               DateTime?
-  releaseDate           DateTime?
-  utilizationProofUrl   String?
-  invoiceUrl            String?
-  adminRemarks          String?
-  status                CSRFundMilestoneStatus @default(FM_PENDING)
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                  String                 @id @default(uuid())
+  tenantId            String?
+  csrRequirementId    String
+  milestoneName       String
+  milestonePercentage Decimal
+  amount              Decimal
+  dueDate             DateTime?
+  releaseDate         DateTime?
+  utilizationProofUrl String?
+  invoiceUrl          String?
+  adminRemarks        String?
+  status              CSRFundMilestoneStatus @default(FM_PENDING)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
 
-  csrRequirement        CSRRequirement         @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([csrRequirementId])
   @@index([status])
@@ -1536,34 +1649,34 @@ model CSRFundMilestone {
 }
 
 model CSRProject {
-  id                    String               @id @default(uuid())
-  tenantId              String?
-  csrRequirementId      String
-  companyId             String
-  ngoId                 String?
-  beneficiaryProfileId  String
-  title                 String
-  approvedBudget        Decimal
-  committedAmount       Decimal              @default(0)
-  releasedAmount        Decimal              @default(0)
-  utilizedAmount        Decimal              @default(0)
-  projectStatus         CSRRequirementStatus @default(AGREEMENT_SIGNED)
-  startDate             DateTime?
-  expectedEndDate       DateTime?
-  actualEndDate         DateTime?
-  agreementDocument     String?
-  createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  id                   String               @id @default(uuid())
+  tenantId             String?
+  csrRequirementId     String
+  companyId            String
+  ngoId                String?
+  beneficiaryProfileId String
+  title                String
+  approvedBudget       Decimal
+  committedAmount      Decimal              @default(0)
+  releasedAmount       Decimal              @default(0)
+  utilizedAmount       Decimal              @default(0)
+  projectStatus        CSRRequirementStatus @default(AGREEMENT_SIGNED)
+  startDate            DateTime?
+  expectedEndDate      DateTime?
+  actualEndDate        DateTime?
+  agreementDocument    String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
 
-  csrRequirement        CSRRequirement       @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
-  beneficiaryProfile    BeneficiaryProfile   @relation(fields: [beneficiaryProfileId], references: [id], onDelete: Cascade)
-  company               Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  ngo                   NGO?                 @relation(fields: [ngoId], references: [id])
-  fundReleases          CSRFundRelease[]
-  utilizationCertificates UtilizationCertificate[]
-  assetHandovers        AssetHandover[]
-  projectInspections    ProjectInspection[]
-  impactMetrics         ImpactMetric[]
+  csrRequirement          CSRRequirement           @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  beneficiaryProfile      BeneficiaryProfile       @relation(fields: [beneficiaryProfileId], references: [id], onDelete: Cascade)
+  company                 Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ngo                     NGO?                     @relation(fields: [ngoId], references: [id])
+  fundReleases            CSRFundRelease[]
+  assetHandovers          AssetHandover[]
+  projectInspections      ProjectInspection[]
+  impactMetrics           ImpactMetric[]
+  utilizationCertificates UtilizationCertificate[] @relation("ProjectUC")
 
   @@unique([csrRequirementId, companyId])
   @@index([csrRequirementId])
@@ -1593,11 +1706,11 @@ model CSRFundRelease {
   createdAt                DateTime               @default(now())
   updatedAt                DateTime               @updatedAt
 
-  csrProject               CSRProject?            @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
-  csrRequirement           CSRRequirement         @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
-  company                  Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  ngo                      NGO?                   @relation(fields: [ngoId], references: [id])
-  utilizationCertificates  UtilizationCertificate[]
+  csrProject              CSRProject?              @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
+  csrRequirement          CSRRequirement           @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  company                 Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  ngo                     NGO?                     @relation(fields: [ngoId], references: [id])
+  utilizationCertificates UtilizationCertificate[] @relation("ReleaseUC")
 
   @@index([csrProjectId])
   @@index([csrRequirementId])
@@ -1607,55 +1720,24 @@ model CSRFundRelease {
   @@index([tenantId])
 }
 
-model UtilizationCertificate {
-  id                    String                 @id @default(uuid())
-  tenantId              String?
-  csrFundReleaseId      String?
-  csrProjectId          String?
-  csrRequirementId      String
-  ngoId                 String
-  utilizedAmount        Decimal
-  certificateDocument   String?
-  invoiceDocuments      String[]
-  submittedAt           DateTime               @default(now())
-  verificationStatus    CSRFundMilestoneStatus @default(UTILIZATION_SUBMITTED)
-  verifiedById          String?
-  verifiedAt            DateTime?
-  remarks               String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-
-  csrFundRelease        CSRFundRelease?        @relation(fields: [csrFundReleaseId], references: [id], onDelete: Cascade)
-  csrProject            CSRProject?            @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
-  csrRequirement        CSRRequirement         @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
-  ngo                   NGO                    @relation(fields: [ngoId], references: [id], onDelete: Cascade)
-
-  @@index([csrFundReleaseId])
-  @@index([csrProjectId])
-  @@index([csrRequirementId])
-  @@index([ngoId])
-  @@index([verificationStatus])
-  @@index([tenantId])
-}
-
 model AssetHandover {
-  id                    String         @id @default(uuid())
-  tenantId              String?
-  csrProjectId          String?
-  csrRequirementId      String
-  beneficiaryProfileId  String
-  assetDescription      String
-  handoverDate          DateTime?
-  confirmationStatus    String         @default("PENDING")
-  confirmedById         String?
-  handoverCertificate   String?
-  remarks               String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                   String    @id @default(uuid())
+  tenantId             String?
+  csrProjectId         String?
+  csrRequirementId     String
+  beneficiaryProfileId String
+  assetDescription     String
+  handoverDate         DateTime?
+  confirmationStatus   String    @default("PENDING")
+  confirmedById        String?
+  handoverCertificate  String?
+  remarks              String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  csrProject            CSRProject?    @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
-  csrRequirement        CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
-  beneficiaryProfile    BeneficiaryProfile @relation(fields: [beneficiaryProfileId], references: [id], onDelete: Cascade)
+  csrProject         CSRProject?        @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
+  csrRequirement     CSRRequirement     @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  beneficiaryProfile BeneficiaryProfile @relation(fields: [beneficiaryProfileId], references: [id], onDelete: Cascade)
 
   @@index([csrProjectId])
   @@index([csrRequirementId])
@@ -1665,24 +1747,24 @@ model AssetHandover {
 }
 
 model ProjectInspection {
-  id                    String         @id @default(uuid())
-  tenantId              String?
-  csrProjectId          String?
-  csrRequirementId      String
-  districtOfficerId     String?
-  visitDate             DateTime
-  latitude              Float?
-  longitude             Float?
-  geoTaggedImages       String[]
-  remarks               String?
-  issuesFound           String?
-  actionRequired        String?
-  nextVisitDate         DateTime?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                String    @id @default(uuid())
+  tenantId          String?
+  csrProjectId      String?
+  csrRequirementId  String
+  districtOfficerId String?
+  visitDate         DateTime
+  latitude          Float?
+  longitude         Float?
+  geoTaggedImages   String[]
+  remarks           String?
+  issuesFound       String?
+  actionRequired    String?
+  nextVisitDate     DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  csrProject            CSRProject?    @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
-  csrRequirement        CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrProject     CSRProject?    @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([csrProjectId])
   @@index([csrRequirementId])
@@ -1692,23 +1774,23 @@ model ProjectInspection {
 }
 
 model ImpactMetric {
-  id                    String         @id @default(uuid())
-  tenantId              String?
-  csrProjectId          String?
-  csrRequirementId      String
-  studentsBenefited     Int            @default(0)
-  patientsBenefited     Int            @default(0)
-  villagesBenefited     Int            @default(0)
-  householdsBenefited   Int            @default(0)
-  womenBeneficiaries    Int            @default(0)
-  farmersBenefited      Int            @default(0)
-  otherMetrics          Json?
-  sdgMapping            String[]
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                  String   @id @default(uuid())
+  tenantId            String?
+  csrProjectId        String?
+  csrRequirementId    String
+  studentsBenefited   Int      @default(0)
+  patientsBenefited   Int      @default(0)
+  villagesBenefited   Int      @default(0)
+  householdsBenefited Int      @default(0)
+  womenBeneficiaries  Int      @default(0)
+  farmersBenefited    Int      @default(0)
+  otherMetrics        Json?
+  sdgMapping          String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  csrProject            CSRProject?    @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
-  csrRequirement        CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrProject     CSRProject?    @relation(fields: [csrProjectId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([csrProjectId])
   @@index([csrRequirementId])
@@ -1737,7 +1819,7 @@ model ProgressReport {
   createdAt               DateTime             @default(now())
   updatedAt               DateTime             @updatedAt
 
-  csrRequirement          CSRRequirement       @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([csrRequirementId])
   @@index([status])
@@ -1745,49 +1827,696 @@ model ProgressReport {
 }
 
 model CompletionReport {
-  id                    String         @id @default(uuid())
-  tenantId              String?
-  csrRequirementId      String         @unique
-  submittedByNgoId      String
-  workCompletedSummary  String
-  finalCost             Decimal
+  id                     String   @id @default(uuid())
+  tenantId               String?
+  csrRequirementId       String   @unique
+  submittedByNgoId       String
+  workCompletedSummary   String
+  finalCost              Decimal
   fundUtilizationSummary String
-  beforePhotoUrls       String[]
-  afterPhotoUrls        String[]
-  beneficiaryCount      Int
-  outcomeIndicators     Json?
-  certificateUrls       String[]
-  beneficiaryFeedback   String?
-  inspectionReportUrl   String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  beforePhotoUrls        String[]
+  afterPhotoUrls         String[]
+  beneficiaryCount       Int
+  outcomeIndicators      Json?
+  certificateUrls        String[]
+  beneficiaryFeedback    String?
+  inspectionReportUrl    String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  csrRequirement        CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
 
 model ImpactReport {
-  id                    String         @id @default(uuid())
-  tenantId              String?
-  csrRequirementId      String         @unique
-  projectSummary        String
-  companyContribution   String
-  ngoExecutionSummary   String
-  beneficiaryReach      Int
-  beforeAfterComparison Json?
-  fundUtilization       Json?
-  impactScore           Int            @default(0) // 0-100
-  timelyCompletionScore Int            @default(0)
-  fundUtilAccuracyScore Int            @default(0)
-  beneficiaryFeedbackScore Int         @default(0)
-  govVerificationScore  Int            @default(0)
-  socialImpactScore     Int            @default(0)
-  documentationScore    Int            @default(0)
-  generatedAt           DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                       String   @id @default(uuid())
+  tenantId                 String?
+  csrRequirementId         String   @unique
+  projectSummary           String
+  companyContribution      String
+  ngoExecutionSummary      String
+  beneficiaryReach         Int
+  beforeAfterComparison    Json?
+  fundUtilization          Json?
+  impactScore              Int      @default(0) // 0-100
+  timelyCompletionScore    Int      @default(0)
+  fundUtilAccuracyScore    Int      @default(0)
+  beneficiaryFeedbackScore Int      @default(0)
+  govVerificationScore     Int      @default(0)
+  socialImpactScore        Int      @default(0)
+  documentationScore       Int      @default(0)
+  generatedAt              DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
-  csrRequirement        CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  csrRequirement CSRRequirement @relation(fields: [csrRequirementId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
+
+// ============================================
+// MAHA CSR CONVERGENCE FRAMEWORK - NEW MODELS
+// ============================================
+
+// 1. Corporate Enquiry - Entry point for corporate partners
+model CorporateEnquiry {
+  id         String  @id @default(uuid())
+  tenantId   String?
+  trackingId String  @unique // CSR-MH-YYYY-000001 format
+
+  // Company Details
+  companyName        String
+  sector             String
+  preferredDistricts String[]
+  indicativeBudget   Decimal? @db.Decimal(15, 2)
+
+  // Contact Details
+  contactPersonName        String
+  contactPersonDesignation String?
+  mobile                   String
+  mobileVerified           Boolean @default(false)
+  email                    String
+  emailVerified            Boolean @default(false)
+
+  // MCA21 Details
+  mca21Cin String
+
+  // CSR Proposal
+  proposedCsrWork String @db.VarChar(2000) // max 200 words validation in backend
+
+  // Assignment & Status
+  assignedRelationshipManagerId String?
+  assignedRelationshipManager   User?                  @relation("RMEnquiries", fields: [assignedRelationshipManagerId], references: [id], onDelete: SetNull)
+  status                        CorporateEnquiryStatus @default(SUBMITTED)
+
+  // Timeline
+  submittedAt            DateTime  @default(now())
+  firstResponseDueAt     DateTime?
+  firstContactedAt       DateTime?
+  currentEscalationLevel Int       @default(0)
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  interactions            CorporateEnquiryInteraction[]
+  feasibilityAssessment   FeasibilityAssessment?
+  nodalOfficerAppointment NodalOfficerAppointment?
+  standardMou             StandardMou?
+  convergenceProject      ConvergenceProject?
+
+  @@index([trackingId])
+  @@index([status])
+  @@index([assignedRelationshipManagerId])
+  @@index([submittedAt])
+  @@index([tenantId])
+}
+
+// 2. Corporate Enquiry Interaction Log
+model CorporateEnquiryInteraction {
+  id                 String           @id @default(uuid())
+  tenantId           String?
+  corporateEnquiryId String
+  corporateEnquiry   CorporateEnquiry @relation(fields: [corporateEnquiryId], references: [id], onDelete: Cascade)
+
+  actorUserId String
+  actorUser   User   @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  note            String   @db.Text
+  interactionType String // CALL / EMAIL / MEETING / PORTAL_NOTE / STATUS_CHANGE
+  attachmentUrls  String[]
+
+  createdAt DateTime @default(now())
+
+  @@index([corporateEnquiryId])
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@index([tenantId])
+}
+
+// 3. Feasibility Assessment - 13-point checklist
+model FeasibilityAssessment {
+  id              String  @id @default(uuid())
+  tenantId        String?
+  reportReference String  @unique
+
+  // References - either corporate enquiry or government pitch
+  corporateEnquiryId String?           @unique
+  corporateEnquiry   CorporateEnquiry? @relation(fields: [corporateEnquiryId], references: [id], onDelete: SetNull)
+  governmentPitchId  String?           @unique
+  governmentPitch    GovernmentPitch?  @relation(fields: [governmentPitchId], references: [id], onDelete: SetNull)
+
+  // Assessment Details
+  relationshipManagerId    String
+  relationshipManager      User     @relation("RMAssessments", fields: [relationshipManagerId], references: [id], onDelete: Cascade)
+  companyName              String
+  cin                      String
+  sector                   String
+  contactSummary           String   @db.Text
+  proposedLocationDistrict String
+  indicativeBudget         Decimal  @db.Decimal(15, 2)
+  developmentNeedAddressed String   @db.Text
+  dateOfFirstContact       DateTime
+  summaryOfInteraction     String   @db.Text
+
+  // Result
+  feasibilityResult           FeasibilityResult
+  recommendation              String            @db.Text
+  suggestedNodalOfficerDomain String
+  conditionText               String?           @db.Text
+
+  // JS Decision
+  submittedToJsAt   DateTime?
+  jsDecisionById    String?
+  jsDecisionBy      User?     @relation("JSAssessments", fields: [jsDecisionById], references: [id], onDelete: SetNull)
+  jsDecisionAt      DateTime?
+  jsDecisionRemarks String?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  checklistItems          FeasibilityChecklistItem[]
+  nodalOfficerAppointment NodalOfficerAppointment?
+
+  @@index([corporateEnquiryId])
+  @@index([governmentPitchId])
+  @@index([relationshipManagerId])
+  @@index([feasibilityResult])
+  @@index([tenantId])
+}
+
+// 4. Feasibility Checklist Item - 13 items
+model FeasibilityChecklistItem {
+  id           String                @id @default(uuid())
+  tenantId     String?
+  assessmentId String
+  assessment   FeasibilityAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  itemNumber Int // 1-13
+  dimension  String // e.g., "CSR Compliance", "Feasibility", "Sustainability"
+  checkText  String          @db.Text
+  isCritical Boolean
+  answer     ChecklistAnswer
+  remarks    String?         @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([assessmentId, itemNumber])
+  @@index([assessmentId])
+  @@index([tenantId])
+}
+
+// 5. Government Pitch - Government officers propose development needs
+model GovernmentPitch {
+  id               String  @id @default(uuid())
+  tenantId         String?
+  pitchReferenceId String  @unique // GP-MH-YYYY-000001 format
+
+  // Official Details
+  officialName String
+  designation  String
+  department   String
+  officeName   String
+  serviceClass String // CLASS_1 / CLASS_2 / BELOW_CLASS_2
+
+  // Contact
+  mobile         String
+  mobileVerified Boolean @default(false)
+  email          String
+  emailVerified  Boolean @default(false)
+
+  // Location
+  district      String
+  taluka        String
+  exactLocation String @db.Text
+
+  // CSR Requirement
+  csrRequirement      String  @db.VarChar(2000) // max 200 words
+  estimatedCost       Decimal @db.Decimal(15, 2)
+  govtFundDeclaration Boolean
+
+  // Certification
+  certificationType        String // SELF / HOD
+  hodCertificationDocument String?
+
+  // Status & Assignment
+  status                        GovernmentPitchStatus @default(DRAFT)
+  assignedRelationshipManagerId String?
+  assignedRelationshipManager   User?                 @relation("RMPitches", fields: [assignedRelationshipManagerId], references: [id], onDelete: SetNull)
+
+  // Timeline
+  submittedAt       DateTime?
+  verificationDueAt DateTime?
+  jsApprovalDueAt   DateTime?
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  photos                  GovernmentPitchPhoto[]
+  interests               CorporatePitchInterest[]
+  feasibilityAssessment   FeasibilityAssessment?
+  nodalOfficerAppointment NodalOfficerAppointment?
+  standardMou             StandardMou?
+  convergenceProject      ConvergenceProject?
+
+  @@index([pitchReferenceId])
+  @@index([status])
+  @@index([district])
+  @@index([assignedRelationshipManagerId])
+  @@index([tenantId])
+}
+
+// 6. Government Pitch Photo - Geo-tagged photos
+model GovernmentPitchPhoto {
+  id                String          @id @default(uuid())
+  tenantId          String?
+  governmentPitchId String
+  governmentPitch   GovernmentPitch @relation(fields: [governmentPitchId], references: [id], onDelete: Cascade)
+
+  fileUrl     String
+  latitude    Decimal   @db.Decimal(10, 8)
+  longitude   Decimal   @db.Decimal(11, 8)
+  capturedAt  DateTime?
+  isGeoTagged Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([governmentPitchId])
+  @@index([tenantId])
+}
+
+// 7. Corporate Pitch Interest - Corporate responds to public pitch
+model CorporatePitchInterest {
+  id                 String  @id @default(uuid())
+  tenantId           String?
+  interestTrackingId String  @unique
+
+  governmentPitchId String
+  governmentPitch   GovernmentPitch @relation(fields: [governmentPitchId], references: [id], onDelete: Cascade)
+
+  // Corporate Details
+  companyName              String
+  mca21Cin                 String
+  contactPersonName        String
+  contactPersonDesignation String
+
+  // Contact
+  mobile         String
+  mobileVerified Boolean @default(false)
+  email          String
+  emailVerified  Boolean @default(false)
+
+  // Proposal
+  indicativeBudget       Decimal? @db.Decimal(15, 2)
+  preferredStartTimeline String
+  implementationMode     String // SELF / OWN_FOUNDATION / NGO_PARTNER
+  messageToGovernment    String?  @db.VarChar(1000) // max 100 words
+
+  // Declaration
+  declarationAccepted Boolean @default(false)
+
+  // Status
+  status String @default("INTERESTED") // INTERESTED, RM_CONTACTED, UNDER_ASSESSMENT, etc.
+  coordinationNotes String? @db.Text
+  dialogueInitiated Boolean @default(false)
+  nodalOfficerRecommended String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([governmentPitchId])
+  @@index([interestTrackingId])
+  @@index([mca21Cin])
+  @@index([tenantId])
+}
+
+// 8. Nodal Officer Appointment
+model NodalOfficerAppointment {
+  id       String  @id @default(uuid())
+  tenantId String?
+
+  // References
+  corporateEnquiryId String?               @unique
+  corporateEnquiry   CorporateEnquiry?     @relation(fields: [corporateEnquiryId], references: [id], onDelete: SetNull)
+  governmentPitchId  String?               @unique
+  governmentPitch    GovernmentPitch?      @relation(fields: [governmentPitchId], references: [id], onDelete: SetNull)
+  assessmentId       String                @unique
+  assessment         FeasibilityAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  // Nodal Officer Details
+  district           String
+  domain             String
+  nodalOfficerUserId String
+  nodalOfficerUser   User   @relation("NodalOfficerAppointments", fields: [nodalOfficerUserId], references: [id], onDelete: Cascade)
+  nodalOfficerName   String
+  designation        String
+  department         String
+
+  // Appointment Details
+  appointmentLetterUrl String?
+  appointedByJsId      String
+  appointedByJs        User     @relation("JSNodalAppointments", fields: [appointedByJsId], references: [id], onDelete: Cascade)
+  appointedAt          DateTime @default(now())
+
+  // CC Recipients
+  collectorCc Boolean @default(true)
+  zpCeoCc     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([district])
+  @@index([nodalOfficerUserId])
+  @@index([appointedByJsId])
+  @@index([tenantId])
+}
+
+// 9. Standard MoU
+model StandardMou {
+  id             String  @id @default(uuid())
+  tenantId       String?
+  mouReferenceId String  @unique
+
+  // References
+  corporateEnquiryId String?           @unique
+  corporateEnquiry   CorporateEnquiry? @relation(fields: [corporateEnquiryId], references: [id], onDelete: SetNull)
+  governmentPitchId  String?           @unique
+  governmentPitch    GovernmentPitch?  @relation(fields: [governmentPitchId], references: [id], onDelete: SetNull)
+  projectId          String?           @unique
+
+  // Parties
+  districtDepartmentName String
+  nodalOfficerName       String
+  corporateName          String
+  cin                    String
+
+  // Project Details
+  projectTitle       String
+  projectDescription String @db.Text
+  scheduleVIIClause  String
+  projectLocation    String
+  deliverables       Json
+  timelineMonths     Int
+
+  // Financial
+  financialContribution  Decimal  @db.Decimal(15, 2)
+  governmentContribution Decimal? @db.Decimal(15, 2)
+
+  // Implementation
+  implementationMode     String
+  implementingAgencyName String?
+
+  // Post-Completion
+  ownershipAfterCompletion  String
+  maintenanceResponsibility String
+
+  // Document & Status
+  signedDocumentUrl String?
+  status            String  @default("DRAFT") // DRAFT / SENT_FOR_REVIEW / APPROVED / SIGNED / REVISION_REQUIRED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  convergenceProject ConvergenceProject?
+
+  @@index([mouReferenceId])
+  @@index([status])
+  @@index([tenantId])
+}
+
+// 10. Convergence Project - Main project tracking
+model ConvergenceProject {
+  id        String  @id @default(uuid())
+  tenantId  String?
+  projectId String  @unique // PRJ-MH-YYYY-000001 format
+
+  // References
+  corporateEnquiryId String?           @unique
+  corporateEnquiry   CorporateEnquiry? @relation(fields: [corporateEnquiryId], references: [id], onDelete: SetNull)
+  governmentPitchId  String?           @unique
+  governmentPitch    GovernmentPitch?  @relation(fields: [governmentPitchId], references: [id], onDelete: SetNull)
+  mouId              String            @unique
+  mou                StandardMou       @relation(fields: [mouId], references: [id], onDelete: Cascade)
+
+  // Project Details
+  title         String
+  district      String
+  taluka        String
+  location      String
+  sector        String
+  corporateName String
+
+  // Personnel
+  nodalOfficerUserId       String
+  nodalOfficerUser         User    @relation("NodalOfficerProjects", fields: [nodalOfficerUserId], references: [id], onDelete: Cascade)
+  implementingAgencyUserId String?
+  implementingAgencyUser   User?   @relation("IaProjects", fields: [implementingAgencyUserId], references: [id], onDelete: SetNull)
+
+  // Progress
+  approvedBudget           Decimal @db.Decimal(15, 2)
+  utilizedAmount           Decimal @default(0) @db.Decimal(15, 2)
+  physicalProgressPercent  Int     @default(0)
+  financialProgressPercent Int     @default(0)
+
+  // Status
+  status String @default("ONBOARDED") // ONBOARDED / EXECUTION_STARTED / IN_PROGRESS / COMPLETED / CLOSED
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  milestones              ProjectDeliverableMilestone[]
+  utilizationCertificates UtilizationCertificate[]
+  grievances              Grievance[]
+  inspections             ConvergenceProjectInspection[]
+
+  @@index([projectId])
+  @@index([status])
+  @@index([district])
+  @@index([nodalOfficerUserId])
+  @@index([implementingAgencyUserId])
+  @@index([tenantId])
+}
+
+// 11. Project Deliverable Milestone
+model ProjectDeliverableMilestone {
+  id                   String             @id @default(uuid())
+  tenantId             String?
+  convergenceProjectId String
+  convergenceProject   ConvergenceProject @relation(fields: [convergenceProjectId], references: [id], onDelete: Cascade)
+
+  name               String
+  description        String?               @db.Text
+  workType           String // CONSTRUCTION / RENOVATION / EQUIPMENT_PURCHASE / SOFT_COMPONENT
+  status             SimpleMilestoneStatus @default(NOT_STARTED)
+  fundsUtilized      Decimal               @default(0) @db.Decimal(15, 2)
+  geoTaggedPhotoUrls String[]
+
+  // Verification
+  verifiedByNodalOfficerId String?
+  verifiedByNodalOfficer   User?     @relation("MilestoneVerifications", fields: [verifiedByNodalOfficerId], references: [id], onDelete: SetNull)
+  verifiedAt               DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  utilizationCertificates UtilizationCertificate[]
+
+  @@index([convergenceProjectId])
+  @@index([status])
+  @@index([tenantId])
+}
+
+// 12. Utilization Certificate
+model UtilizationCertificate {
+  id       String  @id @default(uuid())
+  tenantId String?
+
+  convergenceProjectId String?
+  convergenceProject   ConvergenceProject?          @relation(fields: [convergenceProjectId], references: [id], onDelete: Cascade)
+  milestoneId          String?
+  milestone            ProjectDeliverableMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+
+  // CSR Project fields (optional, added back to support CSR Lifecycle)
+  csrFundReleaseId String?
+  csrFundRelease   CSRFundRelease? @relation("ReleaseUC", fields: [csrFundReleaseId], references: [id], onDelete: Cascade)
+  csrProjectId     String?
+  csrProject       CSRProject?     @relation("ProjectUC", fields: [csrProjectId], references: [id], onDelete: Cascade)
+  csrRequirementId String?
+  csrRequirement   CSRRequirement? @relation("RequirementUC", fields: [csrRequirementId], references: [id], onDelete: Cascade)
+  ngoId            String?
+  ngo              NGO?            @relation("NgoUC", fields: [ngoId], references: [id], onDelete: Cascade)
+  verifiedById     String?
+  verifiedByUser   User?           @relation("UCVerificationsOld", fields: [verifiedById], references: [id], onDelete: SetNull)
+
+  uploadedByUserId String
+  uploadedByUser   User   @relation("UCUploads", fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+
+  certificateDocumentUrl String
+  amountUtilized         Decimal  @db.Decimal(15, 2)
+  remarks                String?  @db.Text
+  invoiceDocuments       String[]
+
+  // Verification
+  verificationStatus       String  @default("PENDING") // PENDING / VERIFIED / REJECTED
+  verifiedByNodalOfficerId String?
+  verifiedByNodalOfficer   User?   @relation("UCVerifications", fields: [verifiedByNodalOfficerId], references: [id], onDelete: SetNull)
+
+  uploadedAt DateTime  @default(now())
+  verifiedAt DateTime?
+
+  @@index([convergenceProjectId])
+  @@index([milestoneId])
+  @@index([uploadedByUserId])
+  @@index([verificationStatus])
+  @@index([tenantId])
+}
+
+// 13. Grievance
+model Grievance {
+  id          String  @id @default(uuid())
+  tenantId    String?
+  grievanceId String  @unique // GRV-MH-YYYY-000001 format
+
+  convergenceProjectId String
+  convergenceProject   ConvergenceProject @relation(fields: [convergenceProjectId], references: [id], onDelete: Cascade)
+
+  raisedByUserId String
+  raisedByUser   User   @relation("GrievancesRaised", fields: [raisedByUserId], references: [id], onDelete: Cascade)
+  raisedByType   String // CORPORATE / IMPLEMENTING_AGENCY / GOVERNMENT_OFFICER
+
+  issueTitle       String
+  issueDescription String          @db.Text
+  status           GrievanceStatus @default(RAISED)
+
+  // SLA Timeline
+  level1DueAt DateTime? // 15 days
+  level2DueAt DateTime? // 30 days after escalation
+
+  // Assignment
+  assignedNodalOfficerId  String?
+  assignedNodalOfficer    User?   @relation("GrievancesNodal", fields: [assignedNodalOfficerId], references: [id], onDelete: SetNull)
+  assignedStateCellUserId String?
+  assignedStateCellUser   User?   @relation("GrievancesStateCell", fields: [assignedStateCellUserId], references: [id], onDelete: SetNull)
+  finalAuthorityUserId    String?
+  finalAuthorityUser      User?   @relation("GrievancesFinalAuthority", fields: [finalAuthorityUserId], references: [id], onDelete: SetNull)
+
+  // Resolution
+  resolutionText String? @db.Text
+
+  // Audit
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  actionLogs GrievanceActionLog[]
+
+  @@index([grievanceId])
+  @@index([convergenceProjectId])
+  @@index([status])
+  @@index([raisedByUserId])
+  @@index([assignedNodalOfficerId])
+  @@index([tenantId])
+}
+
+// 14. Grievance Action Log
+model GrievanceActionLog {
+  id          String    @id @default(uuid())
+  tenantId    String?
+  grievanceId String
+  grievance   Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+
+  actorUserId String
+  actorUser   User   @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  action String // STATUS_CHANGE, NOTE_ADDED, ASSIGNED, ESCALATED, RESOLVED, etc.
+  note   String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([grievanceId])
+  @@index([actorUserId])
+  @@index([tenantId])
+}
+
+model OtpVerification {
+  id                String    @id @default(uuid())
+  purpose           String
+  channel           String
+  target            String
+  otpHash           String
+  verificationToken String?   @unique
+  attempts          Int       @default(0)
+  expiresAt         DateTime
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([purpose, channel, target])
+  @@index([expiresAt])
+}
+
+// 15. SLA Escalation Tracking
+model SLAEscalation {
+  id       String  @id @default(uuid())
+  tenantId String?
+
+  entityType String // CORPORATE_ENQUIRY, GOVERNMENT_PITCH, GRIEVANCE, etc.
+  entityId   String
+  stage      SLAStage
+
+  responsibleUserId String?
+  responsibleUser   User?   @relation("SLAResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+
+  dueAt DateTime
+
+  escalatedToUserId String?
+  escalatedToUser   User?     @relation("SLAEscalatedTo", fields: [escalatedToUserId], references: [id], onDelete: SetNull)
+  escalatedAt       DateTime?
+
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([stage])
+  @@index([responsibleUserId])
+  @@index([isResolved])
+  @@index([dueAt])
+  @@index([tenantId])
+}
+
+model ConvergenceProjectInspection {
+  id                   String             @id @default(uuid())
+  tenantId             String?
+  convergenceProjectId String
+  districtOfficerId    String
+  visitDate            DateTime           @default(now())
+  latitude             Float?
+  longitude            Float?
+  geoTaggedImages      String[]
+  remarks              String?            @db.Text
+  issuesFound          String?            @db.Text
+  actionRequired       String?            @db.Text
+  nextVisitDate        DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  convergenceProject   ConvergenceProject @relation(fields: [convergenceProjectId], references: [id], onDelete: Cascade)
+  districtOfficer      User               @relation(fields: [districtOfficerId], references: [id], onDelete: Cascade)
+
+  @@index([convergenceProjectId])
+  @@index([districtOfficerId])
+  @@index([tenantId])
+}
+

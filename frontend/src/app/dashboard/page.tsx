@@ -68,9 +68,9 @@ export default function DashboardPage() {
       icon: "🎯",
     },
     {
-      title: "Marketplace",
-      description: "Browse and apply for CSR funding opportunities",
-      link: "/marketplace",
+      title: "Public Development Needs",
+      description: "Browse JS-approved government development needs",
+      link: "/public-development-needs",
       status: "Available",
       statusVariant: "info" as const,
       icon: "🏪",

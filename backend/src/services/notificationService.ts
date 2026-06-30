@@ -106,3 +106,55 @@ export async function auditLog(
     data: { userId, action, details, ipAddress }
   });
 }
+
+type StubNotificationInput = {
+  trackingId?: string;
+  targetEmail?: string | null;
+  targetMobile?: string | null;
+  title: string;
+  message: string;
+  userId?: string;
+};
+
+async function safeNotificationStub(kind: string, input: StubNotificationInput): Promise<void> {
+  if (input.userId) {
+    await notify(input.userId, input.title, input.message);
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info(`[DEV ${kind}] ${input.title}`, {
+      trackingId: input.trackingId,
+      email: input.targetEmail,
+      mobile: input.targetMobile,
+      message: input.message,
+    });
+  }
+}
+
+export async function sendTrackingIdNotification(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("TRACKING_NOTIFICATION", input);
+}
+
+export async function sendSlaEscalationNotification(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("SLA_ESCALATION", input);
+}
+
+export async function sendGrievanceAcknowledgement(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("GRIEVANCE_ACK", input);
+}
+
+export async function sendJsDecisionNotification(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("JS_DECISION", input);
+}
+
+export async function sendNodalOfficerAppointmentNotification(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("NODAL_APPOINTMENT", input);
+}
+
+export async function sendMouStatusNotification(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("MOU_STATUS", input);
+}
+
+export async function sendUcVerificationNotification(input: StubNotificationInput): Promise<void> {
+  await safeNotificationStub("UC_VERIFICATION", input);
+}

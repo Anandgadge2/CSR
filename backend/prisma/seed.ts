@@ -1,4 +1,5 @@
-import { PrismaClient, Role, VerificationStatus, ProjectStatus, MilestoneStatus, OnboardingStatus, OrganizationType, CSRCategory, PriorityLevel, CSRRequirementStatus, NGOApplicationStatus, CompanyInterestStatus, AgreementStatus, CSRFundMilestoneStatus, ProgressReportStatus, OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, RoleScope } from "@prisma/client";
+import "dotenv/config";
+import { PrismaClient, Role, VerificationStatus, ProjectStatus, MilestoneStatus, OnboardingStatus, OrganizationType, CSRCategory, PriorityLevel, CSRRequirementStatus, NGOApplicationStatus, CompanyInterestStatus, AgreementStatus, CSRFundMilestoneStatus, ProgressReportStatus, OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, RoleScope, FeasibilityResult, ChecklistAnswer } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { PERMISSIONS, ROLE_PERMISSION_MAP, TENANT_FEATURES } from "../src/config/platformAccess";
 
@@ -44,6 +45,22 @@ async function main() {
     await tx.cSRRequirementDocument.deleteMany();
     await tx.cSRRequirement.deleteMany();
     await tx.beneficiaryProfile.deleteMany();
+    await tx.otpVerification.deleteMany();
+    await tx.sLAEscalation.deleteMany();
+    await tx.grievanceActionLog.deleteMany();
+    await tx.grievance.deleteMany();
+    await tx.utilizationCertificate.deleteMany();
+    await tx.projectDeliverableMilestone.deleteMany();
+    await tx.convergenceProject.deleteMany();
+    await tx.standardMou.deleteMany();
+    await tx.nodalOfficerAppointment.deleteMany();
+    await tx.feasibilityChecklistItem.deleteMany();
+    await tx.feasibilityAssessment.deleteMany();
+    await tx.corporatePitchInterest.deleteMany();
+    await tx.governmentPitchPhoto.deleteMany();
+    await tx.governmentPitch.deleteMany();
+    await tx.corporateEnquiryInteraction.deleteMany();
+    await tx.corporateEnquiry.deleteMany();
 
     await tx.user.deleteMany();
     await tx.nGO.deleteMany();
@@ -135,6 +152,488 @@ async function main() {
       },
     });
     console.log("✓ CSR Admin created:", csrAdmin.email);
+
+    const rmUser = await tx.user.create({ data: { email: "rm.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.CSR_RELATIONSHIP_MANAGER, tenantId: tenant.id, assignedDistrict: "Pune", isVerified: true } });
+    const jsUser = await tx.user.create({ data: { email: "js.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.JOINT_SECRETARY, tenantId: tenant.id, isVerified: true } });
+    const secretaryUser = await tx.user.create({ data: { email: "secretary.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.PLANNING_SECRETARY, tenantId: tenant.id, isVerified: true } });
+    const nodalUser = await tx.user.create({ data: { email: "nodal.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.DISTRICT_NODAL_OFFICER, tenantId: tenant.id, assignedDistrict: "Pune", isVerified: true } });
+    const stateCellUser = await tx.user.create({ data: { email: "statecell.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.STATE_CSR_CELL, tenantId: tenant.id, isVerified: true } });
+    const corporateUser = await tx.user.create({ data: { email: "corporate.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.CORPORATE_USER, tenantId: tenant.id, isVerified: true } });
+    const corporateTestUser = await tx.user.create({ data: { email: "corporate.user@testcsr.com", passwordHash: defaultPasswordHash, role: Role.CORPORATE_USER, tenantId: tenant.id, isVerified: true } });
+    const iaUser = await tx.user.create({ data: { email: "ia.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.IMPLEMENTING_AGENCY_USER, tenantId: tenant.id, isVerified: true } });
+    const agencyUser = await tx.user.create({ data: { email: "agency.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.IMPLEMENTING_AGENCY_USER, tenantId: tenant.id, isVerified: true } });
+    const govtOfficerUser = await tx.user.create({ data: { email: "government.user@mahacsr.gov.in", passwordHash: defaultPasswordHash, role: Role.GOVERNMENT_OFFICER, tenantId: tenant.id, isVerified: true } });
+
+    // ============================================
+    // MAHA CSR FRAMEWORK TEST DATA - Joint Secretary Testing
+    // ============================================
+
+    // Test Enquiry 1: Submitted to JS, awaiting decision (FEASIBLE)
+    const sampleEnquiry = await tx.corporateEnquiry.create({
+      data: {
+        tenantId: tenant.id,
+        trackingId: "CSR-MH-2026-000001",
+        companyName: "Maharashtra Industries CSR Foundation",
+        sector: "EDUCATION",
+        preferredDistricts: ["Pune"],
+        indicativeBudget: 2500000,
+        contactPersonName: "Amit Deshpande",
+        mobile: "9876543210",
+        mobileVerified: true,
+        email: "csr@mahacorp.example",
+        emailVerified: true,
+        mca21Cin: "U12345MH2024PTC123456",
+        proposedCsrWork: "Smart classroom support for government schools in Pune district.",
+        assignedRelationshipManagerId: rmUser.id,
+        status: "ASSESSMENT_SUBMITTED_TO_JS",
+        submittedAt: new Date("2026-06-20"),
+        firstResponseDueAt: new Date("2026-06-27"),
+        firstContactedAt: new Date("2026-06-21"),
+      }
+    });
+
+    // Test Enquiry 2: Submitted to JS - PROCEED_WITH_CONDITIONS scenario
+    const sampleEnquiry2 = await tx.corporateEnquiry.create({
+      data: {
+        tenantId: tenant.id,
+        trackingId: "CSR-MH-2026-000002",
+        companyName: "Tata Consultancy Services CSR",
+        sector: "HEALTH",
+        preferredDistricts: ["Mumbai", "Thane"],
+        indicativeBudget: 5000000,
+        contactPersonName: "Priya Sharma",
+        mobile: "9876543212",
+        mobileVerified: true,
+        email: "csr@tcs.example",
+        emailVerified: true,
+        mca21Cin: "L22222MH1990PLC054321",
+        proposedCsrWork: "Mobile health clinics in rural Mumbai suburbs.",
+        assignedRelationshipManagerId: rmUser.id,
+        status: "ASSESSMENT_SUBMITTED_TO_JS",
+        submittedAt: new Date("2026-06-25"),
+        firstResponseDueAt: new Date("2026-07-02"),
+        firstContactedAt: new Date("2026-06-26"),
+      }
+    });
+
+    // Test Enquiry 3: Submitted to JS - NOT_FEASIBLE scenario (will be rejected)
+    const sampleEnquiry3 = await tx.corporateEnquiry.create({
+      data: {
+        tenantId: tenant.id,
+        trackingId: "CSR-MH-2026-000003",
+        companyName: "Reliance Foundation",
+        sector: "RURAL_DEVELOPMENT",
+        preferredDistricts: ["Nagpur"],
+        indicativeBudget: 10000000,
+        contactPersonName: "Vijay Kumar",
+        mobile: "9876543213",
+        mobileVerified: true,
+        email: "csr@reliance.example",
+        emailVerified: true,
+        mca21Cin: "L17110MH1973PLC019786",
+        proposedCsrWork: "Village infrastructure development in Nagpur district.",
+        assignedRelationshipManagerId: rmUser.id,
+        status: "ASSESSMENT_SUBMITTED_TO_JS",
+        submittedAt: new Date("2026-06-28"),
+        firstResponseDueAt: new Date("2026-07-05"),
+        firstContactedAt: new Date("2026-06-29"),
+      }
+    });
+
+    // Test Enquiry 4: RM missed SLA - escalated to JS (overdue)
+    const sampleEnquiry4 = await tx.corporateEnquiry.create({
+      data: {
+        tenantId: tenant.id,
+        trackingId: "CSR-MH-2026-000004",
+        companyName: "Infosys Limited",
+        sector: "SKILL_DEVELOPMENT",
+        preferredDistricts: ["Pune"],
+        indicativeBudget: 3500000,
+        contactPersonName: "Rahul Mehta",
+        mobile: "9876543214",
+        mobileVerified: true,
+        email: "csr@infosys.example",
+        emailVerified: true,
+        mca21Cin: "L85110KA1981PLC013115",
+        proposedCsrWork: "IT training center for rural youth in Pune.",
+        assignedRelationshipManagerId: rmUser.id,
+        status: "ASSESSMENT_SUBMITTED_TO_JS",
+        submittedAt: new Date("2026-06-10"), // Overdue - more than 3 days
+        firstResponseDueAt: new Date("2026-06-17"),
+        firstContactedAt: new Date("2026-06-11"),
+      }
+    });
+
+    // Test Pitch 1: JS Approved (already processed)
+    const samplePitch = await tx.governmentPitch.create({
+      data: {
+        tenantId: tenant.id,
+        pitchReferenceId: "GP-MH-2026-000001",
+        officialName: "Rajesh Patil",
+        designation: "Block Education Officer",
+        department: "School Education",
+        officeName: "Zilla Parishad Pune",
+        serviceClass: "CLASS_1",
+        mobile: "9876543211",
+        mobileVerified: true,
+        email: "zp.pune@mahacsr.gov.in",
+        emailVerified: true,
+        district: "Pune",
+        taluka: "Haveli",
+        exactLocation: "ZP School Loni Kalbhor",
+        csrRequirement: "Digital smart classroom setup for secondary students.",
+        estimatedCost: 2500000,
+        govtFundDeclaration: true,
+        certificationType: "SELF",
+        status: "JS_APPROVED",
+        assignedRelationshipManagerId: rmUser.id,
+        submittedAt: new Date("2026-06-18"),
+        verificationDueAt: new Date("2026-06-25"),
+        jsApprovalDueAt: new Date("2026-06-30"),
+        photos: { create: [
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/site-1.jpg", latitude: 18.5204, longitude: 73.8567, isGeoTagged: true },
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/site-2.jpg", latitude: 18.5214, longitude: 73.8577, isGeoTagged: true },
+        ] }
+      }
+    });
+
+    // Test Pitch 2: Awaiting JS approval
+    const samplePitch2 = await tx.governmentPitch.create({
+      data: {
+        tenantId: tenant.id,
+        pitchReferenceId: "GP-MH-2026-000002",
+        officialName: "Sunita Deshmukh",
+        designation: "District Health Officer",
+        department: "Health",
+        officeName: "Zilla Parishad Nagpur",
+        serviceClass: "CLASS_1",
+        mobile: "9876543215",
+        mobileVerified: true,
+        email: "health.nagpur@mahacsr.gov.in",
+        emailVerified: true,
+        district: "Nagpur",
+        taluka: "Nagpur",
+        exactLocation: "Primary Health Center, Kamptee Road",
+        csrRequirement: "Equipment upgrade for pediatric ward including monitors and ventilators.",
+        estimatedCost: 4500000,
+        govtFundDeclaration: true,
+        certificationType: "HOD",
+        hodCertificationDocument: "https://dev.mahacsr.local/docs/hod-cert-002.pdf",
+        status: "JS_APPROVAL_PENDING",
+        assignedRelationshipManagerId: rmUser.id,
+        submittedAt: new Date("2026-06-26"),
+        verificationDueAt: new Date("2026-07-03"),
+        jsApprovalDueAt: new Date("2026-07-10"),
+        photos: { create: [
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/health-1.jpg", latitude: 21.1458, longitude: 79.0882, isGeoTagged: true },
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/health-2.jpg", latitude: 21.1468, longitude: 79.0892, isGeoTagged: true },
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/health-3.jpg", latitude: 21.1478, longitude: 79.0902, isGeoTagged: true },
+        ] }
+      }
+    });
+
+    // Test Pitch 3: Awaiting JS approval (Mumbai)
+    const samplePitch3 = await tx.governmentPitch.create({
+      data: {
+        tenantId: tenant.id,
+        pitchReferenceId: "GP-MH-2026-000003",
+        officialName: "Anil Sharma",
+        designation: "Municipal Commissioner",
+        department: "Urban Development",
+        officeName: "Mumbai Municipal Corporation",
+        serviceClass: "CLASS_1",
+        mobile: "9876543216",
+        mobileVerified: true,
+        email: "commissioner@mumbai.gov.in",
+        emailVerified: true,
+        district: "Mumbai",
+        taluka: "Mumbai City",
+        exactLocation: "Dharavi Community Center, 90 Feet Road",
+        csrRequirement: "Skill development center for women with focus on tailoring and embroidery.",
+        estimatedCost: 1800000,
+        govtFundDeclaration: false,
+        certificationType: "SELF",
+        status: "JS_APPROVAL_PENDING",
+        assignedRelationshipManagerId: rmUser.id,
+        submittedAt: new Date("2026-06-27"),
+        verificationDueAt: new Date("2026-07-04"),
+        jsApprovalDueAt: new Date("2026-07-11"),
+        photos: { create: [
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/skill-1.jpg", latitude: 19.0360, longitude: 72.8530, isGeoTagged: true },
+          { tenantId: tenant.id, fileUrl: "https://dev.mahacsr.local/photos/skill-2.jpg", latitude: 19.0370, longitude: 72.8540, isGeoTagged: true },
+        ] }
+      }
+    });
+
+    const checklist = [
+      "Activity falls within Schedule VII of the Companies Act.",
+      "Not a prohibited CSR activity: not employee-only, not political, not normal course of business.",
+      "Addresses a genuine, verified development need.",
+      "Does NOT duplicate an existing government scheme or ongoing project in same location.",
+      "For construction/renovation: site/land is available, clear, and in government ownership/control.",
+      "Required permissions/clearances are obtainable within a reasonable time.",
+      "Required government support/personnel/access is confirmed.",
+      "Indicative budget is adequate for the proposed scope.",
+      "Cost estimate is realistic and benchmarked against similar works.",
+      "Implementing capacity exists: corporate/foundation/NGO is capable.",
+      "Timeline is realistic for the scope.",
+      "Post-completion ownership of the asset is clear.",
+      "Maintenance / recurring-cost responsibility is identified.",
+    ];
+    const dimensions = ["Mandate & Legal", "Mandate & Legal", "Need & Alignment", "Need & Alignment", "Site & Govt Support", "Site & Govt Support", "Site & Govt Support", "Financial", "Financial", "Implementation", "Implementation", "Sustainability", "Sustainability"];
+
+    // Assessment 1: FEASIBLE - Already decided by JS
+    const sampleAssessment = await tx.feasibilityAssessment.create({
+      data: {
+        tenantId: tenant.id,
+        reportReference: "FES-MH-2026-000001",
+        corporateEnquiryId: sampleEnquiry.id,
+        relationshipManagerId: rmUser.id,
+        companyName: sampleEnquiry.companyName,
+        cin: sampleEnquiry.mca21Cin,
+        sector: sampleEnquiry.sector,
+        contactSummary: "Initial call completed and documents verified.",
+        proposedLocationDistrict: "Pune",
+        indicativeBudget: 2500000,
+        developmentNeedAddressed: "Smart classroom infrastructure gap in ZP school.",
+        dateOfFirstContact: new Date("2026-06-21"),
+        summaryOfInteraction: "Company confirmed budget and implementation support.",
+        feasibilityResult: FeasibilityResult.FEASIBLE,
+        recommendation: "Recommended for approval. Company has strong track record in education CSR.",
+        suggestedNodalOfficerDomain: "School Education",
+        submittedToJsAt: new Date("2026-06-22"),
+        jsDecisionById: jsUser.id,
+        jsDecisionAt: new Date("2026-06-23"),
+        jsDecisionRemarks: "Approved for nodal appointment. Proceed with standard MoU.",
+        checklistItems: { create: checklist.map((checkText, index) => ({ tenantId: tenant.id, itemNumber: index + 1, dimension: dimensions[index], checkText, isCritical: [1,2,3,4,5,6,7,12,13].includes(index + 1), answer: ChecklistAnswer.YES, remarks: index === 0 ? "Verified Schedule VII compliance" : undefined })) }
+      }
+    });
+
+    // Assessment 2: PROCEED_WITH_CONDITIONS - Pending JS decision
+    const sampleAssessment2 = await tx.feasibilityAssessment.create({
+      data: {
+        tenantId: tenant.id,
+        reportReference: "FES-MH-2026-000002",
+        corporateEnquiryId: sampleEnquiry2.id,
+        relationshipManagerId: rmUser.id,
+        companyName: sampleEnquiry2.companyName,
+        cin: sampleEnquiry2.mca21Cin,
+        sector: sampleEnquiry2.sector,
+        contactSummary: "Multiple calls and site visits completed.",
+        proposedLocationDistrict: "Mumbai",
+        indicativeBudget: 5000000,
+        developmentNeedAddressed: "Mobile health clinics for underserved areas.",
+        dateOfFirstContact: new Date("2026-06-26"),
+        summaryOfInteraction: "Company interested but has conditions regarding government support.",
+        feasibilityResult: FeasibilityResult.PROCEED_WITH_CONDITIONS,
+        recommendation: "Proceed with conditions. Requires dedicated government liaison.",
+        suggestedNodalOfficerDomain: "Health",
+        conditionText: "Government to provide designated liaison officer and permits for mobile clinics in restricted areas.",
+        submittedToJsAt: new Date("2026-06-28"),
+        // No JS decision yet - pending
+        checklistItems: { create: checklist.map((checkText, index) => ({ tenantId: tenant.id, itemNumber: index + 1, dimension: dimensions[index], checkText, isCritical: [1,2,3,4,5,6,7,12,13].includes(index + 1), answer: index === 6 ? ChecklistAnswer.NO : ChecklistAnswer.YES, remarks: index === 6 ? "Limited government support confirmed" : undefined })) }
+      }
+    });
+
+    // Assessment 3: NOT_FEASIBLE - Pending JS decision (will be rejected)
+    const sampleAssessment3 = await tx.feasibilityAssessment.create({
+      data: {
+        tenantId: tenant.id,
+        reportReference: "FES-MH-2026-000003",
+        corporateEnquiryId: sampleEnquiry3.id,
+        relationshipManagerId: rmUser.id,
+        companyName: sampleEnquiry3.companyName,
+        cin: sampleEnquiry3.mca21Cin,
+        sector: sampleEnquiry3.sector,
+        contactSummary: "Initial contact and preliminary assessment.",
+        proposedLocationDistrict: "Nagpur",
+        indicativeBudget: 10000000,
+        developmentNeedAddressed: "Village infrastructure development.",
+        dateOfFirstContact: new Date("2026-06-29"),
+        summaryOfInteraction: "Company interested but project scope overlaps with ongoing government scheme.",
+        feasibilityResult: FeasibilityResult.NOT_FEASIBLE,
+        recommendation: "Not recommended. Duplicates existing government infrastructure scheme.",
+        suggestedNodalOfficerDomain: "Rural Development",
+        submittedToJsAt: new Date("2026-06-30"),
+        // No JS decision yet - pending
+        checklistItems: { create: checklist.map((checkText, index) => ({ tenantId: tenant.id, itemNumber: index + 1, dimension: dimensions[index], checkText, isCritical: [1,2,3,4,5,6,7,12,13].includes(index + 1), answer: index === 3 ? ChecklistAnswer.NO : index === 4 ? ChecklistAnswer.NO : ChecklistAnswer.YES, remarks: index === 3 ? "Duplicates PMGSY Phase III work" : index === 4 ? "Land not clearly demarcated" : undefined })) }
+      }
+    });
+
+    // Assessment 4: FEASIBLE - Overdue (RM missed SLA, escalated to JS)
+    const sampleAssessment4 = await tx.feasibilityAssessment.create({
+      data: {
+        tenantId: tenant.id,
+        reportReference: "FES-MH-2026-000004",
+        corporateEnquiryId: sampleEnquiry4.id,
+        relationshipManagerId: rmUser.id,
+        companyName: sampleEnquiry4.companyName,
+        cin: sampleEnquiry4.mca21Cin,
+        sector: sampleEnquiry4.sector,
+        contactSummary: "Delayed due to RM availability.",
+        proposedLocationDistrict: "Pune",
+        indicativeBudget: 3500000,
+        developmentNeedAddressed: "IT skill development for rural youth.",
+        dateOfFirstContact: new Date("2026-06-11"),
+        summaryOfInteraction: "Company ready to proceed immediately. Training curriculum ready.",
+        feasibilityResult: FeasibilityResult.FEASIBLE,
+        recommendation: "Highly recommended. Addresses skill gap in district.",
+        suggestedNodalOfficerDomain: "Skill Development",
+        submittedToJsAt: new Date("2026-06-12"), // Overdue by more than 3 days
+        // No JS decision yet - overdue
+        checklistItems: { create: checklist.map((checkText, index) => ({ tenantId: tenant.id, itemNumber: index + 1, dimension: dimensions[index], checkText, isCritical: [1,2,3,4,5,6,7,12,13].includes(index + 1), answer: ChecklistAnswer.YES })) }
+      }
+    });
+
+    // Assessment 5: Government Pitch Assessment (RM Verified, pending JS)
+    const sampleAssessment5 = await tx.feasibilityAssessment.create({
+      data: {
+        tenantId: tenant.id,
+        reportReference: "FES-MH-2026-000005",
+        governmentPitchId: samplePitch2.id,
+        relationshipManagerId: rmUser.id,
+        companyName: "Government Pitch - Health Equipment",
+        cin: "N/A",
+        sector: "HEALTH",
+        contactSummary: "Site verification completed.",
+        proposedLocationDistrict: "Nagpur",
+        indicativeBudget: 4500000,
+        developmentNeedAddressed: "Critical pediatric ward equipment shortage.",
+        dateOfFirstContact: new Date("2026-06-27"),
+        summaryOfInteraction: "Official verified. Requirements genuine and urgent.",
+        feasibilityResult: FeasibilityResult.FEASIBLE,
+        recommendation: "Highly recommended. Addresses critical healthcare gap.",
+        suggestedNodalOfficerDomain: "Health",
+        submittedToJsAt: new Date("2026-06-28"),
+        // No JS decision yet - pending
+        checklistItems: { create: checklist.map((checkText, index) => ({ tenantId: tenant.id, itemNumber: index + 1, dimension: dimensions[index], checkText, isCritical: [1,2,3,4,5,6,7,12,13].includes(index + 1), answer: index === 1 ? ChecklistAnswer.NA : ChecklistAnswer.YES })) }
+      }
+    });
+
+    // Assessment 6: Government Pitch Assessment (Mumbai - pending JS)
+    const sampleAssessment6 = await tx.feasibilityAssessment.create({
+      data: {
+        tenantId: tenant.id,
+        reportReference: "FES-MH-2026-000006",
+        governmentPitchId: samplePitch3.id,
+        relationshipManagerId: rmUser.id,
+        companyName: "Government Pitch - Skill Development",
+        cin: "N/A",
+        sector: "SKILL_DEVELOPMENT",
+        contactSummary: "Site visit completed. Community center suitable.",
+        proposedLocationDistrict: "Mumbai",
+        indicativeBudget: 1800000,
+        developmentNeedAddressed: "Women empowerment through skill training.",
+        dateOfFirstContact: new Date("2026-06-28"),
+        summaryOfInteraction: "Good community participation. Training demand confirmed.",
+        feasibilityResult: FeasibilityResult.FEASIBLE,
+        recommendation: "Recommended. Strong community support.",
+        suggestedNodalOfficerDomain: "Skill Development",
+        submittedToJsAt: new Date("2026-06-29"),
+        // No JS decision yet - pending
+        checklistItems: { create: checklist.map((checkText, index) => ({ tenantId: tenant.id, itemNumber: index + 1, dimension: dimensions[index], checkText, isCritical: [1,2,3,4,5,6,7,12,13].includes(index + 1), answer: ChecklistAnswer.YES })) }
+      }
+    });
+
+    // Nodal Appointment 1: For approved assessment
+    await tx.nodalOfficerAppointment.create({
+      data: {
+        tenantId: tenant.id,
+        corporateEnquiryId: sampleEnquiry.id,
+        assessmentId: sampleAssessment.id,
+        district: "Pune",
+        domain: "School Education",
+        nodalOfficerUserId: nodalUser.id,
+        nodalOfficerName: "Nodal Officer Pune",
+        designation: "District Nodal Officer",
+        department: "School Education",
+        appointedByJsId: jsUser.id,
+        appointmentLetterUrl: "https://dev.mahacsr.local/letters/appointment-001.pdf",
+        collectorCc: true,
+        zpCeoCc: true,
+      }
+    });
+
+    // Create SLA Escalation record for overdue case (sampleAssessment4)
+    await tx.sLAEscalation.create({
+      data: {
+        tenantId: tenant.id,
+        entityType: "CORPORATE_ENQUIRY",
+        entityId: sampleEnquiry4.id,
+        stage: "JS_DECISION",
+        responsibleUserId: jsUser.id,
+        dueAt: new Date("2026-06-15"), // Overdue
+        isResolved: false,
+      }
+    });
+
+    // Create SLA Escalation for government pitch awaiting JS approval
+    await tx.sLAEscalation.create({
+      data: {
+        tenantId: tenant.id,
+        entityType: "GOVERNMENT_PITCH",
+        entityId: samplePitch2.id,
+        stage: "JS_DECISION",
+        responsibleUserId: jsUser.id,
+        dueAt: new Date("2026-07-05"), // Due soon
+        isResolved: false,
+      }
+    });
+
+    const sampleMou = await tx.standardMou.create({
+      data: {
+        tenantId: tenant.id,
+        mouReferenceId: "MOU-MH-2026-000001",
+        corporateEnquiryId: sampleEnquiry.id,
+        districtDepartmentName: "Zilla Parishad Pune",
+        nodalOfficerName: "Nodal Officer Pune",
+        corporateName: sampleEnquiry.companyName,
+        cin: sampleEnquiry.mca21Cin,
+        projectTitle: "ZP School Smart Classroom Convergence Project",
+        projectDescription: "Digital smart classroom setup in Pune district.",
+        scheduleVIIClause: "3",
+        projectLocation: "ZP School Loni Kalbhor, Haveli, Pune",
+        deliverables: [{ milestoneNo: 1, description: "Procurement", timeline: "Month 1", amount: 1250000 }, { milestoneNo: 2, description: "Installation and training", timeline: "Month 2", amount: 1250000 }],
+        timelineMonths: 2,
+        financialContribution: 2500000,
+        governmentContribution: 0,
+        implementationMode: "OWN_FOUNDATION",
+        implementingAgencyName: "District Education Implementation Team",
+        ownershipAfterCompletion: "Government school",
+        maintenanceResponsibility: "School Education Department",
+        status: "SIGNED",
+        signedDocumentUrl: "https://dev.mahacsr.local/mou/signed.pdf",
+      }
+    });
+
+    const sampleProject = await tx.convergenceProject.create({
+      data: {
+        tenantId: tenant.id,
+        projectId: "PRJ-MH-2026-000001",
+        corporateEnquiryId: sampleEnquiry.id,
+        mouId: sampleMou.id,
+        title: "ZP School Smart Classroom Convergence Project",
+        district: "Pune",
+        taluka: "Haveli",
+        location: "Loni Kalbhor",
+        sector: "Education",
+        corporateName: sampleEnquiry.companyName,
+        nodalOfficerUserId: nodalUser.id,
+        implementingAgencyUserId: iaUser.id,
+        approvedBudget: 2500000,
+        utilizedAmount: 750000,
+        physicalProgressPercent: 50,
+        financialProgressPercent: 30,
+        status: "IN_PROGRESS",
+      }
+    });
+
+    const milestone1 = await tx.projectDeliverableMilestone.create({ data: { tenantId: tenant.id, convergenceProjectId: sampleProject.id, name: "Hardware Procurement", description: "Procure panels and classroom devices", workType: "EQUIPMENT_PURCHASE", status: "COMPLETED", fundsUtilized: 750000, geoTaggedPhotoUrls: ["https://dev.mahacsr.local/photos/m1.jpg"], verifiedByNodalOfficerId: nodalUser.id, verifiedAt: new Date("2026-06-28") } });
+    await tx.projectDeliverableMilestone.create({ data: { tenantId: tenant.id, convergenceProjectId: sampleProject.id, name: "Installation and Teacher Training", description: "Install equipment and train teachers", workType: "SOFT_COMPONENT", status: "IN_PROGRESS", fundsUtilized: 0, geoTaggedPhotoUrls: [] } });
+    await tx.utilizationCertificate.create({ data: { tenantId: tenant.id, convergenceProjectId: sampleProject.id, milestoneId: milestone1.id, uploadedByUserId: iaUser.id, certificateDocumentUrl: "https://dev.mahacsr.local/uc/uc-q1.pdf", amountUtilized: 750000, verificationStatus: "VERIFIED", verifiedByNodalOfficerId: nodalUser.id, verifiedAt: new Date("2026-06-29"), invoiceDocuments: [] } });
+    await tx.grievance.create({ data: { tenantId: tenant.id, grievanceId: "GRV-MH-2026-000001", convergenceProjectId: sampleProject.id, raisedByUserId: corporateUser.id, raisedByType: "CORPORATE", issueTitle: "Installation delay clarification", issueDescription: "Requesting updated installation schedule for the second milestone.", status: "LEVEL_1_REVIEW", level1DueAt: new Date("2026-07-15"), assignedNodalOfficerId: nodalUser.id, actionLogs: { create: { tenantId: tenant.id, actorUserId: corporateUser.id, action: "RAISED", note: "Grievance acknowledged and assigned to nodal officer." } } } });
+    await tx.corporatePitchInterest.create({ data: { tenantId: tenant.id, interestTrackingId: "INT-MH-2026-000001", governmentPitchId: samplePitch.id, companyName: "Maharashtra Industries CSR Foundation", mca21Cin: "U12345MH2024PTC123456", contactPersonName: "Amit Deshpande", contactPersonDesignation: "CSR Head", mobile: "9876543210", mobileVerified: true, email: "csr@mahacorp.example", emailVerified: true, indicativeBudget: 2500000, preferredStartTimeline: "THIS_QUARTER", implementationMode: "OWN_FOUNDATION", declarationAccepted: true } });
+    console.log("✓ Framework role users and convergence sample data created.");
 
     // ============================================
     // 3. CREATE NGO PROFILES
@@ -1349,7 +1848,6 @@ async function main() {
 main()
   .catch((e) => {
     console.error("❌ Seed failed:", e);
-    process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();

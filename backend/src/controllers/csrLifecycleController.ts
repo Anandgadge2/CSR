@@ -225,8 +225,9 @@ export const submitUtilizationCertificate = async (req: AuthenticatedRequest, re
           csrProjectId: release.csrProjectId,
           csrRequirementId: release.csrRequirementId,
           ngoId: req.user!.ngoId!,
-          utilizedAmount: toNumber(req.body.utilizedAmount),
-          certificateDocument: req.body.certificateDocument || null,
+          uploadedByUserId: req.user!.id,
+          amountUtilized: toNumber(req.body.utilizedAmount),
+          certificateDocumentUrl: req.body.certificateDocument || req.body.certificateDocumentUrl || "",
           invoiceDocuments: req.body.invoiceDocuments || [],
           remarks: req.body.remarks || null,
           verificationStatus: CSRFundMilestoneStatus.UTILIZATION_SUBMITTED

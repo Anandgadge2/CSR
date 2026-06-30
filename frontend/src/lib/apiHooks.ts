@@ -30,6 +30,7 @@ export const useApiMutation = <TData, TVariables>(
   path: string,
   options?: {
     onSuccess?: (data: TData) => void;
+    onError?: (error: Error) => void;
     invalidateKeys?: string[][];
   }
 ) => {
@@ -50,6 +51,9 @@ export const useApiMutation = <TData, TVariables>(
         });
       }
       options?.onSuccess?.(data);
+    },
+    onError: (error) => {
+      options?.onError?.(error);
     },
   });
 };

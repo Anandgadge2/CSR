@@ -13,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import HeroSection from "@/components/HeroSection";
-import { GisMap } from "@/components/LazyComponents";
+import GisMap from "@/components/GisMap";
 
 const workflow = [
   {
@@ -49,17 +49,17 @@ const roleCards = [
   },
   {
     title: "For Corporates",
-    detail: "Discover verified projects, track recommended matches, approve tranches, and generate reports.",
-    action: "Register as Corporate",
-    href: "/register",
+    detail: "Submit CSR interest, browse public development needs, and track enquiry status.",
+    action: "Partner with Maharashtra",
+    href: "/partner-with-maharashtra",
     icon: Building2,
     tone: "blue",
   },
   {
     title: "For Government Entities",
-    detail: "Register departments, district offices, or local bodies for restricted access and approval workflows.",
-    action: "Register as Government Entity",
-    href: "/register",
+    detail: "Pitch development needs with district, budget, certification, and location evidence.",
+    action: "Pitch Development Need",
+    href: "/pitch-development-need",
     icon: Landmark,
     tone: "orange",
   },
@@ -170,7 +170,7 @@ export default function LandingPage() {
 
         <section className="rounded-lg border border-[#d8e2ef] bg-white p-4 shadow-[0_8px_26px_rgba(15,35,70,0.06)] sm:p-5 md:p-6">
           <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#456aa4]">MahaCSR at a Glance</div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {stats.map(([value, label, delta], index) => (
               <div key={label} className="rounded-md border border-[#d8e2ef] bg-white p-4">
                 <div className="flex items-center gap-3">

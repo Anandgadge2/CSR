@@ -194,7 +194,7 @@ const buildRequirementReport = async (req: AuthenticatedRequest, reportName: str
   const utilized = requirements.reduce(
     (sum, item) => sum + item.utilizationCertificates
       .filter((certificate) => certificate.verificationStatus === "FM_VERIFIED" || certificate.verificationStatus === "UTILIZATION_SUBMITTED")
-      .reduce((inner, certificate) => inner + asNumber(certificate.utilizedAmount), 0),
+      .reduce((inner, certificate) => inner + asNumber(certificate.amountUtilized), 0),
     0
   );
   const beneficiaries = requirements.reduce((sum, item) => sum + item.beneficiaryCount, 0);
@@ -218,7 +218,7 @@ const buildRequirementReport = async (req: AuthenticatedRequest, reportName: str
       + item.csrFundReleases
         .filter((release) => release.status === "FM_RELEASED" || release.status === "FM_VERIFIED" || release.status === "UTILIZATION_SUBMITTED")
         .reduce((sum, release) => sum + asNumber(release.releasedAmount), 0);
-    const utilizedAmount = item.utilizationCertificates.reduce((sum, certificate) => sum + asNumber(certificate.utilizedAmount), 0);
+    const utilizedAmount = item.utilizationCertificates.reduce((sum, certificate) => sum + asNumber(certificate.amountUtilized), 0);
     return {
       id: item.id,
       requirementTitle: item.title,
@@ -329,7 +329,7 @@ export const getCompanyReport = async (req: AuthenticatedRequest, res: Response,
     );
     const utilized = interests.reduce(
       (sum, item) => sum + item.csrRequirement.utilizationCertificates
-        .reduce((inner, certificate) => inner + asNumber(certificate.utilizedAmount), 0),
+        .reduce((inner, certificate) => inner + asNumber(certificate.amountUtilized), 0),
       0
     );
 

@@ -114,54 +114,48 @@ export default memo(function GisMap() {
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.aside
-            key={selectedDistrict.name}
-            initial={{ opacity: 0, x: 16 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 16 }}
-            transition={{ duration: 0.18 }}
-            className="flex min-w-0 flex-col justify-between rounded-md border border-[#d8e2ef] bg-white p-5 shadow-sm"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#456aa4]">Territory Details</span>
-                  <h4 className="mt-1 font-heading text-2xl font-extrabold leading-none tracking-tight text-[#102c60]">
-                    {selectedDistrict.name}
-                  </h4>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDistrict(districts[0])}
-                  className="rounded-md p-1.5 text-[#5b6b80] transition-colors hover:bg-[#eef4fb] hover:text-[#102c60]"
-                  aria-label="Reset selected district"
-                >
-                  <X size={16} />
-                </button>
+        <aside
+          key={selectedDistrict.name}
+          className="flex min-w-0 flex-col justify-between rounded-md border border-[#d8e2ef] bg-white p-5 shadow-sm"
+        >
+          <div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#456aa4]">Territory Details</span>
+                <h4 className="mt-1 font-heading text-2xl font-extrabold leading-none tracking-tight text-[#102c60]">
+                  {selectedDistrict.name}
+                </h4>
               </div>
-
-              <div className="my-5 h-px w-full bg-[#d8e2ef]" />
-
-              <div className="space-y-4">
-                <Metric icon={Coins} label="Allocated CSR Funds" value={`Rs ${selectedDistrict.funding.toFixed(2)} Cr`} tone="orange" />
-                <Metric icon={FolderCheck} label="Active Approved Projects" value={`${selectedDistrict.projects} Projects`} tone="blue" />
-                <Metric icon={HeartHandshake} label="Active Impact NGOs" value={`${selectedDistrict.ngos} NGOs`} tone="green" />
-              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDistrict(districts[0])}
+                className="rounded-md p-1.5 text-[#5b6b80] transition-colors hover:bg-[#eef4fb] hover:text-[#102c60]"
+                aria-label="Reset selected district"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <div className="group relative mt-6 flex flex-col gap-1.5 overflow-hidden rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-5">
-              <div className="z-10 flex items-center justify-between gap-3 text-xs font-semibold text-[#5b6b80]">
-                <span className="flex items-center gap-1"><Users size={12} /> Beneficiaries Served</span>
-                <span className="flex items-center gap-0.5 text-emerald-700"><TrendingUp size={10} /> +8% YoY</span>
-              </div>
-              <span className="z-10 font-heading text-3xl font-extrabold text-[#0a3f92]">
-                {selectedDistrict.beneficiaries.toLocaleString()}
-              </span>
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-emerald-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="my-5 h-px w-full bg-[#d8e2ef]" />
+
+            <div className="space-y-4">
+              <Metric icon={Coins} label="Allocated CSR Funds" value={`Rs ${selectedDistrict.funding.toFixed(2)} Cr`} tone="orange" />
+              <Metric icon={FolderCheck} label="Active Approved Projects" value={`${selectedDistrict.projects} Projects`} tone="blue" />
+              <Metric icon={HeartHandshake} label="Active Impact NGOs" value={`${selectedDistrict.ngos} NGOs`} tone="green" />
             </div>
-          </motion.aside>
-        </AnimatePresence>
+          </div>
+
+          <div className="group relative mt-6 flex flex-col gap-1.5 overflow-hidden rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-5">
+            <div className="z-10 flex items-center justify-between gap-3 text-xs font-semibold text-[#5b6b80]">
+              <span className="flex items-center gap-1"><Users size={12} /> Beneficiaries Served</span>
+              <span className="flex items-center gap-0.5 text-emerald-700"><TrendingUp size={10} /> +8% YoY</span>
+            </div>
+            <span className="z-10 font-heading text-3xl font-extrabold text-[#0a3f92]">
+              {selectedDistrict.beneficiaries.toLocaleString()}
+            </span>
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-emerald-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          </div>
+        </aside>
       </div>
     </div>
   );
