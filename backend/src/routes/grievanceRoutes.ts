@@ -244,15 +244,77 @@ const closeGrievance = asyncHandler(async (req, res) => {
   res.json({ success: true, data: grievance });
 });
 
+const assignGrievance = asyncHandler(async (req, res) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Authentication required" });
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  if (!userId) return res.status(400).json({ error: "User ID is required for assignment" });
+
+  const grievance = await prisma.grievance.findUnique({ where: { id } });
+  if (!grievance) return res.status(404).json({ error: "Grievance not found" });
+
+  const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+  if (!targetUser) return res.status(404).json({ error: "Target user not found" });
+
+  const updateData: any = {};
+  if (targetUser.role === Role.DISTRICT_NODAL_OFFICER) {
+    updateData.assignedNodalOfficerId = userId;
+  } else {
+    updateData.assignedStateCellUserId = userId;
+  }
+
+  const updatedGrievance = await prisma.grievance.update({
+    where: { id },
+    data: updateData,
+    include: {
+      assignedNodalOfficer: { select: { id: true, email: true } },
+      assignedStateCellUser: { select: { id: true, email: true } }
+    }
+  });
+
+  await prisma.grievanceActionLog.create({
+    data: {
+      tenantId: grievance.tenantId,
+      grievanceId: grievance.id,
+      actorUserId: user.id,
+      action: "ASSIGNED",
+      note: `Grievance assigned to user ${targetUser.email} (${targetUser.role})`
+    }
+  });
+
+  res.json({ success: true, data: updatedGrievance });
+});
+
+const getAssignableUsers = asyncHandler(async (req, res) => {
+  const users = await prisma.user.findMany({
+    where: {
+      role: { in: [Role.DISTRICT_NODAL_OFFICER, Role.STATE_CSR_CELL] },
+      accountStatus: "ACTIVE"
+    },
+    select: { id: true, email: true, role: true, assignedDistrict: true }
+  });
+  res.json({ success: true, data: users });
+});
+
 // Routes
 
 // POST / - Raise a new grievance
 // Authorized: Corporate, Implementing Agency, Government Officer, Beneficiary Agency
 router.post("/", ...grievanceAccess, validateRequest(raiseGrievanceSchema), raiseGrievance);
 
+// GET /assignable-users - Get list of users who can be assigned a grievance
+// Authorized: All authenticated users
+router.get("/assignable-users", ...grievanceAccess, getAssignableUsers);
+
 // GET /my - Get grievances raised by the current user
 // Authorized: All authenticated users
 router.get("/my", ...grievanceAccess, getMyGrievances);
+
+// PATCH /:id/assign - Assign grievance to a user
+// Authorized: Nodal Officer, State CSR Cell, Joint Secretary, Admin
+router.patch("/:id/assign", ...respondAccess, assignGrievance);
 
 // GET /:id - Get grievance by ID
 // Authorized: All authenticated users

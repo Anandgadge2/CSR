@@ -44,9 +44,9 @@ interface GrievanceDetail {
   updatedAt: string;
   convergenceProject?: { projectId: string; title: string; district: string };
   raisedByUser?: { email: string; role: string };
-  assignedNodalOfficer?: { email: string; role: string };
-  assignedStateCellUser?: { email: string; role: string };
-  finalAuthorityUser?: { email: string; role: string };
+  assignedNodalOfficer?: { id: string; email: string; role: string };
+  assignedStateCellUser?: { id: string; email: string; role: string };
+  finalAuthorityUser?: { id: string; email: string; role: string };
   actionLogs?: ActionLog[];
 }
 
@@ -57,6 +57,7 @@ export default function GrievanceDetailPage() {
   const [grievance, setGrievance] = useState<GrievanceDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Action modals
   const [actionType, setActionType] = useState<"respond" | "escalate" | "close" | null>(null);
@@ -65,7 +66,54 @@ export default function GrievanceDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState("");
 
-  useEffect(() => { setMounted(true); }, []);
+  const [assignableUsers, setAssignableUsers] = useState<{ id: string; email: string; role: string; name?: string; assignedDistrict?: string }[]>([]);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const user = getCurrentUser();
+
+  useEffect(() => {
+    const isAssigner = user && ["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "MASTER_ADMIN", "STATE_CSR_CELL", "JOINT_SECRETARY"].includes(user.role);
+    if (isAssigner) {
+      apiFetch<{ success: boolean; data: any }>("/grievances/assignable-users")
+        .then((res) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) setAssignableUsers(data);
+        })
+        .catch((err) => console.error("Error fetching assignable users:", err));
+    }
+  }, [user]);
+
+  // Set initial assignee
+  useEffect(() => {
+    if (grievance) {
+      setSelectedAssigneeId(grievance.assignedStateCellUser?.id || grievance.assignedNodalOfficer?.id || "");
+    }
+  }, [grievance]);
+
+  const handleAssign = async () => {
+    if (!selectedAssigneeId) return;
+    setAssigning(true);
+    setError("");
+    setSuccess(null);
+    try {
+      await apiFetch(`/grievances/${id}/assign`, {
+        method: "PATCH",
+        body: JSON.stringify({ userId: selectedAssigneeId })
+      });
+      setSuccess("Grievance assigned successfully!");
+      clearApiCache();
+      fetchGrievance();
+    } catch (err: any) {
+      setError(err?.message || "Failed to assign grievance.");
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   const fetchGrievance = useCallback(async () => {
     if (!id) return;
@@ -88,7 +136,6 @@ export default function GrievanceDetailPage() {
   if (!mounted) return null;
   if (!hasRoleAccess(GRIEVANCE_ACCESS_ROLES)) return <AccessDenied />;
 
-  const user = getCurrentUser();
   const canRespond = hasRoleAccess(GRIEVANCE_RESPOND_ROLES);
   const canEscalate = hasRoleAccess(GRIEVANCE_ESCALATE_ROLES);
   const canClose = hasRoleAccess(GRIEVANCE_CLOSE_ROLES);
@@ -233,6 +280,35 @@ export default function GrievanceDetailPage() {
             </GovCardBody>
           </GovCard>
         </div>
+
+        {/* Assignment Widget */}
+        {grievance.status !== "CLOSED" && grievance.status !== "REJECTED" && ["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "MASTER_ADMIN", "STATE_CSR_CELL", "JOINT_SECRETARY"].includes(user?.role || "") && (
+          <GovCard style={{ marginTop: 16, marginBottom: 16 }}>
+            <GovCardHeader style={{ paddingBottom: 8 }}>
+              <GovCardTitle>Assign Grievance Officer</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ flex: 1 }}>
+                <select
+                  className="gov-select"
+                  value={selectedAssigneeId}
+                  onChange={(e) => setSelectedAssigneeId(e.target.value)}
+                  style={{ width: "100%", height: 38, padding: "8px 12px", border: "1px solid var(--gov-border)", borderRadius: 6, fontSize: 13 }}
+                >
+                  <option value="">Select Nodal Officer or State CSR Cell User</option>
+                  {assignableUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.email} ({u.role.replace(/_/g, " ")}) {u.assignedDistrict ? `— ${u.assignedDistrict}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <GovButton onClick={handleAssign} disabled={assigning || !selectedAssigneeId}>
+                {assigning ? "Assigning..." : "Assign Officer"}
+              </GovButton>
+            </GovCardBody>
+          </GovCard>
+        )}
 
         {/* Actions */}
         {grievance.status !== "CLOSED" && grievance.status !== "REJECTED" && (

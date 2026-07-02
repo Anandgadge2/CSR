@@ -557,7 +557,12 @@ export const getPendingPitches = async (
       Role.CSR_RELATIONSHIP_MANAGER,
       Role.JOINT_SECRETARY,
       Role.SUPER_ADMIN,
-      Role.PORTAL_ADMIN
+      Role.PORTAL_ADMIN,
+      Role.STATE_CSR_CELL,
+      Role.PLANNING_SECRETARY,
+      Role.CSR_ADMIN,
+      Role.DISTRICT_ADMIN,
+      Role.MASTER_ADMIN
     ];
 
     if (!allowedRoles.includes(userRole)) {

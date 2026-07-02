@@ -65,7 +65,6 @@ const navGroups: NavGroup[] = [
       { label: "Corporate Enquiries", to: "/rm/enquiries" },
       { label: "Government Pitches", to: "/rm/government-pitches" },
       { label: "Grievance Queue", to: "/state-cell/grievances" },
-      { label: "Escalations", to: "/state-cell/escalations" },
       { label: "Convergence Projects", to: "/convergence-projects" },
     ],
   },
