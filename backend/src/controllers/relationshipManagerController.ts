@@ -370,9 +370,12 @@ export const getPendingEnquiries = async (
       where.tenantId = tenantId;
     }
 
-    // RM sees only their assigned enquiries
+    // RM sees only their assigned enquiries or unassigned
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) {
-      where.assignedRelationshipManagerId = userId;
+      where.OR = [
+        { assignedRelationshipManagerId: userId },
+        { assignedRelationshipManagerId: null }
+      ];
     }
 
     if (req.query.status && typeof req.query.status === "string") {
@@ -398,7 +401,7 @@ export const getPendingEnquiries = async (
             take: 1
           },
           assignedRelationshipManager: {
-            select: { email: true }
+            select: { id: true, email: true }
           }
         },
         orderBy: [

@@ -32,12 +32,14 @@ interface Enquiry {
   companyCin: string;
   sector: string;
   district: string;
-  status: "PENDING" | "IN_PROGRESS" | "UNDER_VERIFICATION" | "APPROVED" | "REJECTED" | "ESCALATED";
+  status: string;
   submittedAt: string;
   lastActivity: string;
   contactPerson: string;
   contactEmail: string;
   contactPhone: string;
+  assignedRelationshipManager?: { id: string; email: string } | null;
+  assignedRelationshipManagerId?: string | null;
 }
 
 interface EnquiryListResponse {
@@ -59,12 +61,15 @@ interface Filters {
 // Status badge variant mapper
 const getStatusVariant = (status: string): "success" | "warning" | "danger" | "info" | "muted" => {
   const statusMap: Record<string, "success" | "warning" | "danger" | "info" | "muted"> = {
-    PENDING: "warning",
-    IN_PROGRESS: "info",
-    UNDER_VERIFICATION: "info",
-    APPROVED: "success",
-    REJECTED: "danger",
-    ESCALATED: "danger",
+    TRACKING_ID_GENERATED: "warning",
+    RM_ASSIGNED: "info",
+    RM_CONTACTED: "info",
+    ASSESSMENT_PENDING: "info",
+    ASSESSMENT_SUBMITTED_TO_JS: "info",
+    JS_APPROVED: "success",
+    JS_REJECTED: "danger",
+    COMPLETED: "success",
+    CLOSED: "muted"
   };
   return statusMap[status] || "muted";
 };
@@ -121,12 +126,13 @@ const MAHARASHTRA_DISTRICTS = [
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Status" },
-  { value: "PENDING", label: "Pending" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "UNDER_VERIFICATION", label: "Under Verification" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "ESCALATED", label: "Escalated" },
+  { value: "TRACKING_ID_GENERATED", label: "Awaiting Assignment" },
+  { value: "RM_ASSIGNED", label: "RM Assigned" },
+  { value: "RM_CONTACTED", label: "First Contact Made" },
+  { value: "ASSESSMENT_PENDING", label: "Assessment Pending" },
+  { value: "ASSESSMENT_SUBMITTED_TO_JS", label: "Submitted to JS" },
+  { value: "JS_APPROVED", label: "Approved by JS" },
+  { value: "JS_REJECTED", label: "Rejected by JS" }
 ];
 
 const ITEMS_PER_PAGE = 10;
@@ -180,7 +186,7 @@ export default function EnquiriesListPage() {
   const hasActiveFilters = Object.values(filters).some(v => v !== "");
 
   return (
-    <GovPortalLayout userRole="CSR_RELATIONSHIP_MANAGER">
+    <GovPortalLayout>
       <GovPageHeader
         title="Corporate Enquiries"
         description="View and manage all corporate CSR enquiries assigned to you"
@@ -304,6 +310,7 @@ export default function EnquiriesListPage() {
                       <th>Company Details</th>
                       <th>Sector</th>
                       <th>District</th>
+                      <th>Assigned RM</th>
                       <th>Status</th>
                       <th>Submitted At</th>
                       <th>Actions</th>
@@ -337,6 +344,13 @@ export default function EnquiriesListPage() {
                             <MapPin size={14} color="var(--gov-text-muted)" />
                             {enquiry.district}
                           </div>
+                        </td>
+                        <td>
+                          {enquiry.assignedRelationshipManager ? (
+                            <span style={{ fontSize: 13 }}>{enquiry.assignedRelationshipManager.email}</span>
+                          ) : (
+                            <span style={{ color: "var(--gov-danger)", fontSize: 12, fontWeight: 600 }}>⚠️ Unassigned</span>
+                          )}
                         </td>
                         <td>
                           <GovStatusBadge variant={getStatusVariant(enquiry.status)}>
