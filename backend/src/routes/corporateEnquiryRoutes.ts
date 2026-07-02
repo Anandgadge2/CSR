@@ -7,7 +7,8 @@ import {
   getAllEnquiries,
   getEnquiryById,
   assignRM,
-  recordContact
+  recordContact,
+  getRelationshipManagers
 } from "../controllers/corporateEnquiryController";
 import { checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
 
@@ -20,15 +21,32 @@ router.get("/track/:trackingId", getEnquiryByTrackingId);
 // Protected routes - RM, JS, Admin only
 const requireStateCellStaff = [
   authenticateToken,
-  authorizeRoles([Role.MASTER_ADMIN, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN]),
+  authorizeRoles([
+    Role.MASTER_ADMIN,
+    Role.SUPER_ADMIN,
+    Role.PORTAL_ADMIN,
+    Role.CSR_ADMIN,
+    Role.DISTRICT_ADMIN,
+    Role.CSR_RELATIONSHIP_MANAGER,
+    Role.JOINT_SECRETARY,
+    Role.STATE_CSR_CELL,
+    Role.PLANNING_SECRETARY
+  ]),
   resolveTenantContext,
   checkTenantActive
 ];
 
-// Protected routes - Admin only
+// Protected routes - Admin & assigners only
 const requireAdmin = [
   authenticateToken,
-  authorizeRoles([Role.MASTER_ADMIN, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
+  authorizeRoles([
+    Role.MASTER_ADMIN,
+    Role.SUPER_ADMIN,
+    Role.PORTAL_ADMIN,
+    Role.CSR_ADMIN,
+    Role.STATE_CSR_CELL,
+    Role.JOINT_SECRETARY
+  ]),
   resolveTenantContext,
   checkTenantActive
 ];
@@ -36,13 +54,22 @@ const requireAdmin = [
 // Protected routes - RM only
 const requireRM = [
   authenticateToken,
-  authorizeRoles([Role.DISTRICT_ADMIN]),
+  authorizeRoles([
+    Role.CSR_RELATIONSHIP_MANAGER,
+    Role.DISTRICT_ADMIN,
+    Role.SUPER_ADMIN,
+    Role.PORTAL_ADMIN,
+    Role.MASTER_ADMIN
+  ]),
   resolveTenantContext,
   checkTenantActive
 ];
 
 // Get all enquiries (RM, JS, Admin only)
 router.get("/", ...requireStateCellStaff, checkPermission("enquiry:view"), getAllEnquiries);
+
+// Get list of Relationship Managers (JS, Admin, State Cell only)
+router.get("/relationship-managers", ...requireStateCellStaff, checkPermission("enquiry:assign"), getRelationshipManagers);
 
 // Get enquiry by ID (RM, JS, Admin, or assigned to user)
 router.get("/:id", ...requireStateCellStaff, checkPermission("enquiry:view"), getEnquiryById);

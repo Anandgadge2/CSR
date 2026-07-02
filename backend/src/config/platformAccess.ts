@@ -78,7 +78,10 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "fund:verify-utilization",
     "report:view",
     "report:export",
-    "audit:view"
+    "audit:view",
+    "enquiry:view",
+    "enquiry:assign",
+    "enquiry:contact"
   ],
   CSR_ADMIN: [
     "organization:view",
@@ -98,7 +101,10 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "milestone:verify",
     "report:view",
     "report:export",
-    "audit:view"
+    "audit:view",
+    "enquiry:view",
+    "enquiry:assign",
+    "enquiry:contact"
   ],
   DISTRICT_ADMIN: ["requirement:view", "requirement:approve", "project:view", "milestone:verify", "report:view", "organization:view"],
   FINANCE_USER: ["fund:view", "fund:release", "fund:verify-utilization", "report:view"],
@@ -175,5 +181,9 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   NGO_PROJECT_COORDINATOR: ["marketplace:view", "project:view", "milestone:update", "report:view"],
   NGO_FINANCE_MANAGER: ["fund:view", "fund:verify-utilization", "report:view"],
   NGO_FIELD_OFFICER: ["project:view", "milestone:update"],
-  VIEWER: ["organization:view", "requirement:view", "marketplace:view", "project:view", "report:view"]
+  VIEWER: ["organization:view", "requirement:view", "marketplace:view", "project:view", "report:view"],
+  CSR_RELATIONSHIP_MANAGER: ["enquiry:view", "enquiry:contact"],
+  JOINT_SECRETARY: ["enquiry:view", "enquiry:assign"],
+  STATE_CSR_CELL: ["enquiry:view", "enquiry:assign"],
+  PLANNING_SECRETARY: ["enquiry:view"]
 };

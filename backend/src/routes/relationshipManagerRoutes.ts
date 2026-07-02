@@ -23,7 +23,7 @@ const router = Router();
 router.get(
   "/dashboard",
   authenticateToken,
-  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
+  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.JOINT_SECRETARY, Role.STATE_CSR_CELL]),
   asyncHandler(getDashboardStats)
 );
 
@@ -31,7 +31,7 @@ router.get(
 router.get(
   "/enquiries",
   authenticateToken,
-  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
+  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.JOINT_SECRETARY, Role.STATE_CSR_CELL]),
   asyncHandler(getPendingEnquiries)
 );
 
@@ -39,7 +39,7 @@ router.get(
 router.get(
   "/enquiries/:id",
   authenticateToken,
-  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
+  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.JOINT_SECRETARY, Role.STATE_CSR_CELL]),
   asyncHandler(getRMEnquiryById)
 );
 
@@ -55,7 +55,7 @@ router.post(
 router.get(
   "/pitches",
   authenticateToken,
-  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
+  authorizeRoles([Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.JOINT_SECRETARY, Role.STATE_CSR_CELL]),
   asyncHandler(getPendingPitches)
 );
 

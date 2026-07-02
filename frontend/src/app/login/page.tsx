@@ -84,6 +84,8 @@ function LoginForm() {
         router.push("/js/dashboard");
       } else if (userRole === "PLANNING_SECRETARY") {
         router.push("/secretary/escalations");
+      } else if (userRole === "STATE_CSR_CELL") {
+        router.push("/state-cell/dashboard");
       } else if (userRole === "DISTRICT_NODAL_OFFICER") {
         router.push("/nodal/dashboard");
       } else if (userRole === "IMPLEMENTING_AGENCY_USER") {
@@ -96,12 +98,10 @@ function LoginForm() {
         router.push("/ngo/dashboard");
       } else if (userRole === "COMPANY_ADMIN" || userRole === "COMPANY_MEMBER") {
         router.push("/company/dashboard");
-      } else if (userRole === "SUPER_ADMIN") {
+      } else if (["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN"].includes(userRole)) {
         router.push("/admin/dashboard");
       } else if (userRole === "BENEFICIARY_AGENCY") {
         router.push("/department/dashboard");
-      } else if (userRole === "PORTAL_ADMIN") {
-        router.push("/admin/dashboard");
       } else {
         router.push("/");
       }

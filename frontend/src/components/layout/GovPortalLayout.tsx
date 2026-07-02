@@ -38,6 +38,7 @@ const navGroups: NavGroup[] = [
     roles: ["JOINT_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"],
     links: [
       { label: "JS Dashboard", to: "/js/dashboard" },
+      { label: "Corporate Enquiries", to: "/rm/enquiries" },
       { label: "Assessment Reports", to: "/js/assessments" },
       { label: "Government Pitch Approvals", to: "/js/government-pitches" },
       { label: "Nodal Appointments", to: "/js/nodal-appointments" },
@@ -61,6 +62,7 @@ const navGroups: NavGroup[] = [
     roles: ["STATE_CSR_CELL"],
     links: [
       { label: "Dashboard", to: "/state-cell/dashboard" },
+      { label: "Corporate Enquiries", to: "/rm/enquiries" },
       { label: "Grievance Queue", to: "/state-cell/grievances" },
       { label: "Escalations", to: "/state-cell/escalations" },
       { label: "Convergence Projects", to: "/convergence-projects" },
@@ -135,6 +137,7 @@ const navGroups: NavGroup[] = [
     links: [
       { label: "Dashboard", to: "/admin/dashboard" },
       { label: "Users", to: "/admin/users-roles" },
+      { label: "Corporate Enquiries", to: "/rm/enquiries" },
       { label: "NGO Registry", to: "/admin/ngo-registry" },
       { label: "Companies", to: "/admin/companies" },
       { label: "Projects", to: "/admin/projects" },
@@ -197,20 +200,22 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
   const [userInitials, setUserInitials] = useState<string>("U");
 
   useEffect(() => {
-    if (userRole) {
-      setRole(userRole);
-    } else if (typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
       const user = localStorage.getItem("user");
       if (user) {
         try {
           const userData = JSON.parse(user);
           if (userData.role) {
             setRole(userData.role);
+            return;
           }
         } catch (e) {
           console.error("Error parsing user data", e);
         }
       }
+    }
+    if (userRole) {
+      setRole(userRole);
     }
   }, [userRole]);
 

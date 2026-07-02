@@ -860,3 +860,34 @@ export const getEnquiryById = async (
     return errorResponse(res, "Failed to retrieve enquiry", 500);
   }
 };
+
+/**
+ * @desc Get all Relationship Managers
+ * @route GET /api/corporate-enquiries/relationship-managers
+ * @access Private (STATE_CSR_CELL, JOINT_SECRETARY, SUPER_ADMIN, PORTAL_ADMIN, CSR_ADMIN, MASTER_ADMIN)
+ */
+export const getRelationshipManagers = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const rms = await prisma.user.findMany({
+      where: {
+        role: Role.CSR_RELATIONSHIP_MANAGER,
+        tenantId: tenantId || undefined,
+        accountStatus: "ACTIVE",
+      },
+      select: {
+        id: true,
+        email: true,
+        assignedDistrict: true,
+      },
+    });
+    return successResponse(res, rms, "Relationship Managers retrieved successfully");
+  } catch (error) {
+    console.error("Error in getRelationshipManagers:", error);
+    return errorResponse(res, "Failed to retrieve Relationship Managers", 500);
+  }
+};

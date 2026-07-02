@@ -112,7 +112,14 @@ const mapCorporateEnquiryForRM = (enquiry: any) => {
       : null,
     jsConditions: enquiry.feasibilityAssessment?.conditionText || null,
     jsDecisionDate: enquiry.feasibilityAssessment?.jsDecisionAt || null,
-    feasibilityAssessment: enquiry.feasibilityAssessment || null
+    feasibilityAssessment: enquiry.feasibilityAssessment || null,
+    assignedRelationshipManager: enquiry.assignedRelationshipManager
+      ? {
+          id: enquiry.assignedRelationshipManager.id,
+          email: enquiry.assignedRelationshipManager.email,
+        }
+      : null,
+    assignedRelationshipManagerId: enquiry.assignedRelationshipManagerId || null
   };
 };
 
@@ -347,7 +354,8 @@ export const getPendingEnquiries = async (
       Role.CSR_RELATIONSHIP_MANAGER,
       Role.JOINT_SECRETARY,
       Role.SUPER_ADMIN,
-      Role.PORTAL_ADMIN
+      Role.PORTAL_ADMIN,
+      Role.STATE_CSR_CELL
     ];
 
     if (!allowedRoles.includes(userRole)) {

@@ -14,6 +14,7 @@ import GovTextarea from "@/components/gov/GovTextarea";
 import GovAlert from "@/components/gov/GovAlert";
 import { apiFetch } from "@/lib/api";
 import { useApiQuery, useApiMutation } from "@/lib/apiHooks";
+import { useAuthStore } from "@/store/authStore";
 import { 
   ArrowLeft,
   Building2, 
@@ -92,6 +93,8 @@ interface EnquiryDetail {
   jsDecision: "APPROVED" | "REJECTED" | "APPROVED_WITH_CONDITIONS" | null;
   jsConditions: string | null;
   jsDecisionDate: string | null;
+  assignedRelationshipManager?: { id: string; email: string } | null;
+  assignedRelationshipManagerId?: string | null;
 }
 
 interface AddInteractionRequest {
@@ -217,6 +220,71 @@ export default function EnquiryDetailPage() {
     `/rm/enquiries/${enquiryId}`,
     { staleTime: 30 * 1000, enabled: !!enquiryId }
   );
+
+  const currentUser = useAuthStore((state) => state.user);
+  const isAssigner = currentUser && ["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "MASTER_ADMIN", "JOINT_SECRETARY", "STATE_CSR_CELL"].includes(currentUser.role);
+
+  const [relationshipManagers, setRelationshipManagers] = useState<{ id: string; email: string; assignedDistrict?: string }[]>([]);
+  const [selectedRmId, setSelectedRmId] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  useEffect(() => {
+    if (isAssigner) {
+      apiFetch<any>("/corporate-enquiries/relationship-managers")
+        .then((res) => {
+          const data = res?.data || res;
+          if (Array.isArray(data)) {
+            setRelationshipManagers(data);
+          }
+        })
+        .catch((err) => console.error("Error fetching RMs:", err));
+    }
+  }, [isAssigner]);
+
+  // Set initial selected RM
+  useEffect(() => {
+    if (enquiry && enquiry.assignedRelationshipManagerId) {
+      setSelectedRmId(enquiry.assignedRelationshipManagerId);
+    }
+  }, [enquiry]);
+
+  const handleAssignRM = async () => {
+    if (!selectedRmId) return;
+    setAssigning(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await apiFetch(`/corporate-enquiries/${enquiryId}/assign-rm`, {
+        method: "PATCH",
+        body: JSON.stringify({ relationshipManagerId: selectedRmId })
+      });
+      setSuccessMessage("Relationship Manager assigned successfully!");
+      refetch();
+    } catch (err: any) {
+      setError(err?.message || "Failed to assign Relationship Manager.");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleClaimEnquiry = async () => {
+    if (!currentUser?.id) return;
+    setAssigning(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await apiFetch(`/corporate-enquiries/${enquiryId}/assign-rm`, {
+        method: "PATCH",
+        body: JSON.stringify({ relationshipManagerId: currentUser.id })
+      });
+      setSuccessMessage("Enquiry claimed successfully!");
+      refetch();
+    } catch (err: any) {
+      setError(err?.message || "Failed to claim enquiry.");
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   // Initialize feasibility form when enquiry loads
   useEffect(() => {
@@ -373,7 +441,7 @@ export default function EnquiryDetailPage() {
 
   if (isLoading) {
     return (
-      <GovPortalLayout userRole="CSR_RELATIONSHIP_MANAGER">
+      <GovPortalLayout>
         <div style={{ padding: 60, textAlign: "center", color: "var(--gov-text-muted)" }}>
           <div style={{ 
             width: 48, 
@@ -393,14 +461,14 @@ export default function EnquiryDetailPage() {
 
   if (!enquiry) {
     return (
-      <GovPortalLayout userRole="CSR_RELATIONSHIP_MANAGER">
+      <GovPortalLayout>
         <GovAlert variant="danger">Enquiry not found or you do not have permission to view it.</GovAlert>
       </GovPortalLayout>
     );
   }
 
   return (
-    <GovPortalLayout userRole="CSR_RELATIONSHIP_MANAGER">
+    <GovPortalLayout>
       <GovPageHeader
         title={`Enquiry ${enquiry.trackingId}`}
         description="View and manage corporate CSR enquiry details"
@@ -957,6 +1025,89 @@ export default function EnquiryDetailPage() {
                   </div>
                 </div>
               </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* Relationship Manager Card */}
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Relationship Manager</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody style={{ fontSize: 13 }}>
+              {enquiry.assignedRelationshipManager ? (
+                <div>
+                  <div style={{ color: "var(--gov-text-secondary)", display: "flex", alignItems: "center", gap: 8 }}>
+                    <User size={16} />
+                    <span>{enquiry.assignedRelationshipManager.email}</span>
+                  </div>
+                  {isAssigner && (
+                    <div style={{ marginTop: 16 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", display: "block", marginBottom: 6 }}>REASSIGN MANAGER</label>
+                      <GovSelect
+                        value={selectedRmId}
+                        onChange={(e) => setSelectedRmId(e.target.value)}
+                        style={{ fontSize: 13, marginBottom: 8 }}
+                      >
+                        <option value="">Select Relationship Manager</option>
+                        {relationshipManagers.map((rm) => (
+                          <option key={rm.id} value={rm.id}>
+                            {rm.email} {rm.assignedDistrict ? `(${rm.assignedDistrict})` : ""}
+                          </option>
+                        ))}
+                      </GovSelect>
+                      <GovButton 
+                        variant="secondary" 
+                        onClick={handleAssignRM} 
+                        disabled={assigning || !selectedRmId}
+                        style={{ width: "100%", minHeight: 32, fontSize: 12 }}
+                      >
+                        {assigning ? "Assigning..." : "Reassign RM"}
+                      </GovButton>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div style={{ color: "var(--gov-danger)", fontWeight: 600, marginBottom: 12 }}>
+                    ⚠️ Not Assigned
+                  </div>
+                  {isAssigner ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <GovSelect
+                        value={selectedRmId}
+                        onChange={(e) => setSelectedRmId(e.target.value)}
+                        style={{ fontSize: 13 }}
+                      >
+                        <option value="">Select Relationship Manager</option>
+                        {relationshipManagers.map((rm) => (
+                          <option key={rm.id} value={rm.id}>
+                            {rm.email} {rm.assignedDistrict ? `(${rm.assignedDistrict})` : ""}
+                          </option>
+                        ))}
+                      </GovSelect>
+                      <GovButton 
+                        variant="primary" 
+                        onClick={handleAssignRM} 
+                        disabled={assigning || !selectedRmId}
+                        style={{ width: "100%", minHeight: 32, fontSize: 12 }}
+                      >
+                        {assigning ? "Assigning..." : "Assign RM"}
+                      </GovButton>
+                    </div>
+                  ) : currentUser?.role === "CSR_RELATIONSHIP_MANAGER" ? (
+                    <GovButton 
+                      variant="primary" 
+                      onClick={handleClaimEnquiry} 
+                      disabled={assigning}
+                      style={{ width: "100%", minHeight: 32, fontSize: 12 }}
+                    >
+                      {assigning ? "Claiming..." : "Claim Enquiry"}
+                    </GovButton>
+                  ) : (
+                    <span style={{ color: "var(--gov-text-muted)" }}>Awaiting assignment by State Cell / Admin.</span>
+                  )}
+                </div>
+              )}
             </GovCardBody>
           </GovCard>
 
