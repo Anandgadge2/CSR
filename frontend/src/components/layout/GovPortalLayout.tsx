@@ -35,7 +35,7 @@ const navGroups: NavGroup[] = [
   },
   {
     title: "Joint Secretary",
-    roles: ["JOINT_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"],
+    roles: ["JOINT_SECRETARY"],
     links: [
       { label: "JS Dashboard", to: "/js/dashboard" },
       { label: "Corporate Enquiries", to: "/rm/enquiries" },
