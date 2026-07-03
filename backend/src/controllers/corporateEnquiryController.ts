@@ -145,11 +145,15 @@ export const submitEnquiry = async (
       );
     }
 
-    try {
-      await assertOtpVerified("CORPORATE_ENQUIRY", "MOBILE", body.mobile, body.mobileVerificationToken);
-      await assertOtpVerified("CORPORATE_ENQUIRY", "EMAIL", body.email, body.emailVerificationToken);
-    } catch (error: any) {
-      return validationErrorResponse(res, error.message);
+    const isCorporateUser = req.user?.role === Role.CORPORATE_USER;
+
+    if (!isCorporateUser) {
+      try {
+        await assertOtpVerified("CORPORATE_ENQUIRY", "MOBILE", body.mobile, body.mobileVerificationToken);
+        await assertOtpVerified("CORPORATE_ENQUIRY", "EMAIL", body.email, body.emailVerificationToken);
+      } catch (error: any) {
+        return validationErrorResponse(res, error.message);
+      }
     }
 
     // Check for duplicate CIN in active enquiries

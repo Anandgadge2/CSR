@@ -99,8 +99,8 @@ const navGroups: NavGroup[] = [
     links: [
       { label: "Dashboard", to: "/agency/dashboard" },
       { label: "Assigned Projects", to: "/agency/projects" },
-      { label: "Milestone Tracking", to: "/agency/projects" },
-      { label: "Grievances", to: "/agency/grievances" },
+      { label: "Milestone Tracking", to: "/convergence-projects" },
+      { label: "Grievances", to: "/grievances" },
       { label: "Track Status", to: "/track" },
     ],
   },

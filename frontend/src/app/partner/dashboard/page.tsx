@@ -155,7 +155,7 @@ export default function PartnerDashboardPage() {
   }, []);
 
   const handleNewEnquiry = () => {
-    router.push("/partner-with-maharashtra");
+    router.push("/partner/enquiries/new");
   };
 
   if (isLoading) {

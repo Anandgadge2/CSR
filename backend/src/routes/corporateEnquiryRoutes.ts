@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Role } from "@prisma/client";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
 import {
   submitEnquiry,
   getEnquiryByTrackingId,
@@ -14,8 +14,8 @@ import { checkPermission, checkTenantActive, resolveTenantContext } from "../mid
 
 const router = Router();
 
-// Public routes (no authentication required)
-router.post("/", submitEnquiry);
+// Public routes (no authentication required, optional token)
+router.post("/", optionalAuthenticateToken, submitEnquiry);
 router.get("/track/:trackingId", getEnquiryByTrackingId);
 
 // Protected routes - RM, JS, Admin only
