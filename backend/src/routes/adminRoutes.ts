@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Role } from "@prisma/client";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import { checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
-import { getAdminOverview, listUsers, updateUserRole } from "../controllers/adminController";
+import { createAdminUser, getAdminOverview, listUsers, updateUserRole } from "../controllers/adminController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
   approveRequirement,
@@ -25,11 +25,50 @@ import {
 
 const router = Router();
 
-const requireSuperAdmin = [authenticateToken, authorizeRoles([Role.MASTER_ADMIN, Role.SUPER_ADMIN]), resolveTenantContext, checkTenantActive];
+const requireSuperAdmin = [authenticateToken, authorizeRoles([Role.MASTER_ADMIN, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]), resolveTenantContext, checkTenantActive];
+
+const adminManageableRoles = [
+  "MASTER_ADMIN",
+  "SUPER_ADMIN",
+  "DISTRICT_ADMIN",
+  "BENEFICIARY_AGENCY",
+  "COMPANY_ADMIN",
+  "COMPANY_MEMBER",
+  "NGO_ADMIN",
+  "NGO_MEMBER",
+  "PORTAL_ADMIN",
+  "CSR_ADMIN",
+  "ANALYST_REVIEWER",
+  "COMPLIANCE_REVIEWER",
+  "FINANCE_USER",
+  "APPROVER",
+  "AUDITOR",
+  "AUTHORIZED_SIGNATORY",
+  "CSR_RELATIONSHIP_MANAGER",
+  "JOINT_SECRETARY",
+  "PLANNING_SECRETARY",
+  "DISTRICT_NODAL_OFFICER",
+  "STATE_CSR_CELL",
+  "CORPORATE_USER",
+  "IMPLEMENTING_AGENCY_USER",
+  "GOVERNMENT_OFFICER"
+] as const;
+
+const createUserSchema = z.object({
+  body: z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    role: z.enum(adminManageableRoles),
+    assignedDistrict: z.string().optional(),
+    accountStatus: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]).optional()
+  })
+});
 
 const roleSchema = z.object({
   body: z.object({
-    role: z.enum(["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "NGO_ADMIN", "NGO_MEMBER", "FINANCE_USER", "ANALYST_REVIEWER", "COMPLIANCE_REVIEWER", "APPROVER", "AUDITOR"])
+    role: z.enum(adminManageableRoles),
+    assignedDistrict: z.string().optional(),
+    accountStatus: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]).optional()
   })
 });
 
@@ -37,6 +76,7 @@ const requireStateCell = [authenticateToken, authorizeRoles([Role.MASTER_ADMIN, 
 
 router.get("/overview", ...requireSuperAdmin, getAdminOverview);
 router.get("/users", ...requireSuperAdmin, listUsers);
+router.post("/users", ...requireSuperAdmin, validateRequest(createUserSchema), createAdminUser);
 router.patch("/users/:id/role", ...requireSuperAdmin, validateRequest(roleSchema), updateUserRole);
 router.get("/organizations", ...requireStateCell, checkPermission("organization:view"), listOrganizations);
 router.get("/organizations/pending", ...requireStateCell, checkPermission("organization:view"), listPendingOrganizations);
