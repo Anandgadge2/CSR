@@ -42,6 +42,12 @@ const STATUS_STEPS = [
   { key: "JS_REVIEW", label: "JS Review", description: "Joint Secretary review" },
   { key: "APPROVED", label: "Approved", description: "Application approved" },
   { key: "REJECTED", label: "Rejected", description: "Application rejected" },
+  
+  // Pitch workflow steps
+  { key: "RM_VERIFICATION_PENDING", label: "Verification Pending", description: "Relationship Manager verification pending" },
+  { key: "JS_APPROVAL_PENDING", label: "JS Approval Pending", description: "Joint Secretary approval pending" },
+  { key: "PUBLIC_LISTED", label: "Publicly Listed", description: "Listed on public portal" },
+  { key: "CORPORATE_INTEREST_RECEIVED", label: "Corporate Interest Received", description: "Companies expressed interest" },
 ];
 
 function TrackContent() {
@@ -61,7 +67,7 @@ function TrackContent() {
   }, [searchParams]);
 
   const validateTrackingId = (id: string): boolean => {
-    const pattern = /^CSR-MH-\d{4}-\d{6}$/;
+    const pattern = /^(CSR|GP|INT|GRV|PRJ)-MH-\d{4}-\d{6}$/;
     return pattern.test(id);
   };
 
@@ -76,7 +82,7 @@ function TrackContent() {
     }
 
     if (!validateTrackingId(id)) {
-      setError("Invalid tracking ID format. Expected: CSR-MH-YYYY-XXXXXX");
+      setError("Invalid tracking ID format. Expected prefix (e.g. CSR, GP, INT, GRV, PRJ) followed by -MH-YYYY-XXXXXX");
       return;
     }
 
@@ -84,27 +90,62 @@ function TrackContent() {
     try {
       const response = await apiFetch<any>(`/tracking/${id}`);
       const enquiry = response.details ?? response?.data?.enquiry ?? response?.enquiry ?? response;
-      const timeline = [
-        { status: "TRACKING_ID_GENERATED", description: "Your enquiry has been received.", completed: true, timestamp: enquiry.submittedAt },
-        { status: "RM_ASSIGNED", description: "A CSR Relationship Manager is assigned.", completed: Boolean(enquiry.assignedRelationshipManager), timestamp: enquiry.updatedAt },
-        { status: "RM_CONTACTED", description: "Relationship Manager contacts the company.", completed: Boolean(enquiry.firstContactedAt), timestamp: enquiry.firstContactedAt ?? "" },
-        { status: "ASSESSMENT_SUBMITTED_TO_JS", description: "Feasibility assessment is submitted for decision.", completed: false, timestamp: "" },
-        { status: "JS_APPROVED", description: "Joint Secretary decision is recorded.", completed: false, timestamp: "" },
-      ];
+      const isPitch = response.type === "PITCH";
+      
+      let timeline = [];
+      if (isPitch) {
+        timeline = [
+          {
+            status: "SUBMITTED",
+            description: "Government pitch has been received.",
+            completed: true,
+            timestamp: enquiry.submittedAt
+          },
+          {
+            status: "RM_VERIFICATION_PENDING",
+            description: "A CSR Relationship Manager is assigned for verification.",
+            completed: enquiry.status !== "SUBMITTED",
+            timestamp: enquiry.assignedRelationshipManagerId ? enquiry.updatedAt : ""
+          },
+          {
+            status: "JS_APPROVAL_PENDING",
+            description: "Relationship Manager verified the need and submitted to Joint Secretary.",
+            completed: !["SUBMITTED", "RM_VERIFICATION_PENDING"].includes(enquiry.status),
+            timestamp: enquiry.status === "JS_APPROVAL_PENDING" || !["SUBMITTED", "RM_VERIFICATION_PENDING"].includes(enquiry.status) ? enquiry.updatedAt : ""
+          },
+          {
+            status: "PUBLIC_LISTED",
+            description: "Joint Secretary approved and listed the development need publicly.",
+            completed: ["PUBLIC_LISTED", "CORPORATE_INTEREST_RECEIVED", "NODAL_OFFICER_ASSIGNED", "MOU_PENDING", "MOU_SIGNED", "PROJECT_ONBOARDED", "COMPLETED", "CLOSED"].includes(enquiry.status),
+            timestamp: ["PUBLIC_LISTED", "CORPORATE_INTEREST_RECEIVED", "NODAL_OFFICER_ASSIGNED", "MOU_PENDING", "MOU_SIGNED", "PROJECT_ONBOARDED", "COMPLETED", "CLOSED"].includes(enquiry.status) ? enquiry.updatedAt : ""
+          }
+        ];
+      } else {
+        timeline = [
+          { status: "TRACKING_ID_GENERATED", description: "Your enquiry has been received.", completed: true, timestamp: enquiry.submittedAt },
+          { status: "RM_ASSIGNED", description: "A CSR Relationship Manager is assigned.", completed: Boolean(enquiry.assignedRelationshipManager), timestamp: enquiry.updatedAt },
+          { status: "RM_CONTACTED", description: "Relationship Manager contacts the company.", completed: Boolean(enquiry.firstContactedAt), timestamp: enquiry.firstContactedAt ?? "" },
+          { status: "ASSESSMENT_SUBMITTED_TO_JS", description: "Feasibility assessment is submitted for decision.", completed: false, timestamp: "" },
+          { status: "JS_APPROVED", description: "Joint Secretary decision is recorded.", completed: false, timestamp: "" },
+        ];
+      }
+
       setTrackingData({
-        trackingId: enquiry.trackingId,
-        type: response.type === "PITCH" ? "PITCH" : "ENQUIRY",
+        trackingId: isPitch ? (enquiry.pitchReferenceId ?? response.trackingId) : enquiry.trackingId,
+        type: isPitch ? "PITCH" : "ENQUIRY",
         currentStatus: response.status ?? enquiry.status,
         submittedAt: response.submittedAt ?? enquiry.submittedAt ?? enquiry.createdAt,
         estimatedCompletion: enquiry.firstResponseDueAt,
         timeline,
         details: {
-          companyName: enquiry.companyName,
-          sector: enquiry.sector,
-          district: enquiry.preferredDistricts?.join(", "),
-          contactPerson: enquiry.contactPersonName,
-          requirement: enquiry.proposedCsrWork,
-          estimatedCost: enquiry.indicativeBudget ? Number(enquiry.indicativeBudget) : undefined,
+          companyName: isPitch ? enquiry.department : enquiry.companyName,
+          sector: isPitch ? enquiry.officeName : enquiry.sector,
+          district: isPitch ? enquiry.district : enquiry.preferredDistricts?.join(", "),
+          contactPerson: isPitch ? `${enquiry.officialName} (${enquiry.designation})` : enquiry.contactPersonName,
+          requirement: isPitch ? enquiry.csrRequirement : enquiry.proposedCsrWork,
+          estimatedCost: isPitch 
+            ? (enquiry.estimatedCost ? Number(enquiry.estimatedCost) : undefined)
+            : (enquiry.indicativeBudget ? Number(enquiry.indicativeBudget) : undefined),
         },
       });
       setSearched(true);
@@ -323,13 +364,17 @@ function TrackContent() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {trackingData.details.companyName && (
                       <div>
-                        <p className="text-xs text-slate-500">Company Name</p>
+                        <p className="text-xs text-slate-500">
+                          {trackingData.type === "PITCH" ? "Department" : "Company Name"}
+                        </p>
                         <p className="font-medium">{trackingData.details.companyName}</p>
                       </div>
                     )}
                     {trackingData.details.sector && (
                       <div>
-                        <p className="text-xs text-slate-500">Sector</p>
+                        <p className="text-xs text-slate-500">
+                          {trackingData.type === "PITCH" ? "Office Name" : "Sector"}
+                        </p>
                         <p className="font-medium">{trackingData.details.sector}</p>
                       </div>
                     )}
@@ -349,7 +394,9 @@ function TrackContent() {
                     )}
                     {trackingData.details.contactPerson && (
                       <div>
-                        <p className="text-xs text-slate-500">Contact Person</p>
+                        <p className="text-xs text-slate-500">
+                          {trackingData.type === "PITCH" ? "Official Name" : "Contact Person"}
+                        </p>
                         <p className="font-medium">{trackingData.details.contactPerson}</p>
                       </div>
                     )}
