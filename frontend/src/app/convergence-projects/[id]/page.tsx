@@ -121,7 +121,7 @@ export default function ConvergenceProjectDetailPage() {
   if (error || !project) {
     return (
       <GovPortalLayout>
-        <GovPageShell breadcrumb="Home / Convergence Projects / Detail" title="Project Not Found">
+        <GovPageShell breadcrumb="Home / Projects / Detail" title="Project Not Found">
           <GovAlert variant="danger">{error || "Project not found"}</GovAlert>
           <GovButton variant="muted" onClick={() => router.push("/convergence-projects")} style={{ marginTop: 12 }}>← Back</GovButton>
         </GovPageShell>
@@ -134,7 +134,7 @@ export default function ConvergenceProjectDetailPage() {
   return (
     <GovPortalLayout>
       <GovPageShell
-        breadcrumb="Home / Convergence Projects / Detail"
+        breadcrumb="Home / Projects / Detail"
         title={project.title}
         description={`${project.projectId} — ${project.district}, ${project.sector}`}
         actions={

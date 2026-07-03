@@ -124,9 +124,9 @@ export default function ConvergenceProjectsPage() {
   return (
     <GovPortalLayout>
       <GovPageShell
-        breadcrumb="Home / Convergence Projects"
-        title="Convergence Projects"
-        description="Government–corporate CSR convergence projects with milestone tracking, fund utilisation, and UC verification."
+        breadcrumb="Home / Projects"
+        title="Projects"
+        description="Official CSR projects with MoU, milestone tracking, fund utilisation, UC verification, inspections, grievances, and completion."
       >
         {/* KPI Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>

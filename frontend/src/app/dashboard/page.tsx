@@ -60,9 +60,9 @@ export default function DashboardPage() {
       icon: "💬",
     },
     {
-      title: "CSR Projects",
-      description: "Create and manage CSR project proposals",
-      link: "/csr-projects",
+      title: "Projects",
+      description: "View official CSR project execution, milestones, UC, and completion status",
+      link: "/convergence-projects",
       status: "Available",
       statusVariant: "info" as const,
       icon: "🎯",
@@ -254,8 +254,8 @@ export default function DashboardPage() {
                   <GovButton variant="secondary" onClick={() => router.push("/onboarding/documents")}>
                     Upload Documents
                   </GovButton>
-                  <GovButton variant="secondary" onClick={() => router.push("/csr-projects/new")}>
-                    Create Project
+                  <GovButton variant="secondary" onClick={() => router.push("/convergence-projects")}>
+                    View Projects
                   </GovButton>
                 </>
               )}

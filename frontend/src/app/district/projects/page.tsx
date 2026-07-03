@@ -1,13 +1,5 @@
-import CSRWorkflowModulePage from "@/components/CSRWorkflowModulePage";
+import { redirect } from "next/navigation";
 
 export default function DistrictProjectsPage() {
-  return (
-    <CSRWorkflowModulePage
-      area="District Officer"
-      title="District Projects"
-      description="Track CSR project execution, milestone evidence, local inspections, handover readiness, and district-level project risk."
-      primaryHref="/district/inspections"
-      primaryLabel="Open Inspections"
-    />
-  );
+  redirect("/convergence-projects");
 }

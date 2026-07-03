@@ -6,7 +6,7 @@ export default function DistrictInspectionsPage() {
       area="District Officer"
       title="Inspection Queue"
       description="Record field visit remarks, geo-tagged evidence review, issues found, corrective action, and next visit dates."
-      primaryHref="/district/projects"
+      primaryHref="/convergence-projects"
       primaryLabel="Open District Projects"
     />
   );

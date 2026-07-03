@@ -228,7 +228,7 @@ export default function ProjectTrackingPage() {
   return (
     <GovPortalLayout>
       <GovPageShell
-        breadcrumb="Home / Convergence Projects / Milestone Tracking"
+        breadcrumb="Home / Projects / Milestone Tracking"
         title="Milestone Tracking"
         description={`${project.projectId} — ${project.title}`}
         actions={
