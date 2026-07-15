@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 
 export const ImpactSphere = dynamic(() => import("@/components/ImpactSphere"), {

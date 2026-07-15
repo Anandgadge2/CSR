@@ -15,6 +15,9 @@ const nextConfig = {
   },
   experimental: {
     optimizeCss: false,
+    // Tree-shake big icon/chart libs to only the imports actually used —
+    // dramatically shrinks per-page JS and speeds up client navigation.
+    optimizePackageImports: ["lucide-react", "recharts"],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

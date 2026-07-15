@@ -13,19 +13,22 @@ export const clearApiCache = () => {
 };
 
 const CACHE_PREFIX = "api_cache_";
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_FRESH_MS = 60 * 1000;       // serve without refetch
+const CACHE_STALE_MS = 5 * 60 * 1000;   // serve instantly + revalidate in background
 
-const getCachedData = <T>(path: string): T | null => {
+type CacheHit<T> = { data: T; isStale: boolean } | null;
+
+const getCachedData = <T>(path: string): CacheHit<T> => {
   if (typeof window === "undefined") return null;
-  
+
   const cached = localStorage.getItem(CACHE_PREFIX + btoa(path));
   if (!cached) return null;
 
   try {
     const { data, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp < CACHE_TTL_MS) {
-      return data as T;
-    }
+    const age = Date.now() - timestamp;
+    if (age < CACHE_FRESH_MS) return { data: data as T, isStale: false };
+    if (age < CACHE_STALE_MS) return { data: data as T, isStale: true };
     localStorage.removeItem(CACHE_PREFIX + btoa(path));
   } catch {
     localStorage.removeItem(CACHE_PREFIX + btoa(path));
@@ -38,17 +41,10 @@ const setCachedData = <T>(path: string, data: T): void => {
   localStorage.setItem(CACHE_PREFIX + btoa(path), JSON.stringify({ data, timestamp: Date.now() }));
 };
 
-export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-  const method = init.method || "GET";
-  const isCacheable = method === "GET";
-  
-  if (isCacheable) {
-    const cached = getCachedData<T>(path);
-    if (cached) {
-      return cached;
-    }
-  }
+// In-flight GET dedup — concurrent components requesting the same path share one network call.
+const inflight = new Map<string, Promise<unknown>>();
 
+const networkFetch = async <T>(path: string, init: RequestInit, isCacheable: boolean): Promise<T> => {
   const token = getAccessToken();
   const headers = new Headers(init.headers);
 
@@ -89,6 +85,34 @@ export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise
   }
 
   return data as T;
+};
+
+export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
+  const method = init.method || "GET";
+  const isCacheable = method === "GET";
+
+  if (isCacheable) {
+    const cached = getCachedData<T>(path);
+    if (cached) {
+      if (cached.isStale && !inflight.has(path)) {
+        // Stale-while-revalidate: return instantly, refresh in background.
+        const refresh = networkFetch<T>(path, init, true)
+          .catch(() => {})
+          .finally(() => inflight.delete(path));
+        inflight.set(path, refresh as Promise<unknown>);
+      }
+      return cached.data;
+    }
+
+    const pending = inflight.get(path);
+    if (pending) return pending as Promise<T>;
+
+    const request = networkFetch<T>(path, init, true).finally(() => inflight.delete(path));
+    inflight.set(path, request as Promise<unknown>);
+    return request;
+  }
+
+  return networkFetch<T>(path, init, false);
 };
 
 export const invalidateCache = (pathPattern?: string): void => {
