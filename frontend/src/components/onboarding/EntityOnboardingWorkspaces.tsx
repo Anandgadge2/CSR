@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch, API_BASE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { locationData } from "@/lib/locationData";
+import { FieldFormat, sanitizeField, validateField, inputModeFor, FIELD_MAX_LENGTH } from "@/lib/validation";
 import "@/styles/gov-theme.css";
 
 type OrganizationDocument = {
@@ -238,14 +239,17 @@ function Field({
   value,
   onChange,
   type = "text",
-  required
+  required,
+  format
 }: {
   label: string;
   value: any;
   onChange: (value: any) => void;
   type?: string;
   required?: boolean;
+  format?: FieldFormat;
 }) {
+  const [fieldError, setFieldError] = useState("");
   return (
     <label className="flex flex-col gap-1.5 text-sm font-bold text-gov-ink">
       {label}
@@ -253,9 +257,25 @@ function Field({
         value={value || ""}
         type={type}
         required={required}
-        onChange={(event) => onChange(type === "number" ? event.target.value : event.target.value)}
-        className="border border-gov-line px-3 py-2.5 text-sm font-medium outline-none focus:border-gov-blue"
+        inputMode={format ? inputModeFor(format) : undefined}
+        maxLength={format ? FIELD_MAX_LENGTH[format] : undefined}
+        onChange={(event) => {
+          const raw = event.target.value;
+          const clean = format ? sanitizeField(format, raw) : raw;
+          if (fieldError && format && !validateField(format, clean)) setFieldError("");
+          onChange(clean);
+        }}
+        onBlur={(event) => {
+          if (!format) return;
+          const val = event.target.value;
+          if (!val && required) setFieldError(`${label} is required`);
+          else setFieldError(validateField(format, val));
+        }}
+        className={`border px-3 py-2.5 text-sm font-medium outline-none ${
+          fieldError ? "border-[#c62828] bg-[#fdf3f2] focus:border-[#c62828]" : "border-gov-line focus:border-gov-blue"
+        }`}
       />
+      {fieldError && <span className="text-xs font-semibold text-[#c62828]">{fieldError}</span>}
     </label>
   );
 }
@@ -599,16 +619,16 @@ export function CompanyOnboardingStep() {
             <Field label="Legal company name" required value={data.legalName || data.name} onChange={(value) => setData("legalName", value)} />
             <Field label="Brand / display name" value={data.displayName} onChange={(value) => setData("displayName", value)} />
             <SelectField label="Organization type" required value={data.companyType} onChange={(value) => setData("companyType", value)} options={["Public Limited Company", "Private Limited Company", "Section 8 Company", "Government Company / PSU", "LLP", "Foreign Company", "Other"]} />
-            <Field label="CIN / LLPIN" required value={data.cin || data.llpin} onChange={(value) => data.companyType === "LLP" ? setData("llpin", value) : setData("cin", value)} />
-            <Field label="PAN" required value={data.pan} onChange={(value) => setData("pan", value)} />
-            <Field label="GSTIN" value={data.gstin} onChange={(value) => setData("gstin", value)} />
+            <Field label="CIN / LLPIN" required format="cin" value={data.cin || data.llpin} onChange={(value) => data.companyType === "LLP" ? setData("llpin", value) : setData("cin", value)} />
+            <Field label="PAN" required format="pan" value={data.pan} onChange={(value) => setData("pan", value)} />
+            <Field label="GSTIN" format="gst" value={data.gstin} onChange={(value) => setData("gstin", value)} />
             <TextAreaField label="Registered office address" value={data.registeredOfficeAddress || data.address} onChange={(value) => setData("registeredOfficeAddress", value)} />
             <TextAreaField label="Corporate office address" value={data.corporateOfficeAddress} onChange={(value) => setData("corporateOfficeAddress", value)} />
             <Field label="District" value={data.district} onChange={(value) => setData("district", value)} />
             <Field label="Official website" value={data.website} onChange={(value) => setData("website", value)} />
-            <Field label="Official email" required value={data.officialEmail || data.email} onChange={(value) => setData("officialEmail", value)} />
+            <Field label="Official email" required format="email" value={data.officialEmail || data.email} onChange={(value) => setData("officialEmail", value)} />
             <Field label="Official email domain" value={data.officialEmailDomain} onChange={(value) => setData("officialEmailDomain", value)} />
-            <Field label="Company phone" value={data.officialPhone || data.phone} onChange={(value) => setData("officialPhone", value)} />
+            <Field label="Company phone" format="phone" value={data.officialPhone || data.phone} onChange={(value) => setData("officialPhone", value)} />
             <Field label="Year of incorporation" type="number" value={data.yearOfIncorporation} onChange={(value) => setData("yearOfIncorporation", value)} />
             <SelectField label="MCA verification status" value={data.mcaVerificationStatus} onChange={(value) => setData("mcaVerificationStatus", value)} options={["Not Started", "Under Verification", "Verified", "Mismatch"]} />
             <SelectField label="Company status" value={data.companyStatus} onChange={(value) => setData("companyStatus", value)} options={["Active", "Inactive", "Under Verification", "Suspended"]} />
@@ -627,12 +647,12 @@ export function CompanyOnboardingStep() {
             <Field label="CSR budget current financial year" required type="number" value={data.currentYearCsrBudget} onChange={(value) => setData("currentYearCsrBudget", value)} />
             <Field label="Unspent CSR amount" type="number" value={data.unspentCsrAmount} onChange={(value) => setData("unspentCsrAmount", value)} />
             <Field label="CSR head name" required value={data.csrHeadName} onChange={(value) => setData("csrHeadName", value)} />
-            <Field label="CSR head email" required value={data.csrHeadEmail} onChange={(value) => setData("csrHeadEmail", value)} />
-            <Field label="CSR head mobile" value={data.csrHeadMobile} onChange={(value) => setData("csrHeadMobile", value)} />
+            <Field label="CSR head email" required format="email" value={data.csrHeadEmail} onChange={(value) => setData("csrHeadEmail", value)} />
+            <Field label="CSR head mobile" format="phone" value={data.csrHeadMobile} onChange={(value) => setData("csrHeadMobile", value)} />
             <Field label="Finance officer name" value={data.financeOfficerName} onChange={(value) => setData("financeOfficerName", value)} />
-            <Field label="Finance officer email" value={data.financeOfficerEmail} onChange={(value) => setData("financeOfficerEmail", value)} />
+            <Field label="Finance officer email" format="email" value={data.financeOfficerEmail} onChange={(value) => setData("financeOfficerEmail", value)} />
             <Field label="Authorized signatory name" required value={data.authorizedSignatoryName} onChange={(value) => setData("authorizedSignatoryName", value)} />
-            <Field label="Authorized signatory email" required value={data.authorizedSignatoryEmail} onChange={(value) => setData("authorizedSignatoryEmail", value)} />
+            <Field label="Authorized signatory email" required format="email" value={data.authorizedSignatoryEmail} onChange={(value) => setData("authorizedSignatoryEmail", value)} />
             <Field label="Authorization reference number" value={data.authorizationReferenceNumber} onChange={(value) => setData("authorizationReferenceNumber", value)} />
             <CheckboxList label="Schedule VII focus areas" values={data.scheduleVIIFocusAreas || []} options={scheduleAreas} onChange={(values) => setData("scheduleVIIFocusAreas", values)} />
           </>
@@ -953,9 +973,9 @@ export function DepartmentOnboardingStep() {
             <Field label="District" value={data.district} onChange={(value) => setData("district", value)} />
             <Field label="Taluka" value={data.taluka} onChange={(value) => setData("taluka", value)} />
             <Field label="Village / city" value={data.villageOrCity} onChange={(value) => setData("villageOrCity", value)} />
-            <Field label="Official email" required value={data.officialEmail || data.email} onChange={(value) => setData("officialEmail", value)} />
+            <Field label="Official email" required format="email" value={data.officialEmail || data.email} onChange={(value) => setData("officialEmail", value)} />
             <Field label="Official email domain" value={data.officialEmailDomain} onChange={(value) => setData("officialEmailDomain", value)} />
-            <Field label="Office phone" value={data.officePhone || data.officialPhone} onChange={(value) => setData("officePhone", value)} />
+            <Field label="Office phone" format="phone" value={data.officePhone || data.officialPhone} onChange={(value) => setData("officePhone", value)} />
             <Field label="Official website" value={data.website || data.officeWebsite} onChange={(value) => setData("website", value)} />
             <Field label="Government office identifier" value={data.governmentOfficeIdentifier} onChange={(value) => setData("governmentOfficeIdentifier", value)} />
             <TextAreaField label="Office address" value={data.address} onChange={(value) => setData("address", value)} />
@@ -966,13 +986,13 @@ export function DepartmentOnboardingStep() {
             <Field label="Nodal officer name" required value={data.nodalOfficerName} onChange={(value) => setData("nodalOfficerName", value)} />
             <Field label="Designation" required value={data.nodalOfficerDesignation} onChange={(value) => setData("nodalOfficerDesignation", value)} />
             <Field label="Department" value={data.nodalOfficerDepartment} onChange={(value) => setData("nodalOfficerDepartment", value)} />
-            <Field label="Official email" required value={data.nodalOfficerEmail} onChange={(value) => setData("nodalOfficerEmail", value)} />
-            <Field label="Mobile number" required value={data.nodalOfficerMobile} onChange={(value) => setData("nodalOfficerMobile", value)} />
-            <Field label="Office phone" value={data.nodalOfficerOfficePhone} onChange={(value) => setData("nodalOfficerOfficePhone", value)} />
+            <Field label="Official email" required format="email" value={data.nodalOfficerEmail} onChange={(value) => setData("nodalOfficerEmail", value)} />
+            <Field label="Mobile number" required format="phone" value={data.nodalOfficerMobile} onChange={(value) => setData("nodalOfficerMobile", value)} />
+            <Field label="Office phone" format="phone" value={data.nodalOfficerOfficePhone} onChange={(value) => setData("nodalOfficerOfficePhone", value)} />
             <Field label="Employee ID" value={data.nodalOfficerEmployeeId} onChange={(value) => setData("nodalOfficerEmployeeId", value)} />
             <Field label="Reporting officer name" value={data.reportingOfficerName} onChange={(value) => setData("reportingOfficerName", value)} />
             <Field label="Reporting officer designation" value={data.reportingOfficerDesignation} onChange={(value) => setData("reportingOfficerDesignation", value)} />
-            <Field label="Reporting officer email" value={data.reportingOfficerEmail} onChange={(value) => setData("reportingOfficerEmail", value)} />
+            <Field label="Reporting officer email" format="email" value={data.reportingOfficerEmail} onChange={(value) => setData("reportingOfficerEmail", value)} />
           </>
         )}
         {step === "authorization" && (

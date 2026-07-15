@@ -6,6 +6,11 @@ import Link from "next/link";
 import { Landmark, ArrowRight, AlertCircle, Eye, EyeOff, FileCheck } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { locationData } from "@/lib/locationData";
+import { FieldFormat, sanitizeField, validateField } from "@/lib/validation";
+
+const FIELD_FORMATS: Record<string, FieldFormat> = {
+  pan: "pan",
+};
 
 function RegisterInvitedForm() {
   const router = useRouter();
@@ -113,7 +118,9 @@ function RegisterInvitedForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const fmt = FIELD_FORMATS[name];
+    const clean = fmt ? sanitizeField(fmt, value) : value;
+    setFormData(prev => ({ ...prev, [name]: clean }));
     if (fieldErrors[name]) {
       setFieldErrors(prev => {
         const copy = { ...prev };
@@ -121,6 +128,14 @@ function RegisterInvitedForm() {
         return copy;
       });
     }
+  };
+
+  const handleBlurValidate = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const fmt = FIELD_FORMATS[name];
+    if (!fmt || !value) return;
+    const message = validateField(fmt, value);
+    if (message) setFieldErrors(prev => ({ ...prev, [name]: message }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -260,15 +275,16 @@ function RegisterInvitedForm() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">PAN Card Number</label>
-                <input 
-                  required 
-                  name="pan" 
-                  value={formData.pan} 
-                  onChange={handleChange} 
-                  maxLength={10} 
-                  minLength={10} 
-                  placeholder="ABCDE1234F" 
-                  className={`govt-input ${fieldErrors.pan ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  name="pan"
+                  value={formData.pan}
+                  onChange={handleChange}
+                  onBlur={handleBlurValidate}
+                  maxLength={10}
+                  minLength={10}
+                  placeholder="ABCDE1234F"
+                  className={`govt-input uppercase ${fieldErrors.pan ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.pan && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.pan}</span>}
               </div>

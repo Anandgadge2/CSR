@@ -658,6 +658,14 @@ textarea {
 .gov-select.error,
 .gov-textarea.error {
   border-color: var(--gov-danger);
+  background: #fdf3f2;
+}
+
+.gov-input.error:focus,
+.gov-select.error:focus,
+.gov-textarea.error:focus {
+  border-color: var(--gov-danger);
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.15);
 }
 
 .gov-error-text {

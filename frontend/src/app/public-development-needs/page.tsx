@@ -509,12 +509,12 @@ export default function PublicDevelopmentNeedsPage() {
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
                       <GovInput label="Pitch Reference ID" value={selectedNeed.trackingId} disabled />
                       <GovInput label="Company Name" required value={interestForm.companyName} onChange={(e) => setInterestForm({ ...interestForm, companyName: e.target.value })} />
-                      <GovInput label="MCA21 CIN" required value={interestForm.mca21Cin} onChange={(e) => setInterestForm({ ...interestForm, mca21Cin: e.target.value.toUpperCase() })} />
-                      <GovInput label="Contact Person" required value={interestForm.contactPersonName} onChange={(e) => setInterestForm({ ...interestForm, contactPersonName: e.target.value })} />
+                      <GovInput label="MCA21 CIN" required format="cin" value={interestForm.mca21Cin} onChange={(e) => setInterestForm({ ...interestForm, mca21Cin: e.target.value })} />
+                      <GovInput label="Contact Person" required format="name" value={interestForm.contactPersonName} onChange={(e) => setInterestForm({ ...interestForm, contactPersonName: e.target.value })} />
                       <GovInput label="Contact Person & Designation" required value={interestForm.contactPersonDesignation} onChange={(e) => setInterestForm({ ...interestForm, contactPersonDesignation: e.target.value })} />
                       <div>
-                        <GovInput label="Mobile Number" required value={interestForm.mobile} onChange={(e) => {
-                          setInterestForm({ ...interestForm, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) });
+                        <GovInput label="Mobile Number" required format="phone" value={interestForm.mobile} onChange={(e) => {
+                          setInterestForm({ ...interestForm, mobile: e.target.value });
                           if (!isAuthenticatedCorporate) setInterestTokens({ ...interestTokens, mobile: "" });
                         }} />
                         {!isAuthenticatedCorporate && (
@@ -522,7 +522,7 @@ export default function PublicDevelopmentNeedsPage() {
                         )}
                       </div>
                       <div>
-                        <GovInput label="Email" type="email" required value={interestForm.email} onChange={(e) => {
+                        <GovInput label="Email" type="email" required format="email" value={interestForm.email} onChange={(e) => {
                           setInterestForm({ ...interestForm, email: e.target.value });
                           if (!isAuthenticatedCorporate) setInterestTokens({ ...interestTokens, email: "" });
                         }} />

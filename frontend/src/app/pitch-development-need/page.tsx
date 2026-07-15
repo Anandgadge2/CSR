@@ -383,6 +383,7 @@ export default function PitchDevelopmentNeedPage() {
                     <GovInput
                       label="Official Name"
                       required
+                      format="name"
                       value={form.officialName}
                       onChange={(e) => {
                         setForm({ ...form, officialName: e.target.value });
@@ -459,6 +460,7 @@ export default function PitchDevelopmentNeedPage() {
                       <GovInput
                         label="Mobile Number"
                         required
+                        format="phone"
                         value={form.mobile}
                         onChange={(e) => {
                           const value = e.target.value.replace(/\D/g, "").slice(0, 10);
@@ -478,6 +480,7 @@ export default function PitchDevelopmentNeedPage() {
                       label="Email"
                         type="email"
                         required
+                        format="email"
                         value={form.email}
                         onChange={(e) => {
                           setForm({ ...form, email: e.target.value });

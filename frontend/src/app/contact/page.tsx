@@ -57,8 +57,8 @@ export default function ContactPage() {
               {sent && <GovAlert variant="success">Message registered. The helpdesk will respond as per the applicable SLA.</GovAlert>}
               <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
-                  <GovInput label="Full Name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                  <GovInput label="Email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <GovInput label="Full Name" required format="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  <GovInput label="Email" type="email" required format="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 </div>
                 <GovInput label="Subject" required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
                 <GovTextarea label="Description / Query" required rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />

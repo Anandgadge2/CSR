@@ -6,6 +6,14 @@ import Link from "next/link";
 import { ShieldAlert, FileCheck, Landmark, Building2, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { locationData, allStatesList } from "@/lib/locationData";
+import { FieldFormat, sanitizeField, validateField } from "@/lib/validation";
+
+// Formats per field name — sanitize keystrokes, validate on blur.
+const FIELD_FORMATS: Record<string, FieldFormat> = {
+  email: "email",
+  pan: "pan",
+  gst: "gst",
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -116,9 +124,17 @@ export default function RegisterPage() {
     });
   };
 
+  const formatFor = (name: string): FieldFormat | undefined => {
+    // "cin" is reused as free-text designation for government entities
+    if (name === "cin") return role === "COMPANY" ? "cin" : undefined;
+    return FIELD_FORMATS[name];
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const fmt = formatFor(name);
+    const clean = fmt ? sanitizeField(fmt, value) : value;
+    setFormData(prev => ({ ...prev, [name]: clean }));
     if (fieldErrors[name]) {
       setFieldErrors(prev => {
         const copy = { ...prev };
@@ -126,6 +142,14 @@ export default function RegisterPage() {
         return copy;
       });
     }
+  };
+
+  const handleBlurValidate = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const fmt = formatFor(name);
+    if (!fmt || !value) return;
+    const message = validateField(fmt, value);
+    if (message) setFieldErrors(prev => ({ ...prev, [name]: message }));
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -343,14 +367,15 @@ export default function RegisterPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">{role === "GOV_ENTITY" ? "Official Department Email" : "Corporate / NGO Email"}</label>
-                <input 
-                  required 
-                  type="email" 
-                  name="email" 
-                  value={formData.email} 
-                  onChange={handleChange} 
-                  placeholder="e.g. contact@domain.org" 
-                  className={`govt-input ${fieldErrors.email ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  onBlur={handleBlurValidate}
+                  placeholder="e.g. contact@domain.org"
+                  className={`govt-input ${fieldErrors.email ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.email && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.email}</span>}
               </div>
@@ -381,15 +406,16 @@ export default function RegisterPage() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">PAN Card Number</label>
-                <input 
-                  required 
-                  name="pan" 
-                  value={formData.pan} 
-                  onChange={handleChange} 
-                  maxLength={10} 
-                  minLength={10} 
-                  placeholder="ABCDE1234F" 
-                  className={`govt-input ${fieldErrors.pan ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  name="pan"
+                  value={formData.pan}
+                  onChange={handleChange}
+                  onBlur={handleBlurValidate}
+                  maxLength={10}
+                  minLength={10}
+                  placeholder="ABCDE1234F"
+                  className={`govt-input uppercase ${fieldErrors.pan ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.pan && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.pan}</span>}
               </div>
@@ -478,25 +504,29 @@ export default function RegisterPage() {
                 <>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">Corporate CIN Code</label>
-                    <input 
-                      required 
-                      name="cin" 
-                      value={formData.cin} 
-                      onChange={handleChange} 
-                      placeholder="L72200MH2018PLC309876" 
-                      className={`govt-input ${fieldErrors.cin ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    <input
+                      required
+                      name="cin"
+                      value={formData.cin}
+                      onChange={handleChange}
+                      onBlur={handleBlurValidate}
+                      maxLength={21}
+                      placeholder="L72200MH2018PLC309876"
+                      className={`govt-input uppercase ${fieldErrors.cin ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                     />
                     {fieldErrors.cin && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.cin}</span>}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-gray-800 text-xs font-bold">GST Registration Number</label>
-                    <input 
-                      required 
-                      name="gst" 
-                      value={formData.gst} 
-                      onChange={handleChange} 
-                      placeholder="27AAAAA1111A1Z1" 
-                      className={`govt-input ${fieldErrors.gst ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                    <input
+                      required
+                      name="gst"
+                      value={formData.gst}
+                      onChange={handleChange}
+                      onBlur={handleBlurValidate}
+                      maxLength={15}
+                      placeholder="27AAAAA1111A1Z1"
+                      className={`govt-input uppercase ${fieldErrors.gst ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                     />
                     {fieldErrors.gst && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.gst}</span>}
                   </div>

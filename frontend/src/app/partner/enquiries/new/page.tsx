@@ -309,6 +309,7 @@ export default function NewPartnerEnquiryPage() {
                   <GovInput
                     label="MCA21 CIN (Corporate Identification Number)"
                     required
+                    format="cin"
                     value={form.mca21CIN}
                     onChange={(e) => {
                       setForm({ ...form, mca21CIN: e.target.value.toUpperCase() });
@@ -391,6 +392,7 @@ export default function NewPartnerEnquiryPage() {
                   <GovInput
                     label="Contact Person Name"
                     required
+                    format="name"
                     value={form.contactPersonName}
                     onChange={(e) => {
                       setForm({ ...form, contactPersonName: e.target.value });
@@ -403,6 +405,7 @@ export default function NewPartnerEnquiryPage() {
                   <GovInput
                     label="Mobile Number"
                     required
+                    format="phone"
                     value={form.mobile}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, "").slice(0, 10);
@@ -417,6 +420,7 @@ export default function NewPartnerEnquiryPage() {
                     label="Email"
                     type="email"
                     required
+                    format="email"
                     value={form.email}
                     onChange={(e) => {
                       setForm({ ...form, email: e.target.value });
