@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "http";
 import { getAllowedOrigins } from "./env";
 
-const vercelPreviewOriginPattern = /^https:\/\/csr-[a-z0-9-]+\.vercel\.app$/i;
+const vercelPreviewOriginPattern = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 type HeaderRequest = { headers: IncomingHttpHeaders & { origin?: string } };
 type HeaderResponse = { setHeader(name: string, value: number | string | readonly string[]): unknown };
 
