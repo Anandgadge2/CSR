@@ -2,7 +2,7 @@ import { Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import { runEscalationSweep } from "../services/slaSchedulerService";
 import SLAEscalationService from "../services/slaEscalationService";
 
@@ -149,14 +149,18 @@ export const updateUserRole = async (req: AuthenticatedRequest, res: Response, n
     if (!isGlobalAdmin(req) && existingUser.tenantId !== getRequestTenantId(req)) {
       return res.status(403).json({ error: "Cannot update a user outside your portal instance" });
     }
-    if (req.user?.role === Role.PORTAL_ADMIN && (isTopLevelAdminRole(existingUser.role) || isTopLevelAdminRole(role))) {
+    if (req.user?.role === Role.PORTAL_ADMIN && (isTopLevelAdminRole(existingUser.role as any) || isTopLevelAdminRole(role))) {
       return res.status(403).json({ error: "Portal Admin cannot modify Super Admin access" });
     }
+
+    const dbRole = ["SUPER_ADMIN", "CORPORATE_USER", "GOVERNMENT_OFFICER"].includes(role) ? (role as any) : null;
+    const orgRole = !dbRole ? (await prisma.organizationRole.findFirst({ where: { name: role } })) : null;
 
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: {
-        role,
+        role: dbRole,
+        roleId: orgRole?.id || null,
         assignedDistrict: assignedDistrict ?? existingUser.assignedDistrict,
         accountStatus: accountStatus ?? existingUser.accountStatus,
       }

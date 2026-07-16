@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { ROLE_PERMISSION_MAP } from "../config/platformAccess";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import { successResponse } from "../utils/apiResponse";
 
 /**
@@ -27,7 +27,7 @@ export const getCurrentUserPermissions = async (
     const organizationId = req.user.organizationId;
 
     // Start with system role permissions as fallback
-    const systemPermissions = ROLE_PERMISSION_MAP[userRole] || [];
+    const systemPermissions = userRole ? (ROLE_PERMISSION_MAP[userRole] || []) : [];
     const permissionSet = new Set<string>(systemPermissions);
 
     // Fetch dynamic organization role permissions
@@ -69,7 +69,7 @@ export const getCurrentUserPermissions = async (
 
     // Add system role if not already in organization roles
     const hasSystemRole = roles.some((r) => r.name === userRole);
-    if (!hasSystemRole) {
+    if (!hasSystemRole && userRole) {
       roles.push({
         id: userRole,
         name: userRole,
@@ -82,7 +82,7 @@ export const getCurrentUserPermissions = async (
       permissions: Array.from(permissionSet),
       roles: roles.map((r) => r.name),
       roleDetails: roles,
-      isAdmin: ([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN] as Role[]).includes(userRole),
+      isAdmin: ([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN] as string[]).includes(userRole || ""),
     });
   } catch (error) {
     next(error);
@@ -109,9 +109,9 @@ export const getModulePermissions = async (
     const organizationId = req.user.organizationId;
 
     // Get all user permissions
-    const systemPermissions = ROLE_PERMISSION_MAP[req.user.role] || [];
+    const systemPermissions = req.user.role ? (ROLE_PERMISSION_MAP[req.user.role] || []) : [];
     const permissionSet = new Set<string>(
-      systemPermissions.filter((p) => p.startsWith(`${module}:`))
+      systemPermissions.filter((p: string) => p.startsWith(`${module}:`))
     );
 
     const userOrgRoles = await prisma.userOrganizationRole.findMany({
@@ -182,7 +182,7 @@ export const checkUserPermission = async (
     }
 
     // Check system role permissions
-    const systemPermissions = ROLE_PERMISSION_MAP[userRole] || [];
+    const systemPermissions = userRole ? (ROLE_PERMISSION_MAP[userRole] || []) : [];
     if (systemPermissions.includes(permission)) {
       return successResponse(res, { hasPermission: true, permission });
     }

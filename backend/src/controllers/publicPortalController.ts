@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/db";
-import { Role, GovernmentPitchStatus } from "@prisma/client";
+import { GovernmentPitchStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import { successResponse, errorResponse, notFoundResponse } from "../utils/apiResponse";
 
 /**

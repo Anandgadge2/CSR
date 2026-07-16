@@ -11,7 +11,8 @@ import { Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { Role, UserAccountStatus } from "@prisma/client";
+import { UserAccountStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import {
   successResponse,
   errorResponse,

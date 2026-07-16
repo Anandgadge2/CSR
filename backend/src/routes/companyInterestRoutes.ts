@@ -9,7 +9,7 @@ import {
 } from "../controllers/companyInterestController";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import { checkFeatureEnabled, checkOrganizationApproved, checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 
 const router = Router();
 const companyTransaction = [

@@ -62,7 +62,7 @@ export const PERMISSIONS = [
 ] as const;
 
 export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
-  PORTAL_ADMIN: [
+  SUPER_ADMIN: [
     "organization:view",
     "organization:approve",
     "organization:suspend",
@@ -72,27 +72,6 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "interest:view",
     "interest:approve",
     "project:view",
-    "project:approve",
-    "fund:view",
-    "fund:verify-utilization",
-    "report:view",
-    "report:export",
-    "audit:view",
-    "enquiry:view",
-    "enquiry:assign",
-    "enquiry:contact"
-  ],
-  CSR_ADMIN: [
-    "organization:view",
-    "organization:approve",
-    "organization:suspend",
-    "requirement:view",
-    "requirement:approve",
-    "requirement:publish",
-    "interest:view",
-    "interest:approve",
-    "project:view",
-    "project:create",
     "project:approve",
     "fund:view",
     "fund:release",
@@ -105,49 +84,7 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "enquiry:assign",
     "enquiry:contact"
   ],
-  DISTRICT_ADMIN: ["requirement:view", "requirement:approve", "project:view", "milestone:verify", "report:view", "organization:view"],
-  FINANCE_USER: ["fund:view", "fund:release", "fund:verify-utilization", "report:view"],
-  ORGANIZATION_VERIFIER: ["organization:view", "organization:approve", "organization:suspend", "audit:view"],
-  REQUIREMENT_APPROVER: ["requirement:view", "requirement:approve", "requirement:publish"],
-  REPORT_MANAGER: ["report:view", "report:export"],
-  FINANCE_REVIEWER: ["fund:view", "fund:release", "fund:verify-utilization"],
-  SUPPORT_OFFICER: ["organization:view", "requirement:view", "interest:view", "project:view"],
-  DEPARTMENT_ADMIN: [
-    "organization:view",
-    "organization:update",
-    "user:invite",
-    "user:update",
-    "role:create",
-    "role:update",
-    "role:delete",
-    "requirement:create",
-    "requirement:view",
-    "requirement:update",
-    "requirement:submit",
-    "interest:view",
-    "project:view",
-    "report:view"
-  ],
-  BENEFICIARY_AGENCY: [
-    "organization:view",
-    "organization:update",
-    "user:invite",
-    "user:update",
-    "role:create",
-    "role:update",
-    "role:delete",
-    "requirement:create",
-    "requirement:view",
-    "requirement:update",
-    "requirement:submit",
-    "interest:view",
-    "project:view",
-    "project:update",
-    "report:view"
-  ],
-  REQUIREMENT_CREATOR: ["requirement:create", "requirement:view", "requirement:update", "requirement:submit"],
-  HANDOVER_OFFICER: ["project:view", "project:update"],
-  COMPANY_ADMIN: [
+  CORPORATE_USER: [
     "organization:view",
     "organization:update",
     "user:invite",
@@ -160,13 +97,10 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "interest:view",
     "fund:view",
     "fund:commit",
-    "report:view"
+    "report:view",
+    "project:view"
   ],
-  COMPANY_MEMBER: ["marketplace:view", "interest:create", "interest:view", "project:view", "fund:view", "report:view"],
-  CSR_HEAD: ["marketplace:view", "interest:create", "interest:view", "project:view", "fund:commit", "report:view"],
-  CSR_FINANCE_OFFICER: ["fund:view", "fund:commit", "fund:release", "report:view"],
-  CSR_PROJECT_MANAGER: ["project:view", "project:update", "milestone:update", "report:view"],
-  NGO_ADMIN: [
+  GOVERNMENT_OFFICER: [
     "organization:view",
     "organization:update",
     "user:invite",
@@ -174,20 +108,12 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "role:create",
     "role:update",
     "role:delete",
-    "marketplace:view",
-    "project:create",
+    "requirement:create",
+    "requirement:view",
+    "requirement:update",
+    "requirement:submit",
+    "interest:view",
     "project:view",
-    "milestone:update",
-    "fund:view",
     "report:view"
-  ],
-  NGO_MEMBER: ["marketplace:view", "project:create", "project:view", "milestone:update", "fund:view", "fund:verify-utilization", "report:view"],
-  NGO_PROJECT_COORDINATOR: ["marketplace:view", "project:view", "milestone:update", "report:view"],
-  NGO_FINANCE_MANAGER: ["fund:view", "fund:verify-utilization", "report:view"],
-  NGO_FIELD_OFFICER: ["project:view", "milestone:update"],
-  VIEWER: ["organization:view", "requirement:view", "marketplace:view", "project:view", "report:view"],
-  CSR_RELATIONSHIP_MANAGER: ["enquiry:view", "enquiry:contact", "enquiry:assign"],
-  JOINT_SECRETARY: ["enquiry:view", "enquiry:assign"],
-  STATE_CSR_CELL: ["enquiry:view", "enquiry:assign"],
-  PLANNING_SECRETARY: ["enquiry:view"]
+  ]
 };

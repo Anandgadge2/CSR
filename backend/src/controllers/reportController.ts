@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { CompanyInterestStatus, CSRRequirementStatus, ReportType, Role } from "@prisma/client";
+import { CompanyInterestStatus, CSRRequirementStatus, ReportType } from "@prisma/client";
+import { Role } from "../types/role";
 
 const getRequestTenantId = (req: AuthenticatedRequest) =>
   (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
@@ -17,8 +18,8 @@ export const listReports = async (req: AuthenticatedRequest, res: Response, next
     const where: any = tenantScopedWhere(req);
 
     if (req.user?.role !== Role.SUPER_ADMIN) {
-      if (req.user?.ngoId) where.ngoId = req.user.ngoId;
-      if (req.user?.companyId) where.companyId = req.user.companyId;
+      if (req.user?.ngoId) where.ngoId = req.user?.ngoId;
+      if (req.user?.companyId) where.companyId = req.user?.companyId;
     }
 
     const reports = await prisma.report.findMany({
@@ -80,7 +81,7 @@ export const generateAnnualSummary = async (req: AuthenticatedRequest, res: Resp
     const projects = await prisma.project.findMany({
       where: {
         ...tenantScopedWhere(req),
-        ...(req.user?.ngoId ? { ngoId: req.user.ngoId } : {}),
+        ...(req.user?.ngoId ? { ngoId: req.user?.ngoId } : {}),
         status: { in: ["APPROVED", "FUNDED", "COMPLETED"] }
       },
       include: { milestones: true, ngo: { select: { name: true } } }
@@ -144,11 +145,11 @@ const auditReportAccess = async (req: AuthenticatedRequest, reportName: string, 
 const requirementScope = async (req: AuthenticatedRequest) => {
   const scope: any = tenantScopedWhere(req);
   if (req.user?.role === Role.BENEFICIARY_AGENCY) {
-    const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user.id } });
+    const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user?.id } });
     return profile ? { ...scope, beneficiaryProfileId: profile.id } : { ...scope, id: "__none__" };
   }
-  if (req.user?.role === Role.DISTRICT_ADMIN && req.user.assignedDistrict) {
-    return { ...scope, district: req.user.assignedDistrict };
+  if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict) {
+    return { ...scope, district: req.user?.assignedDistrict };
   }
   return scope;
 };
@@ -296,7 +297,7 @@ export const getGovernmentReport = async (req: AuthenticatedRequest, res: Respon
 export const getCompanyReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const where: any = tenantScopedWhere(req);
-    if (req.user?.companyId) where.companyId = req.user.companyId;
+    if (req.user?.companyId) where.companyId = req.user?.companyId;
     const interests = await prisma.companyInterest.findMany({
       where,
       include: {
@@ -369,7 +370,7 @@ export const getCompanyReport = async (req: AuthenticatedRequest, res: Response,
 export const getNgoReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const where: any = tenantScopedWhere(req);
-    if (req.user?.ngoId) where.ngoId = req.user.ngoId;
+    if (req.user?.ngoId) where.ngoId = req.user?.ngoId;
     const applications = await prisma.nGOApplication.findMany({
       where,
       include: {

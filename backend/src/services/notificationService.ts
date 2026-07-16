@@ -1,4 +1,5 @@
 import prisma from "../config/db";
+import { Role } from "../types/role";
 import { emitNotificationToUser } from "../websocket/notificationSocket";
 
 /**
@@ -94,12 +95,23 @@ export async function notifyDistrictAdmins(
   message: string
 ): Promise<void> {
   const users = await prisma.user.findMany({
-    where: { role: "DISTRICT_ADMIN", assignedDistrict: district },
+    where: {
+      assignedDistrict: district,
+      organizationRoles: {
+        some: {
+          role: {
+            name: {
+              in: ["DISTRICT_ADMIN", "District Admin"]
+            }
+          }
+        }
+      }
+    },
     select: { id: true }
   });
   // Also notify super admins
   const superAdmins = await prisma.user.findMany({
-    where: { role: "SUPER_ADMIN" },
+    where: { role: Role.SUPER_ADMIN },
     select: { id: true }
   });
   const allIds = [...users.map((u) => u.id), ...superAdmins.map((u) => u.id)];

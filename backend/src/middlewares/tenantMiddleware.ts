@@ -1,5 +1,6 @@
 import { NextFunction, Response } from "express";
-import { OrganizationOnboardingStatus, OrganizationStatus, Role, TenantStatus } from "@prisma/client";
+import { OrganizationOnboardingStatus, OrganizationStatus, TenantStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "./authMiddleware";
 import { ROLE_PERMISSION_MAP } from "../config/platformAccess";
@@ -125,12 +126,8 @@ export const checkPublicFeatureEnabled = (featureKey: string) => {
 export const checkOrganizationApproved = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     if (
-      req.tenantContext?.isMasterAdmin ||
       req.user?.role === Role.SUPER_ADMIN ||
-      req.user?.role === Role.PORTAL_ADMIN ||
-      req.user?.role === Role.CSR_ADMIN ||
-      req.user?.role === Role.DISTRICT_ADMIN ||
-      req.user?.role === Role.FINANCE_USER
+      req.user?.role === Role.GOVERNMENT_OFFICER
     ) return next();
     const organizationId = req.tenantContext?.organizationId;
 
@@ -170,7 +167,7 @@ export const checkPermission = (permissionKey: string) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized access" });
       if (req.user.role === Role.SUPER_ADMIN) return next();
-      const fallbackPermissions = ROLE_PERMISSION_MAP[req.user.role] || [];
+      const fallbackPermissions = req.user.role ? (ROLE_PERMISSION_MAP[req.user.role] || []) : [];
       if (fallbackPermissions.includes(permissionKey)) return next();
 
       const userRoles = await prisma.userOrganizationRole.findMany({

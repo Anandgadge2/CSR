@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { successResponse, errorResponse, notFoundResponse, unauthorizedResponse, validationErrorResponse } from "../utils/apiResponse";
-import { Role, SimpleMilestoneStatus, GrievanceStatus, Prisma, CorporateEnquiryStatus, GovernmentPitchStatus, VerificationStatus } from "@prisma/client";
+import { SimpleMilestoneStatus, GrievanceStatus, Prisma, CorporateEnquiryStatus, GovernmentPitchStatus, VerificationStatus } from "@prisma/client";
+import { Role } from "../types/role";
 
 // Extended Request type with user info
 interface AuthenticatedRequest extends Request {

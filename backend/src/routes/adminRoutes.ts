@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import { checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
 import { createAdminUser, getAdminOverview, listUsers, updateUserRole, runSlaEscalations, getSlaStatistics } from "../controllers/adminController";

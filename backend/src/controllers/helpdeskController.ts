@@ -8,7 +8,7 @@
 import { Response } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import {
   successResponse,
   errorResponse,

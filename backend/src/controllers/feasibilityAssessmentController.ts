@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { successResponse, errorResponse, notFoundResponse, unauthorizedResponse, validationErrorResponse } from "../utils/apiResponse";
-import { Role, FeasibilityResult, ChecklistAnswer, CorporateEnquiryStatus, GovernmentPitchStatus, Prisma } from "@prisma/client";
+import { FeasibilityResult, ChecklistAnswer, CorporateEnquiryStatus, GovernmentPitchStatus, Prisma } from "@prisma/client";
+import { Role } from "../types/role";
 import { FEASIBILITY_CHECKLIST_TEMPLATE } from "../constants/feasibilityChecklist";
 import { onboardApprovedAssessmentToProject } from "../services/convergenceOnboardingService";
 

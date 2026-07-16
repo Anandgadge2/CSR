@@ -20,7 +20,7 @@ import {
 } from "../controllers/csrRequirementController";
 import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
 import { checkFeatureEnabled, checkOrganizationApproved, checkPermission, checkPublicFeatureEnabled, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 
 const router = Router();
 const departmentTransaction = [

@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { successResponse, errorResponse, unauthorizedResponse } from "../utils/apiResponse";
-import { Role, SLAStage } from "@prisma/client";
+import { SLAStage } from "@prisma/client";
+import { Role } from "../types/role";
 
 interface AuthenticatedRequest extends Request {
   user?: {

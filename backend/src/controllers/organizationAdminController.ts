@@ -7,9 +7,9 @@ import {
   OrganizationOnboardingStatus,
   OrganizationStatus,
   OrganizationKind,
-  Role,
   RoleScope
 } from "@prisma/client";
+import { Role } from "../types/role";
 import { TenantAwareRequest } from "../middlewares/tenantMiddleware";
 import { ensureOrganizationAdminRole } from "../utils/orgRoles";
 

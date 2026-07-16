@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { VerificationStatus, Role } from "@prisma/client";
+import { VerificationStatus } from "@prisma/client";
+import { Role } from "../types/role";
 
 const getRequestTenantId = async (req: AuthenticatedRequest) => {
   const tenantContextId = (req as any).tenantContext?.tenantId || req.user?.tenantId;

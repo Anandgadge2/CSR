@@ -7,7 +7,7 @@
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { MatchingService } from "../services/matchingService";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 
 export const getMatches = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

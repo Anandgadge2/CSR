@@ -13,7 +13,7 @@ import {
   releaseMilestoneFunding
 } from "../controllers/projectController";
 import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { z } from "zod";
 

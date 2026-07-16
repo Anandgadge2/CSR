@@ -109,7 +109,7 @@ async function main() {
       data: {
         email: "portal.admin@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.PORTAL_ADMIN,
+        role: null,
         tenantId: tenant.id,
         isVerified: true,
       },
@@ -120,7 +120,7 @@ async function main() {
       data: {
         email: "csr.admin@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.CSR_ADMIN,
+        role: null,
         tenantId: tenant.id,
         isVerified: true,
       },
@@ -193,7 +193,7 @@ async function main() {
         tenantId: tenant.id,
         email: "rm@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.CSR_RELATIONSHIP_MANAGER,
+        role: Role.GOVERNMENT_OFFICER,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -205,7 +205,7 @@ async function main() {
         tenantId: tenant.id,
         email: "js@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.JOINT_SECRETARY,
+        role: Role.GOVERNMENT_OFFICER,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -217,7 +217,7 @@ async function main() {
         tenantId: tenant.id,
         email: "secretary@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.PLANNING_SECRETARY,
+        role: Role.GOVERNMENT_OFFICER,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -229,7 +229,7 @@ async function main() {
         tenantId: tenant.id,
         email: "statecell@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.STATE_CSR_CELL,
+        role: Role.GOVERNMENT_OFFICER,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -241,7 +241,7 @@ async function main() {
         tenantId: tenant.id,
         email: "nodal@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
-        role: Role.DISTRICT_NODAL_OFFICER,
+        role: Role.GOVERNMENT_OFFICER,
         accountStatus: "ACTIVE",
         isVerified: true,
         assignedDistrict: "Pune"
@@ -283,7 +283,7 @@ async function main() {
           ngoId: ngo.id,
           email: `ngo${i}@example.com`,
           passwordHash: defaultPasswordHash,
-          role: Role.NGO_ADMIN,
+          role: null,
           accountStatus: "ACTIVE",
           isVerified: true,
         }
@@ -391,7 +391,7 @@ async function main() {
           organizationId: organization.id,
           email: `company${i}@example.com`,
           passwordHash: defaultPasswordHash,
-          role: Role.COMPANY_ADMIN,
+          role: Role.CORPORATE_USER,
           accountStatus: "ACTIVE",
           isVerified: true,
         }
@@ -440,7 +440,7 @@ async function main() {
           organizationId: organization.id,
           email: `dept${i}@example.com`,
           passwordHash: defaultPasswordHash,
-          role: Role.BENEFICIARY_AGENCY,
+          role: Role.GOVERNMENT_OFFICER,
           accountStatus: "ACTIVE",
           isVerified: true,
         }

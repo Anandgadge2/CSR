@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { CompanyInterestStatus, CSRFundMilestoneStatus, CSRRequirementStatus, Role } from "@prisma/client";
+import { CompanyInterestStatus, CSRFundMilestoneStatus, CSRRequirementStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import { auditLog, notify, notifyCompanyUsers, notifyDistrictAdmins, notifyNGOUsers } from "../services/notificationService";
 
 const toNumber = (value: unknown, fallback = 0) => {
@@ -37,7 +38,7 @@ export const convertRequirementToProject = async (req: AuthenticatedRequest, res
     if (!requirement) return res.status(404).json({ error: "Requirement not found" });
     const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || requirement.tenantId || null;
 
-    if (req.user?.role === Role.DISTRICT_ADMIN && req.user.assignedDistrict && requirement.district !== req.user.assignedDistrict) {
+    if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict && requirement.district !== req.user?.assignedDistrict) {
       return res.status(403).json({ error: "You can convert only assigned district requirements" });
     }
 
@@ -144,14 +145,14 @@ export const listCsrProjects = async (req: AuthenticatedRequest, res: Response, 
       where.tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId;
     }
     if (req.user?.role === Role.COMPANY_ADMIN || req.user?.role === Role.COMPANY_MEMBER) {
-      where.companyId = req.user.companyId || "__none__";
+      where.companyId = req.user?.companyId || "__none__";
     } else if (req.user?.role === Role.NGO_ADMIN || req.user?.role === Role.NGO_MEMBER) {
-      where.ngoId = req.user.ngoId || "__none__";
+      where.ngoId = req.user?.ngoId || "__none__";
     } else if (req.user?.role === Role.BENEFICIARY_AGENCY) {
-      const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user.id } });
+      const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user?.id } });
       where.beneficiaryProfileId = profile?.id || "__none__";
-    } else if (req.user?.role === Role.DISTRICT_ADMIN && req.user.assignedDistrict) {
-      where.csrRequirement = { district: req.user.assignedDistrict };
+    } else if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict) {
+      where.csrRequirement = { district: req.user?.assignedDistrict };
     }
 
     const projects = await prisma.cSRProject.findMany({
@@ -213,7 +214,7 @@ export const submitUtilizationCertificate = async (req: AuthenticatedRequest, re
     const release = await prisma.cSRFundRelease.findUnique({ where: { id }, include: { csrProject: true, csrRequirement: true } });
     if (!release) return res.status(404).json({ error: "Fund release not found" });
     const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || release.tenantId || null;
-    if (!req.user?.ngoId || req.user.ngoId !== release.ngoId) {
+    if (!req.user?.ngoId || req.user?.ngoId !== release.ngoId) {
       return res.status(403).json({ error: "Only the assigned NGO can submit utilization certificate" });
     }
 
@@ -290,7 +291,7 @@ export const confirmAssetHandover = async (req: AuthenticatedRequest, res: Respo
     if (!project) return res.status(404).json({ error: "CSR project not found" });
     const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || project.tenantId || null;
 
-    const ownsProject = req.user?.role === Role.BENEFICIARY_AGENCY && project.beneficiaryProfile.userId === req.user.id;
+    const ownsProject = req.user?.role === Role.BENEFICIARY_AGENCY && project.beneficiaryProfile.userId === req.user?.id;
     if (!ownsProject && !isStateCell(req.user?.role)) {
       return res.status(403).json({ error: "Only the owning government department can confirm handover" });
     }
@@ -336,7 +337,7 @@ export const createProjectInspection = async (req: AuthenticatedRequest, res: Re
     const project = await prisma.cSRProject.findUnique({ where: { id }, include: { csrRequirement: true } });
     if (!project) return res.status(404).json({ error: "CSR project not found" });
     const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || project.tenantId || null;
-    if (req.user?.role === Role.DISTRICT_ADMIN && req.user.assignedDistrict && project.csrRequirement.district !== req.user.assignedDistrict) {
+    if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict && project.csrRequirement.district !== req.user?.assignedDistrict) {
       return res.status(403).json({ error: "You can inspect only assigned district projects" });
     }
 

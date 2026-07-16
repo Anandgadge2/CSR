@@ -7,7 +7,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { ProjectStatus, MilestoneStatus, Role, VerificationStatus } from "@prisma/client";
+import { ProjectStatus, MilestoneStatus, VerificationStatus } from "@prisma/client";
+import { Role } from "../types/role";
 
 // Get all projects with filters
 export const getProjects = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -31,7 +32,7 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response, next
     } else {
       // NGO can see drafts; others see only submitted or beyond
       if (req.user?.role === Role.NGO_ADMIN || req.user?.role === Role.NGO_MEMBER) {
-        filter.ngoId = req.user.ngoId;
+        filter.ngoId = req.user?.ngoId;
       } else {
         filter.status = { notIn: ["DRAFT", "REJECTED"] };
       }
@@ -325,7 +326,7 @@ export const releaseMilestoneFunding = async (req: AuthenticatedRequest, res: Re
 
     await prisma.auditLog.create({
       data: {
-        userId: req.user.id,
+        userId: req.user?.id,
         action: "MILESTONE_PAYMENT_RELEASED",
         details: { milestoneId, amount: milestone.amount }
       }

@@ -13,7 +13,7 @@ model User {
   organizationId       String?
   email                String                    @unique
   passwordHash         String
-  role                 Role                      @default(NGO_MEMBER)
+  role                 Role?
   accountStatus        UserAccountStatus         @default(ACTIVE)
   isSystemSeeded       Boolean                   @default(false)
   isVerified           Boolean                   @default(false)
@@ -45,6 +45,8 @@ model User {
   finalNgoApprovals    NGO[]                     @relation("NgoFinalApprovedBy")
   beneficiaryProfile   BeneficiaryProfile?
   organizationRoles    UserOrganizationRole[]
+  roleId               String?
+  roleRelation         OrganizationRole?         @relation("UserDynamicRole", fields: [roleId], references: [id], onDelete: SetNull)
 
   // MAHA CSR CONVERGENCE FRAMEWORK - New Relations
   rmEnquiries              CorporateEnquiry[]            @relation("RMEnquiries")
@@ -186,12 +188,14 @@ model Company {
   documents          Document[]
   matchScores        MatchScore[]
   reports            Report[]
-  users              User[]
-  companyInterests   CompanyInterest[]
-  csrProjects        CSRProject[]
-  csrFundReleases    CSRFundRelease[]
-  invitedNgos        NGO[]              @relation("CompanyInvitedNgos")
-  ngoInvitations     NgoInvitation[]
+  users                 User[]
+  companyInterests      CompanyInterest[]
+  csrProjects           CSRProject[]
+  csrFundReleases       CSRFundRelease[]
+  invitedNgos           NGO[]              @relation("CompanyInvitedNgos")
+  ngoInvitations        NgoInvitation[]
+  organizationRoles     OrganizationRole[]     @relation("CompanyRoles")
+  userOrganizationRoles UserOrganizationRole[] @relation("CompanyUserRoles")
 
   @@index([tenantId])
   @@index([organizationId])
@@ -760,6 +764,9 @@ model OrganizationRole {
   organization    Organization?                @relation(fields: [organizationId], references: [id])
   rolePermissions OrganizationRolePermission[]
   userRoles       UserOrganizationRole[]
+  companyId       String?
+  company         Company?                     @relation("CompanyRoles", fields: [companyId], references: [id], onDelete: Cascade)
+  users           User[]                       @relation("UserDynamicRole")
 
   @@unique([tenantId, organizationId, name])
   @@index([tenantId])
@@ -786,6 +793,8 @@ model UserOrganizationRole {
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   role           OrganizationRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
   organization   Organization?    @relation(fields: [organizationId], references: [id])
+  companyId      String?
+  company        Company?         @relation("CompanyUserRoles", fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId, organizationId])
   @@index([tenantId])
@@ -1034,28 +1043,7 @@ model FundRelease {
 
 enum Role {
   SUPER_ADMIN
-  DISTRICT_ADMIN
-  BENEFICIARY_AGENCY
-  COMPANY_ADMIN
-  COMPANY_MEMBER
-  NGO_ADMIN
-  NGO_MEMBER
-  PORTAL_ADMIN
-  CSR_ADMIN
-  ANALYST_REVIEWER
-  COMPLIANCE_REVIEWER
-  FINANCE_USER
-  APPROVER
-  AUDITOR
-  AUTHORIZED_SIGNATORY
-  // MAHA CSR CONVERGENCE FRAMEWORK - NEW ROLES
-  CSR_RELATIONSHIP_MANAGER
-  JOINT_SECRETARY
-  PLANNING_SECRETARY
-  DISTRICT_NODAL_OFFICER
-  STATE_CSR_CELL
   CORPORATE_USER
-  IMPLEMENTING_AGENCY_USER
   GOVERNMENT_OFFICER
 }
 

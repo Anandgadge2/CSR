@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { CompanyInterestStatus, CSRRequirementStatus, Role } from "@prisma/client";
+import { CompanyInterestStatus, CSRRequirementStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import { notify, notifyDistrictAdmins, auditLog } from "../services/notificationService";
 
 // ─── Create CSR Requirement ────────────────────────────────────────

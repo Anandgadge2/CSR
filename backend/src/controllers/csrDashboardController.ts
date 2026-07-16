@@ -6,7 +6,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { Role, CSRRequirementStatus, NGOApplicationStatus, CompanyInterestStatus, NGOEmpanelmentStatus } from "@prisma/client";
+import { CSRRequirementStatus, NGOApplicationStatus, CompanyInterestStatus, NGOEmpanelmentStatus } from "@prisma/client";
+import { Role } from "../types/role";
 
 export const getCSRDashboardStats = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

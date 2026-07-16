@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { CompanyInterestStatus, CSRRequirementStatus, NGOApplicationStatus, Role } from "@prisma/client";
+import { CompanyInterestStatus, CSRRequirementStatus, NGOApplicationStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import { notify, notifyNGOUsers, notifyDistrictAdmins, notifyCompanyUsers, auditLog } from "../services/notificationService";
 
 // ─── Express Interest ──────────────────────────────────────────────
@@ -149,11 +150,11 @@ export const listCompanyInterestsForAdmin = async (req: AuthenticatedRequest, re
     if (status) where.status = status;
     
     let csrRequirementFilter: any = {};
-    if (district || (req.user?.role === Role.DISTRICT_ADMIN && req.user.assignedDistrict)) {
+    if (district || (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict)) {
       csrRequirementFilter.district = (district as string) || req.user?.assignedDistrict;
     }
     if (req.user?.role === Role.BENEFICIARY_AGENCY) {
-      const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user.id } });
+      const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user?.id } });
       csrRequirementFilter.beneficiaryProfileId = profile?.id || "__none__";
     }
 

@@ -7,7 +7,7 @@ import {
   respondToQuery
 } from "../controllers/onboardingController";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import { checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
 import {
   deleteOnboardingDocument,

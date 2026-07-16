@@ -7,7 +7,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { NGOApplicationStatus, NGOEmpanelmentStatus, CSRRequirementStatus, Role } from "@prisma/client";
+import { NGOApplicationStatus, NGOEmpanelmentStatus, CSRRequirementStatus } from "@prisma/client";
+import { Role } from "../types/role";
 import { notify, notifyCompanyUsers, notifyDistrictAdmins, auditLog } from "../services/notificationService";
 
 // ─── Submit NGO Application ────────────────────────────────────────

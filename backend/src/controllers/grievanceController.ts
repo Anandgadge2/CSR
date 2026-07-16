@@ -1,12 +1,8 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import {
-  Role,
-  GrievanceStatus,
-  SLAStage,
-  Prisma,
-} from "@prisma/client";
+import { GrievanceStatus, SLAStage, Prisma } from "@prisma/client";
+import { Role } from "../types/role";
 import {
   successResponse,
   errorResponse,

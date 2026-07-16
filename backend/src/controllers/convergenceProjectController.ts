@@ -2,12 +2,8 @@ import { Response, NextFunction } from "express";
 import { Decimal } from "@prisma/client/runtime/library";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import {
-  Role,
-  SimpleMilestoneStatus,
-  GrievanceStatus,
-  Prisma,
-} from "@prisma/client";
+import { SimpleMilestoneStatus, GrievanceStatus, Prisma } from "@prisma/client";
+import { Role } from "../types/role";
 import {
   successResponse,
   errorResponse,

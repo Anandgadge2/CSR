@@ -2,13 +2,8 @@ import { Response, NextFunction } from "express";
 import { Decimal } from "@prisma/client/runtime/library";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import {
-  CorporateEnquiryStatus,
-  GovernmentPitchStatus,
-  Role,
-  ChecklistAnswer,
-  FeasibilityResult
-} from "@prisma/client";
+import { CorporateEnquiryStatus, GovernmentPitchStatus, ChecklistAnswer, FeasibilityResult } from "@prisma/client";
+import { Role } from "../types/role";
 import { notify, notifyByRole, auditLog } from "../services/notificationService";
 import { FEASIBILITY_CHECKLIST_TEMPLATE, getFailedCriticalItems } from "../constants/feasibilityChecklist";
 import { SLAEscalationService, calculateDueDate } from "../services/slaEscalationService";

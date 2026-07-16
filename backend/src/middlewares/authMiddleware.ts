@@ -1,13 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { Role } from "@prisma/client";
+import { Role } from "../types/role";
 import { getJwtSecret } from "../config/env";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: Role;
+    role?: Role | null;
+    roleId?: string | null;
     tenantId?: string | null;
     organizationId?: string | null;
     accountStatus?: string | null;
@@ -57,7 +58,7 @@ export const authorizeRoles = (allowedRoles: Role[]) => {
       return res.status(401).json({ error: "Unauthorized access" });
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!req.user.role || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ error: `Forbidden: role '${req.user.role}' lacks permissions` });
     }
 

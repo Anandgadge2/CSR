@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { OnboardingStatus, Role, DocumentType } from "@prisma/client";
+import { OnboardingStatus, DocumentType } from "@prisma/client";
+import { Role } from "../types/role";
 
 /**
  * NGO Onboarding Controller
