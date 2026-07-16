@@ -12,6 +12,7 @@ import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
 import { hasRoleAccess, CONVERGENCE_PROJECT_ROLES } from "@/lib/roleAccess";
+import { useAuthStore } from "@/store/authStore";
 
 interface Project {
   id: string;
@@ -33,6 +34,10 @@ interface Project {
 
 export default function ConvergenceProjectsPage() {
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const isNodal = user?.role === "DISTRICT_NODAL_OFFICER" || user?.role === "NODAL_OFFICER";
+  const getProjectViewUrl = (id: string) => isNodal ? `/nodal/projects/${id}` : `/convergence-projects/${id}`;
+
   const [mounted, setMounted] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,7 +116,7 @@ export default function ConvergenceProjectsPage() {
     { key: "status", label: "Status", render: (v: unknown) => { const s = (v as string) || ""; return <GovStatusBadge variant={statusToVariant(s)}>{s.replace(/_/g, " ")}</GovStatusBadge>; } },
     { key: "id", label: "Action", align: "right" as const, render: (_: unknown, row: Record<string, unknown>) => (
       <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-        <Link href={`/convergence-projects/${row.id}`} onClick={(e) => e.stopPropagation()}>
+        <Link href={getProjectViewUrl(row.id as string)} onClick={(e) => e.stopPropagation()}>
           <GovButton variant="muted" style={{ fontSize: 11, padding: "3px 10px", minHeight: 28 }}>View</GovButton>
         </Link>
         <Link href={`/projects/${row.id}/tracking`} onClick={(e) => e.stopPropagation()}>
@@ -160,7 +165,7 @@ export default function ConvergenceProjectsPage() {
             loading={loading}
             error={error}
             emptyMessage="No convergence projects found."
-            onRowClick={(row) => router.push(`/convergence-projects/${row.id}`)}
+            onRowClick={(row) => router.push(getProjectViewUrl(row.id as string))}
           />
         </div>
       </GovPageShell>

@@ -513,8 +513,10 @@ export function CompanyOnboardingStep() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    if (organization && organization.onboardingStatus !== "REGISTERED" && organization.onboardingStatus !== "PROFILE_INCOMPLETE") {
-      router.push("/organization/onboarding/status");
+    // Locked statuses: details are read-only after submission.
+    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "SUSPENDED"];
+    if (organization && locked.includes(organization.onboardingStatus)) {
+      router.push(organization.onboardingStatus === "APPROVED" ? "/organization/onboarding/details" : "/organization/onboarding/status");
     }
   }, [organization, router]);
   const org = organization || ({} as Organization);
@@ -572,7 +574,13 @@ export function CompanyOnboardingStep() {
     }
   };
 
-  if (!organization) return <Shell title="CSR Company Onboarding" description="Complete company verification before CSR marketplace access." steps={companySteps} currentStep={step} onStepChange={setStep}><LoadingPanel /></Shell>;
+  if (!organization) {
+    return (
+      <Shell title="CSR Company Onboarding" description="Complete company verification before CSR marketplace access." steps={companySteps} currentStep={step} onStepChange={setStep}>
+        {error ? <ErrorBox error={error} /> : <LoadingPanel />}
+      </Shell>
+    );
+  }
 
   if (step === "documents") return <DocumentsStep title="CSR Company Documents" steps={companySteps} currentStep={step} onStepChange={setStep} documentTypes={companyDocumentTypes} status={organization.onboardingStatus} />;
 
@@ -707,8 +715,8 @@ function DocumentsStep({
 }) {
   const [documents, setDocuments] = useState<OrganizationDocument[]>([]);
   const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ documentType: documentTypes[0], fileUrl: "", fileName: "", mimeType: "application/pdf", fileSize: "" });
+  const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -719,11 +727,11 @@ function DocumentsStep({
   };
   useEffect(() => { load(); }, []);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSpecificUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: string) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setUploadingType(type);
     setError("");
     try {
       const formData = new FormData();
@@ -735,7 +743,6 @@ function DocumentsStep({
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      // 1. Upload file
       const res = await fetch(`${API_BASE_URL}/upload`, {
         method: "POST",
         headers,
@@ -745,11 +752,10 @@ function DocumentsStep({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "File upload failed");
 
-      // 2. Automatically link/save document in database
       await apiFetch("/onboarding/documents", {
         method: "POST",
         body: JSON.stringify({
-          documentType: form.documentType,
+          documentType: type,
           fileUrl: data.url,
           fileName: file.name,
           mimeType: file.type || "application/pdf",
@@ -757,15 +763,49 @@ function DocumentsStep({
         })
       });
 
-      // 3. Clear file input and reload
       event.target.value = "";
       await load();
     } catch (err: any) {
       setError(err.message || "Failed to upload and save document");
-      event.target.value = ""; // Clear file input
+      event.target.value = "";
     } finally {
-      setUploading(false);
+      setUploadingType(null);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    setDeletingId(id);
+    setError("");
+    try {
+      await apiFetch(`/onboarding/documents/${id}`, {
+        method: "DELETE"
+      });
+      await load();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete document");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const isMandatoryDoc = (type: string): boolean => {
+    const mandatoryList = [
+      "CERTIFICATE_OF_INCORPORATION",
+      "PAN_CARD",
+      "GST_CERTIFICATE",
+      "BOARD_RESOLUTION",
+      "AUTHORIZATION_LETTER",
+      "CSR_POLICY",
+      "CSR_DECLARATION",
+      "DEPARTMENT_AUTHORIZATION",
+      "DEPARTMENT_PROOF",
+      "OFFICE_ORDER",
+      "GOVERNMENT_ORDER",
+      "NODAL_OFFICER_APPOINTMENT",
+      "OFFICIAL_LETTERHEAD"
+    ];
+    return mandatoryList.includes(type);
   };
 
   const handleContinue = () => {
@@ -776,87 +816,98 @@ function DocumentsStep({
   };
 
   return (
-    <Shell title={title} description="Upload private onboarding documents. These files are tenant-scoped and not exposed publicly." steps={steps} currentStep={currentStep} onStepChange={onStepChange} status={status}>
+    <Shell title={title} description="Upload onboarding verification documents. Each document type below has a dedicated upload slot. Mandatory documents are marked with a red star (*)." steps={steps} currentStep={currentStep} onStepChange={onStepChange} status={status}>
       <ErrorBox error={error} />
       
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Left Side: Upload Panel (1/3) */}
-        <div className="md:col-span-1 flex flex-col gap-4 border border-gov-line bg-white p-5 shadow-sm">
-          <div className="text-xs font-bold text-gov-navy uppercase tracking-wider border-b border-gov-line pb-2 mb-1">
-            Upload Document
+      <div className="border border-gov-line bg-white shadow-sm flex flex-col rounded-lg">
+        <div className="border-b border-gov-line p-4 flex justify-between items-center bg-slate-50/30">
+          <div>
+            <div className="text-xs font-bold text-gov-navy uppercase tracking-wider">Required Verification Documents</div>
+            <p className="text-[11px] text-gov-muted mt-0.5">Please provide files for each document class below</p>
           </div>
-          
-          <SelectField 
-            label="Document type to upload" 
-            value={form.documentType} 
-            onChange={(value) => setForm(current => ({ ...current, documentType: value }))} 
-            options={documentTypes} 
-            required 
-          />
-
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-bold text-gov-ink">Select File *</span>
-            <div className="relative border-2 border-dashed border-gov-line hover:border-gov-blue hover:bg-slate-50/50 p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group min-h-[140px]">
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                onChange={handleFileChange}
-                disabled={uploading}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
-              <Upload className="w-8 h-8 text-gov-muted group-hover:text-gov-blue transition-colors" />
-              <div className="text-sm font-bold text-gov-ink">Click or drag file here</div>
-              <div className="text-[10px] text-gov-muted font-medium">Supports PDF, JPG, PNG, DOC (max 10MB)</div>
-            </div>
-            
-            {uploading && (
-              <div className="flex items-center gap-2.5 mt-2 bg-[#f0f4f8] border border-gov-line p-3 text-xs text-gov-blue font-semibold animate-pulse">
-                <Loader2 className="w-4 h-4 animate-spin text-gov-blue shrink-0" />
-                <span>Uploading & saving document...</span>
-              </div>
-            )}
-          </div>
+          <span className="text-xs font-bold bg-[#e8f0f8] text-gov-blue px-2.5 py-1 rounded-full">
+            {documents.length} of {documentTypes.length} Uploaded
+          </span>
         </div>
 
-        {/* Right Side: Uploaded List (2/3) */}
-        <div className="md:col-span-2 border border-gov-line bg-white shadow-sm flex flex-col">
-          <div className="border-b border-gov-line p-4 flex justify-between items-center bg-slate-50/30">
-            <div>
-              <div className="text-xs font-bold text-gov-navy uppercase tracking-wider">Uploaded Documents</div>
-              <p className="text-[11px] text-gov-muted mt-0.5">Documents submitted for organization verification</p>
-            </div>
-            <span className="text-xs font-bold bg-[#e8f0f8] text-gov-blue px-2.5 py-1 rounded-full">{documents.length} Uploaded</span>
-          </div>
-
-          <div className="flex-grow divide-y divide-gov-line min-h-[250px] bg-white">
-            {documents.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center gap-2">
-                <FileText className="w-12 h-12 text-slate-200" />
-                <div className="text-sm font-bold text-gov-muted">No documents uploaded yet</div>
-                <p className="text-xs text-gov-muted max-w-xs font-medium">Select a document type and upload your file on the left to begin.</p>
-              </div>
-            ) : (
-              documents.map((doc) => (
-                <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 gap-3 hover:bg-slate-50/20 transition-colors">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-[#e8f0f8] flex items-center justify-center text-gov-blue shrink-0">
-                      <FileText className="w-4 h-4" />
-                    </div>
-                    <div className="flex flex-col">
-                      <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-gov-blue hover:underline flex items-center gap-1.5">
-                        {doc.documentType.replace(/_/g, " ")}
-                      </a>
-                      <span className="text-xs text-gov-muted font-medium truncate max-w-[280px]">{doc.fileName || "uploaded_file"}</span>
-                    </div>
+        <div className="divide-y divide-gov-line bg-white">
+          {documentTypes.map((type) => {
+            const uploadedDoc = documents.find((doc) => doc.documentType === type);
+            return (
+              <div key={type} className="flex flex-col md:flex-row md:items-center md:justify-between p-4 gap-4 hover:bg-slate-50/10 transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-[#e8f0f8] flex items-center justify-center text-gov-blue shrink-0 rounded">
+                    <FileText className="w-4 h-4" />
                   </div>
-                  <div className="flex items-center gap-3 self-end sm:self-center">
-                    <span className="text-[10px] text-gov-muted font-bold uppercase">{doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ""}</span>
-                    <Badge>{doc.verificationStatus}</Badge>
+                  <div className="flex flex-col">
+                    <div className="text-sm font-bold text-gov-ink flex items-center gap-1.5">
+                      {type.replace(/_/g, " ")}
+                      {isMandatoryDoc(type) && <span className="text-rose-500 font-bold">*</span>}
+                    </div>
+                    {uploadedDoc ? (
+                      <span className="text-xs text-gov-blue font-semibold max-w-[320px] truncate">
+                        {uploadedDoc.fileName || "uploaded_file.pdf"}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-rose-500 font-semibold uppercase tracking-wider">Pending Upload</span>
+                    )}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+
+                <div className="flex flex-wrap items-center gap-3 self-start md:self-center">
+                  {uploadedDoc ? (
+                    <>
+                      <span className="text-[10px] text-gov-muted font-bold">
+                        {uploadedDoc.createdAt ? new Date(uploadedDoc.createdAt).toLocaleDateString("en-IN") : ""}
+                      </span>
+                      <Badge>{uploadedDoc.verificationStatus}</Badge>
+                      <a
+                        href={uploadedDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex h-8 items-center justify-center rounded border border-[#c7cdd6] bg-white px-3 text-xs font-semibold text-[#14274e] hover:bg-[#f4f5f7] hover:no-underline"
+                      >
+                        View
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(uploadedDoc.id)}
+                        disabled={deletingId === uploadedDoc.id}
+                        className="inline-flex h-8 items-center justify-center rounded border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                      >
+                        {deletingId === uploadedDoc.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      {uploadingType === type && (
+                        <div className="flex items-center gap-1.5 text-xs text-gov-blue font-semibold animate-pulse">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Uploading...</span>
+                        </div>
+                      )}
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          onChange={(e) => handleSpecificUpload(e, type)}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          disabled={uploadingType === type}
+                        />
+                        <button
+                          type="button"
+                          className="inline-flex h-8 items-center justify-center rounded bg-[#1789d6] hover:bg-[#146fb0] px-4 text-xs font-bold text-white transition-colors"
+                          disabled={uploadingType === type}
+                        >
+                          Upload File
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -882,8 +933,10 @@ export function DepartmentOnboardingStep() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    if (organization && organization.onboardingStatus !== "REGISTERED" && organization.onboardingStatus !== "PROFILE_INCOMPLETE") {
-      router.push("/organization/onboarding/status");
+    // Locked statuses: details are read-only after submission.
+    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "SUSPENDED"];
+    if (organization && locked.includes(organization.onboardingStatus)) {
+      router.push(organization.onboardingStatus === "APPROVED" ? "/organization/onboarding/details" : "/organization/onboarding/status");
     }
   }, [organization, router]);
   const org = organization || ({} as Organization);
@@ -924,7 +977,13 @@ export function DepartmentOnboardingStep() {
     }
   };
 
-  if (!organization) return <Shell title="Government Department Onboarding" description="Complete department verification before requirement creation." steps={departmentSteps} currentStep={step} onStepChange={setStep}><LoadingPanel /></Shell>;
+  if (!organization) {
+    return (
+      <Shell title="Government Department Onboarding" description="Complete department verification before requirement creation." steps={departmentSteps} currentStep={step} onStepChange={setStep}>
+        {error ? <ErrorBox error={error} /> : <LoadingPanel />}
+      </Shell>
+    );
+  }
 
   if (step === "documents") return <DocumentsStep title="Government Department Documents" steps={departmentSteps} currentStep={step} onStepChange={setStep} documentTypes={departmentDocumentTypes} status={organization.onboardingStatus} />;
 

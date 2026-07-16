@@ -7,6 +7,7 @@ import { notify, notifyByRole, auditLog, sendTrackingIdNotification } from "../s
 import { assertOtpVerified } from "../services/otpService";
 import { SLAEscalationService, calculateDueDate } from "../services/slaEscalationService";
 import { onboardApprovedAssessmentToProject } from "../services/convergenceOnboardingService";
+import { FEASIBILITY_CHECKLIST_SEED } from "../constants/mahacsr-framework";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface PhotoInput {
@@ -121,6 +122,7 @@ export const submitPitch = async (
     const allowedRoles: Role[] = [
       Role.GOVERNMENT_OFFICER,
       Role.DISTRICT_NODAL_OFFICER,
+      Role.BENEFICIARY_AGENCY,
       Role.SUPER_ADMIN,
       Role.PORTAL_ADMIN
     ];
@@ -187,11 +189,13 @@ export const submitPitch = async (
       return res.status(400).json({ error: "HOD certification document is required for HOD certification type" });
     }
 
-    try {
-      await assertOtpVerified("GOVERNMENT_PITCH", "MOBILE", body.mobile, body.mobileVerificationToken);
-      await assertOtpVerified("GOVERNMENT_PITCH", "EMAIL", body.email, body.emailVerificationToken);
-    } catch (error: any) {
-      return res.status(400).json({ error: error.message });
+    if (!req.user) {
+      try {
+        await assertOtpVerified("GOVERNMENT_PITCH", "MOBILE", body.mobile, body.mobileVerificationToken);
+        await assertOtpVerified("GOVERNMENT_PITCH", "EMAIL", body.email, body.emailVerificationToken);
+      } catch (error: any) {
+        return res.status(400).json({ error: error.message });
+      }
     }
 
     // Photo validation - minimum 2 geo-tagged photos required
@@ -590,12 +594,16 @@ export const verifyPitch = async (
         feasibilityResult: FeasibilityResult.FEASIBLE,
         recommendation: "Pending JS approval",
         suggestedNodalOfficerDomain: pitch.department,
+        // Standard 13-point feasibility checklist (Annexure A). RM answers
+        // are pre-filled YES on verification and refined during JS review.
         checklistItems: {
-          create: [
-            { itemNumber: 1, dimension: "Compliance", checkText: "Valid government officer", isCritical: true, answer: ChecklistAnswer.YES },
-            { itemNumber: 2, dimension: "Location", checkText: "Geo-tagged location verified", isCritical: true, answer: ChecklistAnswer.YES },
-            { itemNumber: 3, dimension: "Documentation", checkText: "Required documents present", isCritical: true, answer: ChecklistAnswer.YES }
-          ]
+          create: FEASIBILITY_CHECKLIST_SEED.map((item) => ({
+            itemNumber: item.itemNumber,
+            dimension: item.dimension,
+            checkText: item.checkText,
+            isCritical: item.isCritical,
+            answer: ChecklistAnswer.YES,
+          }))
         }
       }
     });
@@ -764,9 +772,11 @@ export const submitInterest = async (
       return res.status(400).json({ error: "Indicative budget is required" });
     }
 
-    const isCorporateUser = req.user?.role === Role.CORPORATE_USER;
+    // OTP verification is only for anonymous public submissions —
+    // any authenticated user has already verified their identity at login
+    const isAuthenticatedUser = Boolean(req.user);
 
-    if (!isCorporateUser) {
+    if (!isAuthenticatedUser) {
       try {
         await assertOtpVerified("CORPORATE_INTEREST", "MOBILE", body.mobile, body.mobileVerificationToken);
         await assertOtpVerified("CORPORATE_INTEREST", "EMAIL", body.email, body.emailVerificationToken);
@@ -881,6 +891,7 @@ export const getMyPitches = async (
     const allowedRoles: Role[] = [
       Role.GOVERNMENT_OFFICER,
       Role.DISTRICT_NODAL_OFFICER,
+      Role.BENEFICIARY_AGENCY,
       Role.SUPER_ADMIN,
       Role.PORTAL_ADMIN
     ];

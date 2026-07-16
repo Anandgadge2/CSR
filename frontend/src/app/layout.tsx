@@ -3,6 +3,7 @@ import "./globals.css";
 import "../styles/gov-theme.css";
 import { QueryProvider } from "@/lib/queryProvider";
 import SaaSLayout from "@/components/SaaSLayout";
+import SessionExpiredModal from "@/components/auth/SessionExpiredModal";
 
 export const metadata: Metadata = {
   title: "MahaCSR | CSR Facilitation & Monitoring Portal",
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className="antialiased min-h-screen bg-white text-[#333333] selection:bg-[#e3f0fa] selection:text-[#14274e]">
         <QueryProvider>
           <SaaSLayout>{children}</SaaSLayout>
+          <SessionExpiredModal />
         </QueryProvider>
       </body>
     </html>

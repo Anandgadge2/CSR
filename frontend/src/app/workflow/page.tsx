@@ -199,12 +199,7 @@ export default function WorkflowPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: 14, padding: 14, border: "1px solid var(--gov-border)", background: "#ecfdf5" }}>
-                <div style={{ fontWeight: 800, color: "var(--gov-success)" }}>Where to access it after login</div>
-                <div style={{ marginTop: 6, fontSize: 13, color: "var(--gov-text-secondary)", lineHeight: 1.6 }}>
-                  Open <strong>/convergence-projects</strong>, select a project, then click <strong>Milestone Tracking</strong>. Direct tracking URLs use the format <strong>/projects/&lt;project-id&gt;/tracking</strong>.
-                </div>
-              </div>
+             
             </GovCardBody>
           </GovCard>
         </div>
@@ -364,7 +359,7 @@ export default function WorkflowPage() {
               <GovCardTitle>Annexure A: Assessment Report + 13-Point Feasibility Checklist</GovCardTitle>
             </GovCardHeader>
             <GovCardBody>
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(260px, 360px)", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div>
                   <h3 className="gov-section-title">A.1 Assessment Report Format</h3>
                   <div className="gov-table-container">
@@ -380,18 +375,7 @@ export default function WorkflowPage() {
                     </table>
                   </div>
                 </div>
-                <div style={{ padding: 14, border: "1px solid var(--gov-border)", background: "#ecfdf5", alignSelf: "start" }}>
-                  <div style={{ fontWeight: 800, color: "var(--gov-success)" }}>Where this is used</div>
-                  <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.65, color: "var(--gov-text-secondary)" }}>
-                    RM login: open <strong>/rm/enquiries</strong>, select an enquiry, then open <strong>Feasibility Assessment</strong>. JS login: review submitted reports at <strong>/js/assessments</strong>.
-                  </div>
-                  <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                    <Link href="/rm/enquiries"><GovButton style={{ width: "100%" }}>RM Enquiry Assessments</GovButton></Link>
-                    <Link href="/js/assessments"><GovButton variant="secondary" style={{ width: "100%" }}>JS Assessment Queue</GovButton></Link>
-                    <Link href="/js/escalations"><GovButton variant="danger" style={{ width: "100%" }}>JS Escalations</GovButton></Link>
-                    <Link href="/secretary/escalations"><GovButton variant="secondary" style={{ width: "100%" }}>Planning Secretary Escalations</GovButton></Link>
-                  </div>
-                </div>
+                
               </div>
 
               <h3 className="gov-section-title" style={{ marginTop: 18 }}>A.2 13-Point Project Feasibility Checklist</h3>

@@ -1,8 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
-// Initialized Prisma Client with environment-based logging
+// Initialized Prisma Client with minimal logging
+// Only errors are logged to keep terminal output clean and concise
 const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  log: ["error"],
 });
 
 export default prisma;

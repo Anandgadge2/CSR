@@ -12,6 +12,7 @@ import GovAlert from "@/components/gov/GovAlert";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
 import { hasRoleAccess, CONVERGENCE_PROJECT_ROLES } from "@/lib/roleAccess";
+import { useAuthStore } from "@/store/authStore";
 
 interface Milestone {
   id: string;
@@ -74,13 +75,24 @@ interface ProjectDetail {
 export default function ConvergenceProjectDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const isNodal = user?.role === "DISTRICT_NODAL_OFFICER" || user?.role === "NODAL_OFFICER";
+
   const [mounted, setMounted] = useState(false);
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isNodal && id) {
+      router.replace(`/nodal/projects/${id}`);
+    }
+  }, [mounted, isNodal, id, router]);
 
   const fetchProject = useCallback(async () => {
     if (!id) return;

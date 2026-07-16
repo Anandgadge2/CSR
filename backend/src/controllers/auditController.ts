@@ -8,7 +8,12 @@ export const listAuditLogs = async (req: AuthenticatedRequest, res: Response, ne
     const take = Math.min(parseInt(req.query.limit as string) || 100, 250);
     const userId = req.query.userId as string | undefined;
 
-    const where = req.user?.role === Role.SUPER_ADMIN
+    const canSeeAllLogs =
+      req.user?.role === Role.SUPER_ADMIN ||
+      req.user?.role === Role.MASTER_ADMIN ||
+      req.user?.role === Role.PORTAL_ADMIN;
+
+    const where = canSeeAllLogs
       ? { ...(userId ? { userId } : {}) }
       : { userId: req.user!.id };
 

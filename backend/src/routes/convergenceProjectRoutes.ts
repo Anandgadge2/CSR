@@ -122,6 +122,13 @@ const listProjects = asyncHandler(async (req, res) => {
   const where: any = {};
   if (user?.role === Role.DISTRICT_NODAL_OFFICER) where.nodalOfficerUserId = user.id;
   if (user?.role === Role.IMPLEMENTING_AGENCY_USER) where.implementingAgencyUserId = user.id;
+  if (user?.role === Role.CORPORATE_USER) {
+    // Corporates see only their own projects (direct link or verified enquiry email)
+    where.OR = [
+      { corporateUserId: user.id },
+      ...(user.email ? [{ corporateEnquiry: { email: { equals: user.email, mode: "insensitive" } } }] : []),
+    ];
+  }
   if (req.query.status) where.status = req.query.status;
   const projects = await prisma.convergenceProject.findMany({
     where,

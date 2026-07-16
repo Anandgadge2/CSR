@@ -12,70 +12,7 @@ import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { apiFetch } from "@/lib/api";
 import "../../../styles/gov-theme.css";
 
-const ngos = [
-  {
-    id: "NGO-2026-001",
-    name: "Sahyadri Eco Foundation",
-    registrationNo: "MH/2015/0123456",
-    district: "Pune",
-    focusArea: "Environment",
-    status: "Active",
-    statusVariant: "success" as const,
-    projectsCompleted: 12,
-    totalFunding: "₹45,00,000",
-    lastAudit: "2026-03-15",
-  },
-  {
-    id: "NGO-2026-002",
-    name: "Vidarbha Development Society",
-    registrationNo: "MH/2018/0234567",
-    district: "Nagpur",
-    focusArea: "Rural Development",
-    status: "Active",
-    statusVariant: "success" as const,
-    projectsCompleted: 8,
-    totalFunding: "₹32,50,000",
-    lastAudit: "2026-02-20",
-  },
-  {
-    id: "NGO-2026-003",
-    name: "Mumbai Education Trust",
-    registrationNo: "MH/2012/0345678",
-    district: "Mumbai",
-    focusArea: "Education",
-    status: "Under Review",
-    statusVariant: "warning" as const,
-    projectsCompleted: 15,
-    totalFunding: "₹67,80,000",
-    lastAudit: "2025-12-10",
-  },
-  {
-    id: "NGO-2026-004",
-    name: "Konkan Welfare Association",
-    registrationNo: "MH/2019/0456789",
-    district: "Ratnagiri",
-    focusArea: "Healthcare",
-    status: "Active",
-    statusVariant: "success" as const,
-    projectsCompleted: 6,
-    totalFunding: "₹28,90,000",
-    lastAudit: "2026-04-05",
-  },
-  {
-    id: "NGO-2026-005",
-    name: "Marathwada Social Welfare",
-    registrationNo: "MH/2020/0567890",
-    district: "Aurangabad",
-    focusArea: "Women Empowerment",
-    status: "Suspended",
-    statusVariant: "danger" as const,
-    projectsCompleted: 4,
-    totalFunding: "₹15,60,000",
-    lastAudit: "2025-11-22",
-  },
-];
-
-export default function NGORegistryPage() {
+export default function ImplementingAgencyRegistryPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -87,11 +24,12 @@ export default function NGORegistryPage() {
     const load = async () => {
       try {
         const orgs = await apiFetch<any[]>("/admin/organizations");
-        const ngoOrgs = orgs.filter(org => ["TRUST", "SOCIETY", "SECTION_8_COMPANY"].includes(org.organizationType));
-        
-        const mapped = ngoOrgs.map((org, index) => ({
+        // Implementing agencies are NGO-kind organizations in the convergence framework
+        const agencyOrgs = orgs.filter(org => org.organizationType === "NGO");
+
+        const mapped = agencyOrgs.map((org, index) => ({
           id: org.id,
-          displayId: `NGO-${new Date(org.createdAt || Date.now()).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
+          displayId: `IA-${new Date(org.createdAt || Date.now()).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
           name: org.name,
           registrationNo: org.registrationNumber || "—",
           district: org.district || "—",
@@ -103,11 +41,11 @@ export default function NGORegistryPage() {
           lastAudit: org.updatedAt ? new Date(org.updatedAt).toLocaleDateString("en-IN") : "—",
           isDb: true
         }));
-        
-        setItems([...mapped, ...ngos]);
+
+        setItems(mapped);
       } catch (err) {
-        console.error("Failed to load NGOs", err);
-        setItems(ngos);
+        console.error("Failed to load implementing agencies", err);
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -127,8 +65,8 @@ export default function NGORegistryPage() {
   return (
     <GovPortalLayout>
       <GovPageHeader
-        title="NGO Registry"
-        breadcrumb="Admin / NGO Registry"
+        title="Implementing Agencies"
+        breadcrumb="Admin / Implementing Agencies"
       />
 
       <div className="gov-container">
@@ -136,16 +74,16 @@ export default function NGORegistryPage() {
         <div className="gov-grid gov-grid-cols-4 gov-gap-6 gov-mb-6">
           <GovCard>
             <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Total NGOs</div>
-              <div className="gov-text-3xl gov-font-bold gov-text-primary">1,248</div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">Registered organizations</div>
+              <div className="gov-text-sm gov-text-muted gov-mb-1">Total Agencies</div>
+              <div className="gov-text-3xl gov-font-bold gov-text-primary">{loading ? "…" : items.length}</div>
+              <div className="gov-text-xs gov-text-muted gov-mt-1">Registered implementing agencies</div>
             </GovCardBody>
           </GovCard>
           <GovCard>
             <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Active NGOs</div>
+              <div className="gov-text-sm gov-text-muted gov-mb-1">Active Agencies</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#166534" }}>
-                1,156
+                {loading ? "…" : items.filter((i) => i.status === "Active").length}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Currently operational</div>
             </GovCardBody>
@@ -154,7 +92,7 @@ export default function NGORegistryPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Under Review</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#d97706" }}>
-                67
+                {loading ? "…" : items.filter((i) => i.status === "Under Review").length}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Pending verification</div>
             </GovCardBody>
@@ -163,7 +101,7 @@ export default function NGORegistryPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Suspended</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#b91c1c" }}>
-                25
+                {loading ? "…" : items.filter((i) => i.status === "SUSPENDED" || i.status === "Suspended").length}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Compliance issues</div>
             </GovCardBody>
@@ -175,7 +113,7 @@ export default function NGORegistryPage() {
           <GovCardBody>
             <div className="gov-grid gov-grid-cols-3 gov-gap-4">
               <GovInput
-                label="Search NGO"
+                label="Search Agency"
                 placeholder="Search by name or registration number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -206,17 +144,17 @@ export default function NGORegistryPage() {
           </GovCardBody>
         </GovCard>
 
-        {/* NGO List */}
+        {/* Agency List */}
         <GovCard>
           <GovCardHeader>
-            <GovCardTitle>Registered NGOs ({filteredNGOs.length})</GovCardTitle>
+            <GovCardTitle>Registered Implementing Agencies ({filteredNGOs.length})</GovCardTitle>
           </GovCardHeader>
           <GovCardBody>
             <div className="gov-table-container">
               <table className="gov-table">
                 <thead>
                   <tr>
-                    <th>NGO ID</th>
+                    <th>Agency ID</th>
                     <th>Organization Name</th>
                     <th>Registration No.</th>
                     <th>District</th>
@@ -231,7 +169,7 @@ export default function NGORegistryPage() {
                 <tbody>
                   {filteredNGOs.map((ngo) => (
                     <tr key={ngo.id}>
-                      <td className="gov-font-mono">{ngo.id}</td>
+                      <td className="gov-font-mono">{ngo.displayId || ngo.id}</td>
                       <td className="gov-font-semibold">{ngo.name}</td>
                       <td className="gov-font-mono gov-text-sm">{ngo.registrationNo}</td>
                       <td>{ngo.district}</td>
@@ -246,10 +184,18 @@ export default function NGORegistryPage() {
                       </td>
                       <td>
                         <div className="gov-flex gov-gap-2">
-                          <GovButton variant="secondary">
+                          <GovButton variant="secondary" onClick={() => {
+                            if (ngo.isDb) {
+                              router.push(`/admin/organizations/${ngo.id}`);
+                            } else {
+                              router.push("/admin/organizations");
+                            }
+                          }}>
                             View
                           </GovButton>
-                          <GovButton variant="muted">
+                          <GovButton variant="muted" onClick={() => {
+                            router.push(`/admin/audit-trail?search=${encodeURIComponent(ngo.name)}`);
+                          }}>
                             Audit
                           </GovButton>
                         </div>

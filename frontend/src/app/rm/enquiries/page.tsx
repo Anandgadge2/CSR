@@ -12,6 +12,7 @@ import GovInput from "@/components/gov/GovInput";
 import GovAlert from "@/components/gov/GovAlert";
 import { apiFetch } from "@/lib/api";
 import { useApiQuery } from "@/lib/apiHooks";
+import { useAuthStore } from "@/store/authStore";
 import { 
   Search, 
   Filter, 
@@ -138,6 +139,12 @@ const STATUS_OPTIONS = [
 const ITEMS_PER_PAGE = 10;
 
 export default function EnquiriesListPage() {
+  const user = useAuthStore((s) => s.user);
+  const isRM = user?.role === "CSR_RELATIONSHIP_MANAGER";
+  const pageDescription = isRM
+    ? "View and manage all corporate CSR enquiries assigned to you"
+    : "View and manage corporate CSR enquiries across Maharashtra";
+
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<Filters>({
     status: "",
@@ -189,7 +196,7 @@ export default function EnquiriesListPage() {
     <GovPortalLayout>
       <GovPageHeader
         title="Corporate Enquiries"
-        description="View and manage all corporate CSR enquiries assigned to you"
+        description={pageDescription}
         breadcrumb="Home / Enquiries"
         actions={
           <div style={{ display: "flex", gap: 8 }}>

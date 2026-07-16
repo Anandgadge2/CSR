@@ -22,6 +22,12 @@ import {
   requestClarification,
   suspendOrganization
 } from "../controllers/organizationAdminController";
+import {
+  getConvergenceOverview,
+  getConvergenceReport,
+  getFundMonitoringSummary,
+  listPitchInterests
+} from "../controllers/adminConvergenceController";
 
 const router = Router();
 
@@ -98,6 +104,12 @@ router.post("/requirements/:id/request-clarification", ...requireStateCell, chec
 router.post("/requirements/:id/publish", ...requireStateCell, checkPermission("requirement:publish"), publishRequirement);
 router.get("/company-interests", ...requireStateCell, listCompanyInterestsForAdmin);
 router.post("/company-interests/:id/approve", ...requireStateCell, checkPermission("interest:approve"), approveCompanyInterest);
+
+// Convergence-model admin views
+router.get("/pitch-interests", ...requireStateCell, checkPermission("interest:view"), listPitchInterests);
+router.get("/fund-monitoring", ...requireStateCell, checkPermission("fund:view"), getFundMonitoringSummary);
+router.get("/convergence-overview", ...requireStateCell, getConvergenceOverview);
+router.get("/convergence-report", ...requireStateCell, checkPermission("report:view"), getConvergenceReport);
 
 // SLA escalation monitoring & manual sweep trigger
 router.get("/sla/statistics", ...requireSuperAdmin, getSlaStatistics);

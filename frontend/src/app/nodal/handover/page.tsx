@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Save, ShieldCheck, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, Save, ShieldCheck, ClipboardCheck, Upload, CheckCircle } from "lucide-react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
@@ -11,7 +11,7 @@ import GovButton from "@/components/gov/GovButton";
 import GovAlert from "@/components/gov/GovAlert";
 import GovInput from "@/components/gov/GovInput";
 import GovTextarea from "@/components/gov/GovTextarea";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE_URL, getAccessToken } from "@/lib/api";
 
 interface ProjectOption {
   id: string;
@@ -38,6 +38,38 @@ export default function NodalHandoverPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    setUploadingDoc(true);
+    setUploadError("");
+    try {
+      const token = getAccessToken();
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      handleFieldChange("signedDocumentUrl", data.url);
+    } catch (err: any) {
+      setUploadError("Failed to upload document to Cloudinary.");
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
 
   // Fetch assigned projects
   const { data: projectsResponse, isLoading } = useQuery({
@@ -154,9 +186,54 @@ export default function NodalHandoverPage() {
                 required
               />
 
+               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label className="gov-label" style={{ fontWeight: 700 }}>Signed Handover Certificate PDF (Optional)</label>
+                
+                <div style={{
+                  border: "2px dashed var(--gov-border)",
+                  borderRadius: 8,
+                  padding: "16px 20px",
+                  textAlign: "center",
+                  background: "var(--gov-bg-card)",
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "border-color 0.2s"
+                }}>
+                  <input
+                    type="file"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      opacity: 0,
+                      cursor: "pointer",
+                      width: "100%",
+                      height: "100%"
+                    }}
+                    onChange={handleFileUpload}
+                    disabled={uploadingDoc}
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                    <Upload style={{ color: "var(--gov-text-muted)" }} size={28} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--gov-text)" }}>
+                      {uploadingDoc ? "Uploading to Cloudinary..." : "Drag signed certificate or click to upload"}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--gov-text-muted)" }}>PDF, JPG, PNG up to 10MB</span>
+                  </div>
+                </div>
+
+                {uploadError && <span style={{ color: "var(--gov-danger)", fontSize: 12 }}>{uploadError}</span>}
+                {form.signedDocumentUrl && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gov-success)", fontSize: 12, marginTop: 4 }}>
+                    <CheckCircle size={14} />
+                    <span>Uploaded successfully! URL: <a href={form.signedDocumentUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", color: "var(--gov-link)" }}>{form.signedDocumentUrl}</a></span>
+                  </div>
+                )}
+              </div>
+
               <GovInput
-                label="Signed Handover Certificate PDF URL"
-                value={form.signedDocumentUrl}
+                label="Or paste Handover Certificate URL directly"
+                value={form.signedDocumentUrl || ""}
                 onChange={(e) => handleFieldChange("signedDocumentUrl", e.target.value)}
                 placeholder="https://cloud-storage.gov/handover.pdf"
               />

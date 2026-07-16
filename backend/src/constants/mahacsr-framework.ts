@@ -173,9 +173,10 @@ export function validateFeasibilityChecklist(
  * All times in business days
  */
 export const SLA_TIMEFRAMES = {
-  // Corporate Enquiry Flow
+  // Corporate Enquiry Flow (PDF SLA table)
   RM_RESPONSE: 5, // Days for RM to first contact
-  JS_DECISION: 3, // Days for JS decision after RM submission
+  JS_DECISION: 5, // Days for JS decision on an assessment report
+  JS_ESCALATED_RESPONSE: 3, // Days for JS when an RM-missed enquiry escalates to them
   SECRETARY_ESCALATION: 2, // Days for Planning Secretary after JS missed
 
   // Government Pitch Flow

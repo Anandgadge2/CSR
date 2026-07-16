@@ -7,7 +7,7 @@ import {
   ShieldAlert, Landmark, FileText, TrendingUp, Compass, 
   Sliders, FileCheck2, ShieldCheck, Download, Calendar, Mail, 
   Bell, Settings as SettingsIcon, Users, Play, PlusCircle, Trash, FileDown, CheckCircle2,
-  ArrowUpRight, AlertTriangle, Eye, Lock, Key, Server, Plus, Edit, Folder, HelpCircle, BookOpen
+  ArrowUpRight, AlertTriangle, Eye, Lock, Key, Server, Plus, Edit, Folder, HelpCircle, BookOpen, Clock
 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -422,12 +422,73 @@ export default function CompanyDashboard({ params }: { params?: { tab?: string }
       {/* Header */}
       <div className="flex flex-col gap-1 border-b border-gray-200 pb-4">
         <span className="text-[#f7941d] font-extrabold text-[11px] uppercase tracking-widest">{companyName}</span>
-        <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">Company Console</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="font-heading font-extrabold text-2xl text-gray-900 tracking-tight">Company Console</h1>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => router.push("/track")}
+              className="flex items-center gap-2"
+            >
+              <Clock size={16} />
+              Track Status
+            </Button>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={() => router.push("/partner-with-maharashtra")}
+              className="flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Submit New Enquiry
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* 1. Overview */}
       {activeTab === "overview" && (
         <div className="flex flex-col gap-7 animate-fadeIn">
+          {/* Quick Actions */}
+          {/* <Card className="bg-gradient-to-r from-[#14274e] to-[#1a3a6e] border-0">
+            <CardContent className="p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="text-white">
+                <h3 className="font-heading font-bold text-lg">Start Your CSR Journey</h3>
+                <p className="text-white/80 text-xs mt-1">Submit a new enquiry or track your existing applications</p>
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => router.push("/partner/enquiries")}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
+                >
+                  <Mail size={16} />
+                  My Enquiries
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => router.push("/track")}
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white flex items-center gap-2"
+                >
+                  <Clock size={16} />
+                  Track Status
+                </Button>
+                <Button 
+                  variant="accent" 
+                  size="sm" 
+                  onClick={() => router.push("/partner-with-maharashtra")}
+                  className="bg-[#f7941d] hover:bg-[#e8850a] text-white border-0 flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Submit Enquiry
+                </Button>
+              </div>
+            </CardContent>
+          </Card> */}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <StatsCard label="CSR Budget Limit" value={`₹${totalBudget.toLocaleString("en-IN")}`} icon={Coins} />
             <StatsCard label="Funds Allocated" value={`₹${fundedAmount.toLocaleString("en-IN")}`} icon={Award} />

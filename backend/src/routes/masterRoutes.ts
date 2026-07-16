@@ -19,7 +19,14 @@ import {
   updateTenantFeatures,
   updateTenantStatus,
   updateUser,
-  deleteUser
+  deleteUser,
+  listPermissions,
+  listRoles,
+  createRole,
+  updateRole,
+  deleteRole,
+  assignRoleToUser,
+  removeRoleFromUser
 } from "../controllers/masterController";
 
 const router = Router();
@@ -44,5 +51,15 @@ router.get("/users", ...masterOnly, listUsers);
 router.post("/users", ...masterOnly, createUser);
 router.put("/users/:id", ...masterOnly, updateUser);
 router.delete("/users/:id", ...masterOnly, deleteUser);
+
+// Roles & permissions
+router.get("/permissions", ...masterOnly, listPermissions);
+router.get("/roles", ...masterOnly, listRoles);
+router.post("/roles", ...masterOnly, createRole);
+router.put("/roles/:id", ...masterOnly, updateRole);
+router.delete("/roles/:id", ...masterOnly, deleteRole);
+router.post("/users/:id/roles", ...masterOnly, assignRoleToUser);
+router.delete("/users/:id/roles/:roleId", ...masterOnly, removeRoleFromUser);
+
 export default router;
 

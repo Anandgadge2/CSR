@@ -143,7 +143,8 @@ export const raiseGrievance = async (
       );
     }
 
-    // Find project and verify access
+    // Find project and verify access — project members plus the owning
+    // corporate (matched by direct link or verified enquiry email).
     const project = await prisma.convergenceProject.findFirst({
       where: {
         id: projectId,
@@ -151,6 +152,10 @@ export const raiseGrievance = async (
         OR: [
           { nodalOfficerUserId: userId },
           { implementingAgencyUserId: userId },
+          { corporateUserId: userId },
+          ...(req.user?.email
+            ? [{ corporateEnquiry: { email: { equals: req.user.email, mode: "insensitive" as const } } }]
+            : []),
         ],
       },
       include: {

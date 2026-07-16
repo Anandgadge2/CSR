@@ -62,14 +62,21 @@ const networkFetch = async <T>(path: string, init: RequestInit, isCacheable: boo
     credentials: "include"
   });
 
-  if (response.status === 401) {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
+  const data = await response.json().catch(() => null);
+
+  const isSessionExpired =
+    response.status === 401 ||
+    (response.status === 403 && /invalid or expired/i.test(data?.error || ""));
+
+  if (isSessionExpired && typeof window !== "undefined") {
+    const hadToken = Boolean(token);
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    // Only prompt re-login if the user actually had a session that expired.
+    if (hadToken) {
+      window.dispatchEvent(new CustomEvent("auth:session-expired"));
     }
   }
-
-  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
     const error = new Error(data?.error || "Request failed") as Error & { validationErrors?: string[]; status?: number };
@@ -139,3 +146,51 @@ export const getStoredUser = () => {
     return null;
   }
 };
+
+// Permission API functions
+export interface PermissionResponse {
+  permissions: string[];
+  roles: string[];
+  roleDetails: {
+    id: string;
+    name: string;
+    scope: string;
+    isSystemRole: boolean;
+  }[];
+  isAdmin: boolean;
+}
+
+export interface ModulePermissionResponse {
+  module: string;
+  permissions: string[];
+}
+
+export interface CheckPermissionResponse {
+  hasPermission: boolean;
+  permission: string;
+}
+
+/**
+ * Fetch current user's permissions from the server
+ */
+export const fetchUserPermissions = async (): Promise<PermissionResponse> => {
+  return apiFetch<PermissionResponse>("/auth/permissions");
+};
+
+/**
+ * Fetch permissions for a specific module
+ */
+export const fetchModulePermissions = async (module: string): Promise<ModulePermissionResponse> => {
+  return apiFetch<ModulePermissionResponse>(`/auth/permissions/${module}`);
+};
+
+/**
+ * Check if user has a specific permission
+ */
+export const checkPermission = async (permission: string): Promise<CheckPermissionResponse> => {
+  return apiFetch<CheckPermissionResponse>("/auth/check-permission", {
+    method: "POST",
+    body: JSON.stringify({ permission }),
+  });
+};
+

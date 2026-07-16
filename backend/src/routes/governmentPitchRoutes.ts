@@ -17,6 +17,7 @@ const router = Router();
 // Government Officer - Submit pitch
 router.post(
   "/",
+  optionalAuthenticateToken,
   asyncHandler(submitPitch)
 );
 
@@ -43,7 +44,7 @@ router.get(
 router.get(
   "/my",
   authenticateToken,
-  authorizeRoles([Role.GOVERNMENT_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
+  authorizeRoles([Role.GOVERNMENT_OFFICER, Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
   asyncHandler(getMyPitches)
 );
 

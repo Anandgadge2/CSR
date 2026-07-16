@@ -1,8 +1,7 @@
 /**
- * @deprecated LEGACY - NOT MOUNTED. Part of the disabled NGO-marketplace flow
- * (see app.ts: ENABLE_LEGACY_NGO_MARKETPLACE). This controller's route is not
- * registered; editing it has NO runtime effect in the MahaCSR Convergence Framework.
- * Active replacement: role-specific dashboards (jsDashboardController, csrDashboardController is legacy)
+ * Role-based dashboard stats, mounted at /api/csr-dashboard/stats.
+ * Used by the department portal (/department/dashboard, BENEFICIARY_AGENCY)
+ * and admin/NGO/company dashboard views.
  */
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";

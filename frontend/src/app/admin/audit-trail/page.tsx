@@ -1,280 +1,223 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
 import GovInput from "@/components/gov/GovInput";
 import GovSelect from "@/components/gov/GovSelect";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
+import { apiFetch } from "@/lib/api";
 import "../../../styles/gov-theme.css";
 
-const auditLogs = [
-  {
-    id: "AUD-2026-001",
-    timestamp: "2026-06-19 09:15:23",
-    user: "admin@mahacsr.gov.in",
-    action: "NGO_APPROVED",
-    entity: "Sahyadri Eco Foundation",
-    entityId: "NGO-2026-001",
-    ipAddress: "103.45.67.89",
-    status: "Success",
-    statusVariant: "success" as const,
-    details: "NGO application approved after document verification",
-  },
-  {
-    id: "AUD-2026-002",
-    timestamp: "2026-06-19 08:42:15",
-    user: "analyst@mahacsr.gov.in",
-    action: "DOCUMENT_VERIFIED",
-    entity: "Mumbai Education Trust",
-    entityId: "NGO-2026-003",
-    ipAddress: "103.45.67.90",
-    status: "Success",
-    statusVariant: "success" as const,
-    details: "All documents verified and marked as authentic",
-  },
-  {
-    id: "AUD-2026-003",
-    timestamp: "2026-06-19 08:30:45",
-    user: "company@tatamotors.com",
-    action: "PROJECT_CREATED",
-    entity: "Western Ghats Conservation",
-    entityId: "PROJ-2026-001",
-    ipAddress: "103.45.67.91",
-    status: "Success",
-    statusVariant: "success" as const,
-    details: "New CSR project created with budget allocation",
-  },
-  {
-    id: "AUD-2026-004",
-    timestamp: "2026-06-19 07:55:12",
-    user: "ngo@vidarbha.org",
-    action: "LOGIN_FAILED",
-    entity: "User Account",
-    entityId: "USER-2026-045",
-    ipAddress: "103.45.67.92",
-    status: "Failed",
-    statusVariant: "danger" as const,
-    details: "Invalid password attempt - 3rd consecutive failure",
-  },
-  {
-    id: "AUD-2026-005",
-    timestamp: "2026-06-19 07:20:33",
-    user: "admin@mahacsr.gov.in",
-    action: "REPORT_GENERATED",
-    entity: "Quarterly Compliance Report",
-    entityId: "RPT-2026-001",
-    ipAddress: "103.45.67.89",
-    status: "Success",
-    statusVariant: "success" as const,
-    details: "Q1 FY 2026-27 compliance report generated",
-  },
-  {
-    id: "AUD-2026-006",
-    timestamp: "2026-06-19 06:45:18",
-    user: "system@mahacsr.gov.in",
-    action: "DATA_BACKUP",
-    entity: "Database Backup",
-    entityId: "BACKUP-2026-170",
-    ipAddress: "127.0.0.1",
-    status: "Success",
-    statusVariant: "success" as const,
-    details: "Automated daily database backup completed",
-  },
-];
-
-const actionTypes = [
-  { value: "all", label: "All Actions" },
-  { value: "NGO_APPROVED", label: "NGO Approved" },
-  { value: "NGO_REJECTED", label: "NGO Rejected" },
-  { value: "DOCUMENT_VERIFIED", label: "Document Verified" },
-  { value: "PROJECT_CREATED", label: "Project Created" },
-  { value: "PROJECT_UPDATED", label: "Project Updated" },
-  { value: "LOGIN_SUCCESS", label: "Login Success" },
-  { value: "LOGIN_FAILED", label: "Login Failed" },
-  { value: "REPORT_GENERATED", label: "Report Generated" },
-  { value: "DATA_BACKUP", label: "Data Backup" },
-  { value: "USER_CREATED", label: "User Created" },
-  { value: "USER_UPDATED", label: "User Updated" },
-];
+interface AuditLog {
+  id: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  ipAddress: string | null;
+  details: unknown;
+  createdAt: string;
+  user?: { id: string; email: string; role: string } | null;
+}
 
 export default function AuditTrailPage() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [actionFilter, setActionFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [filterAction, setFilterAction] = useState("ALL");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filteredLogs = auditLogs.filter((log) => {
+  const fetchLogs = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch<AuditLog[]>("/audit-logs?limit=250");
+      setLogs(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load audit logs");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  const actions = Array.from(new Set(logs.map((l) => l.action))).sort();
+  const distinctUsers = new Set(logs.map((l) => l.user?.email).filter(Boolean)).size;
+
+  const filtered = logs.filter((log) => {
+    const term = searchTerm.toLowerCase();
     const matchesSearch =
-      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAction = actionFilter === "all" || log.action === actionFilter;
-    const matchesStatus = statusFilter === "all" || log.status === statusFilter;
-    return matchesSearch && matchesAction && matchesStatus;
+      !term ||
+      (log.user?.email || "").toLowerCase().includes(term) ||
+      log.action.toLowerCase().includes(term) ||
+      (log.entityType || "").toLowerCase().includes(term) ||
+      (log.entityId || "").toLowerCase().includes(term);
+    const matchesAction = filterAction === "ALL" || log.action === filterAction;
+    return matchesSearch && matchesAction;
   });
 
+  const actionVariant = (action: string): "success" | "warning" | "danger" | "info" | "muted" => {
+    const a = action.toUpperCase();
+    if (a.includes("FAIL") || a.includes("REJECT") || a.includes("DELETE") || a.includes("SUSPEND")) return "danger";
+    if (a.includes("APPROVE") || a.includes("VERIF") || a.includes("CREATE")) return "success";
+    if (a.includes("LOGIN") || a.includes("ACCESS")) return "info";
+    return "muted";
+  };
+
+  const detailText = (details: unknown) => {
+    if (details == null) return "";
+    if (typeof details === "string") return details;
+    try {
+      return JSON.stringify(details);
+    } catch {
+      return String(details);
+    }
+  };
+
   return (
-    <GovPortalLayout>
+    <GovPortalLayout userRole="PORTAL_ADMIN">
       <GovPageHeader
+        breadcrumb="Home / Admin / Audit Trail"
         title="Audit Trail"
-        breadcrumb="Admin / Audit Trail"
+        description="Platform activity log — user actions, entity changes, and access events"
       />
 
-      <div className="gov-container">
-        {/* Stats Cards */}
-        <div className="gov-grid gov-grid-cols-4 gov-gap-6 gov-mb-6">
-          <GovCard>
-            <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Total Events</div>
-              <div className="gov-text-3xl gov-font-bold gov-text-primary">12,456</div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">All time logs</div>
-            </GovCardBody>
-          </GovCard>
-          <GovCard>
-            <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Today</div>
-              <div className="gov-text-3xl gov-font-bold" style={{ color: "#166534" }}>
-                342
-              </div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">Events logged</div>
-            </GovCardBody>
-          </GovCard>
-          <GovCard>
-            <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Failed Actions</div>
-              <div className="gov-text-3xl gov-font-bold" style={{ color: "#b91c1c" }}>
-                23
-              </div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">Requires attention</div>
-            </GovCardBody>
-          </GovCard>
-          <GovCard>
-            <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Active Users</div>
-              <div className="gov-text-3xl gov-font-bold" style={{ color: "#005ea8" }}>
-                156
-              </div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">Currently online</div>
-            </GovCardBody>
-          </GovCard>
-        </div>
-
-        {/* Filters */}
-        <GovCard className="gov-mb-6">
-          <GovCardBody>
-            <div className="gov-grid gov-grid-cols-3 gov-gap-4">
-              <GovInput
-                label="Search Logs"
-                placeholder="Search by user, entity, or details..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <GovSelect
-                label="Action Type"
-                value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value)}
-              >
-                {actionTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </GovSelect>
-              <GovSelect
-                label="Status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="Success">Success</option>
-                <option value="Failed">Failed</option>
-                <option value="Warning">Warning</option>
-              </GovSelect>
-            </div>
-          </GovCardBody>
-        </GovCard>
-
-        {/* Audit Logs */}
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <GovCard>
-          <GovCardHeader>
-            <GovCardTitle>Audit Logs ({filteredLogs.length})</GovCardTitle>
-          </GovCardHeader>
           <GovCardBody>
-            <div className="gov-table-container">
-              <table className="gov-table">
-                <thead>
-                  <tr>
-                    <th>Audit ID</th>
-                    <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Entity</th>
-                    <th>Entity ID</th>
-                    <th>IP Address</th>
-                    <th>Status</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td className="gov-font-mono gov-text-sm">{log.id}</td>
-                      <td className="gov-font-mono gov-text-sm">{log.timestamp}</td>
-                      <td className="gov-text-sm">{log.user}</td>
-                      <td>
-                        <span className="gov-badge gov-badge-info">{log.action}</span>
-                      </td>
-                      <td className="gov-font-semibold">{log.entity}</td>
-                      <td className="gov-font-mono gov-text-sm">{log.entityId}</td>
-                      <td className="gov-font-mono gov-text-sm">{log.ipAddress}</td>
-                      <td>
-                        <GovStatusBadge variant={log.statusVariant}>
-                          {log.status}
-                        </GovStatusBadge>
-                      </td>
-                      <td className="gov-text-sm">{log.details}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
+              Events (latest window)
             </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-primary)" }}>{logs.length}</div>
           </GovCardBody>
         </GovCard>
-
-        {/* Security Alerts */}
-        <GovCard className="gov-mt-6">
-          <GovCardHeader>
-            <GovCardTitle>Recent Security Alerts</GovCardTitle>
-          </GovCardHeader>
+        <GovCard>
           <GovCardBody>
-            <div className="gov-space-y-3">
-              <div className="gov-flex gov-items-start gov-gap-3 gov-p-3 gov-bg-danger-light gov-rounded">
-                <div className="gov-text-2xl">⚠️</div>
-                <div className="gov-flex-1">
-                  <div className="gov-font-semibold gov-mb-1">Multiple Failed Login Attempts</div>
-                  <div className="gov-text-sm gov-text-muted">
-                    User ngo@vidarbha.org has 3 consecutive failed login attempts from IP 103.45.67.92
-                  </div>
-                  <div className="gov-text-xs gov-text-muted gov-mt-1">2 minutes ago</div>
-                </div>
-              </div>
-              <div className="gov-flex gov-items-start gov-gap-3 gov-p-3 gov-bg-warning-light gov-rounded">
-                <div className="gov-text-2xl">🔔</div>
-                <div className="gov-flex-1">
-                  <div className="gov-font-semibold gov-mb-1">Unusual Activity Detected</div>
-                  <div className="gov-text-sm gov-text-muted">
-                    High volume of document downloads from IP 103.45.67.95 in the last hour
-                  </div>
-                  <div className="gov-text-xs gov-text-muted gov-mt-1">15 minutes ago</div>
-                </div>
-              </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
+              Distinct Users
             </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-link)" }}>{distinctUsers}</div>
+          </GovCardBody>
+        </GovCard>
+        <GovCard>
+          <GovCardBody>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
+              Distinct Actions
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-primary-dark)" }}>{actions.length}</div>
           </GovCardBody>
         </GovCard>
       </div>
+
+      {/* Filters */}
+      <GovCard style={{ marginBottom: 24 }}>
+        <GovCardBody>
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_260px] gap-4 items-end">
+            <div>
+              <label style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 700 }}>
+                Search Events
+              </label>
+              <GovInput
+                type="text"
+                placeholder="Search by user, action, or entity..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <GovSelect
+              label="Filter by Action"
+              value={filterAction}
+              onChange={(e) => setFilterAction(e.target.value)}
+            >
+              <option value="ALL">All Actions</option>
+              {actions.map((a) => (
+                <option key={a} value={a}>{a.replace(/_/g, " ")}</option>
+              ))}
+            </GovSelect>
+          </div>
+        </GovCardBody>
+      </GovCard>
+
+      {/* Log Table */}
+      <GovCard>
+        <GovCardHeader>
+          <GovCardTitle>Activity Log ({filtered.length})</GovCardTitle>
+        </GovCardHeader>
+        <GovCardBody style={{ padding: 0 }}>
+          {loading ? (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--gov-text-muted)", fontSize: 13 }}>
+              Loading audit logs…
+            </div>
+          ) : error ? (
+            <div className="gov-alert danger" style={{ margin: 16 }}>{error}</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--gov-text-muted)", fontSize: 13 }}>
+              No audit events found.
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid var(--gov-border)" }}>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>TIMESTAMP</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>USER</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>ACTION</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>ENTITY</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>IP ADDRESS</th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>DETAILS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((log) => {
+                    const detail = detailText(log.details);
+                    const expanded = expandedId === log.id;
+                    return (
+                      <tr
+                        key={log.id}
+                        style={{ borderBottom: "1px solid var(--gov-border)", cursor: detail ? "pointer" : "default" }}
+                        onClick={() => setExpandedId(expanded ? null : log.id)}
+                      >
+                        <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)", whiteSpace: "nowrap" }}>
+                          {new Date(log.createdAt).toLocaleString()}
+                        </td>
+                        <td style={{ padding: "14px 16px", fontSize: 13 }}>
+                          <div style={{ fontWeight: 700 }}>{log.user?.email || "system"}</div>
+                          <div style={{ fontSize: 11, color: "var(--gov-text-muted)" }}>{log.user?.role || ""}</div>
+                        </td>
+                        <td style={{ padding: "14px 16px" }}>
+                          <GovStatusBadge variant={actionVariant(log.action)}>
+                            {log.action.replace(/_/g, " ")}
+                          </GovStatusBadge>
+                        </td>
+                        <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
+                          <div>{log.entityType || "—"}</div>
+                          {log.entityId && (
+                            <div style={{ fontSize: 11, color: "var(--gov-text-muted)" }}>
+                              {log.entityId.length > 18 ? `${log.entityId.slice(0, 18)}…` : log.entityId}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
+                          {log.ipAddress || "—"}
+                        </td>
+                        <td style={{ padding: "14px 16px", fontSize: 12, color: "var(--gov-text-secondary)", maxWidth: 320 }}>
+                          <span title={detail} style={expanded ? { wordBreak: "break-all" } : undefined}>
+                            {expanded || detail.length <= 80 ? detail || "—" : `${detail.slice(0, 80)}…`}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </GovCardBody>
+      </GovCard>
     </GovPortalLayout>
   );
 }
-
-// Made with Bob

@@ -24,7 +24,12 @@ export default function OrganizationOnboardingPage() {
         router.replace("/organization/onboarding/department");
         return true;
       }
-      if (organizationType === "CSR_COMPANY" || role === "COMPANY_ADMIN" || role === "COMPANY_MEMBER") {
+      if (
+        organizationType === "CSR_COMPANY" ||
+        role === "COMPANY_ADMIN" ||
+        role === "COMPANY_MEMBER" ||
+        role === "CORPORATE_USER"
+      ) {
         router.replace("/organization/onboarding/company");
         return true;
       }

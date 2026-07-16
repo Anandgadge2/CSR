@@ -13,7 +13,7 @@ import GovButton from "@/components/gov/GovButton";
 import GovAlert from "@/components/gov/GovAlert";
 import GovInput from "@/components/gov/GovInput";
 import GovTextarea from "@/components/gov/GovTextarea";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API_BASE_URL, getAccessToken } from "@/lib/api";
 
 interface MouDetail {
   id: string;
@@ -66,6 +66,38 @@ export default function NodalMouBuilderPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    setUploadingDoc(true);
+    setUploadError("");
+    try {
+      const token = getAccessToken();
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      handleFieldChange("signedDocumentUrl", data.url);
+    } catch (err: any) {
+      setUploadError("Failed to upload document to Cloudinary.");
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
   // Fetch project & existing MoU
   const { data: projectResponse, isLoading, refetch } = useQuery({
     queryKey: ["nodal", "project-mou", projectId],
@@ -114,10 +146,17 @@ export default function NodalMouBuilderPage() {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
-      setSuccess("Tripartite MoU details updated successfully");
+    onSuccess: (res: any, variables: any) => {
+      const isSigned = variables?.status === "SIGNED";
+      setSuccess(isSigned ? "Tripartite MoU finalized and signed successfully! Redirecting..." : "Tripartite MoU details updated successfully");
       refetch();
-      setTimeout(() => setSuccess(null), 3000);
+      if (isSigned) {
+        setTimeout(() => {
+          router.push(`/nodal/projects/${projectId}`);
+        }, 2000);
+      } else {
+        setTimeout(() => setSuccess(null), 3000);
+      }
     },
     onError: (err: any) => {
       setError(err.message || "Failed to save MoU details");
@@ -138,6 +177,8 @@ export default function NodalMouBuilderPage() {
     };
     saveMutation.mutate(postData);
   };
+
+  const isReadOnly = form.status === "SIGNED" || project?.mou?.status === "SIGNED";
 
   if (isLoading) {
     return (
@@ -178,24 +219,28 @@ export default function NodalMouBuilderPage() {
                     value={form.districtDepartmentName}
                     onChange={(e) => handleFieldChange("districtDepartmentName", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Nodal Officer Name"
                     value={form.nodalOfficerName}
                     onChange={(e) => handleFieldChange("nodalOfficerName", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Corporate / Company Name"
                     value={form.corporateName}
                     onChange={(e) => handleFieldChange("corporateName", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Corporate CIN"
                     value={form.cin}
                     onChange={(e) => handleFieldChange("cin", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <div style={{ gridColumn: "span 2" }}>
                     <GovInput
@@ -203,6 +248,7 @@ export default function NodalMouBuilderPage() {
                       value={form.projectTitle}
                       onChange={(e) => handleFieldChange("projectTitle", e.target.value)}
                       required
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div style={{ gridColumn: "span 2" }}>
@@ -212,6 +258,7 @@ export default function NodalMouBuilderPage() {
                       onChange={(e) => handleFieldChange("projectDescription", e.target.value)}
                       rows={3}
                       required
+                      disabled={isReadOnly}
                     />
                   </div>
                   <GovInput
@@ -219,12 +266,14 @@ export default function NodalMouBuilderPage() {
                     value={form.scheduleVIIClause}
                     onChange={(e) => handleFieldChange("scheduleVIIClause", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Project Location Details"
                     value={form.projectLocation}
                     onChange={(e) => handleFieldChange("projectLocation", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Timeline Duration (Months)"
@@ -232,6 +281,7 @@ export default function NodalMouBuilderPage() {
                     value={form.timelineMonths}
                     onChange={(e) => handleFieldChange("timelineMonths", parseInt(e.target.value))}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Corporate CSR Contribution (₹)"
@@ -239,29 +289,34 @@ export default function NodalMouBuilderPage() {
                     value={form.financialContribution}
                     onChange={(e) => handleFieldChange("financialContribution", parseFloat(e.target.value))}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Implementing Agency / NGO Name"
                     value={form.implementingAgencyName}
                     onChange={(e) => handleFieldChange("implementingAgencyName", e.target.value)}
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Government Share (₹ - Optional)"
                     type="number"
                     value={form.governmentContribution}
                     onChange={(e) => handleFieldChange("governmentContribution", e.target.value)}
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Post-completion Asset Ownership Entity"
                     value={form.ownershipAfterCompletion}
                     onChange={(e) => handleFieldChange("ownershipAfterCompletion", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                   <GovInput
                     label="Operations & Maintenance Responsibility"
                     value={form.maintenanceResponsibility}
                     onChange={(e) => handleFieldChange("maintenanceResponsibility", e.target.value)}
                     required
+                    disabled={isReadOnly}
                   />
                 </div>
               </GovCardBody>
@@ -312,31 +367,76 @@ export default function NodalMouBuilderPage() {
                     </GovStatusBadge>
                   </div>
 
-                  {form.signedDocumentUrl ? (
-                    <div>
-                      <span style={{ display: "block", fontSize: 11, color: "var(--gov-text-muted)", marginBottom: 4 }}>SIGNED FILE</span>
-                      <a href={form.signedDocumentUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--gov-link)", fontWeight: 600 }}>
-                        <FileText size={14} /> View Signed MoU
-                      </a>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label className="gov-label" style={{ fontWeight: 700 }}>Signed MoU Document (Optional)</label>
+                    
+                    <div style={{
+                      border: "2px dashed var(--gov-border)",
+                      borderRadius: 8,
+                      padding: "16px 20px",
+                      textAlign: "center",
+                      background: "var(--gov-bg-card)",
+                      position: "relative",
+                      cursor: isReadOnly ? "default" : "pointer",
+                      transition: "border-color 0.2s"
+                    }}>
+                      <input
+                        type="file"
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          opacity: 0,
+                          cursor: isReadOnly ? "default" : "pointer",
+                          width: "100%",
+                          height: "100%"
+                        }}
+                        onChange={handleFileUpload}
+                        disabled={uploadingDoc || isReadOnly}
+                        accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                      />
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                        <Upload style={{ color: "var(--gov-text-muted)" }} size={28} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--gov-text)" }}>
+                          {isReadOnly 
+                            ? "MoU finalized and signed" 
+                            : uploadingDoc ? "Uploading to Cloudinary..." : "Drag signed MoU or click to upload"}
+                        </span>
+                        <span style={{ fontSize: 11, color: "var(--gov-text-muted)" }}>PDF, JPG, PNG up to 10MB</span>
+                      </div>
                     </div>
-                  ) : (
-                    <GovInput
-                      label="Signed Document URL (After Signatures)"
-                      value={form.signedDocumentUrl}
-                      onChange={(e) => handleFieldChange("signedDocumentUrl", e.target.value)}
-                      placeholder="https://cloud-storage.gov/mou.pdf"
-                    />
-                  )}
+
+                    {uploadError && <span style={{ color: "var(--gov-danger)", fontSize: 12 }}>{uploadError}</span>}
+                    {form.signedDocumentUrl && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gov-success)", fontSize: 12, marginTop: 4 }}>
+                        <CheckCircle size={14} />
+                        <span>Uploaded successfully! </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <GovInput
+                    label="Or paste Signed Document URL directly"
+                    value={form.signedDocumentUrl || ""}
+                    onChange={(e) => handleFieldChange("signedDocumentUrl", e.target.value)}
+                    placeholder="https://cloud-storage.gov/mou.pdf"
+                    disabled={isReadOnly}
+                  />
 
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-                    <GovButton variant="primary" onClick={() => handleSave()} disabled={saveMutation.isPending}>
-                      <Save size={16} style={{ marginRight: 6 }} /> Save Draft
-                    </GovButton>
+                    {!isReadOnly ? (
+                      <>
+                        <GovButton variant="primary" onClick={() => handleSave()} disabled={saveMutation.isPending}>
+                          <Save size={16} style={{ marginRight: 6 }} /> Save Draft
+                        </GovButton>
 
-                    {form.status !== "SIGNED" && (
-                      <GovButton variant="secondary" onClick={() => handleSave("SIGNED")} disabled={saveMutation.isPending || !form.signedDocumentUrl}>
-                        <CheckSquare size={16} style={{ marginRight: 6 }} /> Confirm Signed MoU
-                      </GovButton>
+                        <GovButton variant="secondary" onClick={() => handleSave("SIGNED")} disabled={saveMutation.isPending || !form.signedDocumentUrl}>
+                          <CheckSquare size={16} style={{ marginRight: 6 }} /> Confirm Signed MoU
+                        </GovButton>
+                      </>
+                    ) : (
+                      <div style={{ padding: 12, borderRadius: 6, background: "#e6f4ea", color: "#137333", fontWeight: 700, fontSize: 13, textAlign: "center", border: "1px solid #137333" }}>
+                        ✓ MoU Signed & Finalized
+                      </div>
                     )}
                   </div>
                 </div>

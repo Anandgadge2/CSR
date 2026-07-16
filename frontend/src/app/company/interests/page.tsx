@@ -150,7 +150,7 @@ export default function CompanyInterestsPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button
-                          onClick={() => router.push("/company/marketplace")}
+                          onClick={() => router.push(`/company/marketplace/${item.governmentPitch?.id}`)}
                           className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md"
                           title="View Details"
                         >

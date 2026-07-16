@@ -48,11 +48,15 @@ export default function BeneficiaryDashboard() {
     website: ""
   });
   const [submittingProfile, setSubmittingProfile] = useState(false);
+  const [onboarding, setOnboarding] = useState<{ onboardingStatus?: string } | null>(null);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
     if (!token) return;
     fetchDashboardData();
+    apiFetch<{ onboardingStatus?: string }>("/onboarding/status")
+      .then(setOnboarding)
+      .catch(() => setOnboarding(null));
   }, []);
 
   const fetchDashboardData = async () => {
@@ -145,15 +149,56 @@ export default function BeneficiaryDashboard() {
           </p>
         </div>
         {stats?.hasProfile && (
-          <Button 
-            onClick={() => router.push("/beneficiary/projects/new")}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold flex items-center gap-2 border-none shadow"
-          >
-            <PlusCircle size={18} />
-            Create Department CSR Requirement
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            <Button 
+              onClick={() => router.push("/department/pitches/create")}
+              className="bg-[#2e7d32] hover:bg-[#1b5e20] text-white font-bold flex items-center gap-2 border-none shadow"
+            >
+              <PlusCircle size={18} />
+              Pitch a Development Need
+            </Button>
+            <Button 
+              onClick={() => router.push("/beneficiary/projects/new")}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold flex items-center gap-2 border-none shadow"
+            >
+              <PlusCircle size={18} />
+              Create Department CSR Requirement
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* Onboarding status banner */}
+      {onboarding && !["APPROVED"].includes(onboarding.onboardingStatus || "") &&
+        (() => {
+          const s = onboarding.onboardingStatus || "";
+          const inReview = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION"].includes(s);
+          const needsAction = ["REJECTED", "CLARIFICATION_REQUIRED"].includes(s);
+          return (
+            <div className={`rounded-lg border p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+              inReview ? "bg-amber-50 border-amber-300" : needsAction ? "bg-rose-50 border-rose-300" : "bg-blue-50 border-blue-300"
+            }`}>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  {inReview ? "Onboarding under review" : needsAction ? "Onboarding needs attention" : "Complete your organization onboarding"}
+                </h2>
+                <p className="text-sm text-slate-700 mt-0.5">
+                  {inReview
+                    ? "Your documents have been submitted. An administrator is verifying them. You will be notified once approved."
+                    : needsAction
+                    ? "Your submission was returned. Please review the remarks and resubmit your details."
+                    : "Complete your department profile and upload verification documents so an administrator can approve your account."}
+                </p>
+              </div>
+              <Button
+                onClick={() => router.push(inReview ? "/organization/onboarding/status" : "/organization/onboarding")}
+                className="bg-blue-900 text-white hover:bg-blue-950 font-bold px-6 shrink-0"
+              >
+                {inReview ? "View Status" : needsAction ? "Update & Resubmit" : "Start Onboarding"}
+              </Button>
+            </div>
+          );
+        })()}
 
       {/* Profile check banner */}
       {!stats?.hasProfile && !showProfileForm && (

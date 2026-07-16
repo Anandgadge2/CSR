@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { register, login, verifyOtp, refresh, logout, getInvitationDetails, registerInvitedNgo } from "../controllers/authController";
+import { getCurrentUserPermissions, getModulePermissions, checkUserPermission } from "../controllers/permissionController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import { z } from "zod";
 import { authRateLimiter, strictRateLimiter } from "../middlewares/rateLimitMiddleware";
 
@@ -11,7 +13,7 @@ const registerSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.enum(["NGO_ADMIN", "COMPANY_ADMIN", "PORTAL_ADMIN", "BENEFICIARY_AGENCY"]),
+    role: z.enum(["NGO_ADMIN", "COMPANY_ADMIN", "PORTAL_ADMIN", "BENEFICIARY_AGENCY", "CORPORATE_USER"]),
     profile: z.object({
       name: z.string().min(2, "Name is required"),
       // NGO Fields (conditional in logic)
@@ -63,5 +65,10 @@ router.post("/refresh", asyncHandler(refresh));
 router.post("/logout", asyncHandler(logout));
 router.get("/ngo/invitation-details", asyncHandler(getInvitationDetails));
 router.post("/ngo/register-invited", asyncHandler(registerInvitedNgo));
+
+// Dynamic permission routes
+router.get("/permissions", authenticateToken, asyncHandler(getCurrentUserPermissions));
+router.get("/permissions/:module", authenticateToken, asyncHandler(getModulePermissions));
+router.post("/check-permission", authenticateToken, asyncHandler(checkUserPermission));
 
 export default router;

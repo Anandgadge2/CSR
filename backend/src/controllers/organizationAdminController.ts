@@ -80,6 +80,25 @@ const getOwnedOrganization = async (req: TenantAwareRequest, expectedType?: Orga
   return organization;
 };
 
+// Onboarding details are locked once submitted; editing is only allowed again
+// when the reviewer returns the application (CLARIFICATION_REQUIRED / REJECTED).
+const EDITABLE_ONBOARDING_STATUSES = new Set<OrganizationOnboardingStatus>([
+  OrganizationOnboardingStatus.REGISTERED,
+  OrganizationOnboardingStatus.PROFILE_INCOMPLETE,
+  OrganizationOnboardingStatus.DOCUMENTS_PENDING,
+  OrganizationOnboardingStatus.CLARIFICATION_REQUIRED,
+  OrganizationOnboardingStatus.REJECTED
+]);
+
+const assertOnboardingEditable = (organization: { onboardingStatus: OrganizationOnboardingStatus }) => {
+  if (!EDITABLE_ONBOARDING_STATUSES.has(organization.onboardingStatus)) {
+    throw Object.assign(
+      new Error("Onboarding details are locked after submission and cannot be edited."),
+      { statusCode: 409 }
+    );
+  }
+};
+
 const handleScopedError = (error: any, res: Response, next: NextFunction) => {
   if (error?.statusCode) return res.status(error.statusCode).json({ error: error.message });
   return next(error);
@@ -159,13 +178,6 @@ export const listPendingOrganizations = async (req: TenantAwareRequest, res: Res
     }
     const organizations = await prisma.organization.findMany({
       where,
-      include: {
-        documents: true,
-        csrCompanyProfile: true,
-        governmentDepartmentProfile: true,
-        onboardingReviews: { orderBy: { createdAt: "desc" }, take: 5 },
-        tenant: { select: { id: true, name: true, code: true } }
-      },
       orderBy: { updatedAt: "desc" },
       take: 250
     });
@@ -185,13 +197,6 @@ export const listOrganizations = async (req: TenantAwareRequest, res: Response, 
     }
     const organizations = await prisma.organization.findMany({
       where,
-      include: {
-        documents: true,
-        csrCompanyProfile: true,
-        governmentDepartmentProfile: true,
-        onboardingReviews: { orderBy: { createdAt: "desc" }, take: 5 },
-        tenant: { select: { id: true, name: true, code: true } }
-      },
       orderBy: [{ onboardingStatus: "asc" }, { updatedAt: "desc" }],
       take: 500
     });
@@ -325,6 +330,10 @@ export const updateOnboardingProfile = async (req: TenantAwareRequest, res: Resp
     const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
     if (!organizationId) return res.status(400).json({ error: "Organization is not assigned to this account" });
 
+    const existing = await prisma.organization.findUnique({ where: { id: organizationId }, select: { onboardingStatus: true } });
+    if (!existing) return res.status(404).json({ error: "Organization not found" });
+    assertOnboardingEditable(existing);
+
     const organization = await prisma.organization.update({
       where: { id: organizationId },
       data: {
@@ -357,7 +366,7 @@ export const updateOnboardingProfile = async (req: TenantAwareRequest, res: Resp
     await audit(req, "ORGANIZATION_ONBOARDING_PROFILE_UPDATED", "Organization", organization.id, {});
     return res.json(organization);
   } catch (error) {
-    return next(error);
+    return handleScopedError(error, res, next);
   }
 };
 
@@ -366,6 +375,9 @@ export const uploadOnboardingDocument = async (req: TenantAwareRequest, res: Res
     const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
     const tenantId = req.tenantContext?.tenantId || req.user?.tenantId;
     if (!organizationId || !tenantId) return res.status(400).json({ error: "Organization is not assigned to this account" });
+    const orgState = await prisma.organization.findUnique({ where: { id: organizationId }, select: { onboardingStatus: true } });
+    if (!orgState) return res.status(404).json({ error: "Organization not found" });
+    assertOnboardingEditable(orgState);
     const mimeType = req.body.mimeType || req.body.fileType;
     const fileName = req.body.fileName || String(req.body.fileUrl || "").split("/").pop() || req.body.documentType;
     const fileSize = req.body.fileSize ? Number(req.body.fileSize) : undefined;
@@ -404,7 +416,7 @@ export const uploadOnboardingDocument = async (req: TenantAwareRequest, res: Res
     });
     return res.status(201).json(document);
   } catch (error) {
-    return next(error);
+    return handleScopedError(error, res, next);
   }
 };
 
@@ -430,11 +442,13 @@ export const deleteOnboardingDocument = async (req: TenantAwareRequest, res: Res
     if (!req.tenantContext?.isMasterAdmin && document.organizationId !== req.tenantContext?.organizationId) {
       return res.status(403).json({ error: "Cannot delete another organization document" });
     }
+    const owner = await prisma.organization.findUnique({ where: { id: document.organizationId }, select: { onboardingStatus: true } });
+    if (owner && !req.tenantContext?.isMasterAdmin) assertOnboardingEditable(owner);
     await prisma.organizationDocument.delete({ where: { id: req.params.id } });
     await audit(req, "ORGANIZATION_DOCUMENT_DELETED", "OrganizationDocument", req.params.id, {});
     return res.json({ message: "Document deleted" });
   } catch (error) {
-    return next(error);
+    return handleScopedError(error, res, next);
   }
 };
 
@@ -459,6 +473,7 @@ export const getCompanyOnboardingProfile = async (req: TenantAwareRequest, res: 
 export const updateCompanyOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
+    assertOnboardingEditable(organization);
     const updatedOrganization = await prisma.organization.update({
       where: { id: organization.id },
       data: {
@@ -522,6 +537,7 @@ export const updateCompanyOnboardingProfile = async (req: TenantAwareRequest, re
 export const updateCompanyCompliance = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
+    assertOnboardingEditable(organization);
     const profile = await prisma.cSRCompanyProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -605,6 +621,7 @@ export const updateCompanyCompliance = async (req: TenantAwareRequest, res: Resp
 export const updateCompanyPreferences = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
+    assertOnboardingEditable(organization);
     const profile = await prisma.cSRCompanyProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -648,6 +665,7 @@ export const updateCompanyPreferences = async (req: TenantAwareRequest, res: Res
 export const submitCompanyOnboarding = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
+    assertOnboardingEditable(organization);
     const profile = await prisma.cSRCompanyProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -694,6 +712,7 @@ export const getDepartmentOnboardingProfile = async (req: TenantAwareRequest, re
 export const updateDepartmentOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
+    assertOnboardingEditable(organization);
     const updatedOrganization = await prisma.organization.update({
       where: { id: organization.id },
       data: {
@@ -756,6 +775,7 @@ export const updateDepartmentOnboardingProfile = async (req: TenantAwareRequest,
 export const updateDepartmentNodalOfficer = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
+    assertOnboardingEditable(organization);
     const profile = await prisma.governmentDepartmentProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -800,6 +820,7 @@ export const updateDepartmentNodalOfficer = async (req: TenantAwareRequest, res:
 export const updateDepartmentAuthorization = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
+    assertOnboardingEditable(organization);
     const profile = await prisma.governmentDepartmentProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -842,6 +863,7 @@ export const updateDepartmentAuthorization = async (req: TenantAwareRequest, res
 export const updateDepartmentJurisdiction = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
+    assertOnboardingEditable(organization);
     const profile = await prisma.governmentDepartmentProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -880,6 +902,7 @@ export const updateDepartmentJurisdiction = async (req: TenantAwareRequest, res:
 export const updateDepartmentPermissions = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
+    assertOnboardingEditable(organization);
     const profile = await prisma.governmentDepartmentProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -905,6 +928,7 @@ export const updateDepartmentPermissions = async (req: TenantAwareRequest, res: 
 export const submitDepartmentOnboarding = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
+    assertOnboardingEditable(organization);
     const profile = await prisma.governmentDepartmentProfile.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -941,6 +965,9 @@ export const submitOnboarding = async (req: TenantAwareRequest, res: Response, n
   try {
     const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
     if (!organizationId) return res.status(400).json({ error: "Organization is not assigned to this account" });
+    const existing = await prisma.organization.findUnique({ where: { id: organizationId }, select: { onboardingStatus: true } });
+    if (!existing) return res.status(404).json({ error: "Organization not found" });
+    assertOnboardingEditable(existing);
     const organization = await prisma.organization.update({
       where: { id: organizationId },
       data: { onboardingStatus: OrganizationOnboardingStatus.SUBMITTED_FOR_REVIEW }
@@ -948,7 +975,7 @@ export const submitOnboarding = async (req: TenantAwareRequest, res: Response, n
     await audit(req, "ORGANIZATION_ONBOARDING_SUBMITTED", "Organization", organization.id, {});
     return res.json(organization);
   } catch (error) {
-    return next(error);
+    return handleScopedError(error, res, next);
   }
 };
 
@@ -1044,7 +1071,9 @@ export const listOrgUsers = async (req: TenantAwareRequest, res: Response, next:
     const users = await prisma.user.findMany({
       where: {
         tenantId: req.tenantContext?.tenantId || undefined,
-        organizationId: req.tenantContext?.organizationId || undefined
+        organizationId: req.tenantContext?.organizationId || undefined,
+        // Master Admin accounts are never listed to portal users.
+        role: { not: "MASTER_ADMIN" }
       },
       select: {
         id: true,

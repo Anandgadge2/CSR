@@ -167,8 +167,12 @@ export const getProjects = async (
     } else if (userRole === Role.IMPLEMENTING_AGENCY_USER) {
       where.implementingAgencyUserId = userId;
     } else if (userRole === Role.CORPORATE_USER) {
-      // Corporate users can see projects from their enquiries
-      // This is handled by checking corporateEnquiry relation
+      // Corporate users see projects that originated from their own enquiries
+      // (matched by verified enquiry email) or their pitch interests.
+      where.OR = [
+        { corporateEnquiry: { email: { equals: req.user?.email, mode: "insensitive" } } },
+        { corporateUserId: userId },
+      ];
     } else if (
       !(
         [
@@ -344,6 +348,7 @@ export const getProjectById = async (
             id: true,
             trackingId: true,
             companyName: true,
+            email: true,
           },
         },
         governmentPitch: {
@@ -372,6 +377,13 @@ export const getProjectById = async (
     }
 
     // Role-based access verification
+    const isOwningCorporate =
+      userRole === Role.CORPORATE_USER &&
+      (project.corporateUserId === userId ||
+        (project.corporateEnquiry?.email &&
+          req.user?.email &&
+          project.corporateEnquiry.email.toLowerCase() === req.user.email.toLowerCase()));
+
     const isAuthorized =
       userRole === Role.SUPER_ADMIN ||
       userRole === Role.PORTAL_ADMIN ||
@@ -379,7 +391,8 @@ export const getProjectById = async (
       userRole === Role.STATE_CSR_CELL ||
       userRole === Role.JOINT_SECRETARY ||
       project.nodalOfficerUserId === userId ||
-      project.implementingAgencyUserId === userId;
+      project.implementingAgencyUserId === userId ||
+      isOwningCorporate;
 
     if (!isAuthorized) {
       return forbiddenResponse(res, "You don't have access to this project");

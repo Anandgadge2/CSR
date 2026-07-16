@@ -1,6 +1,6 @@
 /**
- * @deprecated LEGACY - NOT MOUNTED in app.ts (ENABLE_LEGACY_NGO_MARKETPLACE guard).
- * This router is not registered; changes here have no runtime effect.
+ * Mounted at /api/csr-dashboard — serves role-based dashboard stats
+ * for the department portal (/department/dashboard) and related views.
  */
 import { Router } from "express";
 import { getCSRDashboardStats } from "../controllers/csrDashboardController";

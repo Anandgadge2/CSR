@@ -15,7 +15,7 @@ router.get("/:trackingId", async (req, res) => {
     if (!pitch) return res.status(404).json({ error: "Tracking ID not found" });
     return res.json({ type: "PITCH", trackingId, status: pitch.status, submittedAt: pitch.submittedAt, details: pitch });
   }
-  if (trackingId.startsWith("INT-")) {
+  if (trackingId.startsWith("INT-") || trackingId.startsWith("CPI-")) {
     const interest = await prisma.corporatePitchInterest.findUnique({ where: { interestTrackingId: trackingId }, include: { governmentPitch: true } });
     if (!interest) return res.status(404).json({ error: "Tracking ID not found" });
     return res.json({ type: "INTEREST", trackingId, status: interest.status, submittedAt: interest.createdAt, details: interest });

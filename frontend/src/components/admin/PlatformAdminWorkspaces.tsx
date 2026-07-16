@@ -518,6 +518,22 @@ export function MasterOrganizationsWorkspace() {
   const [error, setError] = useState("");
   const [viewingOrg, setViewingOrg] = useState<Organization | null>(null);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
+  const [creatingOrg, setCreatingOrg] = useState(false);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const emptyOrg = {
+    tenantId: "",
+    organizationType: "NGO",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    district: "",
+    taluka: "",
+    registrationNumber: "",
+    pan: "",
+    gst: "",
+  };
+  const [newOrg, setNewOrg] = useState(emptyOrg);
 
   const load = async () => {
     setLoading(true);
@@ -560,8 +576,46 @@ export function MasterOrganizationsWorkspace() {
     }
   };
 
+  const openCreateOrg = async () => {
+    setCreatingOrg(true);
+    if (tenants.length === 0) {
+      try {
+        const list = await apiFetch<Tenant[]>("/master/tenants");
+        setTenants(list);
+        if (list.length > 0) setNewOrg((prev) => ({ ...prev, tenantId: list[0].id }));
+      } catch (err: any) {
+        setError(err.message || "Unable to load tenants");
+      }
+    }
+  };
+
+  const createOrg = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    try {
+      await apiFetch<Organization>("/master/organizations", {
+        method: "POST",
+        body: JSON.stringify(newOrg)
+      });
+      setCreatingOrg(false);
+      setNewOrg({ ...emptyOrg, tenantId: tenants[0]?.id || "" });
+      await load();
+    } catch (err: any) {
+      setError(err.message || "Failed to create organization");
+    }
+  };
+
   return (
-    <WorkspaceShell eyebrow="Master Admin" title="Organizations" description="All NGO, CSR company, department and portal admin organizations across tenant instances.">
+    <WorkspaceShell
+      eyebrow="Master Admin"
+      title="Organizations"
+      description="All NGO, CSR company, department and portal admin organizations across tenant instances."
+      actions={
+        <Button onClick={openCreateOrg}>
+          <Plus size={16} /> Create Organization
+        </Button>
+      }
+    >
       <ErrorBox error={error} />
       <section className="border border-gov-line bg-white shadow-sm">
         <div className="border-b border-gov-line p-4"><SearchBox value={search} onChange={setSearch} placeholder="Search organizations..." /></div>
@@ -857,9 +911,169 @@ export function MasterOrganizationsWorkspace() {
           </form>
         </div>
       )}
+
+      {/* Create Organization modal */}
+      {creatingOrg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <form onSubmit={createOrg} className="w-full max-w-2xl bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="h-1 bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h2 className="text-lg font-extrabold text-gov-navy">Create Organization</h2>
+              <button type="button" className="text-slate-400 hover:text-slate-600 font-bold" onClick={() => setCreatingOrg(false)}>✕</button>
+            </div>
+            <div className="p-6 overflow-y-auto flex flex-col gap-4 text-xs font-bold text-gov-ink">
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1.5">
+                  Legal Name
+                  <input
+                    value={newOrg.name}
+                    onChange={(e) => setNewOrg({ ...newOrg, name: e.target.value })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                    required
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  Organization Type
+                  <select
+                    value={newOrg.organizationType}
+                    onChange={(e) => setNewOrg({ ...newOrg, organizationType: e.target.value })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                    required
+                  >
+                    <option value="NGO">NGO</option>
+                    <option value="CSR_COMPANY">CSR Company</option>
+                    <option value="GOVERNMENT_DEPARTMENT">Government Department</option>
+                    <option value="PORTAL_ADMIN_ORG">Portal Admin Organization</option>
+                  </select>
+                </label>
+              </div>
+              <label className="flex flex-col gap-1.5">
+                Tenant (State Portal Instance)
+                <select
+                  value={newOrg.tenantId}
+                  onChange={(e) => setNewOrg({ ...newOrg, tenantId: e.target.value })}
+                  className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  required
+                >
+                  {tenants.length === 0 && <option value="">Loading tenants...</option>}
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>{tenant.name} ({tenant.code})</option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1.5">
+                  Email
+                  <input
+                    type="email"
+                    value={newOrg.email}
+                    onChange={(e) => setNewOrg({ ...newOrg, email: e.target.value })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  Phone
+                  <input
+                    value={newOrg.phone}
+                    onChange={(e) => setNewOrg({ ...newOrg, phone: e.target.value.replace(/[^\d+\-() ]/g, "").slice(0, 15) })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1.5">
+                  District
+                  <input
+                    value={newOrg.district}
+                    onChange={(e) => setNewOrg({ ...newOrg, district: e.target.value })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  Taluka
+                  <input
+                    value={newOrg.taluka}
+                    onChange={(e) => setNewOrg({ ...newOrg, taluka: e.target.value })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  />
+                </label>
+              </div>
+              <label className="flex flex-col gap-1.5">
+                Address
+                <input
+                  value={newOrg.address}
+                  onChange={(e) => setNewOrg({ ...newOrg, address: e.target.value })}
+                  className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                />
+              </label>
+              <div className="grid grid-cols-3 gap-4">
+                <label className="flex flex-col gap-1.5">
+                  Registration Number
+                  <input
+                    value={newOrg.registrationNumber}
+                    onChange={(e) => setNewOrg({ ...newOrg, registrationNumber: e.target.value })}
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  PAN
+                  <input
+                    value={newOrg.pan}
+                    onChange={(e) => setNewOrg({ ...newOrg, pan: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10) })}
+                    maxLength={10}
+                    placeholder="ABCDE1234F"
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue uppercase"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  GST
+                  <input
+                    value={newOrg.gst}
+                    onChange={(e) => setNewOrg({ ...newOrg, gst: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15) })}
+                    maxLength={15}
+                    placeholder="27AAAAA1111A1Z1"
+                    className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue uppercase"
+                  />
+                </label>
+              </div>
+            </div>
+            <div className="border-t border-slate-200 px-6 py-4 flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setCreatingOrg(false)}>Cancel</Button>
+              <Button type="submit" disabled={!newOrg.tenantId}><Plus size={14} /> Create Organization</Button>
+            </div>
+          </form>
+        </div>
+      )}
     </WorkspaceShell>
   );
 }
+
+// System roles a master admin can assign. MASTER_ADMIN is deliberately
+// excluded — it is immutable and cannot be created or granted from the portal.
+const ASSIGNABLE_SYSTEM_ROLES = [
+  "SUPER_ADMIN",
+  "PORTAL_ADMIN",
+  "CSR_ADMIN",
+  "DISTRICT_ADMIN",
+  "PLANNING_SECRETARY",
+  "JOINT_SECRETARY",
+  "CSR_RELATIONSHIP_MANAGER",
+  "DISTRICT_NODAL_OFFICER",
+  "STATE_CSR_CELL",
+  "CORPORATE_USER",
+  "IMPLEMENTING_AGENCY_USER",
+  "BENEFICIARY_AGENCY",
+  "COMPANY_ADMIN",
+  "COMPANY_MEMBER",
+  "NGO_ADMIN",
+  "NGO_MEMBER",
+  "GOVERNMENT_OFFICER",
+  "ANALYST_REVIEWER",
+  "COMPLIANCE_REVIEWER",
+  "FINANCE_USER",
+  "APPROVER",
+  "AUDITOR",
+];
 
 export function MasterUsersWorkspace() {
   const [users, setUsers] = useState<OrgUser[]>([]);
@@ -868,6 +1082,30 @@ export function MasterUsersWorkspace() {
   const [error, setError] = useState("");
   const [viewingUser, setViewingUser] = useState<OrgUser | null>(null);
   const [editingUser, setEditingUser] = useState<OrgUser | null>(null);
+
+  // Create-user modal
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", password: "", role: "CSR_RELATIONSHIP_MANAGER", accountStatus: "ACTIVE" });
+
+  // Roles & permissions manager
+  const [rolesOpen, setRolesOpen] = useState(false);
+  const [roles, setRoles] = useState<OrgRole[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [editingRole, setEditingRole] = useState<{ id?: string; name: string; description: string; scope: string; isSystemRole?: boolean; permissionKeys: string[] } | null>(null);
+  const [savingRole, setSavingRole] = useState(false);
+
+  const loadRolesAndPermissions = async () => {
+    try {
+      const [rolesRes, permsRes] = await Promise.all([
+        apiFetch<OrgRole[]>("/master/roles"),
+        apiFetch<Permission[]>("/master/permissions"),
+      ]);
+      setRoles(rolesRes);
+      setPermissions(permsRes);
+    } catch (err: any) {
+      setError(err.message || "Unable to load roles");
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -910,8 +1148,110 @@ export function MasterUsersWorkspace() {
     }
   };
 
+  const createUser = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    try {
+      await apiFetch<OrgUser>("/master/users", {
+        method: "POST",
+        body: JSON.stringify(newUser)
+      });
+      setCreatingUser(false);
+      setNewUser({ email: "", password: "", role: "CSR_RELATIONSHIP_MANAGER", accountStatus: "ACTIVE" });
+      await load();
+    } catch (err: any) {
+      setError(err.message || "Failed to create user");
+    }
+  };
+
+  const saveRole = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!editingRole) return;
+    setSavingRole(true);
+    setError("");
+    try {
+      if (editingRole.id) {
+        await apiFetch(`/master/roles/${editingRole.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ name: editingRole.name, description: editingRole.description, permissionKeys: editingRole.permissionKeys })
+        });
+      } else {
+        await apiFetch("/master/roles", {
+          method: "POST",
+          body: JSON.stringify({ name: editingRole.name, description: editingRole.description, scope: editingRole.scope, permissionKeys: editingRole.permissionKeys })
+        });
+      }
+      setEditingRole(null);
+      await loadRolesAndPermissions();
+    } catch (err: any) {
+      setError(err.message || "Failed to save role");
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
+  const deleteRole = async (id: string) => {
+    if (!window.confirm("Delete this role? Users holding it lose the assignment.")) return;
+    setError("");
+    try {
+      await apiFetch(`/master/roles/${id}`, { method: "DELETE" });
+      await loadRolesAndPermissions();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete role");
+    }
+  };
+
+  const assignRole = async (userId: string, roleId: string) => {
+    if (!roleId) return;
+    setError("");
+    try {
+      await apiFetch(`/master/users/${userId}/roles`, {
+        method: "POST",
+        body: JSON.stringify({ roleId })
+      });
+      await load();
+      // Keep the details modal in sync with the refreshed list.
+      const refreshed = await apiFetch<OrgUser[]>("/master/users");
+      setUsers(refreshed);
+      setViewingUser((prev) => prev ? refreshed.find((u) => u.id === prev.id) || prev : prev);
+    } catch (err: any) {
+      setError(err.message || "Failed to assign role");
+    }
+  };
+
+  const removeRole = async (userId: string, roleId: string) => {
+    setError("");
+    try {
+      await apiFetch(`/master/users/${userId}/roles/${roleId}`, { method: "DELETE" });
+      const refreshed = await apiFetch<OrgUser[]>("/master/users");
+      setUsers(refreshed);
+      setViewingUser((prev) => prev ? refreshed.find((u) => u.id === prev.id) || prev : prev);
+    } catch (err: any) {
+      setError(err.message || "Failed to remove role");
+    }
+  };
+
+  const permissionsByModule = permissions.reduce<Record<string, Permission[]>>((acc, perm) => {
+    (acc[perm.module] = acc[perm.module] || []).push(perm);
+    return acc;
+  }, {});
+
   return (
-    <WorkspaceShell eyebrow="Master Admin" title="Users" description="Global user directory scoped by tenant and organization. Password hashes are never exposed.">
+    <WorkspaceShell
+      eyebrow="Master Admin"
+      title="Users"
+      description="Global user directory scoped by tenant and organization. Create users, manage custom roles, and assign permissions. Password hashes are never exposed."
+      actions={
+        <>
+          <Button variant="secondary" onClick={() => { setRolesOpen(true); loadRolesAndPermissions(); }}>
+            <ShieldCheck size={16} /> Roles &amp; Permissions
+          </Button>
+          <Button onClick={() => setCreatingUser(true)}>
+            <Plus size={16} /> Create User
+          </Button>
+        </>
+      }
+    >
       <ErrorBox error={error} />
       <section className="border border-gov-line bg-white shadow-sm">
         <div className="border-b border-gov-line p-4"><SearchBox value={search} onChange={setSearch} placeholder="Search users..." /></div>
@@ -980,6 +1320,45 @@ export function MasterUsersWorkspace() {
                   <div className="mt-1 text-slate-600 text-xs">{new Date(viewingUser.createdAt).toLocaleString()}</div>
                 </div>
               </div>
+
+              {/* Custom role assignments */}
+              <div>
+                <div className="text-xs font-bold text-slate-500 uppercase">Custom Roles</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(viewingUser.organizationRoles || []).length === 0 && (
+                    <span className="text-xs text-slate-500">No custom roles assigned.</span>
+                  )}
+                  {(viewingUser.organizationRoles || []).map((assignment) => (
+                    <span key={assignment.role.id} className="inline-flex items-center gap-1.5 rounded border border-[#c4ddf2] bg-[#e3f0fa] px-2 py-1 text-[11px] font-bold text-[#14274e]">
+                      {assignment.role.name}
+                      <button
+                        type="button"
+                        className="text-[#c62828] hover:text-[#8e1c1c] font-bold"
+                        title="Remove role"
+                        onClick={() => removeRole(viewingUser.id, assignment.role.id)}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <select
+                    className="border border-gov-line px-3 py-2 text-xs font-medium outline-none focus:border-gov-blue"
+                    defaultValue=""
+                    onChange={(e) => { if (e.target.value) { assignRole(viewingUser.id, e.target.value); e.target.value = ""; } }}
+                    onFocus={() => { if (roles.length === 0) loadRolesAndPermissions(); }}
+                  >
+                    <option value="">Assign a custom role...</option>
+                    {roles
+                      .filter((r) => !(viewingUser.organizationRoles || []).some((a) => a.role.id === r.id))
+                      .map((r) => (
+                        <option key={r.id} value={r.id}>{r.name} ({r.scope})</option>
+                      ))}
+                  </select>
+                  <span className="text-[10px] text-slate-500">Create roles under Roles &amp; Permissions.</span>
+                </div>
+              </div>
             </div>
             <div className="border-t border-slate-200 px-6 py-4 flex justify-end">
               <Button onClick={() => setViewingUser(null)}>Close</Button>
@@ -1015,21 +1394,9 @@ export function MasterUsersWorkspace() {
                   className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
                   required
                 >
-                  <option value="MASTER_ADMIN">MASTER_ADMIN</option>
-                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-                  <option value="DISTRICT_ADMIN">DISTRICT_ADMIN</option>
-                  <option value="BENEFICIARY_AGENCY">BENEFICIARY_AGENCY</option>
-                  <option value="COMPANY_ADMIN">COMPANY_ADMIN</option>
-                  <option value="COMPANY_MEMBER">COMPANY_MEMBER</option>
-                  <option value="NGO_ADMIN">NGO_ADMIN</option>
-                  <option value="NGO_MEMBER">NGO_MEMBER</option>
-                  <option value="PORTAL_ADMIN">PORTAL_ADMIN</option>
-                  <option value="CSR_ADMIN">CSR_ADMIN</option>
-                  <option value="ANALYST_REVIEWER">ANALYST_REVIEWER</option>
-                  <option value="COMPLIANCE_REVIEWER">COMPLIANCE_REVIEWER</option>
-                  <option value="FINANCE_USER">FINANCE_USER</option>
-                  <option value="APPROVER">APPROVER</option>
-                  <option value="AUDITOR">AUDITOR</option>
+                  {ASSIGNABLE_SYSTEM_ROLES.map((r) => (
+                    <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
+                  ))}
                 </select>
               </label>
               <label className="flex flex-col gap-1.5">
@@ -1061,6 +1428,231 @@ export function MasterUsersWorkspace() {
               <Button type="submit">Save Changes</Button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Create User modal */}
+      {creatingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <form onSubmit={createUser} className="w-full max-w-lg bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden flex flex-col">
+            <div className="h-1 bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h2 className="text-lg font-extrabold text-gov-navy">Create User</h2>
+              <button type="button" className="text-slate-400 hover:text-slate-600 font-bold" onClick={() => setCreatingUser(false)}>✕</button>
+            </div>
+            <div className="p-6 flex flex-col gap-4 text-xs font-bold text-gov-ink">
+              <label className="flex flex-col gap-1.5">
+                Email Address
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  required
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                Temporary Password
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  minLength={6}
+                  className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  required
+                />
+                <span className="text-[10px] font-medium text-slate-500">At least 6 characters. Share securely; user should change it on first login.</span>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                System Role
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                  required
+                >
+                  {ASSIGNABLE_SYSTEM_ROLES.map((r) => (
+                    <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
+                  ))}
+                </select>
+                <span className="text-[10px] font-medium text-slate-500">Master Admin cannot be created or assigned from the portal.</span>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                Account Status
+                <select
+                  value={newUser.accountStatus}
+                  onChange={(e) => setNewUser({ ...newUser, accountStatus: e.target.value })}
+                  className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                >
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="INACTIVE">INACTIVE</option>
+                </select>
+              </label>
+            </div>
+            <div className="border-t border-slate-200 px-6 py-4 flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setCreatingUser(false)}>Cancel</Button>
+              <Button type="submit"><Plus size={14} /> Create User</Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Roles & Permissions manager */}
+      {rolesOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-4xl bg-white border border-slate-200 shadow-xl rounded-xl overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="h-1 bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h2 className="text-lg font-extrabold text-gov-navy">Roles &amp; Permissions</h2>
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={() => setEditingRole({ name: "", description: "", scope: "TENANT", permissionKeys: [] })}>
+                  <Plus size={14} /> New Role
+                </Button>
+                <button className="text-slate-400 hover:text-slate-600 font-bold ml-2" onClick={() => { setRolesOpen(false); setEditingRole(null); }}>✕</button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex flex-col gap-4">
+              {editingRole ? (
+                <form onSubmit={saveRole} className="flex flex-col gap-4 text-xs font-bold text-gov-ink">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label className="flex flex-col gap-1.5">
+                      Role Name
+                      <input
+                        value={editingRole.name}
+                        onChange={(e) => setEditingRole({ ...editingRole, name: e.target.value })}
+                        disabled={editingRole.isSystemRole}
+                        className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue disabled:bg-slate-50"
+                        placeholder="e.g. District Reviewer"
+                        required
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      Scope
+                      <select
+                        value={editingRole.scope}
+                        onChange={(e) => setEditingRole({ ...editingRole, scope: e.target.value })}
+                        disabled={Boolean(editingRole.id)}
+                        className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue disabled:bg-slate-50"
+                      >
+                        <option value="GLOBAL">GLOBAL</option>
+                        <option value="TENANT">TENANT</option>
+                        <option value="ORGANIZATION">ORGANIZATION</option>
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1.5">
+                      Description
+                      <input
+                        value={editingRole.description}
+                        onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
+                        className="border border-gov-line px-3 py-2 text-sm font-medium outline-none focus:border-gov-blue"
+                        placeholder="What this role is for"
+                      />
+                    </label>
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-extrabold uppercase text-slate-500 mb-2">Permissions ({editingRole.permissionKeys.length} selected)</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto border border-gov-line p-3">
+                      {Object.entries(permissionsByModule).map(([module, perms]) => (
+                        <div key={module} className="border border-slate-100 p-3 rounded-lg">
+                          <div className="text-[11px] font-extrabold uppercase tracking-wide text-gov-navy mb-2">{module}</div>
+                          <div className="flex flex-col gap-1.5">
+                            {perms.map((perm) => (
+                              <label key={perm.key} className="flex items-start gap-2 cursor-pointer text-[11px] font-medium text-slate-700">
+                                <input
+                                  type="checkbox"
+                                  className="mt-0.5 rounded border-slate-300"
+                                  checked={editingRole.permissionKeys.includes(perm.key)}
+                                  onChange={(e) =>
+                                    setEditingRole({
+                                      ...editingRole,
+                                      permissionKeys: e.target.checked
+                                        ? [...editingRole.permissionKeys, perm.key]
+                                        : editingRole.permissionKeys.filter((k) => k !== perm.key),
+                                    })
+                                  }
+                                />
+                                <span>
+                                  <span className="font-bold">{perm.key}</span>
+                                  {perm.description && <span className="text-slate-500"> — {perm.description}</span>}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="secondary" onClick={() => setEditingRole(null)}>Cancel</Button>
+                    <Button type="submit" disabled={savingRole}>
+                      {savingRole ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {editingRole.id ? "Save Role" : "Create Role"}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead className="bg-gov-mist text-[11px] uppercase tracking-wider text-gov-muted">
+                      <tr>
+                        <th className="px-4 py-3">Role</th>
+                        <th className="px-4 py-3">Scope</th>
+                        <th className="px-4 py-3">Permissions</th>
+                        <th className="px-4 py-3">Users</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gov-line">
+                      {roles.length === 0 ? (
+                        <EmptyRow colSpan={5} text="No custom roles yet. Create one to bundle permissions." />
+                      ) : roles.map((role) => (
+                        <tr key={role.id}>
+                          <td className="px-4 py-3 font-bold text-gov-ink">
+                            {role.name}
+                            {role.description && <div className="text-[11px] font-medium text-gov-muted">{role.description}</div>}
+                          </td>
+                          <td className="px-4 py-3 text-gov-muted">{role.scope}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-wrap gap-1 max-w-[280px]">
+                              {(role.rolePermissions || []).slice(0, 4).map((rp) => (
+                                <span key={rp.permission.key} className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{rp.permission.key}</span>
+                              ))}
+                              {(role.rolePermissions || []).length > 4 && (
+                                <span className="text-[10px] font-bold text-slate-500">+{(role.rolePermissions || []).length - 4} more</span>
+                              )}
+                              {(role.rolePermissions || []).length === 0 && <span className="text-[10px] text-slate-400">None</span>}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-gov-muted">{role._count?.userRoles ?? 0}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setEditingRole({
+                                  id: role.id,
+                                  name: role.name,
+                                  description: role.description || "",
+                                  scope: role.scope,
+                                  isSystemRole: role.isSystemRole,
+                                  permissionKeys: (role.rolePermissions || []).map((rp) => rp.permission.key),
+                                })}
+                              >
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="danger" onClick={() => deleteRole(role.id)} disabled={role.isSystemRole}>Delete</Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </WorkspaceShell>
@@ -1143,7 +1735,12 @@ export function AdminOnboardingApprovalsWorkspace() {
             <tbody className="divide-y divide-gov-line">
               {loading ? <LoadingRow colSpan={5} /> : items.length === 0 ? <EmptyRow colSpan={5} text="No pending organizations." /> : items.map((item) => (
                 <tr key={item.id}>
-                  <td className="px-5 py-4 font-bold text-gov-ink">{item.name}<div className="text-xs font-medium text-gov-muted">{item.email}</div></td>
+                  <td className="px-5 py-4 font-bold text-gov-ink">
+                    <Link href={`/admin/onboarding-approvals/${item.id}`} className="text-gov-blue hover:underline">
+                      {item.name}
+                    </Link>
+                    <div className="text-xs font-medium text-gov-muted">{item.email}</div>
+                  </td>
                   <td className="px-5 py-4 text-gov-muted">{item.organizationType.replace(/_/g, " ")}</td>
                   <td className="px-5 py-4 text-gov-muted">{item.district || "-"}</td>
                   <td className="px-5 py-4"><Badge>{item.onboardingStatus}</Badge></td>
@@ -1165,6 +1762,7 @@ export function AdminOnboardingApprovalsWorkspace() {
 }
 
 export function OrganizationOnboardingWorkspace() {
+  const router = useRouter();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1176,6 +1774,14 @@ export function OrganizationOnboardingWorkspace() {
     if (!token) return;
     apiFetch<Organization>("/onboarding/status").then(setOrganization).catch((err) => setError(err.message));
   }, []);
+
+  // Once submitted, onboarding details are read-only — redirect away from the edit form.
+  useEffect(() => {
+    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "SUSPENDED"];
+    if (organization && locked.includes(organization.onboardingStatus)) {
+      router.push(organization.onboardingStatus === "APPROVED" ? "/organization/onboarding/details" : "/organization/onboarding/status");
+    }
+  }, [organization, router]);
 
   const updateField = (key: keyof Organization, value: string) => {
     setOrganization((current) => current ? { ...current, [key]: value } : current);
@@ -1356,6 +1962,11 @@ export function OrganizationOnboardingStatusWorkspace() {
           Your organization onboarding is pending approval. You can access portal operations after approval from Portal Admin.
         </div>
       )}
+      <div>
+        <a href="/organization/onboarding/details" className="inline-block border border-gov-line bg-white px-4 py-2 text-sm font-bold text-gov-blue shadow-sm hover:bg-gov-mist">
+          View Submitted Onboarding Details
+        </a>
+      </div>
     </WorkspaceShell>
   );
 }
@@ -1521,7 +2132,10 @@ export function AdminOrganizationsWorkspace() {
     setLoading(true);
     setError("");
     try {
-      setItems(await apiFetch<Organization[]>("/admin/organizations"));
+      const orgs = await apiFetch<Organization[]>("/admin/organizations");
+      // This workspace lists government departments only — companies and
+      // implementing agencies have their own dedicated admin pages.
+      setItems(orgs.filter((org) => org.organizationType === "GOVERNMENT_DEPARTMENT"));
     } catch (err: any) {
       setError(err.message || "Unable to load organizations");
     } finally {
@@ -1544,12 +2158,12 @@ export function AdminOrganizationsWorkspace() {
   const filtered = items.filter((item) => `${item.name} ${item.organizationType} ${item.district || ""} ${item.onboardingStatus}`.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <WorkspaceShell eyebrow="Portal Admin" title="Organizations" description="Review all organizations in this portal instance and manage onboarding status.">
+    <WorkspaceShell eyebrow="Portal Admin" title="Government Departments" description="Review government department organizations in this portal instance and manage onboarding status.">
       <ErrorBox error={error} />
       <section className="border border-gov-line bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-gov-line p-4 md:flex-row md:items-center md:justify-between">
-          <SearchBox value={search} onChange={setSearch} placeholder="Search organizations..." />
-          <div className="text-xs font-bold text-gov-muted">{filtered.length} organization(s)</div>
+          <SearchBox value={search} onChange={setSearch} placeholder="Search departments..." />
+          <div className="text-xs font-bold text-gov-muted">{filtered.length} department(s)</div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] text-left text-sm">
@@ -1564,7 +2178,7 @@ export function AdminOrganizationsWorkspace() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gov-line">
-              {loading ? <LoadingRow colSpan={6} /> : filtered.length === 0 ? <EmptyRow colSpan={6} text="No organizations found." /> : filtered.map((item) => (
+              {loading ? <LoadingRow colSpan={6} /> : filtered.length === 0 ? <EmptyRow colSpan={6} text="No government departments found." /> : filtered.map((item) => (
                 <tr key={item.id}>
                   <td className="px-5 py-4 font-bold text-gov-ink">
                     <Link href={`/admin/organizations/${item.id}`} className="text-gov-blue hover:underline">{item.name}</Link>

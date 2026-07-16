@@ -30,9 +30,20 @@ export const getJwtRefreshSecret = () => {
 };
 
 export const getAllowedOrigins = () => {
+  const list: string[] = [];
+
+  const frontendUrl = process.env.FRONTEND_URL;
+  if (frontendUrl) {
+    list.push(...frontendUrl.split(",").map((origin) => origin.trim()).filter(Boolean));
+  }
+
   const origins = process.env.ALLOWED_ORIGINS;
   if (origins) {
-    return origins.split(",").map((origin) => origin.trim()).filter(Boolean);
+    list.push(...origins.split(",").map((origin) => origin.trim()).filter(Boolean));
+  }
+
+  if (list.length > 0) {
+    return list;
   }
 
   return [

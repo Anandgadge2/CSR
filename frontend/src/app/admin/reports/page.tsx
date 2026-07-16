@@ -1,11 +1,14 @@
+import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import LiveCSRReportPage from "@/components/LiveCSRReportPage";
 
 export default function ReportsPage() {
   return (
-    <LiveCSRReportPage
-      title="State CSR Cell Reports"
-      description="Generate district, sector, department, company, NGO, gap analysis, and executive CSR reports from department-created requirements."
-      endpoint="/reports/government/state-dashboard"
-    />
+    <GovPortalLayout>
+      <LiveCSRReportPage
+        title="Convergence CSR Reports"
+        description="Live district, sector, and status reports for convergence projects — budgets, utilization, UC verification, and grievances under the Maha CSR Convergence Model."
+        endpoint="/admin/convergence-report"
+      />
+    </GovPortalLayout>
   );
 }

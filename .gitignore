@@ -64,3 +64,6 @@ hooks.json
 .chrome-profile-mobile-*/
 .chrome-profile-mobile-5/
 
+# Temporary extraction files
+temp_docx/
+temp.zip

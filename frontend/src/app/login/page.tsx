@@ -142,7 +142,7 @@ function LoginForm() {
 
           {/* Email input */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[#14274e] text-xs font-bold">Corporate / NGO Email</label>
+            <label className="text-[#14274e] text-xs font-bold">Corporate Email</label>
             <div className="relative">
               <input
                 type="email"

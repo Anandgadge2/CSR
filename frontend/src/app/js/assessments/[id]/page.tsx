@@ -14,7 +14,8 @@ import GovTextarea from "@/components/gov/GovTextarea";
 import GovAlert from "@/components/gov/GovAlert";
 import GovTimeline, { TimelineStep } from "@/components/gov/GovTimeline";
 import AccessDenied from "@/components/gov/AccessDenied";
-import { apiFetch, clearApiCache } from "@/lib/api";
+import { apiFetch, clearApiCache, API_BASE_URL, getAccessToken } from "@/lib/api";
+import { UploadCloud, CheckCircle2 } from "lucide-react";
 import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
 
 interface ChecklistItem {
@@ -88,6 +89,38 @@ export default function JSAssessmentDetailPage() {
   const [appointLoading, setAppointLoading] = useState(false);
   const [appointSuccess, setAppointSuccess] = useState("");
   const [appointError, setAppointError] = useState("");
+
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    setUploadingDoc(true);
+    setUploadError("");
+    try {
+      const token = getAccessToken();
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setSignedLetterUrl(data.url);
+    } catch (err: any) {
+      setUploadError("Failed to upload document to Cloudinary.");
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -486,9 +519,54 @@ export default function JSAssessmentDetailPage() {
                             required
                           />
 
+                           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <label className="gov-label" style={{ fontWeight: 700 }}>Appointment Letter Document (Optional)</label>
+                            
+                            <div style={{
+                              border: "2px dashed var(--gov-border)",
+                              borderRadius: 8,
+                              padding: "16px 20px",
+                              textAlign: "center",
+                              background: "var(--gov-bg-card)",
+                              position: "relative",
+                              cursor: "pointer",
+                              transition: "border-color 0.2s"
+                            }}>
+                              <input
+                                type="file"
+                                style={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  opacity: 0,
+                                  cursor: "pointer",
+                                  width: "100%",
+                                  height: "100%"
+                                }}
+                                onChange={handleFileUpload}
+                                disabled={uploadingDoc}
+                                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                              />
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                <UploadCloud style={{ color: "var(--gov-text-muted)" }} size={28} />
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--gov-text)" }}>
+                                  {uploadingDoc ? "Uploading to Cloudinary..." : "Drag signed appointment letter or click to upload"}
+                                </span>
+                                <span style={{ fontSize: 11, color: "var(--gov-text-muted)" }}>PDF, JPG, PNG up to 10MB</span>
+                              </div>
+                            </div>
+
+                            {uploadError && <span style={{ color: "var(--gov-danger)", fontSize: 12 }}>{uploadError}</span>}
+                            {signedLetterUrl && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--gov-success)", fontSize: 12, marginTop: 4 }}>
+                                <CheckCircle2 size={14} />
+                                <span>Uploaded successfully! URL: <a href={signedLetterUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline", color: "var(--gov-link)" }}>{signedLetterUrl}</a></span>
+                              </div>
+                            )}
+                          </div>
+
                           <GovInput
-                            label="Appointment Letter Document URL (Optional)"
-                            placeholder="Link to signed appointment letter document"
+                            label="Or paste Appointment Letter URL directly"
+                            placeholder="https://res.cloudinary.com/..."
                             value={signedLetterUrl}
                             onChange={(e) => setSignedLetterUrl(e.target.value)}
                           />

@@ -26,10 +26,13 @@ import { SLAStage } from "@prisma/client";
 export const SLA_TIMELINES = {
   /** Relationship Manager has 5 days to respond to corporate enquiry */
   RM_RESPONSE: 5,
-  
+
   /** Joint Secretary has 5 days for report decision / nodal appointment */
   JS_DECISION: 5,
-  
+
+  /** Joint Secretary has only 3 days when an RM-missed enquiry escalates to them */
+  JS_ESCALATED_RESPONSE: 3,
+
   /** Planning Secretary has 2 days to intervene after JS misses deadline */
   SECRETARY_ESCALATION: 2,
   
@@ -387,8 +390,16 @@ export async function escalateToNextLevel(
       };
     }
 
-    // Calculate new due date
-    const newDueAt = calculateDueDate(nextStage);
+    // Calculate new due date. Escalated JS response uses the shorter 3-day
+    // window from the PDF SLA table, not the standard 5-day JS_DECISION.
+    const newDueAt =
+      nextStage === "JS_DECISION" && currentEscalation.stage === "RM_RESPONSE"
+        ? (() => {
+            const d = new Date();
+            d.setDate(d.getDate() + SLA_TIMELINES.JS_ESCALATED_RESPONSE);
+            return d;
+          })()
+        : calculateDueDate(nextStage);
 
     // Create new escalation record
     const newEscalation = await prisma.sLAEscalation.create({

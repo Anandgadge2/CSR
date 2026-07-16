@@ -129,7 +129,18 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       pathname.startsWith("/analytics") || 
                       pathname.startsWith("/beneficiary") ||
                       pathname.startsWith("/admin") ||
-                      ((pathname.startsWith("/csr-marketplace") || pathname.startsWith("/marketplace")) && isLoggedIn);
+                      pathname.startsWith("/rm") ||
+                      pathname.startsWith("/js") ||
+                      pathname.startsWith("/secretary") ||
+                      pathname.startsWith("/nodal") ||
+                      pathname.startsWith("/state-cell") ||
+                      pathname.startsWith("/agency") ||
+                      (pathname === "/partner" || pathname.startsWith("/partner/")) ||
+                      pathname.startsWith("/grievances") ||
+                      pathname.startsWith("/convergence-projects") ||
+                      pathname.startsWith("/projects") ||
+                      (pathname.startsWith("/track") && isLoggedIn) ||
+                      ((pathname.startsWith("/csr-marketplace") || pathname.startsWith("/marketplace") || pathname.startsWith("/public-development-needs") || pathname.startsWith("/pitch-development-need") || pathname.startsWith("/partner-with-maharashtra")) && isLoggedIn);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -205,13 +216,20 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         (pathname.startsWith("/ngo-dashboard") && ["NGO_ADMIN", "NGO_MEMBER"].includes(role)) ||
         (pathname.startsWith("/company-dashboard") && ["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) ||
         (pathname.startsWith("/government-portal") && ["MASTER_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "DISTRICT_ADMIN"].includes(role)) ||
-        ((pathname === "/company" || pathname.startsWith("/company/")) && ["MASTER_ADMIN", "COMPANY_ADMIN", "COMPANY_MEMBER", "SUPER_ADMIN"].includes(role)) ||
+        ((pathname === "/company" || pathname.startsWith("/company/")) && ["MASTER_ADMIN", "COMPANY_ADMIN", "COMPANY_MEMBER", "SUPER_ADMIN", "CORPORATE_USER"].includes(role)) ||
         ((pathname === "/ngo" || pathname.startsWith("/ngo/")) && ["MASTER_ADMIN", "NGO_ADMIN", "NGO_MEMBER", "SUPER_ADMIN"].includes(role)) ||
         (pathname.startsWith("/district") && ["MASTER_ADMIN", "DISTRICT_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
-        (pathname.startsWith("/organization") && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/organization") && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "CORPORATE_USER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"].includes(role)) ||
         (pathname.startsWith("/master") && role === "MASTER_ADMIN") ||
         (pathname.startsWith("/admin") && ["MASTER_ADMIN", "SUPER_ADMIN", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) ||
         ((pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) && ["MASTER_ADMIN", "BENEFICIARY_AGENCY", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/rm") && ["CSR_RELATIONSHIP_MANAGER", "JOINT_SECRETARY", "PLANNING_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/js") && ["JOINT_SECRETARY", "PLANNING_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/secretary") && ["PLANNING_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/nodal") && ["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER", "JOINT_SECRETARY", "PLANNING_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/state-cell") && ["STATE_CSR_CELL", "PLANNING_SECRETARY", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        (pathname.startsWith("/agency") && ["IMPLEMENTING_AGENCY_USER", "CORPORATE_USER", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
+        ((pathname === "/partner" || pathname.startsWith("/partner/")) && ["CORPORATE_USER", "CORPORATE_PARTNER", "COMPANY_ADMIN", "COMPANY_MEMBER", "MASTER_ADMIN", "SUPER_ADMIN"].includes(role)) ||
         pathname.startsWith("/dashboard") ||
         pathname.startsWith("/onboarding") ||
         pathname.startsWith("/queries") ||
@@ -223,16 +241,30 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         pathname.startsWith("/profile") ||
         pathname.startsWith("/settings") ||
         pathname.startsWith("/chat") ||
-        pathname.startsWith("/analytics");
+        pathname.startsWith("/analytics") ||
+        pathname.startsWith("/grievances") ||
+        pathname.startsWith("/convergence-projects") ||
+        pathname.startsWith("/projects") ||
+        pathname.startsWith("/public-development-needs") ||
+        pathname.startsWith("/pitch-development-need") ||
+        pathname.startsWith("/partner-with-maharashtra") ||
+        pathname.startsWith("/track");
 
       if (!allowed) {
         if (role === "MASTER_ADMIN") router.push("/master/dashboard");
         else if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) router.push("/ngo/dashboard");
         else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) router.push("/company/dashboard");
+        else if (role === "CORPORATE_USER") router.push("/partner/dashboard");
         else if (role === "SUPER_ADMIN") router.push("/admin");
         else if (role === "DISTRICT_ADMIN") router.push("/district/dashboard");
         else if (role === "PORTAL_ADMIN") router.push("/government-portal");
         else if (role === "BENEFICIARY_AGENCY") router.push("/department/dashboard");
+        else if (role === "CSR_RELATIONSHIP_MANAGER") router.push("/rm/dashboard");
+        else if (role === "JOINT_SECRETARY") router.push("/js/dashboard");
+        else if (role === "PLANNING_SECRETARY") router.push("/secretary/dashboard");
+        else if (["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"].includes(role)) router.push("/nodal/dashboard");
+        else if (role === "STATE_CSR_CELL") router.push("/state-cell/dashboard");
+        else if (role === "IMPLEMENTING_AGENCY_USER") router.push("/agency/dashboard");
         else router.push("/");
       }
     }
@@ -264,6 +296,23 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     router.push("/login");
   };
 
+  const getDashboardHref = (role: string): string => {
+    if (role === "MASTER_ADMIN") return "/master/dashboard";
+    if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) return "/ngo/dashboard";
+    if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) return "/company/dashboard";
+    if (["CORPORATE_USER", "CORPORATE_PARTNER"].includes(role)) return "/partner/dashboard";
+    if (["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) return "/admin/dashboard";
+    if (role === "DISTRICT_ADMIN") return "/district/dashboard";
+    if (role === "BENEFICIARY_AGENCY") return "/department/dashboard";
+    if (role === "PLANNING_SECRETARY") return "/secretary/dashboard";
+    if (role === "JOINT_SECRETARY") return "/js/dashboard";
+    if (role === "CSR_RELATIONSHIP_MANAGER") return "/rm/dashboard";
+    if (["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"].includes(role)) return "/nodal/dashboard";
+    if (role === "STATE_CSR_CELL") return "/state-cell/dashboard";
+    if (role === "IMPLEMENTING_AGENCY_USER") return "/agency/dashboard";
+    return "/";
+  };
+
   const storedUser = typeof window !== "undefined" ? getStoredUser() : null;
   const storedRole = storedUser?.role as string | undefined;
   const storedOrganizationType = storedUser?.organization?.organizationType as string | undefined;
@@ -273,6 +322,9 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       { label: "Dashboard", href: "/department/dashboard", icon: Layers },
       { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
       { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
+      { label: "Create Pitch", href: "/department/pitches/create", icon: Sparkles },
+      { label: "My Pitches", href: "/department/pitches", icon: Compass },
+      { label: "Track Status", href: "/track", icon: Clock },
       { label: "Create Requirement", href: "/department/requirements/create", icon: Sparkles, featureKey: "enableRequirementCreation" },
       { label: "My Requirements", href: "/department/requirements", icon: Compass, featureKey: "enableRequirementCreation" },
       { label: "Company Interest", href: "/department/interests", icon: Compass, featureKey: "enableCompanyInterest" },
@@ -286,10 +338,13 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
     const companyItems = [
       { label: "Dashboard", href: "/company/dashboard", icon: Layers },
+      { label: "My Enquiries", href: "/partner/enquiries", icon: Mail },
+      { label: "Track Status", href: "/track", icon: Clock },
       { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
       { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
       { label: "Project Marketplace", href: "/company/marketplace", icon: Compass, featureKey: "enableCSRMarketplace" },
       { label: "My Interests", href: "/company/interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
+      { label: "Implementing Agencies", href: "/partner/agencies", icon: Building2 },
       { label: "Funded Projects", href: "/convergence-projects", icon: ShieldCheck },
       { label: "Fund Releases", href: "/company/funds", icon: Coins, featureKey: "enableFundDisbursement" },
       { label: "Reports", href: "/company/reports", icon: BarChart2, featureKey: "enableReportsExport" },
@@ -312,7 +367,184 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       { label: "Settings", href: "/organization/settings", icon: ShieldCheck }
     ];
 
-    if (storedRole === "MASTER_ADMIN" || pathname.startsWith("/master")) {
+    if (storedRole) {
+      if (storedRole === "CSR_RELATIONSHIP_MANAGER") {
+        return [
+          { label: "Dashboard", href: "/rm/dashboard", icon: Layers },
+          { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
+          { label: "Government Pitches", href: "/rm/government-pitches", icon: Compass },
+          { label: "Corporate Interests", href: "/rm/interests", icon: Sparkles },
+          { label: "Feasibility Reports", href: "/rm/assessments", icon: FileText },
+          { label: "Company Directory", href: "/rm/companies", icon: Building2 },
+          { label: "Communication Log", href: "/rm/communications", icon: Mail },
+          { label: "Reports", href: "/rm/reports", icon: BarChart2 },
+        ];
+      }
+
+      if (storedRole === "JOINT_SECRETARY") {
+        return [
+          { label: "JS Dashboard", href: "/js/dashboard", icon: Layers },
+          { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
+          { label: "Assessment Reports", href: "/js/assessments", icon: FileText },
+          { label: "Government Pitch Approvals", href: "/js/government-pitches", icon: Compass },
+          { label: "Nodal Appointments", href: "/js/nodal-appointments", icon: Users },
+          { label: "RM Escalations", href: "/js/escalations", icon: ShieldAlert },
+          { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+        ];
+      }
+
+      if (storedRole === "PLANNING_SECRETARY") {
+        return [
+          { label: "Escalations", href: "/secretary/escalations", icon: ShieldAlert },
+          { label: "Dashboard", href: "/secretary/dashboard", icon: Layers },
+          { label: "Final Decisions", href: "/secretary/decisions", icon: ShieldCheck },
+          { label: "JS Dashboard", href: "/js/dashboard", icon: Layers },
+          { label: "Feasibility Assessments", href: "/js/assessments", icon: FileText },
+          { label: "Final Grievance Review", href: "/state-cell/grievances", icon: ShieldAlert },
+        ];
+      }
+
+      if (storedRole === "STATE_CSR_CELL") {
+        return [
+          { label: "Dashboard", href: "/state-cell/dashboard", icon: Layers },
+          { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
+          { label: "Government Pitches", href: "/rm/government-pitches", icon: Compass },
+          { label: "Grievance Queue", href: "/state-cell/grievances", icon: ShieldAlert },
+          { label: "Helpdesk Queue", href: "/state-cell/helpdesk", icon: HelpCircle },
+          { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+        ];
+      }
+
+      if (["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"].includes(storedRole)) {
+        return [
+          { label: "Dashboard", href: "/nodal/dashboard", icon: Layers },
+          { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+          { label: "Field Inspections", href: "/nodal/inspections", icon: Landmark },
+          { label: "Agency Approvals", href: "/nodal/agency-approvals", icon: ShieldCheck },
+          { label: "Project Handover", href: "/nodal/handover", icon: Layers },
+          { label: "Grievance Queue", href: "/nodal/grievances", icon: ShieldAlert },
+        ];
+      }
+
+      if (["CORPORATE_USER", "CORPORATE_PARTNER", "COMPANY_ADMIN", "COMPANY_MEMBER"].includes(storedRole)) {
+        return [
+          { label: "Dashboard", href: "/partner/dashboard", icon: Layers },
+          { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
+          { label: "Public Development Needs (Live)", href: "/public-development-needs", icon: Compass },
+          { label: "My Enquiries", href: "/partner/enquiries", icon: Mail },
+          { label: "My Interests", href: "/company/interests", icon: Sparkles },
+          { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+          { label: "Implementing Agencies", href: "/partner/agencies", icon: Building2 },
+          { label: "Grievances", href: "/grievances", icon: ShieldAlert },
+          { label: "Track Status", href: "/track", icon: Clock },
+        ];
+      }
+
+      if (storedRole === "IMPLEMENTING_AGENCY_USER") {
+        return [
+          { label: "Dashboard", href: "/agency/dashboard", icon: Layers },
+          { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+          { label: "Grievances", href: "/grievances", icon: ShieldAlert },
+          { label: "Track Status", href: "/track", icon: Clock },
+        ];
+      }
+
+      if (storedRole === "MASTER_ADMIN") {
+        return [
+          { label: "Dashboard", href: "/master/dashboard", icon: Layers },
+          { label: "Tenants", href: "/master/tenants", icon: Globe2 },
+          { label: "Create Tenant", href: "/master/tenants/create", icon: Sparkles },
+          { label: "Organizations", href: "/master/organizations", icon: Landmark },
+          { label: "Users", href: "/master/users", icon: Users },
+          { label: "Audit Logs", href: "/master/audit-logs", icon: FileText },
+          { label: "Settings", href: "/master/settings", icon: ShieldCheck }
+        ];
+      }
+    }
+
+    // Fallbacks based on pathname starts (e.g. for unauthenticated paths or direct deep links before user loads)
+    if (pathname.startsWith("/rm")) {
+      return [
+        { label: "Dashboard", href: "/rm/dashboard", icon: Layers },
+        { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
+        { label: "Government Pitches", href: "/rm/government-pitches", icon: Compass },
+        { label: "Corporate Interests", href: "/rm/interests", icon: Sparkles },
+        { label: "Feasibility Reports", href: "/rm/assessments", icon: FileText },
+        { label: "Company Directory", href: "/rm/companies", icon: Building2 },
+        { label: "Communication Log", href: "/rm/communications", icon: Mail },
+        { label: "Reports", href: "/rm/reports", icon: BarChart2 },
+      ];
+    }
+
+    if (pathname.startsWith("/js")) {
+      return [
+        { label: "JS Dashboard", href: "/js/dashboard", icon: Layers },
+        { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
+        { label: "Assessment Reports", href: "/js/assessments", icon: FileText },
+        { label: "Government Pitch Approvals", href: "/js/government-pitches", icon: Compass },
+        { label: "Nodal Appointments", href: "/js/nodal-appointments", icon: Users },
+        { label: "RM Escalations", href: "/js/escalations", icon: ShieldAlert },
+        { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+      ];
+    }
+
+    if (pathname.startsWith("/secretary")) {
+      return [
+        { label: "Escalations", href: "/secretary/escalations", icon: ShieldAlert },
+        { label: "Dashboard", href: "/secretary/dashboard", icon: Layers },
+        { label: "Final Decisions", href: "/secretary/decisions", icon: ShieldCheck },
+        { label: "JS Dashboard", href: "/js/dashboard", icon: Layers },
+        { label: "Feasibility Assessments", href: "/js/assessments", icon: FileText },
+        { label: "Final Grievance Review", href: "/state-cell/grievances", icon: ShieldAlert },
+      ];
+    }
+
+    if (pathname.startsWith("/state-cell")) {
+      return [
+        { label: "Dashboard", href: "/state-cell/dashboard", icon: Layers },
+        { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
+        { label: "Government Pitches", href: "/rm/government-pitches", icon: Compass },
+        { label: "Grievance Queue", href: "/state-cell/grievances", icon: ShieldAlert },
+        { label: "Helpdesk Queue", href: "/state-cell/helpdesk", icon: HelpCircle },
+        { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+      ];
+    }
+
+    if (pathname.startsWith("/nodal")) {
+      return [
+        { label: "Dashboard", href: "/nodal/dashboard", icon: Layers },
+        { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+        { label: "Field Inspections", href: "/nodal/inspections", icon: Landmark },
+        { label: "Agency Approvals", href: "/nodal/agency-approvals", icon: ShieldCheck },
+        { label: "Project Handover", href: "/nodal/handover", icon: Layers },
+        { label: "Grievance Queue", href: "/nodal/grievances", icon: ShieldAlert },
+      ];
+    }
+
+    if (pathname === "/partner" || pathname.startsWith("/partner/")) {
+      return [
+        { label: "Dashboard", href: "/partner/dashboard", icon: Layers },
+        { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
+        { label: "Public Development Needs (Live)", href: "/public-development-needs", icon: Compass },
+        { label: "My Enquiries", href: "/partner/enquiries", icon: Mail },
+        { label: "My Interests", href: "/company/interests", icon: Sparkles },
+        { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+        { label: "Implementing Agencies", href: "/partner/agencies", icon: Building2 },
+        { label: "Grievances", href: "/grievances", icon: ShieldAlert },
+        { label: "Track Status", href: "/track", icon: Clock },
+      ];
+    }
+
+    if (pathname.startsWith("/agency")) {
+      return [
+        { label: "Dashboard", href: "/agency/dashboard", icon: Layers },
+        { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
+        { label: "Grievances", href: "/grievances", icon: ShieldAlert },
+        { label: "Track Status", href: "/track", icon: Clock },
+      ];
+    }
+
+    if (pathname.startsWith("/master")) {
       return [
         { label: "Dashboard", href: "/master/dashboard", icon: Layers },
         { label: "Tenants", href: "/master/tenants", icon: Globe2 },
@@ -364,16 +596,16 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         { label: "Dashboard", href: "/admin/dashboard", icon: Layers },
         { label: "Users", href: "/admin/users-roles", icon: Users },
         { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", icon: ShieldCheck },
-        { label: "Organizations", href: "/admin/organizations", icon: Landmark },
-        { label: "NGO Registry", href: "/admin/ngo-registry", icon: Landmark },
+        { label: "Government Departments", href: "/admin/organizations", icon: Landmark },
+        { label: "Implementing Agencies", href: "/admin/ngo-registry", icon: Landmark },
         { label: "Companies", href: "/admin/companies", icon: Building2 },
         { label: "Requirements Pending", href: "/admin/requirements/pending", icon: Clock, featureKey: "enableRequirementCreation" },
         { label: "Company Interests", href: "/admin/company-interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
-        { label: "NGO Selection", href: "/admin/ngo-selection", icon: Award, featureKey: "enableNGOSelection" },
+        { label: "Agency Selection", href: "/admin/ngo-selection", icon: Award, featureKey: "enableNGOSelection" },
         { label: "Fund Monitoring", href: "/admin/fund-monitoring", icon: Coins, featureKey: "enableFundDisbursement" },
         { label: "Projects", href: "/convergence-projects", icon: Compass },
         { label: "Verification Queue", href: "/admin/applications", icon: Clock },
-        { label: "Executive Dashboard", href: "/admin/executive-dashboard", icon: BarChart2 },
+        // { label: "Executive Dashboard", href: "/admin/executive-dashboard", icon: BarChart2 },
         { label: "Reports", href: "/admin/reports", icon: BarChart2 },
         { label: "Audit Trail", href: "/admin/audit-trail", icon: FileText }
       ];
@@ -490,9 +722,6 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     </div>
   ) : children;
 
-  if (usesGovPortalShell && isLoggedIn) {
-    return <>{children}</>;
-  }
 
   if (isDashboard && !mounted) {
     return (
@@ -523,7 +752,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 <Menu size={20} />
               </button>
 
-              <Link href="/" className="flex min-w-0 items-center gap-3 hover:no-underline">
+              <Link href={getDashboardHref(storedRole || "")} className="flex min-w-0 items-center gap-3 hover:no-underline">
                 <svg viewBox="0 0 100 100" className="w-9 h-9" fill="none" stroke="currentColor">
                   <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="#14274e" strokeWidth="4.5" fill="#e3f0fa" />
                   <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="#f7941d" strokeWidth="3" strokeLinecap="round" />
@@ -833,11 +1062,17 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             {/* Navigation Links */}
             <div className="flex flex-col gap-0.5 px-2 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
               {dashboardNavigationItems.map((item) => {
-                const isActive = pathname === item.href ||
-                                 (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
-                                 (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
-                                 (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", "")) ||
-                                 (item.href !== "/" && pathname.startsWith(item.href));
+                const isExact = pathname === item.href ||
+                                (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
+                                (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
+                                (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
+                const hasExactMatch = dashboardNavigationItems.some((it) => 
+                  pathname === it.href ||
+                  (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
+                  (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
+                  (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
+                );
+                const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.label}
@@ -893,9 +1128,27 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       icon: group.label === "About" ? HelpCircle : group.label === "Projects" ? Compass : group.label === "Documents" ? BookOpen : group.label === "Updates" ? FileText : Phone,
                     }))),
                   ]).map((item) => {
-                    const isActive = pathname === item.href ||
-                                     (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
-                                     (item.href !== "/" && pathname.startsWith(item.href));
+                    const isExact = pathname === item.href ||
+                                    (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
+                                    (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
+                                    (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
+                    const navigationList = isDashboard ? dashboardNavigationItems : [
+                      { label: "Home", href: "/", icon: Layers },
+                      { label: "Partner with Maharashtra", href: "/partner-with-maharashtra", icon: Handshake },
+                      { label: "Pitch a Development Need", href: "/pitch-development-need", icon: Sparkles },
+                      ...publicNavGroups.flatMap((group) => group.links.map((link) => ({
+                        label: link.label,
+                        href: link.href,
+                        icon: group.label === "About" ? HelpCircle : group.label === "Projects" ? Compass : group.label === "Documents" ? BookOpen : group.label === "Updates" ? FileText : Phone,
+                      }))),
+                    ];
+                    const hasExactMatch = navigationList.some((it) => 
+                      pathname === it.href ||
+                      (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
+                      (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
+                      (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
+                    );
+                    const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
                     return (
                       <Link
                         key={item.label}

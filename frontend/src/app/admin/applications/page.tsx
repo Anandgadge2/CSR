@@ -1,59 +1,76 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
 import GovButton from "@/components/gov/GovButton";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import GovInput from "@/components/gov/GovInput";
+import { apiFetch, invalidateCache } from "@/lib/api";
 import "../../../styles/gov-theme.css";
+
+interface PendingOrganization {
+  id: string;
+  name: string;
+  organizationType: string;
+  district: string | null;
+  onboardingStatus: string;
+  registrationNumber: string | null;
+  email: string | null;
+  officialEmail: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
 
 export default function ApplicationsListPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [applications, setApplications] = useState<PendingOrganization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [actingId, setActingId] = useState<string | null>(null);
 
-  // Mock data - replace with API call
-  const applications = [
-    {
-      id: "CSR-NGO-2026-00128",
-      ngoName: "Sahyadri Eco Foundation",
-      submittedDate: "2026-06-18",
-      status: "UNDER_ANALYST_REVIEW",
-      district: "Pune",
-      organizationType: "TRUST",
-      riskLevel: "LOW",
-    },
-    {
-      id: "CSR-NGO-2026-00127",
-      ngoName: "Vidarbha Development Society",
-      submittedDate: "2026-06-17",
-      status: "UNDER_COMPLIANCE_REVIEW",
-      district: "Nagpur",
-      organizationType: "SOCIETY",
-      riskLevel: "MEDIUM",
-    },
-    {
-      id: "CSR-NGO-2026-00126",
-      ngoName: "Mumbai Education Trust",
-      submittedDate: "2026-06-16",
-      status: "APPROVED",
-      district: "Mumbai",
-      organizationType: "TRUST",
-      riskLevel: "LOW",
-    },
-    {
-      id: "CSR-NGO-2026-00125",
-      ngoName: "Konkan Welfare Association",
-      submittedDate: "2026-06-15",
-      status: "QUERY_RAISED",
-      district: "Ratnagiri",
-      organizationType: "SOCIETY",
-      riskLevel: "HIGH",
-    },
-  ];
+  const fetchApplications = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await apiFetch<PendingOrganization[]>("/admin/organizations/pending");
+      setApplications(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load applications");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchApplications(); }, [fetchApplications]);
+
+  const act = async (id: string, action: "approve" | "reject" | "request-clarification") => {
+    setActionError("");
+    setActingId(id);
+    try {
+      const body =
+        action === "reject"
+          ? { reason: "Rejected after verification review" }
+          : action === "request-clarification"
+            ? { remarks: "Please provide additional documentation" }
+            : {};
+      await apiFetch(`/admin/organizations/${id}/${action}`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      invalidateCache("/admin/organizations");
+      fetchApplications();
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : "Action failed");
+    } finally {
+      setActingId(null);
+    }
+  };
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -61,43 +78,38 @@ export default function ApplicationsListPage() {
         return "success";
       case "REJECTED":
         return "danger";
-      case "QUERY_RAISED":
+      case "CLARIFICATION_REQUIRED":
         return "warning";
-      case "UNDER_ANALYST_REVIEW":
-      case "UNDER_COMPLIANCE_REVIEW":
+      case "SUBMITTED_FOR_REVIEW":
+      case "UNDER_VERIFICATION":
         return "info";
       default:
         return "muted";
     }
   };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case "LOW":
-        return "#166534";
-      case "MEDIUM":
-        return "#d97706";
-      case "HIGH":
-        return "#b91c1c";
-      default:
-        return "#6b7280";
-    }
-  };
-
   const filteredApplications = applications.filter((app) => {
+    const term = searchTerm.toLowerCase();
     const matchesSearch =
-      app.ngoName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === "ALL" || app.status === filterStatus;
+      app.name.toLowerCase().includes(term) ||
+      (app.registrationNumber || "").toLowerCase().includes(term) ||
+      (app.email || app.officialEmail || "").toLowerCase().includes(term);
+    const matchesFilter = filterStatus === "ALL" || app.onboardingStatus === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  const underReview = applications.filter((a) =>
+    ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION"].includes(a.onboardingStatus)
+  ).length;
+  const clarifications = applications.filter((a) => a.onboardingStatus === "CLARIFICATION_REQUIRED").length;
+  const ngoCount = applications.filter((a) => a.organizationType === "NGO").length;
 
   return (
     <GovPortalLayout userRole="PORTAL_ADMIN">
       <GovPageHeader
-        breadcrumb="Home / Admin / Applications"
-        title="NGO Onboarding Applications"
-        description="Review and verify NGO registration applications"
+        breadcrumb="Home / Admin / Verification Queue"
+        title="Organization Verification Queue"
+        description="Review and verify organization onboarding applications awaiting approval"
       />
 
       {/* Stats */}
@@ -105,7 +117,7 @@ export default function ApplicationsListPage() {
         <GovCard>
           <GovCardBody>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
-              Total Applications
+              Pending Applications
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-primary)" }}>
               {applications.length}
@@ -118,27 +130,27 @@ export default function ApplicationsListPage() {
               Under Review
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#d97706" }}>
-              {applications.filter((a) => a.status.includes("REVIEW")).length}
+              {underReview}
             </div>
           </GovCardBody>
         </GovCard>
         <GovCard>
           <GovCardBody>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
-              Queries Raised
+              Clarification Requested
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#d97706" }}>
-              {applications.filter((a) => a.status === "QUERY_RAISED").length}
+              {clarifications}
             </div>
           </GovCardBody>
         </GovCard>
         <GovCard>
           <GovCardBody>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
-              Approved
+              NGO Applications
             </div>
             <div style={{ fontSize: 28, fontWeight: 800, color: "#166534" }}>
-              {applications.filter((a) => a.status === "APPROVED").length}
+              {ngoCount}
             </div>
           </GovCardBody>
         </GovCard>
@@ -154,7 +166,7 @@ export default function ApplicationsListPage() {
               </label>
               <GovInput
                 type="text"
-                placeholder="Search by NGO name or Application ID..."
+                placeholder="Search by organization name, registration number, or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -176,16 +188,18 @@ export default function ApplicationsListPage() {
                 }}
               >
                 <option value="ALL">All Status</option>
-                <option value="UNDER_ANALYST_REVIEW">Under Analyst Review</option>
-                <option value="UNDER_COMPLIANCE_REVIEW">Under Compliance Review</option>
-                <option value="QUERY_RAISED">Query Raised</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="SUBMITTED_FOR_REVIEW">Submitted For Review</option>
+                <option value="UNDER_VERIFICATION">Under Verification</option>
+                <option value="CLARIFICATION_REQUIRED">Clarification Required</option>
               </select>
             </div>
           </div>
         </GovCardBody>
       </GovCard>
+
+      {actionError && (
+        <div className="gov-alert danger" style={{ marginBottom: 16 }}>{actionError}</div>
+      )}
 
       {/* Applications Table */}
       <GovCard>
@@ -193,101 +207,112 @@ export default function ApplicationsListPage() {
           <GovCardTitle>Applications List ({filteredApplications.length})</GovCardTitle>
         </GovCardHeader>
         <GovCardBody style={{ padding: 0 }}>
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "2px solid var(--gov-border)" }}>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    APPLICATION ID
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    NGO NAME
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    TYPE
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    DISTRICT
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    SUBMITTED
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    RISK
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    STATUS
-                  </th>
-                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
-                    ACTION
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredApplications.map((app) => (
-                  <tr
-                    key={app.id}
-                    style={{
-                      borderBottom: "1px solid var(--gov-border)",
-                      cursor: "pointer",
-                      transition: "background-color 0.15s",
-                    }}
-                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "var(--gov-bg-secondary)")}
-                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                    onClick={() => router.push(`/admin/applications/${app.id}`)}
-                  >
-                    <td style={{ padding: "14px 16px", fontSize: 13, fontWeight: 700, color: "var(--gov-primary)" }}>
-                      {app.id}
-                    </td>
-                    <td style={{ padding: "14px 16px", fontSize: 13, fontWeight: 700 }}>
-                      {app.ngoName}
-                    </td>
-                    <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
-                      {app.organizationType}
-                    </td>
-                    <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
-                      {app.district}
-                    </td>
-                    <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
-                      {app.submittedDate}
-                    </td>
-                    <td style={{ padding: "14px 16px" }}>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          color: getRiskColor(app.riskLevel),
-                        }}
-                      >
-                        {app.riskLevel}
-                      </span>
-                    </td>
-                    <td style={{ padding: "14px 16px" }}>
-                      <GovStatusBadge variant={getStatusVariant(app.status)}>
-                        {app.status.replace(/_/g, " ")}
-                      </GovStatusBadge>
-                    </td>
-                    <td style={{ padding: "14px 16px", textAlign: "right" }}>
-                      <GovButton
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/admin/applications/${app.id}`);
-                        }}
-                        style={{ fontSize: 12, padding: "6px 12px" }}
-                      >
-                        Review →
-                      </GovButton>
-                    </td>
+          {loading ? (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--gov-text-muted)", fontSize: 13 }}>
+              Loading applications…
+            </div>
+          ) : error ? (
+            <div className="gov-alert danger" style={{ margin: 16 }}>{error}</div>
+          ) : filteredApplications.length === 0 ? (
+            <div style={{ padding: 48, textAlign: "center", color: "var(--gov-text-muted)", fontSize: 13 }}>
+              No organizations awaiting verification.
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid var(--gov-border)" }}>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      ORGANIZATION
+                    </th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      TYPE
+                    </th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      DISTRICT
+                    </th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      REG. NO.
+                    </th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      UPDATED
+                    </th>
+                    <th style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      STATUS
+                    </th>
+                    <th style={{ padding: "12px 16px", textAlign: "right", fontSize: 11, fontWeight: 800, color: "var(--gov-text-muted)" }}>
+                      ACTION
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredApplications.map((app) => (
+                    <tr
+                      key={app.id}
+                      style={{
+                        borderBottom: "1px solid var(--gov-border)",
+                        transition: "background-color 0.15s",
+                      }}
+                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "var(--gov-bg-secondary)")}
+                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <td style={{ padding: "14px 16px", fontSize: 13, fontWeight: 700, color: "var(--gov-primary)" }}>
+                        <div>{app.name}</div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--gov-text-muted)" }}>
+                          {app.email || app.officialEmail || ""}
+                        </div>
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
+                        {(app.organizationType || "").replace(/_/g, " ")}
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
+                        {app.district || "—"}
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
+                        {app.registrationNumber || "—"}
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 600, color: "var(--gov-text-secondary)" }}>
+                        {app.updatedAt ? new Date(app.updatedAt).toLocaleDateString() : "—"}
+                      </td>
+                      <td style={{ padding: "14px 16px" }}>
+                        <GovStatusBadge variant={getStatusVariant(app.onboardingStatus)}>
+                          {(app.onboardingStatus || "").replace(/_/g, " ")}
+                        </GovStatusBadge>
+                      </td>
+                      <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                        <GovButton
+                          variant="primary"
+                          disabled={actingId === app.id}
+                          onClick={() => act(app.id, "approve")}
+                          style={{ fontSize: 11, padding: "5px 10px", marginRight: 6 }}
+                        >
+                          Approve
+                        </GovButton>
+                        <GovButton
+                          variant="secondary"
+                          disabled={actingId === app.id}
+                          onClick={() => act(app.id, "request-clarification")}
+                          style={{ fontSize: 11, padding: "5px 10px", marginRight: 6 }}
+                        >
+                          Clarify
+                        </GovButton>
+                        <GovButton
+                          variant="danger"
+                          disabled={actingId === app.id}
+                          onClick={() => act(app.id, "reject")}
+                          style={{ fontSize: 11, padding: "5px 10px" }}
+                        >
+                          Reject
+                        </GovButton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </GovCardBody>
       </GovCard>
     </GovPortalLayout>
   );
 }
-
-// Made with Bob

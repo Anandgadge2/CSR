@@ -145,9 +145,11 @@ export const submitEnquiry = async (
       );
     }
 
-    const isCorporateUser = req.user?.role === Role.CORPORATE_USER;
+    // OTP verification is only for anonymous public submissions —
+    // any authenticated user has already verified their identity at login
+    const isAuthenticatedUser = Boolean(req.user);
 
-    if (!isCorporateUser) {
+    if (!isAuthenticatedUser) {
       try {
         await assertOtpVerified("CORPORATE_ENQUIRY", "MOBILE", body.mobile, body.mobileVerificationToken);
         await assertOtpVerified("CORPORATE_ENQUIRY", "EMAIL", body.email, body.emailVerificationToken);
@@ -352,6 +354,8 @@ export const getAllEnquiries = async (
       Role.SUPER_ADMIN,
       Role.PORTAL_ADMIN,
       Role.MASTER_ADMIN,
+      Role.CSR_ADMIN,
+      Role.DISTRICT_ADMIN,
     ];
 
     if (!allowedRoles.includes(userRole!)) {
@@ -499,10 +503,17 @@ export const assignRM = async (
       Role.SUPER_ADMIN,
       Role.PORTAL_ADMIN,
       Role.MASTER_ADMIN,
+      Role.CSR_ADMIN,
+      Role.CSR_RELATIONSHIP_MANAGER,
     ];
 
     if (!allowedRoles.includes(userRole!)) {
       return forbiddenResponse(res, "You don't have permission to assign Relationship Managers");
+    }
+
+    // If they are RM, they can ONLY assign to themselves!
+    if (userRole === Role.CSR_RELATIONSHIP_MANAGER && body.relationshipManagerId !== userId) {
+      return forbiddenResponse(res, "Relationship Managers can only claim enquiries for themselves");
     }
 
     // Validate RM ID

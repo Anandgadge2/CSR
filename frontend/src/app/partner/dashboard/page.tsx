@@ -123,6 +123,7 @@ function StatCard({
 export default function PartnerDashboardPage() {
   const router = useRouter();
   const [companyName, setCompanyName] = useState<string>("Your Company");
+  const [onboarding, setOnboarding] = useState<{ onboardingStatus?: string; status?: string } | null>(null);
 
   const {
     data,
@@ -152,6 +153,13 @@ export default function PartnerDashboardPage() {
         }
       }
     }
+  }, []);
+
+  // Onboarding status — drives the "complete your onboarding" banner.
+  useEffect(() => {
+    apiFetch<{ onboardingStatus?: string; status?: string }>("/onboarding/status")
+      .then(setOnboarding)
+      .catch(() => setOnboarding(null));
   }, []);
 
   const handleNewEnquiry = () => {
@@ -227,6 +235,63 @@ export default function PartnerDashboardPage() {
           Welcome back, {companyName}. Manage your CSR enquiries and track active projects.
         </p>
       </div>
+
+      {/* Onboarding status banner */}
+      {onboarding && !["APPROVED"].includes(onboarding.onboardingStatus || "") && (
+        <div className="mb-6">
+          {["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION"].includes(onboarding.onboardingStatus || "") ? (
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-amber-300 bg-amber-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                <div>
+                  <p className="font-bold text-amber-900">Onboarding under review</p>
+                  <p className="text-sm text-amber-800">
+                    Your documents have been submitted. An administrator is verifying them. You will be notified once approved.
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Link href="/organization/onboarding/details">
+                  <GovButton variant="secondary" className="whitespace-nowrap text-sm">Submitted Details</GovButton>
+                </Link>
+                <Link href="/organization/onboarding/status">
+                  <GovButton variant="secondary" className="whitespace-nowrap text-sm">View Status</GovButton>
+                </Link>
+              </div>
+            </div>
+          ) : ["REJECTED", "CLARIFICATION_REQUIRED"].includes(onboarding.onboardingStatus || "") ? (
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-rose-300 bg-rose-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+                <div>
+                  <p className="font-bold text-rose-900">Onboarding needs attention</p>
+                  <p className="text-sm text-rose-800">
+                    Your submission was returned. Please review the remarks and resubmit your details.
+                  </p>
+                </div>
+              </div>
+              <Link href="/organization/onboarding">
+                <GovButton className="whitespace-nowrap text-sm">Update &amp; Resubmit</GovButton>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-blue-300 bg-blue-50 px-5 py-4">
+              <div className="flex items-start gap-3">
+                <Building2 className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                <div>
+                  <p className="font-bold text-blue-900">Complete your organization onboarding</p>
+                  <p className="text-sm text-blue-800">
+                    Finish your company profile and upload verification documents so an administrator can approve your account.
+                  </p>
+                </div>
+              </div>
+              <Link href="/organization/onboarding">
+                <GovButton className="whitespace-nowrap text-sm">Start Onboarding</GovButton>
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Quick Action */}
       <div className="mb-6">

@@ -45,7 +45,8 @@ const requireAdmin = [
     Role.PORTAL_ADMIN,
     Role.CSR_ADMIN,
     Role.STATE_CSR_CELL,
-    Role.JOINT_SECRETARY
+    Role.JOINT_SECRETARY,
+    Role.CSR_RELATIONSHIP_MANAGER
   ]),
   resolveTenantContext,
   checkTenantActive

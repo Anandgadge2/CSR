@@ -16,11 +16,12 @@ interface TrackingStatus {
   timestamp: string;
   description: string;
   completed: boolean;
+  current?: boolean;
 }
 
 interface TrackingData {
   trackingId: string;
-  type: "ENQUIRY" | "PITCH";
+  type: "ENQUIRY" | "PITCH" | "INTEREST";
   currentStatus: string;
   submittedAt: string;
   estimatedCompletion?: string;
@@ -35,20 +36,117 @@ interface TrackingData {
   };
 }
 
-const STATUS_STEPS = [
-  { key: "SUBMITTED", label: "Submitted", description: "Application received" },
-  { key: "RM_ASSIGNED", label: "RM Assigned", description: "Relationship manager assigned" },
-  { key: "UNDER_ASSESSMENT", label: "Assessment", description: "Under assessment" },
-  { key: "JS_REVIEW", label: "JS Review", description: "Joint Secretary review" },
-  { key: "APPROVED", label: "Approved", description: "Application approved" },
-  { key: "REJECTED", label: "Rejected", description: "Application rejected" },
-  
-  // Pitch workflow steps
-  { key: "RM_VERIFICATION_PENDING", label: "Verification Pending", description: "Relationship Manager verification pending" },
-  { key: "JS_APPROVAL_PENDING", label: "JS Approval Pending", description: "Joint Secretary approval pending" },
-  { key: "PUBLIC_LISTED", label: "Publicly Listed", description: "Listed on public portal" },
-  { key: "CORPORATE_INTEREST_RECEIVED", label: "Corporate Interest Received", description: "Companies expressed interest" },
+// Full enquiry lifecycle in workflow order (PDF Steps 1-8).
+const ENQUIRY_FLOW = [
+  { key: "TRACKING_ID_GENERATED", label: "Enquiry Received", description: "Your enquiry has been received and a tracking ID issued." },
+  { key: "RM_ASSIGNED", label: "RM Assigned", description: "A dedicated CSR Relationship Manager is assigned." },
+  { key: "RM_CONTACTED", label: "RM Contact", description: "Relationship Manager contacts the company (5-day SLA)." },
+  { key: "ASSESSMENT_SUBMITTED_TO_JS", label: "Feasibility Report", description: "13-point feasibility assessment submitted to Joint Secretary." },
+  { key: "JS_APPROVED", label: "JS Decision", description: "Joint Secretary decision recorded (5-day SLA)." },
+  { key: "NODAL_OFFICER_APPOINTED", label: "Nodal Officer Appointed", description: "District Nodal Officer appointed and mapped to the project." },
+  { key: "MOU_PENDING", label: "MoU Finalisation", description: "Tripartite MoU under review — deliverables and timeline being finalised." },
+  { key: "PROJECT_ONBOARDED", label: "Project Onboarded", description: "MoU signed; project onboarded with Project ID and tracking begins." },
+  { key: "EXECUTION_STARTED", label: "Execution", description: "Implementation in progress with milestone tracking." },
+  { key: "COMPLETED", label: "Completed", description: "Project deliverables completed and handed over." },
 ];
+
+// Full government pitch lifecycle in workflow order.
+const PITCH_FLOW = [
+  { key: "SUBMITTED", label: "Pitch Received", description: "Government pitch has been received." },
+  { key: "RM_VERIFICATION_PENDING", label: "RM Verification", description: "A CSR Relationship Manager verifies the pitch (5-day SLA)." },
+  { key: "JS_APPROVAL_PENDING", label: "JS Approval", description: "Verified pitch submitted to Joint Secretary." },
+  { key: "PUBLIC_LISTED", label: "Publicly Listed", description: "Approved and listed as a public development need." },
+  { key: "CORPORATE_INTEREST_RECEIVED", label: "Corporate Interest", description: "Companies have expressed interest in funding." },
+  { key: "NODAL_OFFICER_ASSIGNED", label: "Nodal Officer Assigned", description: "District Nodal Officer assigned for coordination." },
+  { key: "MOU_PENDING", label: "MoU Finalisation", description: "Tripartite MoU under review with the selected corporate." },
+  { key: "PROJECT_ONBOARDED", label: "Project Onboarded", description: "MoU signed; project onboarded and tracking begins." },
+  { key: "COMPLETED", label: "Completed", description: "Project deliverables completed and handed over." },
+];
+
+// Corporate interest lifecycle in workflow order.
+const INTEREST_FLOW = [
+  { key: "INTERESTED", label: "Interest Submitted", description: "Corporate interest has been successfully registered." },
+  { key: "RM_CONTACTED", label: "RM Contacted", description: "Relationship Manager initiated contact and discussion." },
+  { key: "UNDER_ASSESSMENT", label: "Under Assessment", description: "13-point checklist assessment in progress." },
+  { key: "NGO_SELECTED", label: "NGO Selected", description: "Executing agency selected for implementation." },
+  { key: "MOU_PENDING", label: "MoU Signing", description: "Tripartite MoU drafting and signing in progress." },
+  { key: "PROJECT_ONBOARDED", label: "Project Onboarded", description: "MoU signed and project implementation initiated." },
+];
+
+// Where each backend status lands on the flow above (statuses that share a
+// stage map to the same index so progress is monotonic).
+const ENQUIRY_STATUS_INDEX: Record<string, number> = {
+  SUBMITTED: 0,
+  TRACKING_ID_GENERATED: 0,
+  RM_ASSIGNED: 1,
+  RM_CONTACTED: 2,
+  ASSESSMENT_PENDING: 2,
+  ASSESSMENT_SUBMITTED_TO_JS: 3,
+  JS_APPROVED: 4,
+  JS_REJECTED: 4,
+  NODAL_OFFICER_APPOINTED: 5,
+  MOU_PENDING: 6,
+  MOU_SIGNED: 7,
+  PROJECT_ONBOARDED: 7,
+  EXECUTION_STARTED: 8,
+  COMPLETED: 9,
+  CLOSED: 9,
+};
+
+const PITCH_STATUS_INDEX: Record<string, number> = {
+  DRAFT: 0,
+  SUBMITTED: 0,
+  RM_VERIFICATION_PENDING: 1,
+  RM_VERIFIED: 2,
+  JS_APPROVAL_PENDING: 2,
+  JS_APPROVED: 3,
+  JS_REJECTED: 3,
+  PUBLIC_LISTED: 3,
+  CORPORATE_INTEREST_RECEIVED: 4,
+  NODAL_OFFICER_ASSIGNED: 5,
+  MOU_PENDING: 6,
+  MOU_SIGNED: 7,
+  PROJECT_ONBOARDED: 7,
+  COMPLETED: 8,
+  CLOSED: 8,
+};
+
+const INTEREST_STATUS_INDEX: Record<string, number> = {
+  INTERESTED: 0,
+  INTEREST_SUBMITTED: 0,
+  UNDER_DISCUSSION: 1,
+  RM_CONTACTED: 1,
+  UNDER_ASSESSMENT: 2,
+  NGO_SELECTED: 3,
+  FUNDING_APPROVED: 4,
+  CI_AGREEMENT_PENDING: 4,
+  MOU_PENDING: 4,
+  CI_AGREEMENT_SIGNED: 5,
+  MOU_SIGNED: 5,
+  PROJECT_ONBOARDED: 5,
+  FUND_RELEASED: 5,
+  CI_COMPLETED: 5,
+  WITHDRAWN: 5,
+};
+
+const STATUS_STEPS = [...ENQUIRY_FLOW, ...PITCH_FLOW, ...INTEREST_FLOW];
+
+const buildTimeline = (
+  flow: { key: string; label: string; description: string }[],
+  statusIndex: Record<string, number>,
+  currentStatus: string,
+  timestamps: Record<number, string | undefined>
+): TrackingStatus[] => {
+  const currentIdx = statusIndex[currentStatus] ?? 0;
+  const isTerminal = ["COMPLETED", "CLOSED"].includes(currentStatus);
+  return flow.map((step, idx) => ({
+    status: step.key,
+    description: step.description,
+    completed: idx < currentIdx || (idx === currentIdx && isTerminal),
+    current: idx === currentIdx && !isTerminal,
+    timestamp: timestamps[idx] || "",
+  }));
+};
 
 function TrackContent() {
   const searchParams = useSearchParams();
@@ -67,7 +165,7 @@ function TrackContent() {
   }, [searchParams]);
 
   const validateTrackingId = (id: string): boolean => {
-    const pattern = /^(CSR|GP|INT|GRV|PRJ)-MH-\d{4}-\d{6}$/;
+    const pattern = /^(CSR|GP|INT|CPI|GRV|PRJ)-MH-\d{4}-\d{6,7}$/;
     return pattern.test(id);
   };
 
@@ -82,7 +180,7 @@ function TrackContent() {
     }
 
     if (!validateTrackingId(id)) {
-      setError("Invalid tracking ID format. Expected prefix (e.g. CSR, GP, INT, GRV, PRJ) followed by -MH-YYYY-XXXXXX");
+      setError("Invalid tracking ID format. Expected prefix (e.g. CSR, GP, INT, CPI, GRV, PRJ) followed by -MH-YYYY-XXXXXX");
       return;
     }
 
@@ -91,60 +189,62 @@ function TrackContent() {
       const response = await apiFetch<any>(`/tracking/${id}`);
       const enquiry = response.details ?? response?.data?.enquiry ?? response?.enquiry ?? response;
       const isPitch = response.type === "PITCH";
-      
-      let timeline = [];
+      const isInterest = response.type === "INTEREST";
+      const currentStatus = response.status ?? enquiry.status ?? "SUBMITTED";
+
+      let timeline;
       if (isPitch) {
-        timeline = [
-          {
-            status: "SUBMITTED",
-            description: "Government pitch has been received.",
-            completed: true,
-            timestamp: enquiry.submittedAt
-          },
-          {
-            status: "RM_VERIFICATION_PENDING",
-            description: "A CSR Relationship Manager is assigned for verification.",
-            completed: enquiry.status !== "SUBMITTED",
-            timestamp: enquiry.assignedRelationshipManagerId ? enquiry.updatedAt : ""
-          },
-          {
-            status: "JS_APPROVAL_PENDING",
-            description: "Relationship Manager verified the need and submitted to Joint Secretary.",
-            completed: !["SUBMITTED", "RM_VERIFICATION_PENDING"].includes(enquiry.status),
-            timestamp: enquiry.status === "JS_APPROVAL_PENDING" || !["SUBMITTED", "RM_VERIFICATION_PENDING"].includes(enquiry.status) ? enquiry.updatedAt : ""
-          },
-          {
-            status: "PUBLIC_LISTED",
-            description: "Joint Secretary approved and listed the development need publicly.",
-            completed: ["PUBLIC_LISTED", "CORPORATE_INTEREST_RECEIVED", "NODAL_OFFICER_ASSIGNED", "MOU_PENDING", "MOU_SIGNED", "PROJECT_ONBOARDED", "COMPLETED", "CLOSED"].includes(enquiry.status),
-            timestamp: ["PUBLIC_LISTED", "CORPORATE_INTEREST_RECEIVED", "NODAL_OFFICER_ASSIGNED", "MOU_PENDING", "MOU_SIGNED", "PROJECT_ONBOARDED", "COMPLETED", "CLOSED"].includes(enquiry.status) ? enquiry.updatedAt : ""
-          }
-        ];
+        timeline = buildTimeline(PITCH_FLOW, PITCH_STATUS_INDEX, currentStatus, {
+          0: enquiry.submittedAt ?? enquiry.createdAt,
+          1: enquiry.assignedRelationshipManagerId ? enquiry.updatedAt : undefined,
+          [PITCH_STATUS_INDEX[currentStatus] ?? 0]: enquiry.updatedAt,
+        });
+      } else if (isInterest) {
+        timeline = buildTimeline(INTEREST_FLOW, INTEREST_STATUS_INDEX, currentStatus, {
+          0: enquiry.createdAt,
+          1: enquiry.dialogueInitiated ? enquiry.updatedAt : undefined,
+          [INTEREST_STATUS_INDEX[currentStatus] ?? 0]: enquiry.updatedAt,
+        });
       } else {
-        timeline = [
-          { status: "TRACKING_ID_GENERATED", description: "Your enquiry has been received.", completed: true, timestamp: enquiry.submittedAt },
-          { status: "RM_ASSIGNED", description: "A CSR Relationship Manager is assigned.", completed: Boolean(enquiry.assignedRelationshipManager), timestamp: enquiry.updatedAt },
-          { status: "RM_CONTACTED", description: "Relationship Manager contacts the company.", completed: Boolean(enquiry.firstContactedAt), timestamp: enquiry.firstContactedAt ?? "" },
-          { status: "ASSESSMENT_SUBMITTED_TO_JS", description: "Feasibility assessment is submitted for decision.", completed: false, timestamp: "" },
-          { status: "JS_APPROVED", description: "Joint Secretary decision is recorded.", completed: false, timestamp: "" },
-        ];
+        timeline = buildTimeline(ENQUIRY_FLOW, ENQUIRY_STATUS_INDEX, currentStatus, {
+          0: enquiry.submittedAt ?? enquiry.createdAt,
+          1: enquiry.assignedRelationshipManager || enquiry.assignedRelationshipManagerId ? enquiry.updatedAt : undefined,
+          2: enquiry.firstContactedAt ?? undefined,
+          [ENQUIRY_STATUS_INDEX[currentStatus] ?? 0]: enquiry.updatedAt,
+        });
       }
 
       setTrackingData({
-        trackingId: isPitch ? (enquiry.pitchReferenceId ?? response.trackingId) : enquiry.trackingId,
-        type: isPitch ? "PITCH" : "ENQUIRY",
-        currentStatus: response.status ?? enquiry.status,
+        trackingId: isPitch 
+          ? (enquiry.pitchReferenceId ?? response.trackingId) 
+          : isInterest 
+          ? (enquiry.interestTrackingId ?? response.trackingId)
+          : enquiry.trackingId,
+        type: isPitch ? "PITCH" : isInterest ? "INTEREST" : "ENQUIRY",
+        currentStatus,
         submittedAt: response.submittedAt ?? enquiry.submittedAt ?? enquiry.createdAt,
         estimatedCompletion: enquiry.firstResponseDueAt,
         timeline,
         details: {
           companyName: isPitch ? enquiry.department : enquiry.companyName,
           sector: isPitch ? enquiry.officeName : enquiry.sector,
-          district: isPitch ? enquiry.district : enquiry.preferredDistricts?.join(", "),
-          contactPerson: isPitch ? `${enquiry.officialName} (${enquiry.designation})` : enquiry.contactPersonName,
-          requirement: isPitch ? enquiry.csrRequirement : enquiry.proposedCsrWork,
+          district: isPitch 
+            ? enquiry.district 
+            : isInterest 
+            ? enquiry.governmentPitch?.district 
+            : enquiry.preferredDistricts?.join(", "),
+          contactPerson: isPitch 
+            ? `${enquiry.officialName} (${enquiry.designation})` 
+            : enquiry.contactPersonName,
+          requirement: isPitch 
+            ? enquiry.csrRequirement 
+            : isInterest 
+            ? enquiry.governmentPitch?.csrRequirement 
+            : enquiry.proposedCsrWork,
           estimatedCost: isPitch 
             ? (enquiry.estimatedCost ? Number(enquiry.estimatedCost) : undefined)
+            : isInterest
+            ? (enquiry.governmentPitch?.estimatedCost ? Number(enquiry.governmentPitch?.estimatedCost) : undefined)
             : (enquiry.indicativeBudget ? Number(enquiry.indicativeBudget) : undefined),
         },
       });
@@ -181,7 +281,7 @@ function TrackContent() {
     if (step.completed) {
       return <CheckCircle size={16} className="text-green-600" />;
     }
-    if (step.status === trackingData?.currentStatus) {
+    if (step.current) {
       return <Clock size={16} className="text-amber-600 animate-pulse" />;
     }
     return <div className="w-4 h-4 rounded-full border-2 border-slate-300" />;
@@ -210,14 +310,14 @@ function TrackContent() {
               <div className="flex-1 w-full">
                 <GovInput
                   label="Tracking ID"
-                  placeholder="CSR-MH-YYYY-XXXXXX"
+                  placeholder="CSR-MH-2026-000001"
                   value={trackingId}
                   onChange={(e) => {
                     setTrackingId(e.target.value.toUpperCase());
                     setError("");
                   }}
                   error={error}
-                  help="Format: CSR-MH-YYYY-XXXXXX (e.g., CSR-MH-2024-001234)"
+                  help="Format: PREFIX-MH-YYYY-XXXXXX (e.g., CSR-MH-2026-000001, GP-MH-2026-000001, INT-MH-2026-000001)"
                 />
               </div>
               <GovButton
@@ -263,7 +363,11 @@ function TrackContent() {
                   <div className="bg-slate-50 p-4 rounded">
                     <p className="text-xs text-slate-500 mb-1">Application Type</p>
                     <p className="font-bold text-[#14274e]">
-                      {trackingData.type === "ENQUIRY" ? "CSR Enquiry" : "Development Pitch"}
+                      {trackingData.type === "ENQUIRY" 
+                        ? "CSR Enquiry" 
+                        : trackingData.type === "INTEREST"
+                        ? "Corporate CSR Interest"
+                        : "Development Pitch"}
                     </p>
                   </div>
                   <div className="bg-slate-50 p-4 rounded">
@@ -306,7 +410,7 @@ function TrackContent() {
                         className={`relative flex items-start gap-4 p-4 rounded transition-colors ${
                           step.completed
                             ? "bg-green-50"
-                            : step.status === trackingData.currentStatus
+                            : step.current
                             ? "bg-amber-50 border border-amber-200"
                             : "bg-slate-50"
                         }`}
@@ -315,7 +419,7 @@ function TrackContent() {
                           className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                             step.completed
                               ? "bg-green-100"
-                              : step.status === trackingData.currentStatus
+                              : step.current
                               ? "bg-amber-100"
                               : "bg-slate-100"
                           }`}
@@ -325,7 +429,7 @@ function TrackContent() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <h4 className="font-bold text-sm">{STATUS_STEPS.find(s => s.key === step.status)?.label || step.status}</h4>
-                            {step.status === trackingData.currentStatus && (
+                            {step.current && (
                               <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">
                                 Current
                               </span>

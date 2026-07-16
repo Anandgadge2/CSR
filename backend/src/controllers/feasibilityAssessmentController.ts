@@ -38,7 +38,6 @@ export const getPendingAssessments = async (
 
     const where: Prisma.FeasibilityAssessmentWhereInput = {
       tenantId: tenantId || undefined,
-      jsDecisionById: null, // Only pending assessments
       submittedToJsAt: { not: null }, // Only submitted ones
     };
 

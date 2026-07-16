@@ -132,6 +132,11 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   BENEFICIARY_AGENCY: [
     "organization:view",
     "organization:update",
+    "user:invite",
+    "user:update",
+    "role:create",
+    "role:update",
+    "role:delete",
     "requirement:create",
     "requirement:view",
     "requirement:update",
@@ -182,7 +187,7 @@ export const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   NGO_FINANCE_MANAGER: ["fund:view", "fund:verify-utilization", "report:view"],
   NGO_FIELD_OFFICER: ["project:view", "milestone:update"],
   VIEWER: ["organization:view", "requirement:view", "marketplace:view", "project:view", "report:view"],
-  CSR_RELATIONSHIP_MANAGER: ["enquiry:view", "enquiry:contact"],
+  CSR_RELATIONSHIP_MANAGER: ["enquiry:view", "enquiry:contact", "enquiry:assign"],
   JOINT_SECRETARY: ["enquiry:view", "enquiry:assign"],
   STATE_CSR_CELL: ["enquiry:view", "enquiry:assign"],
   PLANNING_SECRETARY: ["enquiry:view"]

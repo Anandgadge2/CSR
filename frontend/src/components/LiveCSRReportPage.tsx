@@ -4,6 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
+
+const COLORS = ["#14274e", "#f7941d", "#2e7d32", "#c62828", "#1565c0", "#ad1457", "#ef6c00", "#37474f"];
 
 type LiveCSRReportPageProps = {
   title: string;
@@ -209,27 +224,62 @@ export default function LiveCSRReportPage({ title, description, endpoint }: Live
           <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {chartGroups.length === 0 ? (
               <div className="border border-gov-line bg-white p-8 text-center text-sm text-gov-muted">No chart data for the selected filters.</div>
-            ) : chartGroups.map(([name, points]) => (
-              <div key={name} className="border border-gov-line bg-white p-5 shadow-sm">
-                <h2 className="text-sm font-extrabold uppercase tracking-wide text-gov-navy">{name}</h2>
-                <div className="mt-4 space-y-3">
-                  {points.map((point) => {
-                    const max = Math.max(...points.map((item) => item.value), 1);
-                    return (
-                      <div key={point.label}>
-                        <div className="flex justify-between text-xs font-bold text-gov-muted">
-                          <span>{point.label.replace(/_/g, " ")}</span>
-                          <span>{point.value}</span>
-                        </div>
-                        <div className="mt-1 h-2 bg-gov-mist">
-                          <div className="h-2 bg-gov-saffron" style={{ width: `${Math.max((point.value / max) * 100, 4)}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
+            ) : chartGroups.map(([name, points]) => {
+              const isStatusChart = name.toLowerCase().includes("status");
+              
+              if (isStatusChart) {
+                // Render a beautiful donut/pie chart
+                return (
+                  <div key={name} className="border border-gov-line bg-white p-5 shadow-sm flex flex-col">
+                    <h2 className="text-sm font-extrabold uppercase tracking-wide text-gov-navy mb-4">{name.replace(/([A-Z])/g, " $1")}</h2>
+                    <div className="h-[250px] w-full flex-grow">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={points}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={55}
+                            outerRadius={80}
+                            paddingAngle={3}
+                            dataKey="value"
+                            nameKey="label"
+                          >
+                            {points.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip formatter={(value) => [value, "Total"]} />
+                          <Legend formatter={(value) => value.replace(/_/g, " ")} wrapperStyle={{ fontSize: 10 }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Render a professional BarChart
+              return (
+                <div key={name} className="border border-gov-line bg-white p-5 shadow-sm flex flex-col">
+                  <h2 className="text-sm font-extrabold uppercase tracking-wide text-gov-navy mb-4">{name.replace(/([A-Z])/g, " $1")}</h2>
+                  <div className="h-[250px] w-full flex-grow">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="label" fontSize={10} tickLine={false} tickFormatter={(val) => val && val.length > 12 ? `${val.slice(0, 10)}..` : val} />
+                        <YAxis fontSize={10} tickLine={false} allowDecimals={false} />
+                        <Tooltip formatter={(value) => [value, "Count"]} />
+                        <Bar dataKey="value" fill="#f7941d" radius={[4, 4, 0, 0]}>
+                          {points.map((entry: any, index: number) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
 
           <section className="border border-gov-line bg-white shadow-sm">

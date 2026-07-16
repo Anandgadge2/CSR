@@ -1235,22 +1235,23 @@ export const updateMouStatus = async (
     }
 
     if (resolvedStatus === "SIGNED") {
+      // MoU signed → project formally onboarded; tracking begins (Step 8).
       await prisma.convergenceProject.update({
         where: { id: project.id },
-        data: { status: "EXECUTION_STARTED" },
+        data: { status: project.status === "MOU_PENDING" ? "ONBOARDED" : "EXECUTION_STARTED" },
       });
 
       if (project.corporateEnquiryId) {
         await prisma.corporateEnquiry.update({
           where: { id: project.corporateEnquiryId },
-          data: { status: CorporateEnquiryStatus.MOU_SIGNED },
+          data: { status: CorporateEnquiryStatus.PROJECT_ONBOARDED },
         });
       }
 
       if (project.governmentPitchId) {
         await prisma.governmentPitch.update({
           where: { id: project.governmentPitchId },
-          data: { status: GovernmentPitchStatus.MOU_SIGNED },
+          data: { status: GovernmentPitchStatus.PROJECT_ONBOARDED },
         });
       }
     } else if (resolvedStatus && resolvedStatus !== "SIGNED") {

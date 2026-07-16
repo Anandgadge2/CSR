@@ -106,7 +106,6 @@ export default function StandardMouTemplatePage() {
                   This template is used after JS approval and Nodal Officer appointment, when the corporate, District Nodal Officer, and implementing agency finalize deliverables before project onboarding.
                 </div>
                 <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                  <Link href="/convergence-projects"><GovButton style={{ width: "100%" }}>Open Projects</GovButton></Link>
                   <Link href="/workflow"><GovButton variant="secondary" style={{ width: "100%" }}>View Workflow</GovButton></Link>
                   <Link href="/document-library"><GovButton variant="muted" style={{ width: "100%" }}>Document Library</GovButton></Link>
                 </div>

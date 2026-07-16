@@ -12,69 +12,6 @@ import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { apiFetch } from "@/lib/api";
 import "../../../styles/gov-theme.css";
 
-const companies = [
-  {
-    id: "COMP-2026-001",
-    name: "Tata Motors Limited",
-    cin: "L28920MH1945PLC004520",
-    sector: "Automotive",
-    status: "Active",
-    statusVariant: "success" as const,
-    csrObligation: "₹125.5 Cr",
-    spent: "₹132.8 Cr",
-    projects: 24,
-    lastReport: "2026-03-31",
-  },
-  {
-    id: "COMP-2026-002",
-    name: "Infosys Limited",
-    cin: "L85110KA1981PLC013115",
-    sector: "IT Services",
-    status: "Active",
-    statusVariant: "success" as const,
-    csrObligation: "₹89.2 Cr",
-    spent: "₹95.6 Cr",
-    projects: 18,
-    lastReport: "2026-03-31",
-  },
-  {
-    id: "COMP-2026-003",
-    name: "Reliance Industries Limited",
-    cin: "L17110MH1973PLC019786",
-    sector: "Conglomerate",
-    status: "Active",
-    statusVariant: "success" as const,
-    csrObligation: "₹245.8 Cr",
-    spent: "₹256.3 Cr",
-    projects: 42,
-    lastReport: "2026-03-31",
-  },
-  {
-    id: "COMP-2026-004",
-    name: "Mahindra & Mahindra Limited",
-    cin: "L65990MH1945PLC004558",
-    sector: "Automotive",
-    status: "Under Review",
-    statusVariant: "warning" as const,
-    csrObligation: "₹67.4 Cr",
-    spent: "₹58.2 Cr",
-    projects: 15,
-    lastReport: "2025-12-31",
-  },
-  {
-    id: "COMP-2026-005",
-    name: "Wipro Limited",
-    cin: "L32102KA1945PLC020800",
-    sector: "IT Services",
-    status: "Active",
-    statusVariant: "success" as const,
-    csrObligation: "₹52.3 Cr",
-    spent: "₹54.8 Cr",
-    projects: 12,
-    lastReport: "2026-03-31",
-  },
-];
-
 export default function CompaniesPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,14 +24,15 @@ export default function CompaniesPage() {
     const load = async () => {
       try {
         const orgs = await apiFetch<any[]>("/admin/organizations");
-        const companyOrgs = orgs.filter(org => org.csrCompanyProfile !== null || org.organizationType === "COMPANY");
-        
+        // Only corporate CSR company partners belong on this page
+        const companyOrgs = orgs.filter(org => org.organizationType === "CSR_COMPANY");
+
         const mapped = companyOrgs.map((org, index) => ({
           id: org.id,
           displayId: `COMP-${new Date(org.createdAt || Date.now()).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
           name: org.name,
-          cin: org.registrationNumber || org.cin || "—",
-          sector: org.csrCompanyProfile?.sector || org.organizationType?.replace(/_/g, " ") || "Other",
+          cin: org.cin || org.registrationNumber || "—",
+          sector: org.csrCompanyProfile?.sector || "—",
           status: org.status === "ACTIVE" ? "Active" : org.status === "PENDING" ? "Under Review" : org.status.replace(/_/g, " "),
           statusVariant: org.status === "ACTIVE" ? "success" as const : "warning" as const,
           csrObligation: org.csrCompanyProfile?.csrBudget ? `₹${Number(org.csrCompanyProfile.csrBudget).toLocaleString("en-IN")}` : "—",
@@ -103,11 +41,11 @@ export default function CompaniesPage() {
           lastReport: org.updatedAt ? new Date(org.updatedAt).toLocaleDateString("en-IN") : "—",
           isDb: true
         }));
-        
-        setItems([...mapped, ...companies]);
+
+        setItems(mapped);
       } catch (err) {
         console.error("Failed to load companies", err);
-        setItems(companies);
+        setItems([]);
       } finally {
         setLoading(false);
       }
@@ -127,7 +65,7 @@ export default function CompaniesPage() {
   return (
     <GovPortalLayout>
       <GovPageHeader
-        title="Registered Companies"
+        title="Corporate Company Partners"
         breadcrumb="Admin / Companies"
       />
 
@@ -137,33 +75,33 @@ export default function CompaniesPage() {
           <GovCard>
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Total Companies</div>
-              <div className="gov-text-3xl gov-font-bold gov-text-primary">856</div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">Registered entities</div>
+              <div className="gov-text-3xl gov-font-bold gov-text-primary">{loading ? "…" : items.length}</div>
+              <div className="gov-text-xs gov-text-muted gov-mt-1">Registered corporate partners</div>
             </GovCardBody>
           </GovCard>
           <GovCard>
             <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Total CSR Obligation</div>
+              <div className="gov-text-sm gov-text-muted gov-mb-1">Active</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#166534" }}>
-                ₹2,456 Cr
+                {loading ? "…" : items.filter((i) => i.status === "Active").length}
               </div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">FY 2025-26</div>
+              <div className="gov-text-xs gov-text-muted gov-mt-1">Currently operational</div>
             </GovCardBody>
           </GovCard>
           <GovCard>
             <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Total Spent</div>
+              <div className="gov-text-sm gov-text-muted gov-mb-1">Under Review</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#005ea8" }}>
-                ₹2,589 Cr
+                {loading ? "…" : items.filter((i) => i.status === "Under Review").length}
               </div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">105% compliance</div>
+              <div className="gov-text-xs gov-text-muted gov-mt-1">Pending verification</div>
             </GovCardBody>
           </GovCard>
           <GovCard>
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Active Projects</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#d97706" }}>
-                342
+                {loading ? "…" : items.reduce((sum, i) => sum + (Number(i.projects) || 0), 0)}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Ongoing initiatives</div>
             </GovCardBody>

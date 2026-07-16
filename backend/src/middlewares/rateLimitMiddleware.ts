@@ -11,11 +11,12 @@ export const generalRateLimiter = rateLimit({
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many login attempts. Please try again in 15 minutes." },
-  skipSuccessfulRequests: false,
+  message: { error: "Too many failed login attempts. Please try again in 15 minutes." },
+  // Only failed attempts count toward the limit — normal logins never lock users out.
+  skipSuccessfulRequests: true,
 });
 
 export const strictRateLimiter = rateLimit({

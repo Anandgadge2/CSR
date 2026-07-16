@@ -1,108 +1,189 @@
 "use client";
 
 import React, { useState } from "react";
-import { HelpCircle, Search, FileQuestion, BookOpen, Send, Ticket } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { HelpCircle, Send, Ticket, Search, Loader2 } from "lucide-react";
+import GovPortalLayout from "@/components/layout/GovPortalLayout";
+import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
+import GovInput from "@/components/gov/GovInput";
+import GovTextarea from "@/components/gov/GovTextarea";
+import GovButton from "@/components/gov/GovButton";
+import GovAlert from "@/components/gov/GovAlert";
+import GovStatusBadge from "@/components/gov/GovStatusBadge";
+import { apiFetch } from "@/lib/api";
+
+interface HelpdeskStatus {
+  trackingId: string;
+  subject: string;
+  status: string;
+  resolution?: string | null;
+  resolutionDueAt: string;
+  resolvedAt?: string | null;
+  createdAt: string;
+}
+
+const GUIDES = [
+  { tag: "Guide 1", title: "Corporate Enquiry Journey", detail: "How the 8-step convergence flow works — from enquiry and RM contact to MoU signing and project onboarding." },
+  { tag: "Guide 2", title: "Pitching a Development Need", detail: "For government officers: submitting a district development need with location evidence and cost estimates." },
+  { tag: "Guide 3", title: "Tracking Your Application", detail: "Use your tracking ID (CSR-MH-… / GP-MH-…) on the Track page for a live stage-by-stage timeline." },
+  { tag: "Guide 4", title: "Implementing Agency Sub-Logins", detail: "Corporates can delegate implementation to a CSR-1 registered NGO; activation needs Nodal Officer approval." },
+];
 
 export default function HelpCenterPage() {
-  const [topic, setTopic] = useState("NGO Compliance");
-  const [subject, setSubject] = useState("");
-  const [desc, setDesc] = useState("");
-  const [ticketId, setTicketId] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", email: "", mobile: "", subject: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [ticket, setTicket] = useState<{ trackingId: string; resolutionDueAt: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [trackId, setTrackId] = useState("");
+  const [tracking, setTracking] = useState(false);
+  const [trackError, setTrackError] = useState("");
+  const [trackResult, setTrackResult] = useState<HelpdeskStatus | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject || !desc) return;
-    const tid = `TKT-${Math.floor(100000 + Math.random() * 900000)}`;
-    setTicketId(tid);
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await apiFetch<{ data?: { trackingId: string; resolutionDueAt: string } } & { trackingId?: string; resolutionDueAt?: string }>("/helpdesk", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
+      const data = (res as any).data ?? res;
+      setTicket({ trackingId: data.trackingId, resolutionDueAt: data.resolutionDueAt });
+      setForm({ name: "", email: "", mobile: "", subject: "", message: "" });
+    } catch (err: any) {
+      setError(err.message || "Failed to submit query");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleTrack = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTrackError("");
+    setTrackResult(null);
+    if (!trackId.trim()) return;
+    setTracking(true);
+    try {
+      const res = await apiFetch<{ data?: HelpdeskStatus } & HelpdeskStatus>(`/helpdesk/track/${trackId.trim().toUpperCase()}`);
+      setTrackResult((res as any).data ?? res);
+    } catch (err: any) {
+      setTrackError(err.status === 404 ? "Query not found. Check the tracking ID." : err.message || "Failed to fetch query status");
+    } finally {
+      setTracking(false);
+    }
   };
 
   return (
-    <div className="px-6 md:px-12 py-12 max-w-5xl mx-auto flex flex-col gap-10 bg-slate-950 text-slate-100 min-h-screen">
-      <div className="flex flex-col gap-2 border-b border-slate-800 pb-6">
-        <span className="text-[#f7941d] font-bold text-xs uppercase tracking-widest flex items-center gap-1.5">
-          <HelpCircle size={14} /> USER COMPLIANCE HELP DESK
-        </span>
-        <h1 className="font-heading font-extrabold text-4xl text-slate-100 tracking-tight">Help Center</h1>
-        <p className="text-slate-400 text-sm">Resolve system access queries, submit verification support tickets, or read user tutorials.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        
-        {/* Guides */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <h3 className="font-heading font-bold text-xl text-slate-200">Self Help Guides</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="glass-card p-6 rounded-2xl border border-slate-800 flex flex-col gap-3">
-              <span className="text-[#f7941d] font-bold text-xs uppercase tracking-wider">Guide 1</span>
-              <h4 className="font-heading font-bold text-base text-slate-100">NGO Registration Steps</h4>
-              <p className="text-slate-450 text-xs leading-relaxed">Detailed checklist for matching your PAN card, NGO Darpan filings, and getting verified on MahaCSR.</p>
-            </div>
-
-            <div className="glass-card p-6 rounded-2xl border border-slate-800 flex flex-col gap-3">
-              <span className="text-indigo-650 font-bold text-xs uppercase tracking-wider">Guide 2</span>
-              <h4 className="font-heading font-bold text-base text-slate-100">Milestone Tranche Escrows</h4>
-              <p className="text-slate-450 text-xs leading-relaxed">Understanding how to log beneficiary databases and upload site photos to approve milestone tranches.</p>
-            </div>
-          </div>
+    <GovPortalLayout showSidebar={false}>
+      <div className="gov-public-main">
+        <div className="gov-page-header">
+          <div className="gov-breadcrumb">Home / Helpdesk</div>
+          <h1 className="gov-page-title flex items-center gap-3">
+            <HelpCircle size={26} className="text-[#f7941d]" />
+            Helpdesk
+          </h1>
+          <p className="gov-page-description">
+            Submit a query about the portal, registrations, or the CSR convergence process.
+            Every query gets a tracking ID and is resolved within 2 working days.
+          </p>
         </div>
 
-        {/* Submit Ticket */}
-        <div className="glass-panel p-6 rounded-3xl border border-slate-800 flex flex-col gap-5">
-          <h3 className="font-heading font-bold text-lg text-slate-100 flex items-center gap-2">
-            <Ticket size={18} className="text-[#f7941d]" />
-            Generate Support Ticket
-          </h3>
-          
-          {ticketId ? (
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col gap-3 text-center text-xs font-semibold text-slate-400">
-              <span className="text-emerald-600 font-extrabold text-sm flex justify-center items-center gap-1.5">Ticket Created Successfully</span>
-              <span className="text-slate-200 font-extrabold text-base bg-slate-950 py-2 rounded-xl">{ticketId}</span>
-              <span>Please save this ID. An auditor will respond via the communication module within 24 hours.</span>
-              <Button onClick={() => setTicketId(null)} className="mt-2 py-2">Create another ticket</Button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs font-medium text-slate-400">
-              <div className="flex flex-col gap-1.5">
-                <span>Select Category:</span>
-                <select 
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none"
-                >
-                  <option>NGO Compliance</option>
-                  <option>Corporate Sliders</option>
-                  <option>Payment Release</option>
-                  <option>Account Access</option>
-                </select>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+          {/* Guides */}
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Self-Help Guides</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              <div className="flex flex-col gap-3">
+                {GUIDES.map((guide) => (
+                  <div key={guide.tag} className="border border-[#e0e4ea] border-l-4 border-l-[#f7941d] p-3 rounded-lg bg-white">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#f7941d]">{guide.tag}</span>
+                    <h4 className="text-sm font-bold text-[#14274e] mt-0.5">{guide.title}</h4>
+                    <p className="text-xs text-[#4b5563] mt-1 leading-relaxed">{guide.detail}</p>
+                  </div>
+                ))}
               </div>
-              <div className="flex flex-col gap-1.5">
-                <span>Subject:</span>
-                <input 
-                  type="text" 
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Summary of issue"
-                  className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 focus:outline-none focus:border-violet-500" 
-                  required 
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <span>Detailed Description:</span>
-                <textarea 
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
-                  placeholder="Explain your problem..."
-                  className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 h-24 focus:outline-none focus:border-violet-500" 
-                  required 
-                />
-              </div>
-              <Button type="submit" className="w-full mt-2 py-2.5 shadow-md">Submit Support Ticket</Button>
-            </form>
-          )}
-        </div>
+            </GovCardBody>
+          </GovCard>
 
+          {/* Submit Query */}
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle className="flex items-center gap-2"><Ticket size={16} /> Submit a Query</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              {ticket ? (
+                <div className="flex flex-col gap-3 text-center p-2">
+                  <GovAlert variant="success">Query submitted successfully.</GovAlert>
+                  <div className="border border-[#e0e4ea] bg-[#f4f5f7] rounded-lg p-4">
+                    <p className="text-xs text-[#6b7280] mb-1">Your Tracking ID</p>
+                    <code className="text-lg font-mono font-bold text-[#14274e]">{ticket.trackingId}</code>
+                    <p className="text-xs text-[#4b5563] mt-2">
+                      Response due by {new Date(ticket.resolutionDueAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} (2-day SLA).
+                    </p>
+                  </div>
+                  <GovButton variant="secondary" onClick={() => setTicket(null)}>Submit another query</GovButton>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                  {error && <GovAlert variant="danger">{error}</GovAlert>}
+                  <GovInput label="Your Name" required format="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  <GovInput label="Email" type="email" required format="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <GovInput label="Mobile (optional)" format="phone" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
+                  <GovInput label="Subject" required maxLength={200} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+                  <GovTextarea label="Describe your query" required rows={4} maxLength={5000} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
+                  <GovButton type="submit" disabled={submitting}>
+                    {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Submit Query
+                  </GovButton>
+                </form>
+              )}
+            </GovCardBody>
+          </GovCard>
+
+          {/* Track Query */}
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle className="flex items-center gap-2"><Search size={16} /> Track a Query</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              <form onSubmit={handleTrack} className="flex flex-col gap-3">
+                <GovInput
+                  label="Helpdesk Tracking ID"
+                  placeholder="HD-MH-2026-000001"
+                  value={trackId}
+                  onChange={(e) => setTrackId(e.target.value.toUpperCase())}
+                  error={trackError}
+                />
+                <GovButton type="submit" variant="secondary" disabled={tracking}>
+                  {tracking ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />} Check Status
+                </GovButton>
+              </form>
+
+              {trackResult && (
+                <div className="mt-4 border border-[#e0e4ea] rounded-lg p-4 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <code className="text-sm font-mono font-bold text-[#14274e]">{trackResult.trackingId}</code>
+                    <GovStatusBadge variant={trackResult.status === "RESOLVED" || trackResult.status === "CLOSED" ? "success" : trackResult.status === "IN_PROGRESS" ? "warning" : "info"}>
+                      {trackResult.status.replace(/_/g, " ")}
+                    </GovStatusBadge>
+                  </div>
+                  <p className="text-sm font-semibold text-[#333333]">{trackResult.subject}</p>
+                  <p className="text-xs text-[#6b7280]">
+                    Submitted {new Date(trackResult.createdAt).toLocaleDateString("en-IN")} · Response due {new Date(trackResult.resolutionDueAt).toLocaleDateString("en-IN")}
+                  </p>
+                  {trackResult.resolution && (
+                    <div className="bg-[#e8f5e9] border border-[#c8e6c9] rounded-lg p-3 text-xs text-[#2e7d32]">
+                      <strong>Resolution:</strong> {trackResult.resolution}
+                    </div>
+                  )}
+                </div>
+              )}
+            </GovCardBody>
+          </GovCard>
+        </div>
       </div>
-    </div>
+    </GovPortalLayout>
   );
 }

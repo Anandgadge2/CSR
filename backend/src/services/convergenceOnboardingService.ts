@@ -161,7 +161,9 @@ export async function onboardApprovedAssessmentToProject(input: OnboardInput): P
         corporateName,
         nodalOfficerUserId: appointment.nodalOfficerUserId,
         approvedBudget,
-        status: "ONBOARDED",
+        // Per workflow: project is created after nodal appointment but tracking
+        // begins only once the tripartite MoU is signed (Step 7 → Step 8).
+        status: "MOU_PENDING",
         milestones: {
           create: milestones.map((milestone) => ({
             tenantId,
@@ -178,14 +180,14 @@ export async function onboardApprovedAssessmentToProject(input: OnboardInput): P
     if (assessment.corporateEnquiryId) {
       await tx.corporateEnquiry.update({
         where: { id: assessment.corporateEnquiryId },
-        data: { status: CorporateEnquiryStatus.PROJECT_ONBOARDED },
+        data: { status: CorporateEnquiryStatus.MOU_PENDING },
       });
     }
 
     if (assessment.governmentPitchId) {
       await tx.governmentPitch.update({
         where: { id: assessment.governmentPitchId },
-        data: { status: GovernmentPitchStatus.PROJECT_ONBOARDED },
+        data: { status: GovernmentPitchStatus.MOU_PENDING },
       });
     }
 

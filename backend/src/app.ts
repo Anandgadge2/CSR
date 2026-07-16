@@ -49,13 +49,15 @@ import onboardingRoutes from "./routes/onboardingRoutes";
 // import ngoApplicationRoutes from "./routes/ngoApplicationRoutes"; // LEGACY: NGO application
 // import ngoPortalRoutes from "./routes/ngoPortalRoutes"; // LEGACY: NGO portal
 // import marketplaceRoutes from "./routes/marketplaceRoutes"; // LEGACY: Marketplace - replaced by Public Development Needs
-// import csrRequirementRoutes from "./routes/csrRequirementRoutes"; // LEGACY: Replaced by GovernmentPitch
-// import companyInterestRoutes from "./routes/companyInterestRoutes"; // LEGACY: Replaced by CorporatePitchInterest
+// Still required by the department portal (dashboard, requirements, profile) — do not disable
+import csrRequirementRoutes from "./routes/csrRequirementRoutes";
+import companyInterestRoutes from "./routes/companyInterestRoutes";
 // import agreementRoutes from "./routes/agreementRoutes"; // LEGACY: Replaced by StandardMou
 // import csrFundRoutes from "./routes/csrFundRoutes"; // LEGACY: Replaced by ConvergenceProject financials
 // import progressRoutes from "./routes/progressRoutes"; // LEGACY: Replaced by ProjectDeliverableMilestone
 // import completionRoutes from "./routes/completionRoutes"; // LEGACY: Replaced by ConvergenceProject completion
-// import csrDashboardRoutes from "./routes/csrDashboardRoutes"; // LEGACY: Replaced by role-specific dashboards
+// Still required by the department portal dashboard (/department/dashboard) — do not disable
+import csrDashboardRoutes from "./routes/csrDashboardRoutes";
 
 // MAHA CSR CONVERGENCE FRAMEWORK - New Routes
 import corporateEnquiryRoutes from "./routes/corporateEnquiryRoutes";
@@ -66,6 +68,9 @@ import nodalOfficerRoutes from "./routes/nodalOfficerRoutes";
 import convergenceProjectRoutes from "./routes/convergenceProjectRoutes";
 import grievanceRoutes from "./routes/grievanceRoutes";
 import jsRoutes from "./routes/jsRoutes";
+import implementingAgencyRoutes from "./routes/implementingAgencyRoutes";
+import helpdeskRoutes from "./routes/helpdeskRoutes";
+import secretaryRoutes from "./routes/secretaryRoutes";
 
 // Middlewares
 import { errorHandler } from "./middlewares/errorMiddleware";
@@ -97,13 +102,22 @@ app.use(helmet());
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
-// Logger middleware - sanitized for security
+// Logger middleware - concise and production-ready
+// Shows: HTTP method, path, status code, and response time
+// Sanitizes sensitive paths for security
 const SENSITIVE_PATHS = ["/api/auth/login", "/api/auth/register", "/api/auth/verify-otp"];
 app.use((req, res, next) => {
+  const startTime = Date.now();
   const isSensitive = SENSITIVE_PATHS.some((path) => req.path.startsWith(path));
-  const logMethod = req.method;
   const logPath = isSensitive ? "/api/auth/**" : req.path;
-  console.log(`[${new Date().toISOString()}] ${logMethod} ${logPath}`);
+
+  res.on("finish", () => {
+    const duration = Date.now() - startTime;
+    const status = res.statusCode;
+    const statusSymbol = status >= 400 ? "✗" : status >= 300 ? "→" : "✓";
+    console.log(`${statusSymbol} ${req.method} ${logPath} ${status} ${duration}ms`);
+  });
+
   next();
 });
 
@@ -132,6 +146,11 @@ app.use("/api", csrLifecycleRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/tracking", trackingRoutes);
 app.use("/api/onboarding", onboardingRoutes);
+app.use("/api/company-interests", companyInterestRoutes);
+
+// Department portal (BENEFICIARY_AGENCY) — dashboard stats, profile, and requirements
+app.use("/api/csr-dashboard", csrDashboardRoutes);
+app.use("/api/csr-requirements", csrRequirementRoutes);
 
 // MAHA CSR CONVERGENCE FRAMEWORK - New Routes
 app.use("/api/corporate-enquiries", corporateEnquiryRoutes);
@@ -142,6 +161,9 @@ app.use("/api/nodal", nodalOfficerRoutes);
 app.use("/api/convergence-projects", convergenceProjectRoutes);
 app.use("/api/grievances", grievanceRoutes);
 app.use("/api/js", jsRoutes);
+app.use("/api/implementing-agency", implementingAgencyRoutes);
+app.use("/api/helpdesk", helpdeskRoutes);
+app.use("/api/secretary", secretaryRoutes);
 
 // LEGACY NGO MARKETPLACE ROUTES - DISABLED FOR MAHA CSR CONVERGENCE MODEL
 // These routes are commented out as per the Maharashtra CSR Portal framework
