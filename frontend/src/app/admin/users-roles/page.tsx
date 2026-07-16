@@ -13,19 +13,10 @@ import GovSelect from "@/components/gov/GovSelect";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import "../../../styles/gov-theme.css";
 
-const WORKFLOW_ROLES = [
-  "CSR_RELATIONSHIP_MANAGER",
-  "DISTRICT_NODAL_OFFICER",
-  "JOINT_SECRETARY",
-  "STATE_CSR_CELL",
-  "PLANNING_SECRETARY",
-  "GOVERNMENT_OFFICER",
-  "IMPLEMENTING_AGENCY_USER",
-  "CORPORATE_USER",
-  "CSR_ADMIN",
-  "PORTAL_ADMIN",
+const BASE_DATABASE_ROLES = [
   "SUPER_ADMIN",
-  "DISTRICT_ADMIN",
+  "GOVERNMENT_OFFICER",
+  "CORPORATE_USER",
 ] as const;
 
 const DISTRICT_ROLES = new Set(["CSR_RELATIONSHIP_MANAGER", "DISTRICT_NODAL_OFFICER", "DISTRICT_ADMIN"]);
@@ -87,10 +78,11 @@ export default function AdminUsersRolesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [customRoles, setCustomRoles] = useState<any[]>([]);
   const [form, setForm] = useState({
     email: "",
     password: "Temp@12345",
-    role: "CSR_RELATIONSHIP_MANAGER",
+    role: "GOVERNMENT_OFFICER",
     assignedDistrict: "",
     accountStatus: "ACTIVE",
   });
@@ -103,6 +95,12 @@ export default function AdminUsersRolesPage() {
       })
       .catch((err) => setError(err.message || "Failed to load users"))
       .finally(() => setLoading(false));
+
+    apiFetch<any[]>("/org/roles")
+      .then((data) => {
+        if (data) setCustomRoles(data);
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -117,7 +115,7 @@ export default function AdminUsersRolesPage() {
     setForm({
       email: "",
       password: "Temp@12345",
-      role: "CSR_RELATIONSHIP_MANAGER",
+      role: "GOVERNMENT_OFFICER",
       assignedDistrict: "",
       accountStatus: "ACTIVE",
     });
@@ -176,10 +174,11 @@ export default function AdminUsersRolesPage() {
     }
   };
 
+  const allAvailableRoles = [...BASE_DATABASE_ROLES, ...customRoles.map((r) => r.name)];
   const userCount = users.length;
   const metrics = [
     { label: "Users", value: loading ? "..." : String(userCount) },
-    { label: "Workflow Roles", value: String(WORKFLOW_ROLES.length) },
+    { label: "Workflow Roles", value: String(allAvailableRoles.length) },
     { label: "Pending Access", value: String(users.filter((u) => u.accountStatus !== "ACTIVE").length) },
   ];
   const requiresDistrict = DISTRICT_ROLES.has(form.role);
@@ -259,8 +258,8 @@ export default function AdminUsersRolesPage() {
                             onChange={(event) => updateUser(u, "role", event.target.value)}
                             style={{ minWidth: 220 }}
                           >
-                            {Array.from(new Set<string>([u.role, ...WORKFLOW_ROLES])).map((role) => (
-                              <option key={role} value={role}>{role}</option>
+                            {Array.from(new Set<string>([u.role, ...allAvailableRoles])).map((role) => (
+                              <option key={role} value={role}>{role || "No Role"}</option>
                             ))}
                           </select>
                         </td>
@@ -334,8 +333,8 @@ export default function AdminUsersRolesPage() {
               value={form.role}
               onChange={(event) => setField("role", event.target.value)}
             >
-              {WORKFLOW_ROLES.map((role) => (
-                <option key={role} value={role}>{role}</option>
+              {allAvailableRoles.map((role) => (
+                <option key={role} value={role}>{role || "No Role"}</option>
               ))}
             </GovSelect>
             <GovSelect
