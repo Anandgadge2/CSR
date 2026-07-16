@@ -81,7 +81,9 @@ export const getJSDashboard = async (
       // Government pitches pending JS approval
       prisma.governmentPitch.count({
         where: {
-          status: GovernmentPitchStatus.JS_APPROVAL_PENDING,
+          status: {
+            in: [GovernmentPitchStatus.RM_VERIFIED, GovernmentPitchStatus.JS_APPROVAL_PENDING]
+          },
           ...(tenantId ? {
             OR: [
               { tenantId: tenantId },
@@ -338,7 +340,9 @@ export const getJSGovernmentPitches = async (
     const tenantId = req.user?.tenantId;
     const pitches = await prisma.governmentPitch.findMany({
       where: {
-        status: GovernmentPitchStatus.JS_APPROVAL_PENDING,
+        status: {
+          in: [GovernmentPitchStatus.RM_VERIFIED, GovernmentPitchStatus.JS_APPROVAL_PENDING]
+        },
         ...(tenantId ? {
           OR: [
             { tenantId: tenantId },

@@ -64,8 +64,46 @@ export default function JSGovernmentPitchesPage() {
     return true;
   });
 
-  const rawDistricts = pitches.map((p) => p.district);
-  const districts = rawDistricts.filter((v, i) => rawDistricts.indexOf(v) === i).sort();
+  const MAHARASHTRA_DISTRICTS = [
+    "Mumbai City",
+    "Mumbai Suburban",
+    "Thane",
+    "Palghar",
+    "Raigad",
+    "Ratnagiri",
+    "Sindhudurg",
+    "Nashik",
+    "Dhule",
+    "Nandurbar",
+    "Jalgaon",
+    "Ahmednagar",
+    "Pune",
+    "Satara",
+    "Sangli",
+    "Solapur",
+    "Kolhapur",
+    "Aurangabad",
+    "Jalna",
+    "Beed",
+    "Osmanabad",
+    "Nanded",
+    "Latur",
+    "Parbhani",
+    "Hingoli",
+    "Amravati",
+    "Akola",
+    "Washim",
+    "Buldhana",
+    "Yavatmal",
+    "Wardha",
+    "Nagpur",
+    "Bhandara",
+    "Gondia",
+    "Chandrapur",
+    "Gadchiroli",
+  ];
+
+  const districts = MAHARASHTRA_DISTRICTS;
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
   const fmtCurrency = (v: string | number) => `₹${Number(v).toLocaleString("en-IN")}`;
 
