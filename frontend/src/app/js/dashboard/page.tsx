@@ -242,7 +242,7 @@ export default function JSDashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Recent Decisions */}
             <GovCard>
-              <GovCardHeader><GovCardTitle>Recent Decisions.</GovCardTitle></GovCardHeader>
+              <GovCardHeader><GovCardTitle>Recent Decisions</GovCardTitle></GovCardHeader>
               <GovCardBody style={{ padding: 0 }}>
                 <GovDataTable
                   columns={decisionColumns}
