@@ -7,7 +7,7 @@ import { Role } from "../types/role";
 import { runEscalationSweep } from "../services/slaSchedulerService";
 import SLAEscalationService from "../services/slaEscalationService";
 import { createInvitation, InvitationError } from "../services/invitationService";
-import { dispatchNotification } from "../services/notificationService";
+import { dispatchNotification } from "../services/notificationOrchestrator";
 
 const getRequestTenantId = (req: AuthenticatedRequest) =>
   (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
@@ -157,7 +157,7 @@ export const createAdminUser = async (req: AuthenticatedRequest, res: Response, 
             expiresInHours: process.env.INVITATION_TTL_HOURS || "72",
           },
           actionButtonUrl: activationUrl,
-        }).catch((notifyError) => console.error("Invitation notification failed:", notifyError));
+        }).catch((notifyError: any) => console.error("Invitation notification failed:", notifyError));
         invitationSent = true;
       } catch (invError) {
         if (invError instanceof InvitationError) {
