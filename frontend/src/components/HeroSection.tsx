@@ -18,7 +18,7 @@ const DEFAULT_SLIDES = [
   {
     id: "2",
     image: "/hero_slide_2.png",
-    title: "Transforming Rural Maharashtra",
+    title: "Transforming Maharashtra",
     highlight: "Through Convergence.",
     subtitle:
       "CSR investments aligned with district development priorities, driving sustainable infrastructure, education and healthcare across every taluka.",
@@ -241,7 +241,7 @@ export default function HeroSection() {
       ref={heroRef}
       onMouseMove={handleMouseMove}
       className="relative overflow-hidden bg-slate-950"
-      style={{ minHeight: "600px", perspective: "1200px" }}
+      style={{ perspective: "1200px" }}
     >
       {/* Mouse trail canvas */}
       <MouseTrailCanvas />
@@ -276,7 +276,7 @@ export default function HeroSection() {
 
       {/* Floating orbs */}
       <div
-        className="absolute z-10 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl"
+        className="absolute z-10 w-80 h-80 rounded-full bg-blue-500/10 blur-3xl hidden sm:block"
         style={{
           top: "10%",
           left: "5%",
@@ -285,7 +285,7 @@ export default function HeroSection() {
         }}
       />
       <div
-        className="absolute z-10 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl"
+        className="absolute z-10 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl hidden sm:block"
         style={{
           bottom: "15%",
           right: "10%",
@@ -295,223 +295,164 @@ export default function HeroSection() {
       />
 
       {/* Content */}
-      <div className="relative z-30 mx-auto max-w-[1380px] w-full px-4 py-12 sm:px-6 md:px-8 flex flex-col justify-center min-h-[680px]">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          
-          {/* Left Column: Carousel Title & Subtitle */}
-          <div className="lg:col-span-7 flex flex-col items-start text-left pointer-events-none">
-            {/* Accent bar */}
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="w-20 h-1 bg-gradient-to-r from-amber-400 to-blue-500 mb-6 origin-left rounded-full"
-            />
+      <div className="relative z-30 mx-auto max-w-[1370px] w-full px-4 pt-8 pb-10 sm:pt-12 sm:pb-16 sm:px-6 md:px-8 flex flex-col justify-center items-center min-h-[520px] sm:min-h-[580px] md:min-h-[660px]">
+        
+        {/* Centered Title & Subtitle */}
+        <div className="flex flex-col items-center text-center pointer-events-none max-w-4xl px-2 sm:px-0">
+          {/* Accent bar */}
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-14 sm:w-20 h-1 bg-gradient-to-r from-amber-400 to-blue-500 mb-4 sm:mb-6 rounded-full"
+          />
 
-            {/* Title with 3D text reveal */}
-            <AnimatePresence mode="wait">
-              <motion.div key={slide.id} className="flex flex-col items-start">
-                <motion.h1
-                  custom={0}
-                  variants={textReveal}
-                  initial="hidden"
-                  animate="visible"
-                  exit={{ opacity: 0, y: -20, transition: { duration: 0.3 } }}
-                  className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight tracking-tight"
-                  style={{
-                    transform: `perspective(600px) rotateX(${mousePos.y * -2}deg) rotateY(${mousePos.x * 2}deg)`,
-                    transition: "transform 0.3s ease-out",
-                    textShadow: "0 4px 30px rgba(0,0,0,0.4)",
-                  }}
-                >
-                  {slide.title}
-                  <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-blue-400">
-                    {slide.highlight}
-                  </span>
-                </motion.h1>
+          {/* Title with 3D text reveal */}
+          <AnimatePresence mode="wait">
+            <motion.div key={slide.id} className="flex flex-col items-center">
+              <motion.h1
+                custom={0}
+                variants={textReveal}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, y: -20, transition: { duration: 0.3 } }}
+                className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold text-white leading-tight tracking-tight"
+                style={{
+                  transform: `perspective(600px) rotateX(${mousePos.y * -2}deg) rotateY(${mousePos.x * 2}deg)`,
+                  transition: "transform 0.3s ease-out",
+                  textShadow: "0 4px 30px rgba(0,0,0,0.4)",
+                }}
+              >
+                {slide.title}
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-blue-400">
+                  {slide.highlight}
+                </span>
+              </motion.h1>
 
-                <motion.p
-                  custom={1}
-                  variants={textReveal}
-                  initial="hidden"
-                  animate="visible"
-                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                  className="mt-6 text-sm sm:text-base text-slate-300 font-normal leading-relaxed max-w-2xl"
-                >
-                  {slide.subtitle}
-                </motion.p>
-              </motion.div>
-            </AnimatePresence>
+              <motion.p
+                custom={1}
+                variants={textReveal}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                className="mt-3 sm:mt-5 text-xs sm:text-sm md:text-base text-slate-300 font-normal leading-relaxed max-w-2xl px-2 sm:px-0"
+              >
+                {slide.subtitle}
+              </motion.p>
+            </motion.div>
+          </AnimatePresence>
 
-            {/* Carousel navigation dots */}
-            <div className="mt-8 flex items-center gap-3 pointer-events-auto">
-              {slides.map((s, i) => (
-                <button
-                  key={s.id}
-                  onClick={() => goTo(i)}
-                  className={`relative h-2 rounded-full transition-all duration-500 ${
-                    i === current ? "w-10 bg-gradient-to-r from-amber-400 to-blue-500" : "w-2 bg-white/30 hover:bg-white/50"
-                  }`}
-                  aria-label={`Go to slide ${i + 1}`}
-                >
-                  {i === current && (
-                    <motion.div
-                      layoutId="activeDot"
-                      className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 to-blue-500 shadow-lg shadow-amber-500/20"
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column: Unified Glassmorphic Action Panel */}
-          <div className="lg:col-span-5 pointer-events-auto w-full">
-            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-6 shadow-2xl shadow-slate-950/20 text-left flex flex-col gap-6">
-              
-              {/* Action 1: Partner with Maharashtra */}
-              <div className="flex gap-4">
-                <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
-                  <Building2 size={20} />
-                </div>
-                <div className="flex-1">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">For Corporate Partners</span>
-                  <h4 className="text-sm font-bold text-white mt-0.5">Partner with Maharashtra</h4>
-                  <p className="text-[11px] leading-relaxed text-white/80 mt-1.5">
-                    Submit a CSR partnership enquiry, browse live government development needs, and track coordination.
-                  </p>
-                  <div className="mt-3">
-                    <Link
-                      href="/partner-with-maharashtra"
-                      className="inline-flex min-h-9 items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 px-4 text-xs font-bold text-white transition-all shadow-md shadow-blue-500/10 hover:scale-[1.02] hover:no-underline"
-                    >
-                      Submit Partnership Enquiry <ArrowRight size={13} className="ml-1.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Horizontal Divider */}
-              <div className="h-[1px] bg-white/10 w-full" />
-
-              {/* Action 2: Pitch a Development Need */}
-              <div className="flex gap-4">
-                <div className="h-10 w-10 shrink-0 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-300">
-                  <Landmark size={20} />
-                </div>
-                <div className="flex-1">
-                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-300">For Government Departments</span>
-                  <h4 className="text-sm font-bold text-white mt-0.5">Pitch a Development Need</h4>
-                  <p className="text-[11px] leading-relaxed text-white/80 mt-1.5">
-                    Pitch specific development needs with district, budget, and location evidence to seek CSR support.
-                  </p>
-                  <div className="mt-3">
-                    <Link
-                      href="/pitch-development-need"
-                      className="inline-flex min-h-9 items-center justify-center rounded-xl bg-amber-500 hover:bg-amber-600 px-4 text-xs font-bold text-white transition-all shadow-md shadow-amber-500/10 hover:scale-[1.02] hover:no-underline"
-                    >
-                      Pitch Development Need <ArrowRight size={13} className="ml-1.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Horizontal Divider */}
-              <div className="h-[1px] bg-white/10 w-full" />
-
-              {/* Action 3: Mini Track Status Bar */}
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-300">Track Enquiry or Pitch</span>
-                <div className="mt-2.5 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter Tracking ID to view status..."
-                    className="flex-1 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-white/50 focus:outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-400/10 transition-all"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        window.location.href = `/track?id=${(e.target as HTMLInputElement).value}`;
-                      }
-                    }}
+          {/* Carousel navigation dots */}
+          <div className="mt-5 sm:mt-7 flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => goTo(i)}
+                className={`relative h-2 rounded-full transition-all duration-500 ${
+                  i === current ? "w-10 bg-gradient-to-r from-amber-400 to-blue-500" : "w-2 bg-white/30 hover:bg-white/50"
+                }`}
+                aria-label={`Go to slide ${i + 1}`}
+              >
+                {i === current && (
+                  <motion.div
+                    layoutId="activeDot"
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-400 to-blue-500 shadow-lg shadow-amber-500/20"
                   />
-                  <Link
-                    href="/track"
-                    className="inline-flex min-h-9 items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 px-4 text-xs font-bold text-white transition-all border border-white/15 hover:no-underline"
-                  >
-                    Track <ArrowRight size={12} className="ml-1" />
-                  </Link>
-                </div>
-              </div>
-
-            </div>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Stats Row */}
+        {/* Bottom Center: Two Action Cards */}
+        <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-stretch gap-3 sm:gap-4 pointer-events-auto w-full max-w-2xl px-1 sm:px-0">
+          {/* Card 1: Partner with Maharashtra */}
+          <Link href="/partner-with-maharashtra" className="flex-1 hover:no-underline group">
+            <div className="h-full bg-white/8 backdrop-blur-xl border border-white/15 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center gap-3 transition-all hover:bg-white/15 hover:border-blue-400/30 hover:shadow-lg hover:shadow-blue-500/5">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-lg sm:rounded-xl bg-blue-500/20 border border-blue-400/25 flex items-center justify-center text-blue-300 group-hover:bg-blue-500/30 transition-colors">
+                <Building2 size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-blue-300/80">Corporate Partners</span>
+                <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Partner with Maharashtra</h4>
+              </div>
+              <ArrowRight size={16} className="text-white/40 group-hover:text-blue-300 group-hover:translate-x-1 transition-all shrink-0" />
+            </div>
+          </Link>
+
+          {/* Card 2: Pitch a Development Need */}
+          <Link href="/pitch-development-need" className="flex-1 hover:no-underline group">
+            <div className="h-full bg-white/8 backdrop-blur-xl border border-white/15 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center gap-3 transition-all hover:bg-white/15 hover:border-amber-400/30 hover:shadow-lg hover:shadow-amber-500/5">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-lg sm:rounded-xl bg-amber-500/20 border border-amber-400/25 flex items-center justify-center text-amber-300 group-hover:bg-amber-500/30 transition-colors">
+                <Landmark size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-300/80">Government Depts</span>
+                <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">Pitch a Development Need</h4>
+              </div>
+              <ArrowRight size={16} className="text-white/40 group-hover:text-amber-300 group-hover:translate-x-1 transition-all shrink-0" />
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats Strip — Below the Carousel */}
+      <div className="relative z-30 mx-auto max-w-[1380px] w-full px-4 sm:px-6 md:px-8 -mt-5 sm:-mt-7 mb-6 sm:mb-10 ">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={statsContainer}
-          className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-5 w-full pointer-events-auto"
+          className=" rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-200/40 overflow-hidden"
         >
-          <motion.div
-            variants={statItem}
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="group flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-left transition-all hover:bg-white/10 hover:border-white/20 cursor-default"
-          >
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20 shrink-0">
-              <Building2 size={18} />
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold text-white leading-none">2,145+</div>
-              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Registered Corporates</div>
-            </div>
-          </motion.div>
+          <div className="grid grid-cols-3 divide-x divide-slate-100">
+            <motion.div variants={statItem} className="flex items-center justify-center gap-2.5 sm:gap-4 py-4 sm:py-5 px-3 sm:px-6">
+              <div className="hidden sm:grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
+                <Building2 size={18} />
+              </div>
+              <div className="text-center sm:text-left ">
+                <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight">2,145<span className="text-blue-500">+</span></div>
+                <div className="text-[7px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 sm:mt-1">Corporates</div>
+              </div>
+            </motion.div>
 
-          <motion.div
-            variants={statItem}
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="group flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-left transition-all hover:bg-white/10 hover:border-white/20 cursor-default"
-          >
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/20 shrink-0">
-              <Landmark size={18} />
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold text-white leading-none">1,734+</div>
-              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Implementing Agencies</div>
-            </div>
-          </motion.div>
+            <motion.div variants={statItem} className="flex items-center justify-center gap-2.5 sm:gap-4 py-4 sm:py-5 px-3 sm:px-6">
+              <div className="hidden sm:grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 shrink-0">
+                <Landmark size={18} />
+              </div>
+              <div className="text-center sm:text-left">
+                <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight">1,734<span className="text-amber-500">+</span></div>
+                <div className="text-[7px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 sm:mt-1">Agencies</div>
+              </div>
+            </motion.div>
 
-          <motion.div
-            variants={statItem}
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="group flex items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/15 rounded-2xl p-4 text-left transition-all hover:bg-white/10 hover:border-white/20 cursor-default"
-          >
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/20 text-white shrink-0">
-              <CheckCircle2 size={18} />
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold text-white leading-none">4,812+</div>
-              <div className="text-[9px] font-bold text-slate-200 uppercase tracking-widest mt-1">Projects Onboarded</div>
-            </div>
-          </motion.div>
+            <motion.div variants={statItem} className="flex items-center justify-center gap-2.5 sm:gap-4 py-4 sm:py-5 px-3 sm:px-6">
+              <div className="hidden sm:grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+                <CheckCircle2 size={18} />
+              </div>
+              <div className="text-center sm:text-left">
+                <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight">4,812<span className="text-emerald-500">+</span></div>
+                <div className="text-[7px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 sm:mt-1">Projects</div>
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
       </div>
 
       {/* Left/Right arrows */}
       <button
         onClick={prev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 grid h-10 w-10 place-items-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white/60 hover:bg-white/15 hover:text-white transition-all hover:scale-110"
+        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-30 grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white/60 hover:bg-white/15 hover:text-white transition-all hover:scale-110"
         aria-label="Previous slide"
       >
-        <ChevronLeft size={18} />
+        <ChevronLeft className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </button>
       <button
         onClick={next}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 grid h-10 w-10 place-items-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white/60 hover:bg-white/15 hover:text-white transition-all hover:scale-110"
+        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-30 grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-white/60 hover:bg-white/15 hover:text-white transition-all hover:scale-110"
         aria-label="Next slide"
       >
-        <ChevronRight size={18} />
+        <ChevronRight className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </button>
 
       {/* Progress bar */}

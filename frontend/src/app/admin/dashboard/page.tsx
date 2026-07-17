@@ -65,7 +65,8 @@ interface RecentActivity {
 // Sidebar items for Admin
 const sidebarItems = [
   { label: "Dashboard", href: "/admin/dashboard", icon: Layers },
-  { label: "Users", href: "/admin/users-roles", icon: Users },
+  { label: "User Management", href: "/admin/user-management", icon: Users },
+  { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldCheck },
   { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", icon: ShieldCheck, badge: 12 },
   { label: "Government Departments", href: "/admin/organizations", icon: Landmark },
   { label: "Implementing Agencies", href: "/admin/ngo-registry", icon: Building2 },
@@ -116,9 +117,17 @@ const adminModules = [
   },
   {
     title: "User Management",
-    description: "Manage user accounts, roles and permissions",
-    href: "/admin/users-roles",
+    description: "Manage user accounts, edit, activate or delete users",
+    href: "/admin/user-management",
     icon: Users,
+    status: "Available",
+    statusVariant: "info" as const,
+  },
+  {
+    title: "Roles & Permissions",
+    description: "Configure dynamic roles and the permission matrix",
+    href: "/admin/roles-permissions",
+    icon: ShieldCheck,
     status: "Available",
     statusVariant: "info" as const,
   },

@@ -585,8 +585,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       return [
         { label: "Statewide Monitor", href: "/government-portal/statewide", icon: Layers },
         { label: "District Register", href: "/government-portal/district", icon: Compass },
-        { label: "Users", href: "/admin/users-roles?tab=users", icon: Users, requiredPermission: "role:view" },
-        { label: "Roles & Permissions", href: "/admin/users-roles?tab=roles", icon: ShieldAlert, requiredPermission: "role:view" },
+        { label: "User Management", href: "/admin/user-management", icon: Users },
+        { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldAlert },
         { label: "Verification Queues", href: "/government-portal/ngo-verify", icon: Landmark },
         { label: "Project Approvals", href: "/government-portal/project-verify", icon: ShieldCheck },
         { label: "Compliance Audit", href: "/government-portal/compliance", icon: ShieldAlert },
@@ -599,8 +599,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     if (["SUPER_ADMIN", "CSR_ADMIN"].includes(storedRole || "") || pathname.startsWith("/admin")) {
       return [
         { label: "Dashboard", href: "/admin/dashboard", icon: Layers },
-        { label: "Users", href: "/admin/users-roles?tab=users", icon: Users, requiredPermission: "role:view" },
-        { label: "Roles & Permissions", href: "/admin/users-roles?tab=roles", icon: ShieldAlert, requiredPermission: "role:view" },
+        { label: "User Management", href: "/admin/user-management", icon: Users },
+        { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldAlert },
         { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", icon: ShieldCheck },
         { label: "Government Departments", href: "/admin/organizations", icon: Landmark },
         { label: "Implementing Agencies", href: "/admin/ngo-registry", icon: Landmark },
@@ -902,13 +902,13 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   alt="Government of Maharashtra Seal"
                   className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
                 />
-                <div className="flex flex-col text-[10px] sm:text-xs font-semibold leading-tight text-slate-800">
+                <div className="hidden md:flex flex-col text-[10px] sm:text-xs font-semibold leading-tight text-slate-800">
                   <span>Government of Maharashtra</span>
                   <span className="text-slate-400 font-normal">महाराष्ट्र शासन</span>
                 </div>
               </Link>
 
-              <div className="h-8 w-[1px] bg-slate-200 shrink-0" />
+              <div className="h-8 w-[1px] bg-slate-200 shrink-0 hidden md:block" />
 
               <Link href="/" className="flex flex-col leading-none hover:no-underline shrink-0">
                 <span className="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">
@@ -1199,62 +1199,121 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
               </div>
             </footer>
           ) : (
-            <footer className="bg-[#0e2144] text-white">
-              <div className="mx-auto grid max-w-[1380px] gap-10 px-5 py-10 md:grid-cols-[1.3fr_0.8fr_0.8fr_1.1fr] md:px-8">
-                <div>
-                  <Link href="/" className="inline-flex items-center gap-3 text-white hover:no-underline">
-                    <svg viewBox="0 0 100 100" className="h-12 w-12" fill="none" stroke="currentColor">
-                      <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="#ffffff" strokeWidth="4.5" fill="rgba(255,255,255,0.06)" />
-                      <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="#f7941d" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    <div>
-                      <div className="text-2xl font-bold">Maha<span className="text-[#f7941d]">CSR</span></div>
-                      <div className="mt-1 text-xs font-medium leading-5 text-white/80">Corporate Social Responsibility Portal<br />Government of Maharashtra</div>
+            <footer className="bg-gradient-to-b from-slate-900 to-slate-950 text-white">
+              {/* Main Footer Content */}
+              <div className="mx-auto max-w-[1380px] px-5 py-14 md:px-8">
+                <div className="grid gap-12 md:grid-cols-[1.4fr_0.8fr_0.8fr_1.1fr]">
+                  {/* Brand Column */}
+                  <div>
+                    <Link href="/" className="inline-flex items-center gap-3 text-white hover:no-underline group">
+                      <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-white/10 flex items-center justify-center group-hover:border-white/20 transition-colors">
+                        <svg viewBox="0 0 100 100" className="h-6 w-6" fill="none" stroke="currentColor">
+                          <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="#ffffff" strokeWidth="5" fill="rgba(255,255,255,0.06)" />
+                          <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="#f7941d" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold tracking-tight">Maha<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">CSR</span> Setu</div>
+                        <div className="text-[10px] font-medium text-slate-400 tracking-wide">Government of Maharashtra</div>
+                      </div>
+                    </Link>
+                    <p className="mt-5 text-xs leading-relaxed text-slate-400 max-w-xs">
+                      Maharashtra's unified CSR convergence platform — connecting corporates, government departments, and implementing agencies for transparent, district-level development.
+                    </p>
+                    <div className="mt-6 flex gap-2.5">
+                      {[
+                        { label: "f", href: "#" },
+                        { label: "X", href: "#" },
+                        { label: "in", href: "#" },
+                        { label: "yt", href: "#" },
+                      ].map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 border border-white/10 text-[10px] font-extrabold text-slate-400 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all"
+                        >
+                          {item.label}
+                        </a>
+                      ))}
                     </div>
-                  </Link>
-                  <div className="mt-8 flex gap-3">
-                    {["f", "X", "in", "yt"].map((item) => (
-                      <span key={item} className="grid h-9 w-9 place-items-center rounded-full border border-white/35 text-xs font-extrabold">{item}</span>
-                    ))}
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Quick Links</h3>
-                  <div className="mt-4 flex flex-col gap-3 text-sm text-white/80">
-                    <Link href="/about" className="text-white/80 hover:text-white">About MahaCSR</Link>
-                    <Link href="/partner-with-maharashtra" className="text-white/80 hover:text-white">Partner with Maharashtra</Link>
-                    <Link href="/pitch-development-need" className="text-white/80 hover:text-white">Pitch a Development Need</Link>
-                    <Link href="/public-development-needs" className="text-white/80 hover:text-white">Public Development Needs (Live)</Link>
-                    <Link href="/workflow" className="text-white/80 hover:text-white">Workflow</Link>
-                    <Link href="/knowledge" className="text-white/80 hover:text-white">Knowledge Center</Link>
-                    {/* <Link href="/reports" className="text-white/80 hover:text-white">Reports & Data</Link> */}
-                    <Link href="/help" className="text-white/80 hover:text-white">Helpdesk</Link>
+
+                  {/* Quick Links */}
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">Quick Links</h3>
+                    <div className="mt-5 flex flex-col gap-3">
+                      {[
+                        { label: "About MahaCSR", href: "/about" },
+                        { label: "Partner with Maharashtra", href: "/partner-with-maharashtra" },
+                        { label: "Pitch a Development Need", href: "/pitch-development-need" },
+                        { label: "Development Needs (Live)", href: "/public-development-needs" },
+                        { label: "Workflow Explainer", href: "/workflow" },
+                        { label: "Knowledge Center", href: "/knowledge" },
+                        { label: "Helpdesk", href: "/help" },
+                      ].map((link) => (
+                        <Link key={link.label} href={link.href} className="text-xs text-slate-400 hover:text-white transition-colors hover:no-underline">
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Information</h3>
-                  <div className="mt-4 flex flex-col gap-3 text-sm text-white/80">
-                    <Link href="#" className="text-white/80 hover:text-white">Privacy Policy</Link>
-                    <Link href="#" className="text-white/80 hover:text-white">Terms of Use</Link>
-                    <Link href="#" className="text-white/80 hover:text-white">Compliance Audits</Link>
-                    <Link href="#" className="text-white/80 hover:text-white">Sitemap</Link>
-                    <Link href="#" className="text-white/80 hover:text-white">Accessibility</Link>
+
+                  {/* Information */}
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">Information</h3>
+                    <div className="mt-5 flex flex-col gap-3">
+                      {[
+                        { label: "Privacy Policy", href: "#" },
+                        { label: "Terms of Use", href: "#" },
+                        { label: "Compliance Audits", href: "#" },
+                        { label: "Sitemap", href: "#" },
+                        { label: "Accessibility", href: "#" },
+                      ].map((link) => (
+                        <Link key={link.label} href={link.href} className="text-xs text-slate-400 hover:text-white transition-colors hover:no-underline">
+                          {link.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Contact Us</h3>
-                  <div className="mt-4 flex flex-col gap-3 text-sm leading-6 text-white/80">
-                    <span className="inline-flex gap-2"><MapPin className="mt-1 shrink-0" size={15} /> Maharashtra CSR Authority, 7th Floor, Mantralaya Annexe, Mumbai - 400 032, Maharashtra, India.</span>
-                    <span className="inline-flex items-center gap-2"><Mail size={15} /> support@mahacsr.gov.in</span>
-                    <span className="inline-flex items-center gap-2"><Phone size={15} /> 022-2202 1234</span>
+
+                  {/* Contact */}
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">Contact Us</h3>
+                    <div className="mt-5 flex flex-col gap-4">
+                      <div className="flex gap-3 text-xs text-slate-400 leading-relaxed">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-500">
+                          <MapPin size={14} />
+                        </div>
+                        <span>Maharashtra CSR Authority, 7th Floor, Mantralaya Annexe, Mumbai - 400 032</span>
+                      </div>
+                      <div className="flex gap-3 items-center text-xs text-slate-400">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-500">
+                          <Mail size={14} />
+                        </div>
+                        <span>support@mahacsr.gov.in</span>
+                      </div>
+                      <div className="flex gap-3 items-center text-xs text-slate-400">
+                        <div className="h-8 w-8 shrink-0 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-500">
+                          <Phone size={14} />
+                        </div>
+                        <span>022-2202 1234</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="border-t border-white/10 bg-[#091730]">
-                <div className="mx-auto flex max-w-[1380px] flex-col gap-3 px-5 py-4 text-xs font-medium text-white/80 md:flex-row md:items-center md:justify-between md:px-8">
-                  <span>(c) 2026 Government of Maharashtra. All rights reserved.</span>
-                  <span>Best viewed in Chrome 90+, Firefox 90+, Edge 90+, Safari 13+</span>
-                  <a href="#" className="inline-flex items-center gap-2 text-white/80 hover:text-white hover:no-underline"><ArrowUp size={14} /> Back to top</a>
+
+              {/* Bottom Bar */}
+              <div className="border-t border-white/5">
+                <div className="mx-auto flex max-w-[1380px] flex-col gap-3 px-5 py-4 text-[11px] font-medium text-slate-500 md:flex-row md:items-center md:justify-between md:px-8">
+                  <span>&copy; 2026 Government of Maharashtra. All rights reserved.</span>
+                  <span className="hidden md:block">Best viewed in Chrome 90+, Firefox 90+, Edge 90+, Safari 13+</span>
+                  <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    className="inline-flex items-center gap-1.5 text-slate-500 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0"
+                  >
+                    <ArrowUp size={12} /> Back to top
+                  </button>
                 </div>
               </div>
             </footer>

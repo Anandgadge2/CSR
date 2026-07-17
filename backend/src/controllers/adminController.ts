@@ -1,10 +1,13 @@
 import { Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { Role } from "../types/role";
 import { runEscalationSweep } from "../services/slaSchedulerService";
 import SLAEscalationService from "../services/slaEscalationService";
+import { createInvitation, InvitationError } from "../services/invitationService";
+import { dispatchNotification } from "../services/notificationService";
 
 const getRequestTenantId = (req: AuthenticatedRequest) =>
   (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
@@ -60,6 +63,8 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response, next: 
         companyId: true,
         assignedDistrict: true,
         createdAt: true,
+        roleId: true,
+        roleRelation: { select: { id: true, name: true } },
         ngo: { select: { name: true, status: true } },
         company: { select: { name: true, status: true } },
         organizationRoles: {
@@ -78,43 +83,89 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response, next: 
   }
 };
 
+const BASE_DB_ROLES = ["SUPER_ADMIN", "CORPORATE_USER", "GOVERNMENT_OFFICER"];
+
 export const createAdminUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { email, password, role, assignedDistrict, accountStatus = "ACTIVE" } = req.body;
-    if (!Object.values(Role).includes(role)) {
-      return res.status(400).json({ error: "Invalid role" });
+
+    // Role may be a base platform enum value OR the name of a dynamic
+    // OrganizationRole from the RBAC engine — never a hardcoded list.
+    const dbRole = BASE_DB_ROLES.includes(role) ? (role as any) : null;
+    const orgRole = !dbRole
+      ? await prisma.organizationRole.findFirst({ where: { name: role, status: "ACTIVE" } })
+      : null;
+    if (!dbRole && !orgRole) {
+      return res.status(400).json({ error: `Unknown role '${role}'. Use a base platform role or an active dynamic role.` });
     }
-    if (req.user?.role === Role.PORTAL_ADMIN && isTopLevelAdminRole(role)) {
+    if (req.user?.role === Role.PORTAL_ADMIN && isTopLevelAdminRole(dbRole)) {
       return res.status(403).json({ error: "Portal Admin cannot create Super Admin users" });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = String(email).toLowerCase();
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) return res.status(409).json({ error: "Email already registered" });
 
-    const tenantId = getRequestTenantId(req) || (await ((...args: any[]) => ({ id: "global", status: "ACTIVE" } as any))({ where: { code: "MH-CSR" } }))?.id || null;
-    const passwordHash = await bcrypt.hash(password, 10);
-    const needsDistrict = role === Role.CSR_RELATIONSHIP_MANAGER || role === Role.DISTRICT_NODAL_OFFICER || role === Role.DISTRICT_ADMIN;
+    // SECURITY: if no password is supplied, create the account with an
+    // unusable random hash and send a secure single-use invitation link
+    // instead — passwords are never generated or emailed by the platform.
+    const useInvitation = !password;
+    const passwordHash = await bcrypt.hash(
+      useInvitation ? crypto.randomBytes(32).toString("hex") : password,
+      10
+    );
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         passwordHash,
-        role,
-        accountStatus,
-        isVerified: true,
-        assignedDistrict: needsDistrict ? assignedDistrict || null : assignedDistrict || null,
+        role: dbRole,
+        roleId: orgRole?.id || null,
+        accountStatus: useInvitation ? "PENDING_ACTIVATION" : accountStatus,
+        isVerified: !useInvitation,
+        assignedDistrict: assignedDistrict || null,
       },
       select: {
         id: true,
         organizationId: true,
         email: true,
         role: true,
+        roleId: true,
+        roleRelation: { select: { id: true, name: true } },
         accountStatus: true,
         isVerified: true,
         assignedDistrict: true,
         createdAt: true,
       },
     });
+
+    let invitationSent = false;
+    if (useInvitation && req.user?.id) {
+      try {
+        const { activationUrl } = await createInvitation({
+          userId: user.id,
+          email: normalizedEmail,
+          createdById: req.user.id,
+          purpose: "ADMIN_USER_ACTIVATION",
+        });
+        await dispatchNotification({
+          recipientId: user.id,
+          templateName: "ORG_USER_INVITED",
+          variables: {
+            fullName: normalizedEmail,
+            roleName: orgRole?.name || dbRole || "User",
+            expiresInHours: process.env.INVITATION_TTL_HOURS || "72",
+          },
+          actionButtonUrl: activationUrl,
+        }).catch((notifyError) => console.error("Invitation notification failed:", notifyError));
+        invitationSent = true;
+      } catch (invError) {
+        if (invError instanceof InvitationError) {
+          return res.status(invError.status).json({ error: invError.message });
+        }
+        throw invError;
+      }
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -127,13 +178,15 @@ export const createAdminUser = async (req: AuthenticatedRequest, res: Response, 
         details: {
           email: user.email,
           role: user.role,
+          dynamicRole: orgRole?.name || null,
           assignedDistrict: user.assignedDistrict,
           accountStatus: user.accountStatus,
+          invitationSent,
         },
       },
     });
 
-    return res.status(201).json(user);
+    return res.status(201).json({ ...user, invitationSent });
   } catch (error) {
     next(error);
   }
@@ -155,14 +208,16 @@ export const updateUserRole = async (req: AuthenticatedRequest, res: Response, n
       return res.status(403).json({ error: "Portal Admin cannot modify Super Admin access" });
     }
 
+    const roleProvided = Object.prototype.hasOwnProperty.call(req.body, "role");
     const dbRole = ["SUPER_ADMIN", "CORPORATE_USER", "GOVERNMENT_OFFICER"].includes(role) ? (role as any) : null;
     const orgRole = (!dbRole && role) ? (await prisma.organizationRole.findFirst({ where: { name: role } })) : null;
 
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data: {
-        role: dbRole,
-        roleId: orgRole?.id || null,
+        // Only touch role fields when the caller explicitly sent a role value —
+        // otherwise a status-only or district-only PATCH would wipe the role.
+        ...(roleProvided ? { role: dbRole, roleId: orgRole?.id || null } : {}),
         assignedDistrict: assignedDistrict ?? existingUser.assignedDistrict,
         accountStatus: accountStatus ?? existingUser.accountStatus,
       }
@@ -186,7 +241,72 @@ export const updateUserRole = async (req: AuthenticatedRequest, res: Response, n
       }
     });
 
-    return res.json({ id: user.id, email: user.email, role: user.role, assignedDistrict: user.assignedDistrict, accountStatus: user.accountStatus });
+    return res.json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      roleId: user.roleId,
+      roleRelation: orgRole ? { id: orgRole.id, name: orgRole.name } : null,
+      assignedDistrict: user.assignedDistrict,
+      accountStatus: user.accountStatus
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const existingUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!existingUser) return res.status(404).json({ error: "User not found" });
+    if (existingUser.id === req.user?.id) {
+      return res.status(400).json({ error: "You cannot delete your own account" });
+    }
+    if (req.user?.role === Role.PORTAL_ADMIN && isTopLevelAdminRole(existingUser.role as any)) {
+      return res.status(403).json({ error: "Portal Admin cannot delete Super Admin users" });
+    }
+    if ((existingUser as any).isSystemSeeded) {
+      return res.status(403).json({ error: "System-seeded accounts cannot be deleted" });
+    }
+
+    try {
+      await prisma.user.delete({ where: { id: req.params.id } });
+    } catch (deleteError: any) {
+      // FK restrictions (audit history, assignments, etc.) — soft-disable instead.
+      if (deleteError?.code === "P2003") {
+        await prisma.user.update({
+          where: { id: req.params.id },
+          data: { accountStatus: "SUSPENDED", isVerified: false, refreshToken: null }
+        });
+        await prisma.auditLog.create({
+          data: {
+            userId: req.user?.id,
+            actorUserId: req.user?.id,
+            actorRole: req.user?.role,
+            action: "ADMIN_USER_SOFT_DELETED",
+            entityType: "USER",
+            entityId: req.params.id,
+            details: { email: existingUser.email, reason: "User has linked records; account suspended instead of hard delete" }
+          }
+        });
+        return res.json({ id: req.params.id, deleted: false, suspended: true, message: "User has linked records and was suspended instead of deleted." });
+      }
+      throw deleteError;
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        userId: req.user?.id,
+        actorUserId: req.user?.id,
+        actorRole: req.user?.role,
+        action: "ADMIN_USER_DELETED",
+        entityType: "USER",
+        entityId: req.params.id,
+        details: { email: existingUser.email, role: existingUser.role }
+      }
+    });
+
+    return res.json({ id: req.params.id, deleted: true });
   } catch (error) {
     next(error);
   }

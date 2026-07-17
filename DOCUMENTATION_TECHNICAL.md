@@ -1,1506 +1,206 @@
-# MahaCSR Portal - Technical Documentation
+# MahaCSR Portal — Technical Documentation
 
-## Table of Contents
-1. [Architecture Overview](#1-architecture-overview)
-2. [Technology Stack](#2-technology-stack)
-3. [Database Schema](#3-database-schema)
-4. [API Structure](#4-api-structure)
-5. [Frontend Architecture](#5-frontend-architecture)
-6. [Authentication & Authorization](#6-authentication--authorization)
-7. [Workflow Engine](#7-workflow-engine)
-8. [Notification System](#8-notification-system)
-9. [External Integrations](#9-external-integrations)
-10. [Security Implementation](#10-security-implementation)
-11. [Deployment Guide](#11-deployment-guide)
-12. [Development Guidelines](#12-development-guidelines)
+**Repository baseline:** 17 July 2026. This document is an implementation inventory, not an API contract; controller code and the runtime route registry are authoritative.
 
----
+## 1. System at a glance
 
-## 1. Architecture Overview
-
-### 1.1 System Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER                                       │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐       │
-│  │   Web Portal        │  │   Mobile (Future)   │  │   Public Website    │       │
-│  │   (Next.js)         │  │   (React Native)    │  │   (Next.js)         │       │
-│  └──────────┬──────────┘  └──────────┬──────────┘  └──────────┬──────────┘       │
-│             │                        │                        │                │
-└─────────────┼────────────────────────┼────────────────────────┼────────────────┘
-              │                        │                        │
-              └────────────────────────┼────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              API GATEWAY                                        │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  Next.js API Routes / Express Server                                    │   │
-│  │  - Rate Limiting                                                        │   │
-│  │  - Request Validation                                                   │   │
-│  │  - Authentication Middleware                                            │   │
-│  │  - CORS Configuration                                                   │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           APPLICATION LAYER                                   │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌──────────────────────────────────────────────────────────────────────────┐  │
-│  │  Business Logic Layer                                                      │  │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │  │
-│  │  │ Auth Service│ │Project Svc  │ │Payment Svc  │ │Workflow Svc │         │  │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘         │  │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐         │  │
-│  │  │Grievance Svc│ │Report Svc   │ │Notification │ │Upload Svc   │         │  │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘         │  │
-│  └──────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           DATA LAYER                                            │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐  │
-│  │   PostgreSQL          │  │   Redis             │  │   Cloudinary        │  │
-│  │   (Primary DB)        │  │   (Cache/Queue)     │  │   (File Storage)    │  │
-│  └─────────────────────┘  └─────────────────────┘  └─────────────────────┘  │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-                                       │
-                                       ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      EXTERNAL INTEGRATIONS                                      │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐     │
-│  │   API Setu          │  │   Razorpay          │  │   Nodemailer        │     │
-│  │   (Verification)    │  │   (Payments)        │  │   (Email)           │     │
-│  └─────────────────────┘  └─────────────────────┘  └─────────────────────┘     │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
+```text
+Next.js 14 frontend (App Router)
+  ├─ React Query + Zustand + Tailwind/custom government UI
+  ├─ REST calls and Socket.IO notification client
+  └─ 190 route pages / 61 TSX components
+             │
+Express 4 API + Socket.IO
+  ├─ middleware: CORS, Helmet, JSON body parsing, cookies, rate limiting,
+  │             auth, tenant/feature/permission checks and error handling
+  ├─ 47 route modules, 45 controllers, 20 service modules
+  └─ API Setu verification, Cloudinary upload, Redis/BullMQ, mail/SMS helpers
+             │
+PostgreSQL via Prisma 5
+  └─ 89 models, 40 enums, 6 migration directories
 ```
 
-### 1.2 Component Architecture
+The active backend is `backend/src/app.ts`; the server listens on port 5000 unless `PORT` is set and exports the Express app for Vercel. The frontend is an independent Next.js application in `frontend/`. Both deploy folders contain `vercel.json`.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                         FRONTEND ARCHITECTURE                                   │
-├─────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │  PRESENTATION LAYER                                                      │ │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐        │ │
-│  │  │   Pages     │ │Components   │ │   Layouts   │ │   Modals    │        │ │
-│  │  │   (Routes)  │ │   (UI)      │ │             │ │             │        │ │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘        │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │  STATE MANAGEMENT                                                        │ │
-│  │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐           │ │
-│  │  │   Zustand       │ │   React Query   │ │   Context API   │           │ │
-│  │  │   (Auth Store)  │ │   (Server State)│ │   (Local State) │           │ │
-│  │  └─────────────────┘ └─────────────────┘ └─────────────────┘           │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                 │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │  UTILITY LAYER                                                           │ │
-│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐        │ │
-│  │  │    Hooks    │ │   Utils     │ │    Lib      │ │   Types     │        │ │
-│  │  │             │ │             │ │             │ │             │        │ │
-│  │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘        │ │
-│  └─────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                 │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 2. Technology Stack
-
-### 2.1 Frontend Stack
-
-| Category | Technology | Version | Purpose |
-|----------|-----------|---------|---------|
-| **Framework** | Next.js | 14.x | React framework with SSR/SSG |
-| **Language** | TypeScript | 5.x | Type-safe development |
-| **Styling** | Tailwind CSS | 3.x | Utility-first CSS |
-| **UI Components** | Custom + Radix | - | Accessible component primitives |
-| **State Management** | Zustand | 4.x | Global state |
-| **Server State** | TanStack Query | 5.x | Data fetching & caching |
-| **Animation** | Framer Motion | 11.x | Smooth animations |
-| **Icons** | Lucide React | - | Icon library |
-| **Forms** | React Hook Form | 7.x | Form management |
-| **Validation** | Zod | 3.x | Schema validation |
-| **Charts** | Recharts | 2.x | Data visualization |
-| **Maps** | Three.js + Leaflet | - | GIS/Map functionality |
-
-### 2.2 Backend Stack
-
-| Category | Technology | Version | Purpose |
-|----------|-----------|---------|---------|
-| **Runtime** | Node.js | 20.x | JavaScript runtime |
-| **Framework** | Express.js | 4.x | Web framework |
-| **Database** | PostgreSQL | 15.x | Primary database |
-| **ORM** | Prisma | 5.x | Database ORM |
-| **Cache** | Redis | 7.x | Caching & sessions |
-| **Queue** | BullMQ | - | Background jobs |
-| **Auth** | JWT + bcrypt | - | Authentication |
-| **Email** | Nodemailer | - | Email service |
-| **SMS** | SMS Gateway | - | SMS notifications |
-| **WebSocket** | Socket.io | - | Real-time updates |
-
-### 2.3 Infrastructure
-
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| **Cloud** | AWS/Azure | Cloud hosting |
-| **CDN** | Cloudflare | Content delivery |
-| **File Storage** | Cloudinary | Image/document storage |
-| **Monitoring** | - | Application monitoring |
-| **CI/CD** | GitHub Actions | Deployment pipeline |
-| **Container** | Docker | Containerization |
-
----
-
-## 3. Database Schema
-
-### 3.1 Core Entities
-
-#### User Model
-```prisma
-model User {
-  id                   String                    @id @default(uuid())
-  organizationId       String?
-  email                String                    @unique
-  passwordHash         String
-  role                 Role?
-  accountStatus        UserAccountStatus         @default(ACTIVE)
-  isVerified           Boolean                   @default(false)
-  refreshToken         String?
-  createdAt            DateTime                  @default(now())
-  updatedAt            DateTime                  @updatedAt
-  ngoId                String?
-  companyId            String?
-  assignedDistrict     String?
-  
-  // Relations
-  auditLogs            AuditLog[]
-  notifications        Notification[]
-  
-  // Convergence Framework Relations
-  rmEnquiries              CorporateEnquiry[]
-  rmAssessments            FeasibilityAssessment[]
-  jsAssessments            FeasibilityAssessment[]
-  nodalOfficerAppointments NodalOfficerAppointment[]
-  nodalOfficerProjects     ConvergenceProject[]
-  iaProjects               ConvergenceProject[]
-  grievancesRaised         Grievance[]
-}
-```
-
-#### Corporate Enquiry Model
-```prisma
-model CorporateEnquiry {
-  id         String  @id @default(uuid())
-  trackingId String  @unique // CSR-MH-YYYY-000001 format
-
-  // Company Details
-  companyName        String
-  sector             String
-  preferredDistricts String[]
-  indicativeBudget   Decimal? @db.Decimal(15, 2)
-
-  // Contact Details
-  contactPersonName        String
-  contactPersonDesignation String?
-  mobile                   String
-  email                    String
-
-  // MCA21 Details
-  mca21Cin String
-
-  // CSR Proposal
-  proposedCsrWork String @db.VarChar(2000)
-
-  // Assignment & Status
-  assignedRelationshipManagerId String?
-  status                        CorporateEnquiryStatus @default(SUBMITTED)
-
-  // Timeline
-  submittedAt            DateTime  @default(now())
-  firstResponseDueAt     DateTime?
-  firstContactedAt       DateTime?
-
-  // Relations
-  interactions            CorporateEnquiryInteraction[]
-  feasibilityAssessment   FeasibilityAssessment?
-  nodalOfficerAppointment NodalOfficerAppointment?
-  standardMou             StandardMou?
-  convergenceProject      ConvergenceProject?
-}
-```
-
-#### Convergence Project Model
-```prisma
-model ConvergenceProject {
-  id        String  @id @default(uuid())
-  projectId String  @unique // PRJ-MH-YYYY-000001 format
-
-  // References
-  corporateEnquiryId String?
-  governmentPitchId  String?
-  mouId              String  @unique
-
-  // Project Details
-  title         String
-  district      String
-  taluka        String
-  location      String
-  sector        String
-  corporateName String
-
-  // Personnel
-  nodalOfficerUserId       String
-  implementingAgencyUserId String?
-  corporateUserId          String?
-
-  // Progress
-  approvedBudget           Decimal @db.Decimal(15, 2)
-  utilizedAmount           Decimal @default(0) @db.Decimal(15, 2)
-  physicalProgressPercent  Int     @default(0)
-  financialProgressPercent Int     @default(0)
-
-  // Status
-  status String @default("MOU_PENDING")
-
-  // Relations
-  milestones              ProjectDeliverableMilestone[]
-  utilizationCertificates UtilizationCertificate[]
-  grievances              Grievance[]
-  inspections             ConvergenceProjectInspection[]
-}
-```
-
-### 3.2 Complete Entity Relationship Diagram
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                          ENTITY RELATIONSHIP DIAGRAM                             │
-├──────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                  │
-│  ┌──────────────┐         ┌─────────────────────┐         ┌──────────────┐      │
-│  │    User      │────────▶│  CorporateEnquiry   │◀────────│   Company    │      │
-│  └──────────────┘         └──────────┬──────────┘         └──────────────┘      │
-│          │                            │                                          │
-│          │                    ┌───────┴────────┐                                 │
-│          │                    │                │                                 │
-│          │                    ▼                ▼                                 │
-│          │         ┌──────────────────┐ ┌──────────────────┐                   │
-│          │         │FeasibilityAssessment│NodalOfficerAppointment│              │
-│          │         └─────────┬──────────┘ └─────────┬──────────┘                   │
-│          │                   │                    │                              │
-│          │                   └──────────┬─────────┘                              │
-│          │                              ▼                                        │
-│          │                    ┌──────────────────┐                              │
-│          │                    │   StandardMou    │                              │
-│          │                    └─────────┬──────────┘                            │
-│          │                              │                                        │
-│          │                              ▼                                        │
-│          │                    ┌──────────────────┐                              │
-│          └──────────────────▶│ ConvergenceProject│◀────────────────────────────│
-│                              └──────────┬──────────┘                            │
-│                                         │                                       │
-│            ┌────────────────────────────┼────────────────────────────┐           │
-│            │                            │                            │           │
-│            ▼                            ▼                            ▼           │
-│  ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐      │
-│  │ProjectDeliverable│      │UtilizationCertificate│  │   Grievance      │      │
-│  │   Milestone      │      │                    │      │                  │      │
-│  └──────────────────┘      └──────────────────┘      └──────────────────┘      │
-│                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3.3 Key Indexes
-
-| Table | Index | Purpose |
-|-------|-------|---------|
-| User | email | Login lookup |
-| User | organizationId | Organization queries |
-| CorporateEnquiry | trackingId | Public tracking |
-| CorporateEnquiry | status | Status filtering |
-| ConvergenceProject | projectId | Project lookup |
-| ConvergenceProject | status | Dashboard queries |
-| Grievance | grievanceId | Public tracking |
-| Grievance | status | Queue management |
-
----
-
-## 4. API Structure
-
-### 4.1 API Routes Overview
-
-```
-/api
-├── /auth                      # Authentication
-│   ├── POST /login
-│   ├── POST /register
-│   ├── POST /refresh
-│   ├── POST /logout
-│   ├── GET  /me
-│   ├── GET  /permissions
-│   └── POST /verify-otp
-│
-├── /companies                 # Company management
-│   ├── GET    /
-│   ├── POST   /
-│   ├── GET    /:id
-│   ├── PUT    /:id
-│   └── GET    /:id/projects
-│
-├── /corporate-enquiries       # Convergence framework
-│   ├── GET    /
-│   ├── POST   /
-│   ├── GET    /:id
-│   ├── PUT    /:id
-│   ├── POST   /:id/assign-rm
-│   └── POST   /:id/assess
-│
-├── /rm                        # Relationship Manager
-│   ├── GET    /dashboard
-│   ├── GET    /enquiries
-│   ├── POST   /enquiries/:id/contact
-│   └── GET    /assessments
-│
-├── /js                        # Joint Secretary
-│   ├── GET    /dashboard
-│   ├── GET    /pending-approvals
-│   ├── POST   /approve-assessment
-│   └── POST   /reject-assessment
-│
-├── /nodal                     # Nodal Officer
-│   ├── GET    /dashboard
-│   ├── GET    /assigned-projects
-│   ├── POST   /verify-milestone
-│   └── POST   /verify-uc
-│
-├── /grievances                # Grievance management
-│   ├── GET    /
-│   ├── POST   /
-│   ├── GET    /:id
-│   ├── POST   /:id/respond
-│   └── POST   /:id/escalate
-│
-├── /analytics                 # Dashboard data
-│   ├── GET    /dashboard
-│   ├── GET    /stats
-│   └── GET    /reports
-│
-└── /upload                    # File uploads
-    ├── POST   /document
-    └── POST   /image
-```
-
-### 4.2 API Response Format
-
-```typescript
-// Standard Success Response
-interface ApiResponse<T> {
-  success: true;
-  data: T;
-  message?: string;
-  meta?: {
-    page: number;
-    pageSize: number;
-    total: number;
-  };
-}
-
-// Standard Error Response
-interface ApiError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, string[]>;
-  };
-}
-
-// Example Success
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "trackingId": "CSR-MH-2026-000001",
-    "status": "SUBMITTED"
-  },
-  "message": "Enquiry created successfully"
-}
-
-// Example Error
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input data",
-    "details": {
-      "email": ["Email is required"],
-      "mobile": ["Mobile must be 10 digits"]
-    }
-  }
-}
-```
-
-### 4.3 Authentication Middleware
-
-```typescript
-// middleware/auth.ts
-import { NextApiRequest, NextApiResponse } from 'next';
-import jwt from 'jsonwebtoken';
-
-export function authenticateToken(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  next: () => void
-) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      error: { code: 'UNAUTHORIZED', message: 'Access token required' }
-    });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(403).json({
-      success: false,
-      error: { code: 'FORBIDDEN', message: 'Invalid token' }
-    });
-  }
-}
-```
-
----
-
-## 5. Frontend Architecture
-
-### 5.1 Project Structure
-
-```
-frontend/
-├── src/
-│   ├── app/                          # Next.js App Router
-│   │   ├── (public)/                 # Public routes
-│   │   │   ├── page.tsx              # Landing page
-│   │   │   ├── marketplace/
-│   │   │   ├── tracking/
-│   │   │   └── helpdesk/
-│   │   ├── admin/                    # Admin portal
-│   │   ├── rm/                       # Relationship Manager
-│   │   ├── js/                       # Joint Secretary
-│   │   ├── nodal/                    # Nodal Officer
-│   │   ├── district/                 # District portal
-│   │   ├── partner/                  # Corporate Partner
-│   │   └── api/                      # API routes
-│   │
-│   ├── components/
-│   │   ├── ui/                       # Base UI components
-│   │   │   ├── Button.tsx
-│   │   │   ├── Card.tsx
-│   │   │   ├── Input.tsx
-│   │   │   ├── DataTable.tsx
-│   │   │   └── ...
-│   │   ├── layout/                   # Layout components
-│   │   │   ├── DashboardLayout.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── Header.tsx
-│   │   │   └── PageHeader.tsx
-│   │   ├── motion/                   # Animation components
-│   │   │   ├── AnimatedPage.tsx
-│   │   │   ├── AnimatedCard.tsx
-│   │   │   └── variants.ts
-│   │   └── gov/                      # Government components
-│   │
-│   ├── hooks/                        # Custom hooks
-│   │   ├── usePermission.ts
-│   │   ├── useAuth.ts
-│   │   └── useNotification.ts
-│   │
-│   ├── lib/                          # Utilities
-│   │   ├── api.ts                    # API client
-│   │   ├── utils.ts                  # Utilities
-│   │   ├── roleAccess.ts             # Permission constants
-│   │   └── constants.ts              # App constants
-│   │
-│   ├── store/                        # Zustand stores
-│   │   ├── authStore.ts
-│   │   └── notificationStore.ts
-│   │
-│   ├── types/                        # TypeScript types
-│   │   ├── api.ts
-│   │   ├── models.ts
-│   │   └── index.ts
-│   │
-│   └── styles/                       # Global styles
-│       ├── globals.css
-│       └── animations.css
-│
-├── public/                           # Static assets
-├── prisma/                           # Database schema
-├── tests/                            # Test files
-└── package.json
-```
-
-### 5.2 State Management
-
-#### Auth Store (Zustand)
-```typescript
-// store/authStore.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  permissions: string[];
-  roles: string[];
-  
-  // Actions
-  login: (user: User, tokens: Tokens) => void;
-  logout: () => void;
-  setPermissions: (permissions: string[]) => void;
-  refreshPermissions: () => Promise<void>;
-  
-  // Permission checks
-  hasPermission: (permission: string) => boolean;
-  hasAnyPermission: (permissions: string[]) => boolean;
-  hasAllPermissions: (permissions: string[]) => boolean;
-  hasRole: (role: string) => boolean;
-}
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      permissions: [],
-      roles: [],
-      
-      login: (user, tokens) => {
-        set({ user, isAuthenticated: true });
-        localStorage.setItem('accessToken', tokens.accessToken);
-        localStorage.setItem('refreshToken', tokens.refreshToken);
-      },
-      
-      logout: () => {
-        set({ user: null, isAuthenticated: false, permissions: [], roles: [] });
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      },
-      
-      hasPermission: (permission) => {
-        const { permissions, user } = get();
-        return user?.role === 'SUPER_ADMIN' || permissions.includes(permission);
-      },
-      
-      hasAnyPermission: (permissions) => {
-        return permissions.some((p) => get().hasPermission(p));
-      },
-      
-      hasAllPermissions: (permissions) => {
-        return permissions.every((p) => get().hasPermission(p));
-      },
-      
-      hasRole: (role) => {
-        return get().roles.includes(role);
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-        permissions: state.permissions,
-        roles: state.roles,
-      }),
-    }
-  )
-);
-```
-
-### 5.3 API Client
-
-```typescript
-// lib/api.ts
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
-
-interface RequestConfig extends RequestInit {
-  params?: Record<string, string>;
-}
-
-async function apiClient<T>(
-  endpoint: string,
-  config: RequestConfig = {}
-): Promise<ApiResponse<T>> {
-  const { params, ...requestConfig } = config;
-  
-  // Build URL with query params
-  const url = new URL(`${API_BASE_URL}${endpoint}`, window.location.origin);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, value);
-    });
-  }
-  
-  // Add auth header
-  const token = localStorage.getItem('accessToken');
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...requestConfig.headers,
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  const response = await fetch(url.toString(), {
-    ...requestConfig,
-    headers,
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.error?.message || 'Request failed');
-  }
-  
-  return data;
-}
-
-// API methods
-export const api = {
-  get: <T>(endpoint: string, config?: RequestConfig) =>
-    apiClient<T>(endpoint, { ...config, method: 'GET' }),
-    
-  post: <T>(endpoint: string, body: unknown, config?: RequestConfig) =>
-    apiClient<T>(endpoint, {
-      ...config,
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
-    
-  put: <T>(endpoint: string, body: unknown, config?: RequestConfig) =>
-    apiClient<T>(endpoint, {
-      ...config,
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }),
-    
-  delete: <T>(endpoint: string, config?: RequestConfig) =>
-    apiClient<T>(endpoint, { ...config, method: 'DELETE' }),
-};
-```
-
----
-
-## 6. Authentication & Authorization
-
-### 6.1 JWT Authentication Flow
-
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         AUTHENTICATION FLOW                                   │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                               │
-│  ┌─────────────┐                                                              │
-│  │    User     │                                                              │
-│  │   Login     │────────┐                                                     │
-│  │  Request    │        │                                                     │
-│  └─────────────┘        ▼                                                     │
-│                  ┌──────────────────┐                                        │
-│                  │  POST /api/auth/  │                                        │
-│                  │     login         │                                        │
-│                  └────────┬─────────┘                                        │
-│                           │                                                   │
-│                           ▼                                                   │
-│                  ┌──────────────────┐                                        │
-│                  │ Validate         │                                        │
-│                  │ Credentials      │                                        │
-│                  └────────┬─────────┘                                        │
-│                           │                                                   │
-│                           ▼                                                   │
-│                  ┌──────────────────┐                                        │
-│                  │ Generate Tokens  │                                        │
-│                  │ - Access Token   │                                        │
-│                  │ - Refresh Token  │                                        │
-│                  └────────┬─────────┘                                        │
-│                           │                                                   │
-│                           ▼                                                   │
-│                  ┌──────────────────┐                                        │
-│                  │ Store Refresh    │                                        │
-│                  │ Token in DB      │                                        │
-│                  └────────┬─────────┘                                        │
-│                           │                                                   │
-│                           ▼                                                   │
-│  ┌─────────────┐  ┌──────────────────┐                                        │
-│  │   Store     │◀─│ Return Tokens    │                                        │
-│  │   Tokens    │  │ + User Data      │                                        │
-│  │   (local)   │  └──────────────────┘                                        │
-│  └─────────────┘                                                              │
-│                                                                               │
-└──────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 6.2 Permission System
-
-```typescript
-// lib/roleAccess.ts
-export const PERMISSIONS = {
-  // Corporate Enquiry
-  CORPORATE_ENQUIRY: {
-    CREATE: 'corporate-enquiry:create',
-    VIEW: 'corporate-enquiry:view',
-    UPDATE: 'corporate-enquiry:update',
-    DELETE: 'corporate-enquiry:delete',
-    ASSIGN: 'corporate-enquiry:assign',
-    ASSESS: 'corporate-enquiry:assess',
-    APPROVE: 'corporate-enquiry:approve',
-  },
-  
-  // Government Pitch
-  GOVERNMENT_PITCH: {
-    CREATE: 'government-pitch:create',
-    VIEW: 'government-pitch:view',
-    UPDATE: 'government-pitch:update',
-    VERIFY: 'government-pitch:verify',
-    APPROVE: 'government-pitch:approve',
-    PUBLISH: 'government-pitch:publish',
-  },
-  
-  // Convergence Project
-  CONVERGENCE_PROJECT: {
-    CREATE: 'convergence-project:create',
-    VIEW: 'convergence-project:view',
-    UPDATE: 'convergence-project:update',
-    MANAGE: 'convergence-project:manage',
-  },
-  
-  // Grievance
-  GRIEVANCE: {
-    CREATE: 'grievance:create',
-    VIEW: 'grievance:view',
-    RESPOND: 'grievance:respond',
-    ESCALATE: 'grievance:escalate',
-    CLOSE: 'grievance:close',
-  },
-  
-  // Admin
-  ADMIN: {
-    MANAGE_USERS: 'admin:manage-users',
-    MANAGE_ROLES: 'admin:manage-roles',
-    MANAGE_SETTINGS: 'admin:manage-settings',
-    VIEW_AUDIT_LOGS: 'admin:view-audit-logs',
-  },
-} as const;
-
-// Role-based access mapping
-export const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  SUPER_ADMIN: Object.values(PERMISSIONS).flatMap(Object.values),
-  
-  CORPORATE_USER: [
-    PERMISSIONS.CORPORATE_ENQUIRY.CREATE,
-    PERMISSIONS.CORPORATE_ENQUIRY.VIEW,
-    PERMISSIONS.CONVERGENCE_PROJECT.VIEW,
-  ],
-  
-  RELATIONSHIP_MANAGER: [
-    PERMISSIONS.CORPORATE_ENQUIRY.VIEW,
-    PERMISSIONS.CORPORATE_ENQUIRY.ASSESS,
-    PERMISSIONS.GOVERNMENT_PITCH.VIEW,
-    PERMISSIONS.GOVERNMENT_PITCH.VERIFY,
-  ],
-  
-  JOINT_SECRETARY: [
-    PERMISSIONS.CORPORATE_ENQUIRY.VIEW,
-    PERMISSIONS.CORPORATE_ENQUIRY.APPROVE,
-    PERMISSIONS.GOVERNMENT_PITCH.VIEW,
-    PERMISSIONS.GOVERNMENT_PITCH.APPROVE,
-    PERMISSIONS.CONVERGENCE_PROJECT.CREATE,
-  ],
-  
-  NODAL_OFFICER: [
-    PERMISSIONS.CONVERGENCE_PROJECT.VIEW,
-    PERMISSIONS.CONVERGENCE_PROJECT.MANAGE,
-    PERMISSIONS.GRIEVANCE.VIEW,
-    PERMISSIONS.GRIEVANCE.RESPOND,
-  ],
-  
-  GOVERNMENT_OFFICER: [
-    PERMISSIONS.GOVERNMENT_PITCH.CREATE,
-    PERMISSIONS.GOVERNMENT_PITCH.VIEW,
-    PERMISSIONS.GOVERNMENT_PITCH.UPDATE,
-  ],
-};
-```
-
----
-
-## 7. Workflow Engine
-
-### 7.1 Workflow Architecture
-
-```typescript
-// Workflow Definition
-interface WorkflowDefinition {
-  id: string;
-  name: string;
-  description: string;
-  isActive: boolean;
-  stages: WorkflowStage[];
-}
-
-interface WorkflowStage {
-  id: string;
-  name: string;
-  displayOrder: number;
-  slaHours: number;
-  rules: WorkflowRule[];
-  transitions: WorkflowTransition[];
-}
-
-interface WorkflowTransition {
-  id: string;
-  fromStageId: string;
-  toStageId: string;
-  requiredPermission: string;
-  conditions: WorkflowCondition[];
-}
-
-interface WorkflowInstance {
-  id: string;
-  definitionId: string;
-  currentStageId: string;
-  entityId: string;
-  entityType: string;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-### 7.2 SLA Escalation
-
-```typescript
-// SLA Management
-interface SLAEscalation {
-  id: string;
-  entityType: string;      // CORPORATE_ENQUIRY, GOVERNMENT_PITCH, GRIEVANCE
-  entityId: string;
-  stage: SLAStage;         // RM_RESPONSE, JS_DECISION, etc.
-  responsibleUserId: string;
-  dueAt: Date;
-  escalatedToUserId?: string;
-  escalatedAt?: Date;
-  isResolved: boolean;
-  resolvedAt?: Date;
-}
-
-enum SLAStage {
-  RM_RESPONSE = 'RM_RESPONSE',
-  JS_DECISION = 'JS_DECISION',
-  SECRETARY_ESCALATION = 'SECRETARY_ESCALATION',
-  GRIEVANCE_LEVEL_1 = 'GRIEVANCE_LEVEL_1',
-  GRIEVANCE_LEVEL_2 = 'GRIEVANCE_LEVEL_2',
-}
-
-// SLA Configuration
-const SLA_CONFIG = {
-  [SLAStage.RM_RESPONSE]: { hours: 120, escalationLevel: 1 },      // 5 days
-  [SLAStage.JS_DECISION]: { hours: 72, escalationLevel: 2 },          // 3 days
-  [SLAStage.SECRETARY_ESCALATION]: { hours: 48, escalationLevel: 3 }, // 2 days
-  [SLAStage.GRIEVANCE_LEVEL_1]: { hours: 360, escalationLevel: 1 },  // 15 days
-  [SLAStage.GRIEVANCE_LEVEL_2]: { hours: 360, escalationLevel: 2 },   // 15 days
-};
-```
-
----
-
-## 8. Notification System
-
-### 8.1 Notification Architecture
-
-```typescript
-// Notification System
-interface NotificationTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  emailBody: string;
-  smsBody: string;
-  channels: NotificationChannel[];
-}
-
-type NotificationChannel = 'EMAIL' | 'SMS' | 'IN_APP' | 'PUSH';
-
-interface NotificationLog {
-  id: string;
-  recipientId: string;
-  recipientEmail?: string;
-  recipientPhone?: string;
-  title: string;
-  message: string;
-  channel: NotificationChannel;
-  status: 'PENDING' | 'SENT' | 'FAILED' | 'DELIVERED';
-  retryCount: number;
-  sentAt?: Date;
-  correlationId: string;
-}
-
-// Notification Queue
-interface NotificationJob {
-  userId: string;
-  template: string;
-  data: Record<string, unknown>;
-  priority: 'HIGH' | 'NORMAL' | 'LOW';
-}
-```
-
-### 8.2 Event-Driven Notifications
-
-```typescript
-// Notification Events
-enum NotificationEvent {
-  // Corporate Enquiry Events
-  ENQUIRY_SUBMITTED = 'enquiry.submitted',
-  ENQUIRY_ASSIGNED = 'enquiry.assigned',
-  ENQUIRY_ASSESSMENT_SUBMITTED = 'enquiry.assessment_submitted',
-  ENQUIRY_APPROVED = 'enquiry.approved',
-  ENQUIRY_REJECTED = 'enquiry.rejected',
-  
-  // Government Pitch Events
-  PITCH_SUBMITTED = 'pitch.submitted',
-  PITCH_VERIFIED = 'pitch.verified',
-  PITCH_APPROVED = 'pitch.approved',
-  PITCH_PUBLISHED = 'pitch.published',
-  
-  // Project Events
-  PROJECT_CREATED = 'project.created',
-  MILESTONE_COMPLETED = 'milestone.completed',
-  UC_VERIFIED = 'uc.verified',
-  
-  // Grievance Events
-  GRIEVANCE_RAISED = 'grievance.raised',
-  GRIEVANCE_RESPONDED = 'grievance.responded',
-  GRIEVANCE_ESCALATED = 'grievance.escalated',
-  GRIEVANCE_RESOLVED = 'grievance.resolved',
-}
-
-// Event Handlers
-const notificationHandlers: Record<NotificationEvent, NotificationHandler> = {
-  [NotificationEvent.ENQUIRY_SUBMITTED]: async (data) => {
-    // Send email to corporate
-    await sendEmail({
-      to: data.corporateEmail,
-      template: 'enquiry_submitted',
-      data: { trackingId: data.trackingId },
-    });
-    
-    // Send notification to RM pool
-    await notifyRMPool({
-      template: 'new_enquiry',
-      data: { enquiryId: data.enquiryId },
-    });
-  },
-  
-  [NotificationEvent.GRIEVANCE_RAISED]: async (data) => {
-    // Notify nodal officer
-    await sendNotification({
-      userId: data.nodalOfficerId,
-      template: 'grievance_assigned',
-      data: { grievanceId: data.grievanceId },
-    });
-    
-    // Set SLA
-    await createSLA({
-      entityType: 'GRIEVANCE',
-      entityId: data.grievanceId,
-      stage: SLAStage.GRIEVANCE_LEVEL_1,
-      dueAt: addDays(new Date(), 15),
-    });
-  },
-};
-```
-
----
-
-## 9. External Integrations
-
-### 9.1 API Setu Integration
-
-```typescript
-// API Setu Verification Service
-interface VerificationService {
-  verifyGST(gstin: string): Promise<GSTVerificationResult>;
-  verifyAadhaar(aadhaar: string, otp: string): Promise<AadhaarVerificationResult>;
-  verifyPAN(pan: string): Promise<PANVerificationResult>;
-  verifyCIN(cin: string): Promise<CINVerificationResult>;
-}
-
-// Verification Record
-interface VerificationRecord {
-  id: string;
-  entityType: 'COMPANY' | 'NGO' | 'USER';
-  entityId: string;
-  verificationType: 'GST' | 'AADHAAR' | 'PAN' | 'CIN';
-  status: 'IN_PROGRESS' | 'OTP_SENT' | 'SUCCESS' | 'FAILED';
-  maskedIdentifier: string;
-  transactionId?: string;
-  responseData?: Record<string, unknown>;
-  encryptedPayload?: string;
-  verifiedAt?: Date;
-}
-
-// API Setu Client
-class APISetuClient {
-  private baseUrl = 'https://api.api-setu.gov.in';
-  
-  async verifyGST(gstin: string): Promise<APIResponse> {
-    const response = await fetch(`${this.baseUrl}/gst/verify`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.API_SETU_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ gstin }),
-    });
-    
-    return response.json();
-  }
-}
-```
-
-### 9.2 Payment Gateway (Razorpay)
-
-```typescript
-// Payment Service
-interface PaymentOrder {
-  id: string;
-  orderNumber: string;
-  amount: Decimal;
-  currency: string;
-  status: PaymentStatus;
-  gatewayOrderId?: string;
-  gatewayPaymentId?: string;
-}
-
-enum PaymentStatus {
-  CREATED = 'CREATED',
-  PENDING = 'PENDING',
-  AUTHORIZED = 'AUTHORIZED',
-  CAPTURED = 'CAPTURED',
-  FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED',
-}
-
-// Razorpay Integration
-class PaymentService {
-  async createOrder(amount: number, purpose: string): Promise<PaymentOrder> {
-    const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID!,
-      key_secret: process.env.RAZORPAY_KEY_SECRET!,
-    });
-    
-    const order = await razorpay.orders.create({
-      amount: amount * 100, // Convert to paise
-      currency: 'INR',
-      receipt: generateReceipt(),
-    });
-    
-    return await prisma.paymentOrder.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        amount,
-        currency: 'INR',
-        purpose,
-        gatewayOrderId: order.id,
-        status: PaymentStatus.CREATED,
-      },
-    });
-  }
-  
-  async verifyPayment(orderId: string, paymentId: string, signature: string): Promise<boolean> {
-    const crypto = require('crypto');
-    
-    const body = orderId + '|' + paymentId;
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
-      .update(body)
-      .digest('hex');
-    
-    return expectedSignature === signature;
-  }
-}
-```
-
----
-
-## 10. Security Implementation
-
-### 10.1 Security Measures
+## 2. Stack
 
 | Layer | Implementation |
-|-------|---------------|
-| **Authentication** | JWT with refresh tokens, OTP verification |
-| **Authorization** | RBAC with granular permissions |
-| **Data Encryption** | AES-256-GCM for sensitive data |
-| **Password Security** | bcrypt with salt rounds 12 |
-| **Session Management** | Redis-based session store |
-| **Rate Limiting** | Express-rate-limit |
-| **CORS** | Whitelist-based CORS policy |
-| **Input Validation** | Zod schemas for all inputs |
-| **SQL Injection** | Prisma ORM (parameterized queries) |
-| **XSS Protection** | React's built-in escaping |
-| **CSRF Protection** | CSRF tokens for mutations |
-| **File Upload** | Type validation, size limits, virus scan |
+|---|---|
+| Frontend | Next.js 14.2, React 18, TypeScript, Tailwind 3, React Hook Form/Zod, TanStack Query, Zustand, Framer Motion, Recharts, Three, Socket.IO client. |
+| Backend | Node/TypeScript, Express 4, Prisma 5/PostgreSQL, Zod, bcryptjs, JWT, Socket.IO, Helmet, CORS, express-rate-limit, Multer, Cloudinary, Nodemailer, Redis and BullMQ. |
+| Verification | API Setu client for GST and Aadhaar OTP/eKYC; AES-256-GCM encrypted payload storage. |
+| Documentation/test support | Jest + ts-jest/supertest; verification integration/unit tests; OpenAPI YAML for the verification module. |
 
-### 10.2 Audit Logging
+Key commands:
 
-```typescript
-// Audit Log Schema
-interface AuditLog {
-  id: string;
-  userId?: string;
-  actorUserId?: string;
-  actorRole?: string;
-  action: string;           // CREATE, UPDATE, DELETE, VIEW
-  entityType: string;       // User, Project, Enquiry, etc.
-  entityId?: string;
-  details: Record<string, unknown>;
-  oldValueJson?: Record<string, unknown>;
-  newValueJson?: Record<string, unknown>;
-  ipAddress?: string;
-  userAgent?: string;
-  createdAt: Date;
-}
+```powershell
+cd backend; npm run dev
+cd frontend; npm run dev
 
-// Audit Logger
-class AuditLogger {
-  async log({
-    userId,
-    action,
-    entityType,
-    entityId,
-    details,
-    oldValue,
-    newValue,
-    req,
-  }: AuditLogParams): Promise<void> {
-    await prisma.auditLog.create({
-      data: {
-        userId,
-        action,
-        entityType,
-        entityId,
-        details,
-        oldValueJson: oldValue,
-        newValueJson: newValue,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-      },
-    });
-  }
-}
+cd backend; npm run typecheck; npm test; npm run build
+cd frontend; npm run typecheck; npm run build
 ```
 
----
+## 3. Runtime and request architecture
 
-## 11. Deployment Guide
+`app.ts` installs CORS, Helmet, 10 MB JSON parsing, cookie parsing and concise request logging. It then mounts REST routers and finishes with the error middleware. Socket.IO is attached to the same HTTP server for notification events. Chat socket support is only enabled when `ENABLE_LEGACY_NGO_MARKETPLACE` is enabled.
 
-### 11.1 Environment Setup
-
-```bash
-# Prerequisites
-- Node.js 20+
-- PostgreSQL 15+
-- Redis 7+
-- Docker (optional)
-
-# Installation
-1. Clone repository
-git clone https://github.com/mahacsr/portal.git
-cd portal
-
-2. Install dependencies
-npm install
-
-3. Setup environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-4. Setup database
-npx prisma migrate dev
-npx prisma generate
-
-5. Seed database (optional)
-npx prisma db seed
-
-6. Run development server
-npm run dev
+```text
+Browser → Next page/component → lib/api.ts / hooks → Express route
+        → auth + role/permission/tenant/feature middleware → controller
+        → service (where applicable) → Prisma transaction/query → PostgreSQL
+        → response + AuditLog/Notification/WebSocket side effect
 ```
 
-### 11.2 Environment Variables
+The current route registry mounts these prefixes:
 
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/mahacsr"
+| Concern | Active prefix(es) |
+|---|---|
+| Auth and identity | `/api/auth`, `/api/otp`, `/api/onboarding`, `/api/org`, `/api/roles`, `/api/platform` |
+| Core administration | `/api/admin`, `/api/companies`, `/api/government-departments`, `/api/audit-logs`, `/api/analytics` |
+| Documents and communication | `/api/upload`, `/api/documents`, `/api/reports`, `/api/notifications`, `/api/tracking`, `/api/public` |
+| Requirements/lifecycle | `/api/csr-dashboard`, `/api/csr-requirements`, `/api/company-interests`, plus project lifecycle routes mounted at `/api` |
+| Convergence | `/api/corporate-enquiries`, `/api/rm`, `/api/feasibility`, `/api/government-pitches`, `/api/nodal`, `/api/convergence-projects`, `/api/js`, `/api/implementing-agency`, `/api/secretary`, `/api/district`, `/api/assignments` |
+| Service management | `/api/grievances`, `/api/helpdesk` |
 
-# Redis
-REDIS_URL="redis://localhost:6379"
+`GET /health` returns an `ok` status and timestamp. The root endpoint returns a platform gateway message.
 
-# JWT
-JWT_SECRET="your-super-secret-jwt-key"
-JWT_REFRESH_SECRET="your-refresh-secret"
-JWT_EXPIRES_IN="15m"
-JWT_REFRESH_EXPIRES_IN="7d"
+## 4. Security and access control
 
-# API Setu
-API_SETU_KEY="your-api-setu-key"
-API_SETU_URL="https://api.api-setu.gov.in"
+### Authentication
 
-# Razorpay
-RAZORPAY_KEY_ID="rzp_test_xxx"
-RAZORPAY_KEY_SECRET="xxx"
+- Registration, login, OTP verification, refresh and logout are provided by `/api/auth`.
+- JWT bearer tokens are parsed by `authenticateToken`; `optionalAuthenticateToken` enables public-or-authenticated endpoints.
+- Authentication, OTP and strict rate limiters are applied in auth routes.
+- Cookies are parsed; refresh-token/session support is modelled through `Session` and user refresh fields.
 
-# Email
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASS="your-app-password"
+### Authorisation and tenancy
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME="your-cloud"
-CLOUDINARY_API_KEY="xxx"
-CLOUDINARY_API_SECRET="xxx"
+- Static `Role` enum has 23 roles (administrative, corporate, NGO, government and convergence roles).
+- The dynamic layer uses `OrganizationRole`, `Permission`, `OrganizationRolePermission` and `UserOrganizationRole`.
+- `checkPermission`, tenant resolution, active-tenant checks, feature-gate checks and explicit role middleware are applied by routes as applicable.
+- Tenant feature names include registration, requirement, marketplace, interest, NGO selection, fund disbursement, milestone monitoring, GIS, public transparency, report export, messaging, notification and document-verification controls.
 
-# App
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-PORT="3000"
+### Security implementation notes
+
+- Helmet and allow-listed CORS origins are applied globally. `FRONTEND_URL` and `ALLOWED_ORIGINS` extend the default origin list.
+- Sensitive auth paths are redacted in request logs.
+- API Setu data uses masked identifiers in normal fields and encrypted full payloads.
+- Audit records can include actor, action, entity, old/new JSON values, IP and user agent.
+- **Production risk:** environment helpers retain development fallbacks for JWT secrets and verification encryption. Set strong non-default `JWT_SECRET`, `JWT_REFRESH_SECRET`, `VERIFICATION_ENCRYPTION_KEY`, API Setu and database values before deployment.
+
+## 5. Prisma data model
+
+Datasource: PostgreSQL from `DATABASE_URL`; client: `prisma-client-js`.
+
+```text
+User ── Organization / Company / NGO
+ │       └─ roles, permissions, onboarding, documents, verification
+ │
+ ├─ CorporateEnquiry ─ FeasibilityAssessment ─ ConvergenceProject
+ ├─ GovernmentPitch ─ CorporatePitchInterest ─ ConvergenceProject
+ ├─ BeneficiaryProfile ─ CSRRequirement ─ Interest/Agreement/CSRProject
+ ├─ Notification / AuditLog / Session / VerificationRecord
+ └─ Assignment, invitation and dynamic workflow history
 ```
 
-### 11.3 Production Deployment
+### Model groups
 
-```yaml
-# docker-compose.yml
-version: '3.8'
+| Group | Models |
+|---|---|
+| Identity/RBAC | User, Organization, Permission, PermissionGroup, OrganizationRole, RoleHierarchy, OrganizationRolePermission, UserOrganizationRole, Session, PlatformSetting. |
+| Organisation/onboarding | NGO, Company, CSRCompanyProfile, GovernmentDepartmentProfile, OnboardingApplication, OnboardingStatusHistory, OnboardingQuery, QueryResponse, OnboardingReview, OrganizationDocument, NgoDocument, NgoContact, GovernanceMember, BankAccount. |
+| Verification/risk | VerificationRecord, VerificationCheck, RiskScore, RiskFlag, OtpVerification. |
+| Requirements/lifecycle | BeneficiaryProfile, CSRRequirement, CSRRequirementDocument, NGOApplication, CompanyInterest, Agreement, CSRProject, CSRFundMilestone, CSRFundRelease, AssetHandover, ProjectInspection, ImpactMetric, ProgressReport, CompletionReport, ImpactReport. |
+| Convergence | CorporateEnquiry, CorporateEnquiryInteraction, FeasibilityAssessment, FeasibilityChecklistItem, GovernmentPitch, GovernmentPitchPhoto, CorporatePitchInterest, NodalOfficerAppointment, StandardMou, ConvergenceProject, ProjectDeliverableMilestone, UtilizationCertificate, ConvergenceProjectInspection, Grievance, GrievanceActionLog, HelpdeskQuery, SLAEscalation. |
+| Payments/communications | PaymentOrder, PaymentTransaction, PaymentWebhookLog, FundRelease, Notification, NotificationTemplate, NotificationLog, AuditLog. |
+| Workflow/assignment | WorkflowDefinition, WorkflowStage, WorkflowTransition, WorkflowCondition, WorkflowAssignmentRule, WorkflowRule, WorkflowInstance, WorkflowHistory, ProjectAssignment, UserInvitation, UserOfficerProfile, DistrictNodalMapping. |
+| Legacy model | Project, Milestone, Chat, Message, Document, MatchScore, Report. |
 
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/mahacsr
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - db
-      - redis
+The schema also has 40 enums for status and policy states. Important status enums are `CorporateEnquiryStatus`, `GovernmentPitchStatus`, `CSRRequirementStatus`, `ProjectStatus`, `GrievanceStatus`, `SLAStage`, `OnboardingStatus`, `PaymentStatus`, `FundReleaseStatus` and verification/document states.
 
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=mahacsr
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+### Migration history
 
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
+Six migration directories are present: initial schema; inspection support; public OTP/framework routes; coordination fields; NGO invitations; and completion fields. Use Prisma migration commands rather than manually changing the database.
 
-volumes:
-  postgres_data:
-  redis_data:
-```
+## 6. Core workflows as code
 
----
+### Corporate enquiry
 
-## 12. Development Guidelines
+`corporateEnquiryController` validates entity details, OTP tokens for anonymous callers, duplicate active CIN records, generates the tracking ID and RM due date, writes `AuditLog`, and triggers a notification. RM interactions/assessment and subsequent JS/Nodal actions are exposed through the convergence routers and controllers.
 
-### 12.1 Code Standards
+### Government pitch and project delivery
 
-```typescript
-// Naming Conventions
-- Components: PascalCase (Button.tsx, DataTable.tsx)
-- Hooks: camelCase with 'use' prefix (usePermission.ts)
-- Utilities: camelCase (formatDate.ts, validateInput.ts)
-- Types: PascalCase with descriptive names (CorporateEnquiryStatus)
-- Constants: UPPER_SNAKE_CASE (MAX_UPLOAD_SIZE)
+`governmentPitchController` creates `GP-MH-YYYY-nnnnnn` records with location evidence, manages RM/JS verification and pitch interest, and invokes convergence onboarding. `convergenceProjectController` filters projects by caller role; calculates physical progress from completed milestones and financial progress from verified UCs.
 
-// File Structure
-- One component per file
-- Co-locate related files (component + test + styles)
-- Barrel exports for component folders
+### Configurable workflow engine
 
-// Code Style
-- Use TypeScript strict mode
-- Prefer explicit types over 'any'
-- Use functional components with hooks
-- Avoid class components
-```
+`workflowEngineService`:
 
-### 12.2 Component Patterns
+1. Finds an active `WorkflowDefinition` and initial `WorkflowStage`.
+2. Creates a `WorkflowInstance` and initial `WorkflowHistory` entry using a system user.
+3. Validates configured `WorkflowTransition`, required permission and condition operators (`EQUALS`, `GREATER_THAN`, `LESS_THAN`).
+4. Updates the instance and history atomically.
+5. Runs notification and round-robin assignment rules after commit; failures are intentionally non-fatal.
 
-```typescript
-// Composable Component Pattern
-// Card.tsx
-interface CardProps {
-  children: React.ReactNode;
-  className?: string;
-}
+### SLA scheduler
 
-export function Card({ children, className }: CardProps) {
-  return (
-    <div className={cn("bg-white border rounded-lg", className)}>
-      {children}
-    </div>
-  );
-}
+`startSlaScheduler` performs an hourly in-process sweep by default on non-Vercel hosts. `POST /api/admin/sla/run-escalations` is the operational path for serverless/external cron. The sweep is guarded against concurrent execution.
 
-export function CardHeader({ children, className }: CardProps) {
-  return <div className={cn("px-5 py-4 border-b", className)}>{children}</div>;
-}
+## 7. Frontend architecture
 
-export function CardContent({ children, className }: CardProps) {
-  return <div className={cn("px-5 py-4", className)}>{children}</div>;
-}
+The frontend uses the App Router (`frontend/src/app`). `layout.tsx`, `providers.tsx`, layouts and common UI components supply page structure. `lib/api.ts` is the primary API abstraction; React Query holds server state, and Zustand stores authentication, notification and chat client state. `usePermission`, `usePermissionNav` and `ProtectedComponent` support the newer permission UX.
 
-// Usage
-<Card>
-  <CardHeader>
-    <CardTitle>Title</CardTitle>
-  </CardHeader>
-  <CardContent>Content</CardContent>
-</Card>
-```
+Primary component domains:
 
-### 12.3 Testing Guidelines
+- `components/gov`: government-branded buttons, inputs, cards, tables, modal and status controls.
+- `components/layout`: headers, sidebars, dashboard/portal layouts and notification bell.
+- `components/onboarding`, `components/admin`, `components/assignments`, `components/verification`.
+- Map, analytics/chart, workflow, portal module and reusable UI components.
 
-```typescript
-// Component Test Example
-import { render, screen } from '@testing-library/react';
-import { Button } from './Button';
+The current source has both newer dynamic permission APIs and documented deprecated static role helpers. New UI work should use permissions and the backend remains the final enforcement point.
 
-describe('Button', () => {
-  it('renders correctly', () => {
-    render(<Button>Click me</Button>);
-    expect(screen.getByText('Click me')).toBeInTheDocument();
-  });
+## 8. Integrations and background behaviour
 
-  it('handles click events', () => {
-    const handleClick = jest.fn();
-    render(<Button onClick={handleClick}>Click me</Button>);
-    screen.getByText('Click me').click();
-    expect(handleClick).toHaveBeenCalled();
-  });
+| Integration | Code location / behaviour |
+|---|---|
+| API Setu | `modules/verification`; GST and Aadhaar routes/services/client; request correlation, masking, encryption, audit and OpenAPI file. |
+| Socket.IO | `websocket/notificationSocket.ts`; notifications persist first, then emit to connected user. |
+| Redis/BullMQ | `utils/redis.ts`, worker/service dependencies; configure durable Redis where queued processing is used. |
+| Cloudinary/Multer | `config/cloudinary.ts`, `uploadService`, upload routes. |
+| Email/SMS | Mailer/email and SMS services exist. Several convergence notification senders log in development and persist in-app notifications; verify actual delivery adapters before production. |
 
-  it('disables when loading', () => {
-    render(<Button loading>Click me</Button>);
-    expect(screen.getByRole('button')).toBeDisabled();
-  });
-});
-```
+## 9. Deployment configuration
 
-### 12.4 Performance Best Practices
+Required baseline environment variables: `DATABASE_URL`; production should additionally set strong JWT/refresh secrets, verification encryption key, allowed origins/frontend URL, API Setu credentials/endpoints, Cloudinary credentials and mail/SMS/Redis values when those modules are enabled.
 
-```typescript
-// 1. Use React.memo for expensive components
-export const ExpensiveComponent = React.memo(function ExpensiveComponent(props) {
-  // Component logic
-});
+For Vercel, do not rely on process-local intervals. Configure a cron/integration that triggers the protected SLA sweep. Ensure CORS includes each deployed frontend origin and run `prisma generate` during backend build (already included in `npm run build`).
 
-// 2. Use useMemo for expensive computations
-const sortedData = useMemo(() => {
-  return data.sort((a, b) => a.name.localeCompare(b.name));
-}, [data]);
+## 10. Verification and maintenance checklist
 
-// 3. Use useCallback for event handlers
-const handleClick = useCallback(() => {
-  // Handle click
-}, [dependency]);
+1. Run backend and frontend type checks, backend tests, then both production builds.
+2. Apply migrations to an isolated staging database and run seed data.
+3. Exercise each active route family with an account for the relevant role/tenant.
+4. Test API Setu with non-production credentials and confirm no raw Aadhaar payload appears in logs or responses.
+5. Test Socket.IO reconnect, notification persistence, upload type/size controls and error responses.
+6. Confirm serverless SLA cron execution and alerting.
+7. Remove or protect unused legacy endpoints before exposing them; only routes mounted in `app.ts` are active by default.
 
-// 4. Lazy load heavy components
-const HeavyComponent = lazy(() => import('./HeavyComponent'));
+## 11. Known architectural boundaries
 
-// 5. Use next/image for optimized images
-import Image from 'next/image';
-<Image src="/photo.jpg" alt="Photo" width={800} height={600} />;
+- The repository contains legacy NGO marketplace controllers/routes/schema alongside the active convergence model. `app.ts` disables the legacy mounts unless `ENABLE_LEGACY_NGO_MARKETPLACE` is set.
+- A route file being present does not mean it is reachable; use the `app.ts` mount list to determine activation.
+- The database model is broader than the default runtime route set, reflecting staged migration/compatibility work.
+- Scheduler, email/SMS and queue functionality require production infrastructure beyond the source tree.
 
-// 6. Use React Query for server state
-const { data, isLoading } = useQuery({
-  queryKey: ['projects'],
-  queryFn: fetchProjects,
-  staleTime: 5 * 60 * 1000, // 5 minutes
-});
-```
+## 12. Useful source entry points
 
----
-
-## 13. Troubleshooting
-
-### 13.1 Common Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Database connection fails | Wrong DATABASE_URL | Check credentials and network |
-| JWT validation fails | Expired token | Refresh token or re-login |
-| Permission denied | Missing permissions | Check role assignment |
-| File upload fails | File too large | Check size limits |
-| Email not sent | SMTP config | Verify SMTP settings |
-
-### 13.2 Debug Mode
-
-```bash
-# Enable debug logging
-DEBUG=mahacsr:* npm run dev
-
-# Database query logging
-DEBUG=prisma:* npm run dev
-
-# Check database connection
-npx prisma db execute --stdin < "SELECT 1"
-```
-
----
-
-## 14. Document Version History
-
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | July 17, 2026 | Initial Technical Documentation | MahaCSR Team |
-
----
-
-*Document: MahaCSR Portal - Technical Documentation v1.0*
-*Last Updated: July 17, 2026*
+| Need | Source |
+|---|---|
+| API composition/startup | `backend/src/app.ts` |
+| Prisma schema | `backend/prisma/schema.prisma` |
+| Permissions/features | `backend/src/config/platformAccess.ts`, `backend/src/services/permissionService.ts` |
+| Auth | `backend/src/routes/authRoutes.ts`, `backend/src/controllers/authController.ts`, `backend/src/middlewares/authMiddleware.ts` |
+| Core convergence | `backend/src/controllers/corporateEnquiryController.ts`, `governmentPitchController.ts`, `convergenceProjectController.ts` |
+| Workflow/SLA | `backend/src/services/workflowEngineService.ts`, `slaSchedulerService.ts`, `slaEscalationService.ts` |
+| Web client | `frontend/src/app`, `frontend/src/lib/api.ts`, `frontend/src/store` |

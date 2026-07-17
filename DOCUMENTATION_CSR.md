@@ -1,699 +1,149 @@
-# MahaCSR Portal - Comprehensive CSR Documentation
+# MahaCSR Portal — CSR and Operations Document
 
-## 1. Executive Summary
+**Repository baseline:** 17 July 2026 · **Scope:** the implemented MahaCSR web portal, API, Prisma data model, and configured integrations.
 
-### 1.1 About MahaCSR Setu
-**MahaCSR Setu** is a state-of-the-art digital platform designed to revolutionize Corporate Social Responsibility (CSR) management in Maharashtra, India. It serves as a convergence framework that bridges the gap between government departments, corporate entities, implementing agencies, and beneficiaries to maximize the social impact of CSR initiatives.
+## 1. Purpose
 
-### 1.2 Vision
-To create a transparent, efficient, and impactful ecosystem for CSR implementation that ensures maximum social welfare and sustainable development across Maharashtra.
+MahaCSR is a Maharashtra-focused CSR convergence platform. It brings government development needs, corporate CSR intent, implementing agencies, district oversight, state approvals, fund controls, and public transparency into one portal. Its active operating model is **State-led, district-executed convergence**. A prior NGO-marketplace model remains in the schema and source tree for compatibility, but its routes are disabled by default.
 
-### 1.3 Mission
-- Facilitate seamless collaboration between corporates and government
-- Ensure transparency in CSR fund utilization
-- Maximize social impact through strategic project alignment
-- Provide real-time tracking and monitoring of CSR initiatives
-- Enable data-driven decision making for policymakers
+The portal supports two related entry paths:
 
----
+1. **Corporate enquiry:** a corporate declares CSR intent; a Relationship Manager (RM) assesses feasibility; Joint Secretary (JS) approval and a Nodal Officer appointment lead to an onboarded project.
+2. **Government pitch:** an authorised government officer submits a location-specific need; it is RM-verified and JS-approved, publicly listed for corporate interest, then converted into a project.
 
-## 2. Portal Overview
+## 2. Stakeholders and responsibilities
 
-### 2.1 What is MahaCSR Setu?
-MahaCSR Setu is an enterprise-grade CSR management portal that provides:
+| Stakeholder | Portal responsibility |
+|---|---|
+| Public / citizen | Discover needs and projects, track records, submit helpdesk queries and corporate enquiries. |
+| Government / beneficiary agency | Maintain profile; create, submit and clarify development requirements; submit government pitches. |
+| Corporate user | Submit enquiry or interest, appoint implementing-agency sub-users, follow projects, funds and reports. |
+| Implementing agency / NGO | Execute assigned work, update deliverable milestones and submit utilisation certificates (UCs). |
+| Relationship Manager | Coordinate corporate enquiries and pitches, record interactions and feasibility recommendations. |
+| Joint Secretary | Decide feasibility/pitch proposals and appoint district nodal officers. |
+| District Nodal Officer | Supervise project execution, verify milestones and UCs, inspect sites, manage first-level grievances. |
+| State CSR Cell / Planning Secretary | Monitor cross-district delivery, escalations, grievances, dashboards and reports. |
+| Super/portal admin | Approve organisations and requirements, manage people, roles, permissions, feature settings, audit, and manual SLA sweeps. |
 
-- **Digital Convergence Framework**: Connects government departments, corporates, and implementing agencies
-- **Transparent Marketplace**: Public listing of development needs for corporate adoption
-- **End-to-End Project Lifecycle**: From identification to completion and impact assessment
-- **Real-time Monitoring**: Track progress, fund utilization, and impact metrics
-- **SLA-Based Governance**: 5-3-2 rule for timely escalations and resolutions
-- **Multi-Stakeholder Platform**: Unified interface for all CSR stakeholders
+Access is implemented through a mixture of legacy role checks and dynamic organisation-role permissions. The intended control plane is permission-based RBAC; the frontend labels older hard-coded role helpers as deprecated.
 
-### 2.2 Key Stakeholders
+## 3. End-to-end operating flows
 
-| Stakeholder | Role | Key Functions |
-|-------------|------|---------------|
-| **Government Departments** | Need Identifiers | Create development requirements, verify projects, conduct inspections |
-| **Corporate Partners** | Fund Providers | Submit CSR enquiries, fund projects, monitor progress |
-| **Implementing Agencies** | Executors | Execute projects on ground, report progress, submit utilization certificates |
-| **Relationship Managers** | Liaison Officers | Assess feasibility, coordinate between stakeholders |
-| **Joint Secretary** | Approvers | Approve projects, appoint nodal officers |
-| **Nodal Officers** | District Coordinators | Oversee projects, verify milestones, resolve grievances |
-| **State CSR Cell** | Monitoring | Track escalations, manage grievances, generate reports |
-| **Public/General Users** | Observers | View public listings, track projects, submit helpdesk queries |
+### 3.1 Corporate enquiry to completed project
 
-### 2.3 Core Features
-
-#### 2.3.1 Corporate Enquiry System
-- Corporate partners submit CSR interest via tracking ID (CSR-MH-YYYY-000001)
-- Automatic assignment to Relationship Managers
-- 13-point feasibility assessment
-- JS approval workflow
-- Nodal officer appointment
-
-#### 2.3.2 Government Pitch System
-- Government officers propose development needs
-- RM verification and JS approval
-- Public listing for corporate interest
-- Corporate interest submission and coordination
-
-#### 2.3.3 Project Management
-- Convergence project creation (PRJ-MH-YYYY-000001)
-- Milestone tracking with geo-tagged photos
-- Fund release management
-- Utilization certificate tracking
-- Progress reporting
-
-#### 2.3.4 Grievance Management
-- Multi-level escalation (Level 1 → Level 2 → State Cell → JS Secretary)
-- 15-day SLA for Level 1 resolution
-- 30-day SLA for Level 2 resolution
-- Complete audit trail
-
-#### 2.3.5 SLA & Escalation
-- **5-3-2 Rule**: RM responds in 5 days, JS decides in 3 days, Secretary resolves in 2 days
-- Automated escalation tracking
-- Real-time notifications
-
----
-
-## 3. Portal Modules
-
-### 3.1 Public Portal (Static Part)
-
-#### 3.1.1 Landing Page
-- Hero section with portal overview
-- Key statistics dashboard
-- Workflow visualization
-- Success stories gallery
-- Quick links to important sections
-
-#### 3.1.2 CSR Marketplace
-- Public listing of approved development needs
-- Search and filter capabilities
-- Category-wise browsing (Education, Health, Water, etc.)
-- Corporate interest submission
-
-#### 3.1.3 Development Needs
-- Browse requirements by district/taluka
-- View requirement details
-- Estimated costs and timelines
-- Beneficiary information
-
-#### 3.1.4 Project Tracking
-- Track projects by tracking ID
-- View project status and milestones
-- Public transparency in fund utilization
-
-#### 3.1.5 Success Stories Gallery
-- Completed projects showcase
-- Impact metrics and beneficiary testimonials
-- Before/after comparisons
-
-#### 3.1.6 Helpdesk
-- Public query submission
-- 2-day SLA for resolution
-- Query tracking by ID
-
-### 3.2 Corporate Partner Portal
-
-#### 3.2.1 Dashboard
-- Active enquiries overview
-- Fund utilization summary
-- Project progress tracking
-- Recent notifications
-
-#### 3.2.2 CSR Enquiry Management
-- Submit new CSR enquiry
-- View enquiry status
-- Track feasibility assessment
-- Review and approve MoU
-
-#### 3.2.3 Project Tracking
-- View assigned projects
-- Monitor milestone completion
-- Review utilization certificates
-- Track fund releases
-
-#### 3.2.4 Implementing Agency Management
-- Create IA sub-logins
-- Monitor IA performance
-- Approve IA appointments
-
-### 3.3 Relationship Manager (RM) Portal
-
-#### 3.3.1 Dashboard
-- Pending enquiries queue
-- Feasibility assessments due
-- Government pitches pending verification
-- Performance metrics
-
-#### 3.3.2 Corporate Enquiry Management
-- View assigned enquiries
-- Conduct feasibility assessment (13-point checklist)
-- Submit assessment reports to JS
-- Track enquiry progress
-
-#### 3.3.3 Government Pitch Management
-- Review submitted pitches
-- Verify feasibility
-- Submit verification reports
-- Coordinate with government officers
-
-#### 3.3.4 Company Directory
-- Browse registered companies
-- View company profiles
-- Track company interests
-
-### 3.4 Joint Secretary (JS) Portal
-
-#### 3.4.1 Dashboard
-- Pending approvals queue
-- Assessment reports to review
-- Escalated items
-- Performance overview
-
-#### 3.4.2 Approval Workflow
-- Review feasibility assessments
-- Approve/reject corporate enquiries
-- Approve/reject government pitches
-- Appoint nodal officers
-
-#### 3.4.3 Decision Management
-- View all pending decisions
-- Historical decision log
-- Decision remarks and notes
-
-### 3.5 Nodal Officer Portal
-
-#### 3.5.1 Dashboard
-- Assigned projects overview
-- Milestones pending verification
-- UC submissions to verify
-- Grievances assigned
-
-#### 3.5.2 Project Management
-- View assigned convergence projects
-- Monitor project progress
-- Verify milestone completion
-- Conduct field inspections
-
-#### 3.5.3 Verification Tasks
-- Verify utilization certificates
-- Approve milestone completion
-- Review progress reports
-- Conduct inspections
-
-#### 3.5.4 Grievance Resolution
-- View assigned grievances
-- Respond to grievances
-- Escalate when necessary
-- Track resolution timeline
-
-### 3.6 District/Beneficiary Portal
-
-#### 3.6.1 Dashboard
-- Requirements created
-- Active projects
-- Inspection reports
-- Fund utilization
-
-#### 3.6.2 Requirement Management
-- Create new CSR requirements
-- Submit for verification
-- Track requirement status
-- Manage requirement documents
-
-#### 3.6.3 Project Oversight
-- View district projects
-- Conduct inspections
-- Submit inspection reports
-- Verify asset handovers
-
-### 3.7 State Cell Portal
-
-#### 3.7.1 Helpdesk Management
-- View all public queries
-- Assign queries for resolution
-- Track resolution SLA
-- Generate helpdesk reports
-
-#### 3.7.2 Grievance Escalation
-- View escalated grievances
-- Coordinate resolution
-- Escalate to JS Secretary
-- Track grievance metrics
-
-#### 3.7.3 Monitoring & Reporting
-- State-wide project overview
-- Fund utilization reports
-- Impact metrics dashboard
-- Compliance reports
-
-### 3.8 Admin Portal
-
-#### 3.8.1 User Management
-- Manage all users
-- Assign roles and permissions
-- Activate/deactivate accounts
-- View user activity logs
-
-#### 3.8.2 Organization Management
-- Manage NGOs
-- Manage Companies
-- Manage Government Departments
-- Verify organization documents
-
-#### 3.8.3 Role & Permission Management
-- Create custom roles
-- Assign permissions
-- Manage role hierarchies
-- Audit permission usage
-
-#### 3.8.4 Platform Settings
-- Configure SLA timings
-- Manage notification templates
-- Set up workflow rules
-- Configure system parameters
-
----
-
-## 4. Workflows & Business Processes
-
-### 4.1 Corporate Enquiry Workflow
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    CORPORATE ENQUIRY WORKFLOW                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────┐                                                            │
-│  │   Corporate  │                                                            │
-│  │   Submits    │──────┐                                                     │
-│  │   Enquiry    │      │                                                     │
-│  └──────────────┘      ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Tracking ID Generated              │                                     │
-│  │  (CSR-MH-YYYY-000001)               │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Auto-Assigned to RM                │◄──── 5 Day SLA                      │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  RM Conducts Feasibility            │                                     │
-│  │  Assessment (13-Point Checklist)    │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Assessment Submitted to JS         │◄──── 3 Day SLA                      │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│            ┌───────────┴───────────┐                                         │
-│            │                       │                                         │
-│            ▼                       ▼                                         │
-│  ┌─────────────┐         ┌─────────────┐                                     │
-│  │  JS Approve │         │  JS Reject  │                                     │
-│  └──────┬──────┘         └─────────────┘                                     │
-│         │                                                                    │
-│         ▼                                                                    │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Nodal Officer Appointed            │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Standard MoU Generated             │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Project Onboarded                  │                                     │
-│  │  (PRJ-MH-YYYY-000001)               │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+```text
+Corporate submits enquiry (+ OTP when anonymous)
+  → CSR-MH-YYYY-nnnnnn tracking ID
+  → RM assignment and contact log
+  → 13-point feasibility assessment
+  → JS decision
+  → Nodal Officer appointment
+  → MoU / project onboarding
+  → execution milestones, fund releases and UCs
+  → completion, handover and impact reporting
 ```
 
-### 4.2 Government Pitch Workflow
+The `CorporateEnquiry` status sequence is: `SUBMITTED`, `TRACKING_ID_GENERATED`, `RM_ASSIGNED`, `RM_CONTACTED`, `ASSESSMENT_PENDING`, `ASSESSMENT_SUBMITTED_TO_JS`, `JS_APPROVED`/`JS_REJECTED`, `NODAL_OFFICER_APPOINTED`, `MOU_PENDING`, `MOU_SIGNED`, `PROJECT_ONBOARDED`, `EXECUTION_STARTED`, `COMPLETED`, then `CLOSED`.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    GOVERNMENT PITCH WORKFLOW                                 │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────┐                                                            │
-│  │  Government  │                                                            │
-│  │   Officer    │──────┐                                                     │
-│  │Creates Pitch │      │                                                     │
-│  └──────────────┘      ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Pitch Reference Generated          │                                     │
-│  │  (GP-MH-YYYY-000001)                │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  RM Verifies Feasibility            │◄──── 5 Day SLA                      │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  JS Reviews & Approves              │◄──── 3 Day SLA                      │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Public Listing Created             │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Corporate Interest Received        │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Nodal Officer Assigned             │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Project Onboarded                  │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+An anonymous enquiry validates mobile and email OTP verification tokens, validates the CIN/mobile/email input, prevents duplicate active CIN enquiries, generates the tracking identifier, sets the RM first-response due date, writes an audit event, and creates an in-app tracking notification.
+
+### 3.2 Government need, requirement and pitch flow
+
+```text
+Department profile → draft requirement → submit for verification
+  → district/state review → approve → publish to marketplace
+  → corporate interest → NGO selection / agreement / project lifecycle
+
+Government pitch → RM verification → JS approval → public listing
+  → corporate pitch interest → nodal appointment → MoU/project onboarding
 ```
 
-### 4.3 Project Execution Workflow
+Requirements use `DRAFT`, `PENDING_VERIFICATION`, `VERIFIED`, `APPROVED`, `PUBLISHED`, rejection/clarification and lifecycle states in the Prisma enum. Creation requires a beneficiary profile, captures district/taluka/location, cost, beneficiaries, SDGs, expected impact and declaration, and notifies district administrators when submitted.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    PROJECT EXECUTION WORKFLOW                                │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌─────────────────┐                                                         │
-│  │ Project Created │                                                         │
-│  │  (JS Approval)  │                                                         │
-│  └────────┬────────┘                                                         │
-│           │                                                                  │
-│           ▼                                                                  │
-│  ┌──────────────────────────┐                                                │
-│  │ Nodal Officer Assignment │                                                │
-│  └────────────┬─────────────┘                                                │
-│               │                                                              │
-│               ▼                                                              │
-│  ┌──────────────────────────┐                                                │
-│  │ IA Sub-Login Created by  │                                                │
-│  │    Corporate Partner     │                                                │
-│  └────────────┬─────────────┘                                                │
-│               │                                                              │
-│               ▼                                                              │
-│  ┌──────────────────────────┐                                                │
-│  │ Nodal Officer Approves   │                                                │
-│  │    IA Activation         │                                                │
-│  └────────────┬─────────────┘                                                │
-│               │                                                              │
-│               ▼                                                              │
-│  ┌──────────────────────────┐                                                │
-│  │  Project Execution       │                                                │
-│  │  Begins                  │                                                │
-│  └────────────┬─────────────┘                                                │
-│               │                                                              │
-│      ┌────────┴────────┐                                                     │
-│      │                 │                                                     │
-│      ▼                 ▼                                                     │
-│  ┌────────┐      ┌────────┐                                                  │
-│  │Milestone│      │ Fund   │                                                  │
-│  │Completion      │ Release│                                                  │
-│  └────┬───┘      └───┬────┘                                                  │
-│       │              │                                                       │
-│       ▼              ▼                                                       │
-│  ┌──────────────────────────┐                                                │
-│  │ UC Submission &          │                                                │
-│  │ Verification             │                                                │
-│  └────────────┬─────────────┘                                                │
-│               │                                                              │
-│               ▼                                                              │
-│  ┌──────────────────────────┐                                                │
-│  │ Project Completion       │                                                │
-│  └──────────────────────────┘                                                │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+Government pitches capture the official/department, site and geotagged photos, requirement narrative, cost, certification and declaration. The platform generates `GP-MH-YYYY-nnnnnn` reference IDs. They are intended for a development need that is verified before corporate matching.
+
+### 3.3 Delivery, finance and evidence
+
+```text
+Approved project → assigned IA and Nodal Officer
+  → delivery milestone in progress/completed (+ photos/evidence)
+  → Nodal verification → UC upload
+  → UC verification → financial-progress calculation
+  → inspection / handover → completion and impact reports
 ```
 
-### 4.4 Grievance Resolution Workflow
+`ConvergenceProject` is the active operational project record and receives `PRJ-MH-YYYY-nnnnnn` IDs. Physical progress is calculated from completed `ProjectDeliverableMilestone` records; financial progress is calculated from verified `UtilizationCertificate` amounts against the approved budget. The broader CSR lifecycle also stores `CSRProject`, `CSRFundMilestone`, `CSRFundRelease`, `ProgressReport`, `CompletionReport`, `ImpactReport`, `AssetHandover`, `ProjectInspection` and `ImpactMetric` records.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    GRIEVANCE RESOLUTION WORKFLOW                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────┐                                                            │
-│  │  Grievance   │                                                            │
-│  │   Raised     │                                                            │
-│  └──────┬───────┘                                                            │
-│         │                                                                    │
-│         ▼                                                                    │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Level 1: Nodal Officer             │◄──── 15 Day SLA                     │
-│  │  (15 days to resolve)               │                                     │
-│  └──────────────┬──────────────────────┘                                     │
-│                 │                                                            │
-│       ┌─────────┴─────────┐                                                  │
-│       │                   │                                                  │
-│       ▼                   ▼                                                  │
-│  ┌─────────┐         ┌─────────┐                                             │
-│  │Resolved │         │Escalate │                                             │
-│  └─────────┘         └────┬────┘                                             │
-│                           │                                                  │
-│                           ▼                                                  │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  Level 2: District Level            │◄──── 15 Day SLA (30 total)          │
-│  │  (Additional 15 days)               │                                     │
-│  └──────────────┬──────────────────────┘                                     │
-│                 │                                                            │
-│       ┌─────────┴─────────┐                                                  │
-│       │                   │                                                  │
-│       ▼                   ▼                                                  │
-│  ┌─────────┐         ┌─────────┐                                             │
-│  │Resolved │         │Escalate │                                             │
-│  └─────────┘         └────┬────┘                                             │
-│                           │                                                  │
-│                           ▼                                                  │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  State Cell                         │                                     │
-│  └──────────────┬──────────────────────┘                                     │
-│                 │                                                            │
-│                 ▼                                                            │
-│  ┌─────────────────────────────────────┐                                     │
-│  │  JS Secretary (Final Authority)     │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+### 3.4 Grievance and SLA flow
+
+```text
+Project participant raises grievance
+  → Nodal Officer level-1 review (15 days)
+  → resolve or escalate to State CSR Cell level 2 (30 days)
+  → escalate to JS/Secretary where needed
+  → decision/action log → closed or rejected
 ```
 
-### 4.5 Fund Release Workflow
+Grievances are given `GRV-MH-YYYY-nnnnnn` IDs, tied to a convergence project, originator and responsible officers, and retain action logs. The SLA implementation also tracks RM response, JS decision, pitch verification and helpdesk time limits. Its documented 5–3–2 policy is RM response in five days, JS decision in three days and Secretary escalation in two days.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                      FUND RELEASE WORKFLOW                                   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────┐                                                            │
-│  │ Milestone    │                                                            │
-│  │ Completed    │                                                            │
-│  └──────┬───────┘                                                            │
-│         │                                                                    │
-│         ▼                                                                    │
-│  ┌─────────────────────────────────────┐                                     │
-│  │ UC Submitted by IA                  │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                        │                                                     │
-│                        ▼                                                     │
-│  ┌─────────────────────────────────────┐                                     │
-│  │ Nodal Officer Verifies UC           │                                     │
-│  └──────────────┬──────────────────────┘                                     │
-│                 │                                                            │
-│       ┌─────────┴─────────┐                                                  │
-│       │                   │                                                  │
-│       ▼                   ▼                                                  │
-│  ┌─────────┐         ┌─────────┐                                             │
-│  │Approved │         │Rejected │                                             │
-│  └────┬────┘         └─────────┘                                             │
-│       │                                                                      │
-│       ▼                                                                      │
-│  ┌─────────────────────────────────────┐                                     │
-│  │ Fund Released to IA                 │                                     │
-│  └─────────────────────────────────────┘                                     │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+On a persistent Node deployment the scheduler runs an escalation sweep hourly by default. On Vercel/serverless it deliberately does not run a timer: an external cron should call the protected admin sweep endpoint.
 
----
+## 4. Major portal modules
 
-## 5. SLA Framework (5-3-2 Rule)
+| Module | What it provides |
+|---|---|
+| Public portal | Landing content, map/statistics, public marketplace/development needs, tracking, resources, document library, stories, contact/help/feedback. |
+| Organisation onboarding | Organisation registration, role-specific profile, document submission, verification, review, clarification and approval status. |
+| Corporate | Dashboard, enquiries, marketplace/pitch interest, invited NGOs/IAs, project monitoring, fund and report views. |
+| Government department | Dashboard, requirements/pitches, interests, handover, projects and reports. |
+| NGO / IA | Dashboard, assigned projects, milestone updates, UC and fund views, proposal requests and grievances. |
+| RM / JS / Nodal / State Cell / Secretary | Work queues for assessment, decision, appointment, assignment, project oversight, escalations, reports and grievances. |
+| Administration | Organisation/onboarding approvals, requirement and interest queues, company/NGO registries, user/role administration, audit trail, risk/fund monitoring, feature controls and executive reporting. |
 
-### 5.1 SLA Stages
+The frontend contains 190 page routes, including role-specific workspaces. Screen availability alone is not a permission guarantee; API middleware and permissions remain the authoritative boundary.
 
-| Stage | Responsible | SLA Duration | Escalation To |
-|-------|-------------|--------------|---------------|
-| **RM Response** | Relationship Manager | 5 days | JS Secretary |
-| **JS Decision** | Joint Secretary | 3 days | Planning Secretary |
-| **Secretary Resolution** | Planning Secretary | 2 days | N/A (Final) |
+## 5. Governance, compliance and evidence
 
-### 5.2 Grievance SLA
+- Organisation, NGO and company records support registration, PAN/CIN/GST, operating areas, CSR focus, documents, contacts and bank information.
+- NGO onboarding captures legal identity, governance, bank details, financial history, declarations, documents, review history, queries and risk scores/flags.
+- Verification records preserve request metadata, masked identifiers, transaction reference, timing and a redacted response; full API response is encrypted before storage.
+- `AuditLog` records actor, role, action, affected entity, old/new values, IP/user agent and timestamp where supplied.
+- Project evidence includes document records, geotagged pitch/milestone photos, inspections, UCs, reports and handover records.
+- Notifications are persisted in-app and sent to connected users over Socket.IO. Email/SMS helper functions exist, but several business notifications are explicitly development/logging stubs; production communication configuration and delivery monitoring are required before launch.
 
-| Level | Responsible | SLA Duration | Escalation |
-|-------|-------------|--------------|------------|
-| **Level 1** | Nodal Officer | 15 days | District Admin |
-| **Level 2** | District Level | 15 days (30 total) | State Cell |
-| **State Cell** | State CSR Cell | - | JS Secretary |
-| **Final Authority** | JS Secretary | - | N/A |
+## 6. Data domains (Prisma)
 
-### 5.3 Helpdesk SLA
-- **Resolution Time**: 2 days for public queries
-- **Acknowledgment**: Immediate upon submission
+The PostgreSQL Prisma schema has **89 models and 40 enums**. The primary domains are:
 
----
+| Domain | Principal records |
+|---|---|
+| Identity, tenancy and RBAC | User, Organization, OrganizationRole, Permission, PermissionGroup, UserOrganizationRole, RoleHierarchy, Session, PlatformSetting. |
+| Onboarding and compliance | NGO, Company, CSRCompanyProfile, GovernmentDepartmentProfile, OnboardingApplication, OrganisationDocument, NgoDocument, OnboardingReview, VerificationCheck, VerificationRecord, RiskScore/RiskFlag. |
+| Needs and marketplace | BeneficiaryProfile, CSRRequirement, CSRRequirementDocument, CompanyInterest, NGOApplication, Agreement. |
+| Convergence operation | CorporateEnquiry, FeasibilityAssessment/ChecklistItem, GovernmentPitch/Photo/Interest, NodalOfficerAppointment, ConvergenceProject, ProjectDeliverableMilestone, UtilizationCertificate, ConvergenceProjectInspection. |
+| CSR financial lifecycle | CSRProject, CSRFundMilestone, CSRFundRelease, FundRelease, PaymentOrder, PaymentTransaction, PaymentWebhookLog. |
+| Monitoring and closure | ProgressReport, CompletionReport, ImpactReport, ImpactMetric, AssetHandover, ProjectInspection, Report. |
+| Service and communication | Notification/NotificationLog/Template, HelpdeskQuery, Grievance/ActionLog, OtpVerification, SLAEscalation, AuditLog. |
+| Configurable workflow/assignment | WorkflowDefinition, WorkflowStage, WorkflowTransition, WorkflowCondition, WorkflowAssignmentRule, WorkflowRule, WorkflowInstance, WorkflowHistory, ProjectAssignment, UserInvitation, DistrictNodalMapping. |
+| Legacy marketplace compatibility | Project, Milestone, MatchScore, Chat, Message and generic Document. These are only active if `ENABLE_LEGACY_NGO_MARKETPLACE` is enabled. |
 
-## 6. CSR Categories (Schedule VII)
+## 7. Operational controls and readiness notes
 
-The portal supports all CSR categories as per Companies Act 2013, Schedule VII:
+1. Configure an external cron for SLA sweeps in serverless production.
+2. Supply production secrets: database URL, JWT/refresh secrets, verification encryption key, API Setu credentials, storage and mail/SMS configuration. Default development fallbacks must not be accepted for production secrets.
+3. Confirm every enabled route has an explicit authentication/permission middleware; route files exist beyond those mounted in `app.ts` and some are legacy/disabled.
+4. Run the seed and migrations in a non-production environment to validate dynamic permissions, workflow definitions and master data before go-live.
+5. Reconcile the configured CSR process with the reference PDFs in `docs/` (Section 135, development sectors and aspirational districts) and with the authorised government SOP.
 
-### 6.1 Category List
+## 8. Success measures
 
-| Code | Category | Description |
-|------|----------|-------------|
-| EDU | Education | Schools, scholarships, skill development |
-| HLT | Health | Hospitals, medical camps, sanitation |
-| WTR | Water | Water conservation, watershed management |
-| SNT | Sanitation | Toilets, waste management |
-| SKL | Skill Development | Vocational training, employment |
-| ENV | Environment | Afforestation, pollution control |
-| WEM | Women Empowerment | Women-centric projects |
-| AGH | Agriculture | Farmer support, irrigation |
-| ANH | Animal Husbandry | Livestock development |
-| RUR | Rural Development | Village infrastructure |
-| SPT | Sports | Sports facilities, training |
-| OTH | Other | Other social welfare activities |
+- Time from enquiry/pitch submission to RM contact and JS decision.
+- Requirements published, corporate interest conversion and project onboarding rate.
+- Funds released/verified versus approved budget; UC verification turnaround.
+- Physical and financial completion rate by district, sector and SDG.
+- SLA breach/escalation rate, grievance resolution time and re-open rate.
+- Beneficiaries reached, outcome metrics and completed-asset handovers.
 
----
+## 9. Source-of-truth note
 
-## 7. Impact Measurement
-
-### 7.1 Key Impact Metrics
-
-| Metric | Description |
-|--------|-------------|
-| **Students Benefited** | Number of students impacted by education projects |
-| **Patients Benefited** | Number of patients served by health projects |
-| **Villages Benefited** | Number of villages covered |
-| **Households Benefited** | Number of households impacted |
-| **Women Beneficiaries** | Number of women beneficiaries |
-| **Farmers Benefited** | Number of farmers supported |
-
-### 7.2 Impact Scoring
-
-Projects are scored on the following parameters (0-100 scale):
-
-| Parameter | Weight | Description |
-|-----------|--------|-------------|
-| **Timely Completion** | 20% | Adherence to timeline |
-| **Fund Utilization** | 20% | Accuracy in fund usage |
-| **Beneficiary Feedback** | 15% | Satisfaction scores |
-| **Government Verification** | 15% | Official verification |
-| **Social Impact** | 15% | Measurable outcomes |
-| **Documentation** | 15% | Quality of reports |
-
----
-
-## 8. Compliance & Reporting
-
-### 8.1 Regulatory Compliance
-- Companies Act 2013, Section 135
-- CSR Rules, 2014 (as amended)
-- Schedule VII Activities
-- Maharashtra State CSR Policy
-
-### 8.2 Reports Generated
-
-| Report Type | Frequency | Stakeholders |
-|-------------|-----------|--------------|
-| **Project Status Report** | Weekly | All |
-| **Fund Utilization Report** | Monthly | Corporate, Government |
-| **Impact Assessment Report** | Quarterly | All |
-| **Grievance Report** | Monthly | State Cell |
-| **Compliance Report** | Annual | Regulatory |
-| **Audit Report** | Annual | Statutory |
-
----
-
-## 9. Success Stories
-
-### 9.1 Project Showcase Template
-
-Each completed project includes:
-- **Project Overview**: Title, location, sector
-- **Corporate Partner**: Company name, CSR budget
-- **Implementing Agency**: NGO/Agency details
-- **Timeline**: Start date, completion date
-- **Budget**: Total funds utilized
-- **Impact**: Metrics and beneficiary count
-- **Before/After**: Photo documentation
-- **Testimonials**: Beneficiary feedback
-
----
-
-## 10. Contact & Support
-
-### 10.1 Helpdesk
-- **Email**: helpdesk@mahacsr.gov.in
-- **Phone**: 1800-XXX-XXXX (Toll-free)
-- **Portal**: /helpdesk
-
-### 10.2 Escalation Matrix
-
-| Level | Contact | Response Time |
-|-------|---------|---------------|
-| Level 1 | Helpdesk | 2 days |
-| Level 2 | State CSR Cell | 5 days |
-| Level 3 | JS Secretary | 7 days |
-
----
-
-## 11. Glossary
-
-| Term | Definition |
-|------|------------|
-| **Convergence Framework** | Integrated approach bringing together government, corporates, and NGOs |
-| **CSR** | Corporate Social Responsibility |
-| **IA** | Implementing Agency |
-| **JS** | Joint Secretary |
-| **MCA21** | Ministry of Corporate Affairs portal |
-| **MoU** | Memorandum of Understanding |
-| **Nodal Officer** | District-level coordinator appointed by JS |
-| **RM** | Relationship Manager |
-| **SLA** | Service Level Agreement |
-| **UC** | Utilization Certificate |
-| **CIN** | Corporate Identification Number |
-| **DARPAN** | NGO portal of NITI Aayog |
-| **CSR-1** | CSR Registration Number |
-| **Schedule VII** | List of CSR activities under Companies Act |
-
----
-
-## 12. Document Version History
-
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | July 2026 | Initial CSR Documentation | MahaCSR Team |
-
----
-
-*Document: MahaCSR Portal - CSR Documentation v1.0*
-*Last Updated: July 17, 2026*
+This document describes observable implementation, not a legal or policy determination. Prisma schema, active `backend/src/app.ts` route mounts, controller validations and the deployed configuration are the source of truth when they differ from an operational SOP.

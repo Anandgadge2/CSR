@@ -146,7 +146,8 @@ const navGroups: NavGroup[] = [
     roles: ["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"],
     links: [
       { label: "Dashboard", to: "/admin/dashboard" },
-      { label: "Users", to: "/admin/users-roles" },
+      { label: "User Management", to: "/admin/user-management" },
+      { label: "Roles & Permissions", to: "/admin/roles-permissions" },
       { label: "Corporate Enquiries", to: "/rm/enquiries" },
       { label: "Implementing Agencies", to: "/admin/ngo-registry" },
       { label: "Companies", to: "/admin/companies" },

@@ -352,7 +352,8 @@ export default function LandingPage() {
                     <Link href={item.href} className="hover:no-underline flex">
                       <Card
                         index={index}
-                        className="flex items-start gap-4 p-5 bg-white/60 border border-slate-100 hover:border-blue-200/50 w-full group"
+                        variant="default"
+                        className="flex items-start gap-4 p-5 bg-white border border-slate-100 hover:border-blue-200/50 w-full group"
                       >
                         <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 shrink-0 mt-1.5 shadow-sm shadow-blue-500/30" />
                         <div>
@@ -413,11 +414,11 @@ export default function LandingPage() {
                       key={item}
                       whileHover={{ x: 6, scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50/30 p-4 transition-colors hover:bg-slate-50/60 hover:border-blue-200/40 cursor-default"
+                      className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50/30 p-4 transition-colors hover:bg-slate-50/60 hover:border-blue-200/40 cursor-default"
                     >
-                      <CheckCircle2 className="shrink-0 text-emerald-500" size={18} />
+                      <CheckCircle2 className="shrink-0 text-emerald-500 mt-0.5" size={18} />
                       <p className="flex-1 text-xs font-medium leading-relaxed text-slate-600">{item}</p>
-                      <ArrowRight className="shrink-0 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" size={15} />
+                      <ArrowRight className="shrink-0 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" size={15} />
                     </motion.div>
                   ))}
                 </div>

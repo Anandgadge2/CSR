@@ -120,12 +120,20 @@ export default function DashboardPage() {
       icon: "✅",
     },
     {
-      title: "Users & Roles",
-      description: "Manage user accounts and permissions",
-      link: "/admin/users-roles",
+      title: "User Management",
+      description: "Manage user accounts — edit, activate/inactivate, delete",
+      link: "/admin/user-management",
       status: "Available",
       statusVariant: "info" as const,
       icon: "👥",
+    },
+    {
+      title: "Roles & Permissions",
+      description: "Configure dynamic roles and the permission matrix",
+      link: "/admin/roles-permissions",
+      status: "Available",
+      statusVariant: "info" as const,
+      icon: "🛡️",
     },
   ];
 
