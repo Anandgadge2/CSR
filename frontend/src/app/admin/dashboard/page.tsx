@@ -284,16 +284,7 @@ export default function AdminDashboardPage() {
         title={`Welcome, ${userName}`}
         description="Administrative Dashboard - Manage users, organizations, and oversee portal operations"
         breadcrumbs={[{ label: "Dashboard" }]}
-        actions={
-          <div className="flex items-center gap-3">
-            <Button variant="outline">
-              Export Report
-            </Button>
-            <Button>
-              Create New
-            </Button>
-          </div>
-        }
+       
       />
 
       {/* Stats Grid */}
