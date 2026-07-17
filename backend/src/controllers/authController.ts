@@ -405,7 +405,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { ngo: true, company: true, beneficiaryProfile: true }
+    include: { ngo: true, company: true, beneficiaryProfile: true, roleRelation: true }
   });
 
   if (!user) {
@@ -494,6 +494,11 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       id: user.id,
       email: user.email,
       role: user.role,
+      roleId: user.roleId,
+      // Dynamic (RBAC) role name — the base `role` enum is only SUPER_ADMIN /
+      // GOVERNMENT_OFFICER / CORPORATE_USER, so workflow personas (Joint
+      // Secretary, District Nodal Officer, etc.) live here. Clients route on this.
+      dynamicRole: user.roleRelation?.name || null,
       organizationId: user.organizationId,
       accountStatus: user.accountStatus,
       organization,

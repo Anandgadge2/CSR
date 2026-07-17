@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { Building2, Landmark, CheckCircle2, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 /* ─── Default slides (overridden by API fetch) ─── */
 const DEFAULT_SLIDES = [
@@ -181,7 +182,7 @@ export default function HeroSection() {
 
   // Fetch slides from API
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/platform/hero-slides`)
+    fetch(`${API_BASE_URL}/platform/hero-slides`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) setSlides(data);
@@ -336,7 +337,7 @@ export default function HeroSection() {
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, transition: { duration: 0.2 } }}
-                className="mt-3 sm:mt-5 text-xs sm:text-sm md:text-base text-slate-300 font-normal leading-relaxed max-w-2xl px-2 sm:px-0"
+                className="mt-3 sm:mt-5 text-xs sm:text-sm md:text-base text-white/60 font-normal leading-relaxed max-w-2xl px-2 sm:px-0"
               >
                 {slide.subtitle}
               </motion.p>

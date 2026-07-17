@@ -74,31 +74,44 @@ function LoginForm() {
         return;
       }
 
-      const userRole = user.role;
+      // The base `role` enum only distinguishes SUPER_ADMIN / GOVERNMENT_OFFICER /
+      // CORPORATE_USER. Workflow personas (Joint Secretary, Nodal Officer, etc.)
+      // are dynamic RBAC roles carried in `user.dynamicRole`. Route on either, and
+      // normalise so both the enum form ("JOINT_SECRETARY") and the human name
+      // ("Joint Secretary") resolve to the same destination.
       const onboardingStatus = user.organization?.onboardingStatus;
-      if (userRole === "CSR_RELATIONSHIP_MANAGER") {
+      const normalise = (v?: string | null) =>
+        (v || "").toUpperCase().replace(/[\s-]+/g, "_");
+      const roleKey = normalise(user.role);
+      const dynamicKey = normalise(user.dynamicRole);
+      const matches = (...keys: string[]) =>
+        keys.includes(roleKey) || keys.includes(dynamicKey);
+
+      const isAdmin = matches("SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN");
+
+      if (matches("CSR_RELATIONSHIP_MANAGER", "RELATIONSHIP_MANAGER")) {
         router.push("/rm/dashboard");
-      } else if (userRole === "JOINT_SECRETARY") {
+      } else if (matches("JOINT_SECRETARY")) {
         router.push("/js/dashboard");
-      } else if (userRole === "PLANNING_SECRETARY") {
+      } else if (matches("PLANNING_SECRETARY")) {
         router.push("/secretary/escalations");
-      } else if (userRole === "STATE_CSR_CELL") {
+      } else if (matches("STATE_CSR_CELL")) {
         router.push("/state-cell/dashboard");
-      } else if (userRole === "DISTRICT_NODAL_OFFICER") {
+      } else if (matches("DISTRICT_NODAL_OFFICER", "DISTRICT_NODAL_CONSULTANT")) {
         router.push("/nodal/dashboard");
-      } else if (userRole === "IMPLEMENTING_AGENCY_USER") {
+      } else if (matches("IMPLEMENTING_AGENCY_USER")) {
         router.push("/convergence-projects");
-      } else if (userRole === "CORPORATE_USER") {
-        router.push("/partner/dashboard");
-      } else if (onboardingStatus && onboardingStatus !== "APPROVED" && !["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN"].includes(userRole)) {
-        router.push("/organization/onboarding/status");
-      } else if (userRole === "NGO_ADMIN" || userRole === "NGO_MEMBER") {
-        router.push("/ngo/dashboard");
-      } else if (userRole === "COMPANY_ADMIN" || userRole === "COMPANY_MEMBER") {
-        router.push("/company/dashboard");
-      } else if (["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN"].includes(userRole)) {
+      } else if (isAdmin) {
         router.push("/admin/dashboard");
-      } else if (userRole === "BENEFICIARY_AGENCY") {
+      } else if (matches("CORPORATE_USER")) {
+        router.push("/partner/dashboard");
+      } else if (onboardingStatus && onboardingStatus !== "APPROVED") {
+        router.push("/organization/onboarding/status");
+      } else if (matches("NGO_ADMIN", "NGO_MEMBER")) {
+        router.push("/ngo/dashboard");
+      } else if (matches("COMPANY_ADMIN", "COMPANY_MEMBER")) {
+        router.push("/company/dashboard");
+      } else if (matches("BENEFICIARY_AGENCY")) {
         router.push("/department/dashboard");
       } else {
         router.push("/");
