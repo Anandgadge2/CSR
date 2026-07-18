@@ -10,7 +10,7 @@ import jwt from "jsonwebtoken";
 const mockPrisma = {
   tenant: { findUnique: jest.fn() },
   tenantFeature: { findUnique: jest.fn() },
-  userOrganizationRole: { findMany: jest.fn().mockResolvedValue([]) },
+  userOrganizationRole: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
   verificationRecord: {
     findFirst: jest.fn(),
     findUnique: jest.fn(),

@@ -8,16 +8,13 @@ import {
   listCompanyInterestsForAdmin
 } from "../controllers/companyInterestController";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkFeatureEnabled, checkOrganizationApproved, checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
+import { checkOrganizationApproved, checkPermission } from "../middlewares/accessControlMiddleware";
 import { Role } from "../types/role";
 
 const router = Router();
 const companyTransaction = [
   authenticateToken,
   authorizeRoles([Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.SUPER_ADMIN]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableCompanyInterest"),
   checkOrganizationApproved
 ];
 
@@ -27,9 +24,6 @@ router.get(
   "/list",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN, Role.BENEFICIARY_AGENCY]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableCompanyInterest"),
   checkPermission("interest:view"),
   listCompanyInterestsForAdmin
 );
@@ -37,20 +31,14 @@ router.get(
   "/requirement/:requirementId",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN, Role.BENEFICIARY_AGENCY]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableCompanyInterest"),
   checkPermission("interest:view"),
   getInterestsForRequirement
 );
-router.post("/:id/select-ngo", ...companyTransaction, checkFeatureEnabled("enableNGOSelection"), checkPermission("interest:approve"), selectNGO);
+router.post("/:id/select-ngo", ...companyTransaction, checkPermission("interest:approve"), selectNGO);
 router.patch(
   "/:id/status",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableCompanyInterest"),
   checkPermission("interest:approve"),
   updateInterestStatus
 );

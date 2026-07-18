@@ -141,21 +141,10 @@ export const getDashboardStats = async (
       return res.status(403).json({ error: "Not authorized to access RM dashboard" });
     }
 
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     // Build filters for RM-specific data
     const enquiryFilter: any = {};
     const pitchFilter: any = {};
     const assessmentFilter: any = {};
-
-    if (tenantId) {
-      enquiryFilter.tenantId = tenantId;
-      pitchFilter.OR = [
-        { tenantId: tenantId },
-        { tenantId: null }
-      ];
-      assessmentFilter.tenantId = tenantId;
-    }
 
     // RM sees only their assigned enquiries/pitches
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) {
@@ -360,13 +349,7 @@ export const getPendingEnquiries = async (
       return res.status(403).json({ error: "Not authorized" });
     }
 
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     const where: any = {};
-
-    if (tenantId) {
-      where.tenantId = tenantId;
-    }
 
     // RM sees only their assigned enquiries or unassigned
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) {
@@ -443,10 +426,7 @@ export const getRMEnquiryById = async (
     const userId = req.user!.id;
     const userRole = req.user!.role;
     const { id } = req.params;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     const where: any = { id };
-    if (tenantId) where.tenantId = tenantId;
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) {
       where.OR = [
         { assignedRelationshipManagerId: userId },
@@ -491,14 +471,11 @@ export const addRMEnquiryInteraction = async (
     const userRole = req.user!.role;
     const { id } = req.params;
     const { type, summary, notes } = req.body as { type?: string; summary?: string; notes?: string };
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     if (!summary?.trim()) {
       return res.status(400).json({ error: "Interaction summary is required" });
     }
 
     const where: any = { id };
-    if (tenantId) where.tenantId = tenantId;
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) where.assignedRelationshipManagerId = userId;
 
     const enquiry = await prisma.corporateEnquiry.findFirst({ where });
@@ -570,19 +547,8 @@ export const getPendingPitches = async (
       return res.status(403).json({ error: "Not authorized" });
     }
 
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     const where: any = {};
     const conditions: any[] = [];
-
-    if (tenantId) {
-      conditions.push({
-        OR: [
-          { tenantId: tenantId },
-          { tenantId: null }
-        ]
-      });
-    }
 
     // RM sees only their assigned pitches
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) {
@@ -737,10 +703,7 @@ export const submitFeasibilityAssessment = async (
       });
     }
 
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     const enquiryWhere: any = { id: enquiryId };
-    if (tenantId) enquiryWhere.tenantId = tenantId;
     if (userRole === Role.CSR_RELATIONSHIP_MANAGER) enquiryWhere.assignedRelationshipManagerId = userId;
 
     const linkedEnquiry = await prisma.corporateEnquiry.findFirst({
@@ -944,8 +907,6 @@ export const getRMEscalations = async (
 ) => {
   try {
     const userId = req.user!.id;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     const escalations = await prisma.sLAEscalation.findMany({
       where: {
         responsibleUserId: userId,
@@ -968,8 +929,6 @@ export const getCorporateInterests = async (
   try {
     const userId = req.user!.id;
     const userRole = req.user!.role;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-
     const interests = await prisma.corporatePitchInterest.findMany({
       where: {
         governmentPitch: {

@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { getMarketplaceRequirements } from "../controllers/csrRequirementController";
 import { getGovernmentReport } from "../controllers/reportController";
-import { checkPublicFeatureEnabled } from "../middlewares/tenantMiddleware";
 import {
   getCompletedProjectsGallery,
   getCompletedProjectDetail,
@@ -19,11 +18,11 @@ router.get("/success-stories", getSuccessStories);
 router.get("/directory", getPublicDirectory);
 router.get("/portal-stats", getPublicPortalStats);
 
-router.get("/requirements", checkPublicFeatureEnabled("enablePublicTransparency"), checkPublicFeatureEnabled("enableCSRMarketplace"), getMarketplaceRequirements);
-router.get("/projects", checkPublicFeatureEnabled("enablePublicTransparency"), checkPublicFeatureEnabled("enableCSRMarketplace"), getMarketplaceRequirements);
-router.get("/reports/transparency-dashboard", checkPublicFeatureEnabled("enablePublicTransparency"), getGovernmentReport);
-router.get("/reports/district-ranking", checkPublicFeatureEnabled("enablePublicTransparency"), getGovernmentReport);
-router.get("/reports/top-contributors", checkPublicFeatureEnabled("enablePublicTransparency"), getGovernmentReport);
-router.get("/reports/success-stories", checkPublicFeatureEnabled("enablePublicTransparency"), getGovernmentReport);
+router.get("/requirements", getMarketplaceRequirements);
+router.get("/projects", getMarketplaceRequirements);
+router.get("/reports/transparency-dashboard", getGovernmentReport);
+router.get("/reports/district-ranking", getGovernmentReport);
+router.get("/reports/top-contributors", getGovernmentReport);
+router.get("/reports/success-stories", getGovernmentReport);
 
 export default router;

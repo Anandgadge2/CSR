@@ -46,7 +46,7 @@ interface ProjectFilters {
 }
 
 // ─── Helper: Generate Project ID ────────────────────────────────────
-const generateProjectId = async (tenantId?: string | null): Promise<string> => {
+const generateProjectId = async (): Promise<string> => {
   const year = new Date().getFullYear();
   const prefix = `PRJ-MH-${year}-`;
 
@@ -132,7 +132,6 @@ export const getProjects = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = undefined;
 
     if (!userId) {
       return unauthorizedResponse(res, "User not authenticated");
@@ -282,7 +281,6 @@ export const getProjectById = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = undefined;
     const { id } = req.params;
 
     if (!userId) {
@@ -406,7 +404,6 @@ export const updateMilestoneProgress = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = undefined;
     const { id } = req.params;
     const body = req.body as UpdateMilestoneProgressBody;
 
@@ -546,7 +543,6 @@ export const uploadUC = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = undefined;
     const { id } = req.params;
     const body = req.body as UploadUCBody;
 
@@ -679,7 +675,6 @@ export const completeProject = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = undefined;
     const { id } = req.params;
     const { completionNotes, beneficiariesSummary, impactSummary } = req.body;
 
@@ -791,7 +786,6 @@ export const generateCompletionReport = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = undefined;
     const { id } = req.params;
     const { format = "json" } = req.query;
 

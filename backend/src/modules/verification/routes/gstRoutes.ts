@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../../middlewares/asyncHandler";
 import { validateRequest } from "../../../middlewares/validationMiddleware";
-import { checkPermission } from "../../../middlewares/tenantMiddleware";
+import { checkPermission } from "../../../middlewares/accessControlMiddleware";
 import { createCustomRateLimiter } from "../../../middlewares/rateLimitMiddleware";
 import { gstHistorySchema, gstReverifySchema, gstVerifySchema } from "../dto/gstSchemas";
 import { getGstHistory, reverifyGst, verifyGst } from "../controllers/gstController";

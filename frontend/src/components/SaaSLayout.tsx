@@ -748,7 +748,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
       {isDashboard ? (
         <header
-          className="fixed top-1 left-0 right-0 h-[56px] z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/50 flex justify-between items-center px-4 md:px-6 shadow-sm"
+          className="fixed top-1 left-0 right-0 h-[56px] z-50 bg-white/70 backdrop-blur-md border-b border-slate-200/40 flex justify-between items-center px-4 md:px-6 shadow-glass"
         >
           <div className="contents">
             {/* Brand Logo */}
@@ -890,10 +890,10 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
           </div>
         </header>
       ) : (
-        <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+        <header className={`sticky top-0 z-50 w-full transition-all duration-300 backdrop-blur-md border-b shadow-glass ${
           scrolled 
-            ? "backdrop-blur-md bg-white/80 border-b border-slate-200/50 shadow-sm" 
-            : "bg-white/95 border-b border-slate-100 shadow-sm"
+            ? "bg-white/70 border-slate-200/40" 
+            : "bg-white/80 border-slate-100/30"
         }`}>
           <div className="max-w-[1380px] w-full mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-[72px] flex items-center justify-between">
             {/* Left Block: Brand & Seal combined */}

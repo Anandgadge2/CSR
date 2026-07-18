@@ -36,7 +36,6 @@ export const convertRequirementToProject = async (req: AuthenticatedRequest, res
       }
     });
     if (!requirement) return res.status(404).json({ error: "Requirement not found" });
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || ((requirement as any).tenantId) || null;
 
     if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict && requirement.district !== req.user?.assignedDistrict) {
       return res.status(403).json({ error: "You can convert only assigned district requirements" });
@@ -139,9 +138,6 @@ export const convertRequirementToProject = async (req: AuthenticatedRequest, res
 export const listCsrProjects = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const where: any = {};
-    if ((req as any).tenantContext?.tenantId || req.user?.tenantId) {
-      ((where as any).tenantId) = (req as any).tenantContext?.tenantId || req.user?.tenantId;
-    }
     if (req.user?.role === Role.COMPANY_ADMIN || req.user?.role === Role.COMPANY_MEMBER) {
       where.companyId = req.user?.companyId || "__none__";
     } else if (req.user?.role === Role.NGO_ADMIN || req.user?.role === Role.NGO_MEMBER) {
@@ -179,7 +175,6 @@ export const createFundRelease = async (req: AuthenticatedRequest, res: Response
     const { projectId } = req.params;
     const project = await prisma.cSRProject.findUnique({ where: { id: projectId }, include: { csrRequirement: true } });
     if (!project) return res.status(404).json({ error: "CSR project not found" });
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || ((project as any).tenantId) || null;
 
     const release = await prisma.cSRFundRelease.create({
       data: {
@@ -210,7 +205,6 @@ export const submitUtilizationCertificate = async (req: AuthenticatedRequest, re
     const { id } = req.params;
     const release = await prisma.cSRFundRelease.findUnique({ where: { id }, include: { csrProject: true, csrRequirement: true } });
     if (!release) return res.status(404).json({ error: "Fund release not found" });
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || ((release as any).tenantId) || null;
     if (!req.user?.ngoId || req.user?.ngoId !== release.ngoId) {
       return res.status(403).json({ error: "Only the assigned NGO can submit utilization certificate" });
     }
@@ -285,7 +279,6 @@ export const confirmAssetHandover = async (req: AuthenticatedRequest, res: Respo
       include: { beneficiaryProfile: true, csrRequirement: true }
     });
     if (!project) return res.status(404).json({ error: "CSR project not found" });
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || ((project as any).tenantId) || null;
 
     const ownsProject = req.user?.role === Role.BENEFICIARY_AGENCY && project.beneficiaryProfile.userId === req.user?.id;
     if (!ownsProject && !isStateCell(req.user?.role)) {
@@ -331,7 +324,6 @@ export const createProjectInspection = async (req: AuthenticatedRequest, res: Re
     const { id } = req.params;
     const project = await prisma.cSRProject.findUnique({ where: { id }, include: { csrRequirement: true } });
     if (!project) return res.status(404).json({ error: "CSR project not found" });
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || ((project as any).tenantId) || null;
     if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict && project.csrRequirement.district !== req.user?.assignedDistrict) {
       return res.status(403).json({ error: "You can inspect only assigned district projects" });
     }
@@ -364,7 +356,6 @@ export const upsertImpactMetric = async (req: AuthenticatedRequest, res: Respons
     const { projectId } = req.params;
     const project = await prisma.cSRProject.findUnique({ where: { id: projectId } });
     if (!project) return res.status(404).json({ error: "CSR project not found" });
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || ((project as any).tenantId) || null;
 
     const metric = await prisma.impactMetric.create({
       data: {

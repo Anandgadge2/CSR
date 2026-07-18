@@ -119,11 +119,11 @@ function MouseTrailCanvas() {
 /* ─── 3D Slide Transitions ─── */
 const slideVariants = {
   enter: (direction: number) => ({
-    rotateY: direction > 0 ? 25 : -25,
+    rotateY: direction > 0 ? 45 : -45,
     x: direction > 0 ? "100%" : "-100%",
     opacity: 0,
-    scale: 0.85,
-    z: -200,
+    scale: 0.75,
+    z: -400,
   }),
   center: {
     rotateY: 0,
@@ -131,15 +131,15 @@ const slideVariants = {
     opacity: 1,
     scale: 1,
     z: 0,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 1.0, ease: [0.16, 1, 0.3, 1] },
   },
   exit: (direction: number) => ({
-    rotateY: direction > 0 ? -25 : 25,
+    rotateY: direction > 0 ? -45 : 45,
     x: direction > 0 ? "-100%" : "100%",
     opacity: 0,
-    scale: 0.85,
-    z: -200,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    scale: 0.75,
+    z: -400,
+    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
   }),
 };
 
@@ -244,6 +244,8 @@ export default function HeroSection() {
       className="relative overflow-hidden bg-slate-950"
       style={{ perspective: "1200px" }}
     >
+
+
       {/* Mouse trail canvas */}
       <MouseTrailCanvas />
 

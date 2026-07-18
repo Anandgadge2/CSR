@@ -1,23 +1,3 @@
-export const TENANT_FEATURES = [
-  "enableNGORegistration",
-  "enableCompanyRegistration",
-  "enableGovernmentDepartmentRegistration",
-  "enableRequirementCreation",
-  "enableCSRMarketplace",
-  "enableCompanyInterest",
-  "enableNGOSelection",
-  "enableFundDisbursement",
-  "enableMilestoneMonitoring",
-  "enableGISReports",
-  "enableAIReports",
-  "enablePublicTransparency",
-  "enableReportsExport",
-  "enablePaymentModule",
-  "enableMessagingModule",
-  "enableNotifications",
-  "enableDocumentVerification"
-] as const;
-
 export const PERMISSIONS = [
   ["requirement:create", "Create department CSR requirements", "requirements"],
   ["requirement:view", "View CSR requirements", "requirements"],
@@ -58,10 +38,6 @@ export const PERMISSIONS = [
   ["permission:configure", "Configure permissions and groups", "roles"],
   ["feature-toggle:view", "View feature toggles", "features"],
   ["feature-toggle:update", "Update feature toggles", "features"],
-  ["tenant:create", "Create tenants", "tenants"],
-  ["tenant:update", "Update tenants", "tenants"],
-  ["tenant:disable", "Disable tenants", "tenants"],
-  ["tenant:delete", "Delete tenants", "tenants"],
   ["audit:view", "View audit logs", "audit"],
   ["enquiry:view", "View corporate enquiries", "enquiries"],
   ["enquiry:assign", "Assign relationship managers to enquiries", "enquiries"],

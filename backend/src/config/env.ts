@@ -1,32 +1,83 @@
+/**
+ * Centralized environment access + production hardening.
+ *
+ * In production the security-critical secrets (JWT signing keys and the
+ * verification-record encryption key) MUST be set to real, non-default values.
+ * A running instance that silently falls back to a committed dev secret is a
+ * severe vulnerability, so `assertProductionEnv` throws on startup instead.
+ */
+
 const requiredInProduction = [
   "DATABASE_URL"
 ];
 
 export const isProduction = process.env.NODE_ENV === "production";
 
+// Committed dev fallbacks. Treated as "unset" in production so a leaked
+// default can never be used to sign tokens or decrypt verification records.
+const DEV_JWT_SECRET = "dev_only_mahacsr_access_secret";
+const DEV_JWT_REFRESH_SECRET = "dev_only_mahacsr_refresh_secret";
+const DEV_VERIFICATION_ENCRYPTION_KEY =
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+/**
+ * Secrets that must be present AND non-default in production. Each entry pairs
+ * the env var with its forbidden dev default (if any).
+ */
+const mandatoryProductionSecrets: { key: string; devDefault?: string }[] = [
+  { key: "JWT_SECRET", devDefault: DEV_JWT_SECRET },
+  { key: "JWT_REFRESH_SECRET", devDefault: DEV_JWT_REFRESH_SECRET },
+  { key: "VERIFICATION_ENCRYPTION_KEY", devDefault: DEV_VERIFICATION_ENCRYPTION_KEY }
+];
+
 export const assertProductionEnv = () => {
   if (!isProduction) return;
 
-  const missing = requiredInProduction.filter((key) => !process.env[key]);
-  if (missing.length > 0) {
-    throw new Error(`Missing required production environment variables: ${missing.join(", ")}`);
+  const problems: string[] = [];
+
+  for (const key of requiredInProduction) {
+    if (!process.env[key]) {
+      problems.push(`${key} is required in production but is not set`);
+    }
+  }
+
+  for (const { key, devDefault } of mandatoryProductionSecrets) {
+    const value = process.env[key];
+    if (!value) {
+      problems.push(`${key} is required in production but is not set`);
+    } else if (devDefault && value === devDefault) {
+      problems.push(`${key} must not use the committed dev default value in production`);
+    }
+  }
+
+  // VERIFICATION_ENCRYPTION_KEY must be 64 hex chars (32 bytes) for AES-256.
+  const encKey = process.env.VERIFICATION_ENCRYPTION_KEY;
+  if (encKey && encKey !== DEV_VERIFICATION_ENCRYPTION_KEY && !/^[0-9a-fA-F]{64}$/.test(encKey)) {
+    problems.push("VERIFICATION_ENCRYPTION_KEY must be 64 hexadecimal characters (32 bytes)");
+  }
+
+  if (problems.length > 0) {
+    throw new Error(
+      `Refusing to start in production with insecure configuration:\n - ${problems.join("\n - ")}`
+    );
   }
 };
 
 export const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
-  if (!secret && isProduction) {
-    console.warn("[WARNING] JWT_SECRET is not set in production. Falling back to default signing key.");
+  if (isProduction && (!secret || secret === DEV_JWT_SECRET)) {
+    // assertProductionEnv should have caught this at startup; throw defensively.
+    throw new Error("JWT_SECRET is not securely configured in production");
   }
-  return secret || "dev_only_mahacsr_access_secret";
+  return secret || DEV_JWT_SECRET;
 };
 
 export const getJwtRefreshSecret = () => {
   const secret = process.env.JWT_REFRESH_SECRET;
-  if (!secret && isProduction) {
-    console.warn("[WARNING] JWT_REFRESH_SECRET is not set in production. Falling back to default refresh key.");
+  if (isProduction && (!secret || secret === DEV_JWT_REFRESH_SECRET)) {
+    throw new Error("JWT_REFRESH_SECRET is not securely configured in production");
   }
-  return secret || "dev_only_mahacsr_refresh_secret";
+  return secret || DEV_JWT_REFRESH_SECRET;
 };
 
 export const getAllowedOrigins = () => {
@@ -70,5 +121,16 @@ export const getApiSetuConfig = () => {
 };
 
 export const getVerificationEncryptionKey = () => {
-  return process.env.VERIFICATION_ENCRYPTION_KEY || "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+  const key = process.env.VERIFICATION_ENCRYPTION_KEY;
+  if (isProduction && (!key || key === DEV_VERIFICATION_ENCRYPTION_KEY)) {
+    throw new Error("VERIFICATION_ENCRYPTION_KEY is not securely configured in production");
+  }
+  return key || DEV_VERIFICATION_ENCRYPTION_KEY;
 };
+
+/**
+ * Shared secret for external cron callers (e.g. Vercel Cron) to trigger the
+ * SLA escalation sweep without a user JWT. Required whenever the cron endpoint
+ * is used in production.
+ */
+export const getCronSecret = () => process.env.CRON_SECRET || "";

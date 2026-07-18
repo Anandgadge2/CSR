@@ -2,8 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { Role } from "../types/role";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
-import { createAdminUser, getAdminOverview, listUsers, updateUserRole, deleteUser, runSlaEscalations, getSlaStatistics } from "../controllers/adminController";
+import { checkPermission } from "../middlewares/accessControlMiddleware";
+import { createAdminUser, getAdminOverview, listUsers, updateUserRole, deleteUser, runSlaEscalations, runSlaEscalationsViaCron, getSlaStatistics } from "../controllers/adminController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
   approveRequirement,
@@ -31,7 +31,7 @@ import {
 
 const router = Router();
 
-const requireSuperAdmin = [authenticateToken, authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN]), resolveTenantContext, checkTenantActive];
+const requireSuperAdmin = [authenticateToken, authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN])];
 
 // Role can be a base platform enum OR the name of a dynamic OrganizationRole —
 // do not hardcode an enum here; controllers resolve dynamic names against the DB.
@@ -53,7 +53,7 @@ const roleSchema = z.object({
   })
 });
 
-const requireStateCell = [authenticateToken, authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN]), resolveTenantContext, checkTenantActive];
+const requireStateCell = [authenticateToken, authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN])];
 
 router.get("/overview", ...requireSuperAdmin, getAdminOverview);
 router.get("/users", ...requireSuperAdmin, listUsers);
@@ -90,5 +90,8 @@ router.get("/convergence-report", ...requireStateCell, checkPermission("report:v
 // SLA escalation monitoring & manual sweep trigger
 router.get("/sla/statistics", ...requireSuperAdmin, getSlaStatistics);
 router.post("/sla/run-escalations", ...requireSuperAdmin, runSlaEscalations);
+// Serverless external-cron entry point — authenticated via CRON_SECRET header,
+// not a user JWT (no auth middleware here by design).
+router.post("/sla/cron-escalations", runSlaEscalationsViaCron);
 
 export default router;

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { asyncHandler } from "../../../middlewares/asyncHandler";
-import { checkPermission } from "../../../middlewares/tenantMiddleware";
+import { checkPermission } from "../../../middlewares/accessControlMiddleware";
 import { getDashboardLogs, getDashboardStats } from "../controllers/dashboardController";
 
 const router = Router();

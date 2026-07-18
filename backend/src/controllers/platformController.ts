@@ -32,7 +32,7 @@ const DEFAULT_SLIDES = [
 ];
 
 // A static list of all platform features, returning all as enabled
-export const getMyTenantFeatures = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const getPlatformFeatures = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const features = {
       enableNGORegistration: true,

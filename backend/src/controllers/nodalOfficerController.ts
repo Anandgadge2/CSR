@@ -10,7 +10,6 @@ interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: Role;
-    tenantId?: string | null;
     organizationId?: string | null;
     assignedDistrict?: string | null;
   };
@@ -33,7 +32,6 @@ export const getDashboard = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
 
     if (!userId) {
       return unauthorizedResponse(res, "User not authenticated");
@@ -159,7 +157,6 @@ export const getMyProjects = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { status, district, search, page = 1, limit = 20 } = req.query;
 
     if (!userId) {
@@ -267,7 +264,6 @@ export const updateMilestoneStatus = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { status, remarks, geoTaggedPhotoUrls } = req.body;
 
@@ -374,7 +370,6 @@ export const verifyMilestone = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { isVerified, remarks, verificationNotes } = req.body;
 
@@ -470,7 +465,6 @@ export const verifyUC = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { verificationStatus, remarks } = req.body;
 
@@ -587,7 +581,6 @@ export const respondToGrievance = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { responseText, resolutionText, actionTaken } = req.body;
 
@@ -699,7 +692,6 @@ export const generateProgressReport = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { format = "json" } = req.query;
 
@@ -962,7 +954,6 @@ export const createInspection = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     if (!userId) return unauthorizedResponse(res, "User not authenticated");
 
     const {

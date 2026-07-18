@@ -15,7 +15,6 @@ import { notify, notifyCompanyUsers, notifyDistrictAdmins, auditLog } from "../s
 export const submitNGOApplication = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const ngoId = req.user!.ngoId;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
     if (!ngoId) return res.status(403).json({ error: "Only NGO users can apply" });
 
     // Check NGO is empanelled
@@ -109,9 +108,6 @@ export const getApplicationsForRequirement = async (req: AuthenticatedRequest, r
     const { requirementId } = req.params;
 
     const where: any = { csrRequirementId: requirementId };
-    if ((req as any).tenantContext?.tenantId || req.user?.tenantId) {
-      where.tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId;
-    }
 
     const applications = await prisma.nGOApplication.findMany({
       where,
@@ -140,9 +136,6 @@ export const getMyApplications = async (req: AuthenticatedRequest, res: Response
     if (!ngoId) return res.json([]);
 
     const where: any = { ngoId };
-    if ((req as any).tenantContext?.tenantId || req.user?.tenantId) {
-      where.tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId;
-    }
 
     const applications = await prisma.nGOApplication.findMany({
       where,

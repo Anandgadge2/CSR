@@ -9,7 +9,6 @@ import { notify, notifyNGOUsers, notifyDistrictAdmins, notifyCompanyUsers, audit
 export const expressInterest = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const companyId = req.user!.companyId;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
     if (!companyId) return res.status(403).json({ error: "Only company users can express interest" });
 
     const { csrRequirementId, fundingAmount, fundingType, preferredNgoId, focusAlignmentNotes, discussionMessage, expectedTimeline, companyRemarks } = req.body;
@@ -89,9 +88,6 @@ export const getMyInterests = async (req: AuthenticatedRequest, res: Response, n
     if (!companyId) return res.json([]);
 
     const where: any = { companyId };
-    if ((req as any).tenantContext?.tenantId || req.user?.tenantId) {
-      ((where as any).tenantId) = (req as any).tenantContext?.tenantId || req.user?.tenantId;
-    }
 
     const interests = await prisma.companyInterest.findMany({
       where,
@@ -118,9 +114,6 @@ export const getInterestsForRequirement = async (req: AuthenticatedRequest, res:
     const { requirementId } = req.params;
 
     const where: any = { csrRequirementId: requirementId };
-    if ((req as any).tenantContext?.tenantId || req.user?.tenantId) {
-      ((where as any).tenantId) = (req as any).tenantContext?.tenantId || req.user?.tenantId;
-    }
 
     const interests = await prisma.companyInterest.findMany({
       where,
@@ -142,9 +135,6 @@ export const listCompanyInterestsForAdmin = async (req: AuthenticatedRequest, re
   try {
     const { status, district } = req.query;
     const where: any = {};
-    if ((req as any).tenantContext?.tenantId || req.user?.tenantId) {
-      ((where as any).tenantId) = (req as any).tenantContext?.tenantId || req.user?.tenantId;
-    }
 
     if (status) where.status = status;
     

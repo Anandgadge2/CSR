@@ -8,7 +8,6 @@ import {
 } from "../controllers/onboardingController";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import { Role } from "../types/role";
-import { checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
 import {
   deleteOnboardingDocument,
   getCompanyOnboardingProfile,
@@ -41,9 +40,7 @@ const router = Router();
 
 const organizationOnboardingAccess = [
   authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.CORPORATE_USER, Role.NGO_ADMIN, Role.NGO_MEMBER]),
-  resolveTenantContext,
-  checkTenantActive
+  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.CORPORATE_USER, Role.NGO_ADMIN, Role.NGO_MEMBER])
 ];
 
 router.get("/status", ...organizationOnboardingAccess, getOnboardingStatus);

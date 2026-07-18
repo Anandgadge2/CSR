@@ -62,7 +62,7 @@ interface VerifyPitchBody {
 }
 
 // ─── Helper: Generate Pitch Reference ID ────────────────────────────
-const generatePitchReferenceId = async (tenantId?: string | null): Promise<string> => {
+const generatePitchReferenceId = async (): Promise<string> => {
   const year = new Date().getFullYear();
   const prefix = `GP-MH-${year}-`;
 
@@ -117,7 +117,6 @@ export const submitPitch = async (
 ) => {
   try {
     const userId = req.user?.id;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
 
     // Check if user is a government officer
     const allowedRoles: Role[] = [
@@ -227,7 +226,7 @@ export const submitPitch = async (
       }
     }
 
-    const pitchReferenceId = await generatePitchReferenceId(tenantId);
+    const pitchReferenceId = await generatePitchReferenceId();
 
     const verificationDueAt = calculateDueDate("GOVERNMENT_PITCH_VERIFICATION");
 
@@ -352,14 +351,6 @@ export const getPublicPitches = async (
         ]
       }
     };
-
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
-    if (tenantId) {
-      where.OR = [
-        { tenantId: tenantId },
-        { tenantId: null }
-      ];
-    }
 
     if (district) where.district = district as string;
     if (taluka) where.taluka = taluka as string;
@@ -731,7 +722,6 @@ export const submitInterest = async (
   try {
     const { id } = req.params;
     const userId = req.user?.id;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
 
     const body = req.body as SubmitInterestBody;
 
@@ -902,14 +892,6 @@ export const getMyPitches = async (
     // Build filter - get pitches by matching mobile/email with the user
     // In a real system, you'd have a createdBy field, here we match by contact info
     const where: any = {};
-
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-    if (tenantId) {
-      where.OR = [
-        { tenantId: tenantId },
-        { tenantId: null }
-      ];
-    }
 
     if (status) {
       where.status = status as GovernmentPitchStatus;

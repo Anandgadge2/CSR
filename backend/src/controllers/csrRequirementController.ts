@@ -9,7 +9,6 @@ import { notify, notifyDistrictAdmins, auditLog } from "../services/notification
 export const createCSRRequirement = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
 
     // Government departments are the requirement owners. The existing
     // BeneficiaryProfile table stores the department registration details.
@@ -163,9 +162,6 @@ export const getMyRequirements = async (req: AuthenticatedRequest, res: Response
 
     const { status } = req.query;
     const filter: any = { beneficiaryProfileId: profile.id };
-    if ((req as any).tenantContext?.tenantId || undefined) {
-      filter.tenantId = (req as any).tenantContext?.tenantId || undefined;
-    }
     if (status) filter.status = status as CSRRequirementStatus;
 
     const requirements = await prisma.cSRRequirement.findMany({
@@ -410,8 +406,6 @@ export const getMarketplaceRequirements = async (req: AuthenticatedRequest, res:
     ];
 
     const where: any = { status: { in: visibleStatuses } };
-    const tenantId = (req as any).tenantContext?.tenantId || undefined || null;
-    if (tenantId) where.tenantId = tenantId;
 
     if (district) where.district = district as string;
     if (category) where.category = category as string;
@@ -481,9 +475,6 @@ export const getVerificationQueue = async (req: AuthenticatedRequest, res: Respo
         ]
       }
     };
-    if ((req as any).tenantContext?.tenantId || undefined) {
-      filter.tenantId = (req as any).tenantContext?.tenantId || undefined;
-    }
 
     // District admin can only see their district
     if (role === Role.DISTRICT_ADMIN && req.user!.assignedDistrict) {
@@ -580,8 +571,7 @@ export const verifyRequirement = async (req: AuthenticatedRequest, res: Response
 export const upsertBeneficiaryProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const tenantId = (req as any).tenantContext?.tenantId || req.user!.tenantId || null;
-    const organizationId = (req as any).tenantContext?.organizationId || req.user!.organizationId || null;
+    const organizationId = req.user!.organizationId || null;
     const {
       agencyName, agencyType, district, taluka, village, city,
       address, pincode, contactPerson, contactEmail, contactPhone,

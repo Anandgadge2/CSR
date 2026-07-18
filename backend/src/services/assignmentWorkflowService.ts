@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import { auditLog, notifyByRole } from "./notificationService";
+import { auditLog, notifyByRole, sendNodalOfficerAppointmentNotification } from "./notificationService";
 import { dispatchNotification } from "./notificationOrchestrator";
 import {
   ensureWorkflowInstance,
@@ -201,6 +201,19 @@ export async function recordNodalOfficerAssignment(params: {
       },
       params.ipAddress
     );
+
+    // Notify the appointed nodal officer across all channels.
+    const nodalOfficer = await prisma.user.findUnique({
+      where: { id: params.nodalOfficerId },
+      select: { email: true }
+    });
+    await sendNodalOfficerAppointmentNotification({
+      userId: params.nodalOfficerId,
+      targetEmail: nodalOfficer?.email,
+      title: "You have been appointed as Nodal Officer",
+      message: `You have been appointed as the Nodal Officer for ${params.entityType} ${params.entityId}. Please review and take the required action.`,
+      actionButtonUrl: `${FRONTEND_URL}/dashboard`
+    });
   }
 
   try {

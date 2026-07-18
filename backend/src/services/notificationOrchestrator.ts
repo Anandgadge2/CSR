@@ -12,6 +12,55 @@ export interface DispatchInput {
   notificationType?: string;
 }
 
+/**
+ * Contact-only dispatch for recipients that have no User row (e.g. public
+ * corporate-enquiry / government-pitch applicants tracked by tracking ID).
+ *
+ * These recipients cannot receive an IN_APP Notification (that model requires
+ * a userId FK), so only EMAIL + SMS are fanned out through the queue/worker,
+ * which records a NotificationLog row (recipientId is a plain string there).
+ * If a userId is also known, prefer dispatchNotification instead.
+ */
+export interface ContactDispatchInput {
+  /** Stable reference used for NotificationLog.recipientId (e.g. tracking ID). */
+  referenceId: string;
+  email?: string | null;
+  phone?: string | null;
+  title: string;
+  message: string;
+  /** Defaults to EMAIL + SMS. IN_APP/SOCKET are ignored (no user to attach to). */
+  channels?: ("EMAIL" | "SMS")[];
+  trackingId?: string;
+  currentStatus?: string;
+  actionButtonUrl?: string;
+  correlationId?: string;
+  notificationType?: string;
+}
+
+export async function dispatchToContact(input: ContactDispatchInput): Promise<void> {
+  const channels = (input.channels || ["EMAIL", "SMS"]).filter(
+    (c) => (c === "EMAIL" && input.email) || (c === "SMS" && input.phone)
+  ) as NotificationJobPayload["channels"];
+
+  if (channels.length === 0) return; // nothing deliverable
+
+  const payload: NotificationJobPayload = {
+    recipientId: `contact:${input.referenceId}`,
+    recipientEmail: input.email || null,
+    recipientPhone: input.phone || null,
+    title: input.title,
+    message: input.message,
+    channels,
+    trackingId: input.trackingId,
+    currentStatus: input.currentStatus,
+    actionButtonUrl: input.actionButtonUrl,
+    correlationId: input.correlationId,
+    notificationType: input.notificationType || "CONTACT_NOTIFICATION"
+  };
+
+  await notificationQueue.add("notify", payload);
+}
+
 function interpolate(text: string, variables: Record<string, any>): string {
   return text.replace(/\{\{(\w+)\}\}/g, (_match, key) =>
     variables[key] !== undefined && variables[key] !== null ? String(variables[key]) : ""

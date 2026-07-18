@@ -183,12 +183,6 @@ export const submitEnquiry = async (
     // Generate tracking ID
     const trackingId = await generateCorporateEnquiryTrackingId();
 
-    // Resolve tenant context or get default tenant
-    let tenantId = (req as any).tenantContext?.tenantId;
-    if (!tenantId) {
-      const tenant = await ((...args: any[]) => ({ id: "global", status: "ACTIVE" } as any))({ where: { code: "MH-CSR" } });
-    }
-
     // Create enquiry
     const enquiry = await prisma.corporateEnquiry.create({
       data: {
@@ -334,7 +328,6 @@ export const getAllEnquiries = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { status, page = 1, limit = 20, district } = req.query as unknown as EnquiryFilters;
 
     if (!userId) {
@@ -481,7 +474,6 @@ export const assignRM = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const body = req.body as AssignRMBody;
 
@@ -620,7 +612,6 @@ export const recordContact = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const body = req.body as RecordContactBody;
 
@@ -744,7 +735,6 @@ export const getEnquiryById = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
 
     if (!userId) {
@@ -878,7 +868,6 @@ export const getRelationshipManagers = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const tenantId = req.user?.tenantId;
     const rms = await prisma.user.findMany({
       where: {
         role: Role.CSR_RELATIONSHIP_MANAGER,

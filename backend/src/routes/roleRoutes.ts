@@ -12,7 +12,7 @@ import {
   assignUserRoles,
   getUserRoles } from "../controllers/roleController";
 import { authenticateToken } from "../middlewares/authMiddleware";
-import { checkPermission } from "../middlewares/tenantMiddleware";
+import { checkPermission } from "../middlewares/accessControlMiddleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
 
 const router = Router();

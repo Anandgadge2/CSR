@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authMiddleware";
-import { resolveTenantContext, checkPermission } from "../middlewares/tenantMiddleware";
+import { checkPermission } from "../middlewares/accessControlMiddleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
 import {
   getAssignmentContext,
@@ -15,9 +15,9 @@ import {
 
 const router = Router();
 
-// All assignment routes require authentication + tenant context;
+// All assignment routes require authentication;
 // authorization is permission-based (dynamic RBAC), never hardcoded roles.
-router.use(authenticateToken, resolveTenantContext);
+router.use(authenticateToken);
 
 // Assignment page context (entity summary + workflow stage + assignments)
 router.get(

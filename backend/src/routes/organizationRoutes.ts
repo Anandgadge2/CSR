@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Role } from "../types/role";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
+import { checkPermission } from "../middlewares/accessControlMiddleware";
 import {
   createOrgRole,
   deleteOrgRole,
@@ -17,9 +17,7 @@ import {
 const router = Router();
 const orgAdmin = [
   authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.NGO_ADMIN]),
-  resolveTenantContext,
-  checkTenantActive
+  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.NGO_ADMIN])
 ];
 
 router.get("/roles", ...orgAdmin, checkPermission("organization:view"), listOrgRoles);

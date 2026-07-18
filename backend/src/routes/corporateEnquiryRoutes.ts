@@ -10,7 +10,7 @@ import {
   recordContact,
   getRelationshipManagers
 } from "../controllers/corporateEnquiryController";
-import { checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
+import { checkPermission } from "../middlewares/accessControlMiddleware";
 
 const router = Router();
 
@@ -30,9 +30,7 @@ const requireStateCellStaff = [
     Role.JOINT_SECRETARY,
     Role.STATE_CSR_CELL,
     Role.PLANNING_SECRETARY
-  ]),
-  resolveTenantContext,
-  checkTenantActive
+  ])
 ];
 
 // Protected routes - Admin & assigners only
@@ -45,9 +43,7 @@ const requireAdmin = [
     Role.STATE_CSR_CELL,
     Role.JOINT_SECRETARY,
     Role.CSR_RELATIONSHIP_MANAGER
-  ]),
-  resolveTenantContext,
-  checkTenantActive
+  ])
 ];
 
 // Protected routes - RM only
@@ -58,9 +54,7 @@ const requireRM = [
     Role.DISTRICT_ADMIN,
     Role.SUPER_ADMIN,
     Role.PORTAL_ADMIN
-  ]),
-  resolveTenantContext,
-  checkTenantActive
+  ])
 ];
 
 // Get all enquiries (RM, JS, Admin only)

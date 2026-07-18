@@ -3,12 +3,9 @@ import { z } from "zod";
 import { Role } from "../types/role";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import {
-  checkFeatureEnabled,
   checkOrganizationApproved,
-  checkPermission,
-  checkTenantActive,
-  resolveTenantContext
-} from "../middlewares/tenantMiddleware";
+  checkPermission
+} from "../middlewares/accessControlMiddleware";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
   createReport,
@@ -64,8 +61,6 @@ const blockUnapprovedOrganizationsForReports = (req: any, res: any, next: any) =
 const reportAccess = [
   authenticateToken,
   authorizeRoles(reportRoles),
-  resolveTenantContext,
-  checkTenantActive,
   blockUnapprovedOrganizationsForReports,
   checkPermission("report:view")
 ];
@@ -77,7 +72,7 @@ router.get("/executive/:reportType", ...reportAccess, getGovernmentReport);
 router.get("/company/:reportType", ...reportAccess, getCompanyReport);
 router.get("/ngo/:reportType", ...reportAccess, getNgoReport);
 router.get("/district/:reportType", ...reportAccess, getGovernmentReport);
-router.post("/", ...reportAccess, checkFeatureEnabled("enableReportsExport"), checkPermission("report:export"), validateRequest(reportSchema), createReport);
-router.post("/annual-summary", ...reportAccess, checkFeatureEnabled("enableReportsExport"), checkPermission("report:export"), generateAnnualSummary);
+router.post("/", ...reportAccess, checkPermission("report:export"), validateRequest(reportSchema), createReport);
+router.post("/annual-summary", ...reportAccess, checkPermission("report:export"), generateAnnualSummary);
 
 export default router;

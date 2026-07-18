@@ -1,6 +1,6 @@
 import { Response } from "express";
 import prisma from "../config/db";
-import { TenantAwareRequest } from "../middlewares/tenantMiddleware";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import {
   AssignmentError,
   ENTITY_TYPES,
@@ -38,7 +38,7 @@ const parseEntityType = (value: string): AssignmentEntityType => {
  * Everything the "Assign Officer" page needs: entity summary, district,
  * current workflow stage, existing assignments, and nodal officer.
  */
-export const getAssignmentContext = async (req: TenantAwareRequest, res: Response) => {
+export const getAssignmentContext = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const entityType = parseEntityType(req.params.entityType);
     const { entityId } = req.params;
@@ -91,7 +91,7 @@ export const getAssignmentContext = async (req: TenantAwareRequest, res: Respons
  * Option A — searchable existing-officer list (name/email/mobile/employeeId/
  * department/designation).
  */
-export const searchOfficersHandler = async (req: TenantAwareRequest, res: Response) => {
+export const searchOfficersHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const q = typeof req.query.q === "string" ? req.query.q : "";
     const district = typeof req.query.district === "string" ? req.query.district : undefined;
@@ -111,10 +111,10 @@ export const searchOfficersHandler = async (req: TenantAwareRequest, res: Respon
  * GET /api/assignments/roles
  * Dynamic assignable-role dropdown — no hardcoded role names anywhere.
  */
-export const getAssignableRolesHandler = async (req: TenantAwareRequest, res: Response) => {
+export const getAssignableRolesHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const roles = await getAssignableRoles({
-      organizationId: req.tenantContext?.organizationId || null,
+      organizationId: req.user?.organizationId || null,
       companyId: req.user?.companyId || null
     });
     return successResponse(res, { roles });
@@ -131,7 +131,7 @@ export const getAssignableRolesHandler = async (req: TenantAwareRequest, res: Re
  * Option A — assign an existing officer.
  * Body: { entityType, entityId, assignedToId, assignedRoleId?, remarks? }
  */
-export const createAssignment = async (req: TenantAwareRequest, res: Response) => {
+export const createAssignment = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return errorResponse(res, "Unauthorized", 401);
     const { entityType, entityId, assignedToId, assignedRoleId, assignmentType, remarks } = req.body || {};
@@ -149,7 +149,7 @@ export const createAssignment = async (req: TenantAwareRequest, res: Response) =
       remarks: remarks || null,
       assignedById: req.user.id,
       assignerRole: req.user.role as string | null,
-      organizationId: req.tenantContext?.organizationId || null,
+      organizationId: req.user?.organizationId || null,
       companyId: req.user.companyId || null,
       ipAddress: req.ip
     });
@@ -168,7 +168,7 @@ export const createAssignment = async (req: TenantAwareRequest, res: Response) =
  * Option B — create a NEW officer + assign. Sends activation invitation;
  * never emails a password.
  */
-export const createOfficerAndAssign = async (req: TenantAwareRequest, res: Response) => {
+export const createOfficerAndAssign = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return errorResponse(res, "Unauthorized", 401);
     const {
@@ -205,7 +205,7 @@ export const createOfficerAndAssign = async (req: TenantAwareRequest, res: Respo
       entityId,
       assignedById: req.user.id,
       assignerRole: req.user.role as string | null,
-      organizationId: req.tenantContext?.organizationId || null,
+      organizationId: req.user?.organizationId || null,
       companyId: req.user.companyId || null,
       ipAddress: req.ip
     });
@@ -223,7 +223,7 @@ export const createOfficerAndAssign = async (req: TenantAwareRequest, res: Respo
  * GET /api/assignments/mine
  * Assignments for the logged-in user (Field Officer / Nodal dashboards).
  */
-export const getMyAssignments = async (req: TenantAwareRequest, res: Response) => {
+export const getMyAssignments = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return errorResponse(res, "Unauthorized", 401);
 
@@ -268,7 +268,7 @@ export const getMyAssignments = async (req: TenantAwareRequest, res: Response) =
  * GET /api/assignments/status/:entityType/:entityId
  * Workflow stage + full history timeline for an entity.
  */
-export const getWorkflowStatus = async (req: TenantAwareRequest, res: Response) => {
+export const getWorkflowStatus = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const entityType = parseEntityType(req.params.entityType);
     const { entityId } = req.params;
@@ -310,7 +310,7 @@ export const getWorkflowStatus = async (req: TenantAwareRequest, res: Response) 
  * Map a nodal officer to a district. Auto-resumes any approved projects
  * parked waiting for a nodal officer in that district.
  */
-export const createDistrictNodalMapping = async (req: TenantAwareRequest, res: Response) => {
+export const createDistrictNodalMapping = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return errorResponse(res, "Unauthorized", 401);
     const { district, userId, domain } = req.body || {};

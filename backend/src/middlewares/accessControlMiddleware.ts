@@ -6,32 +6,7 @@ import { AuthenticatedRequest } from "./authMiddleware";
 import { ROLE_PERMISSION_MAP } from "../config/platformAccess";
 import { resolveUserPermission } from "../services/permissionService";
 
-export interface TenantAwareRequest extends AuthenticatedRequest {
-  tenantContext?: {
-    organizationId: string | null;
-    isMasterAdmin: boolean;
-    tenantId?: string | null;
-  };
-}
-
-export const resolveTenantContext = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
-  try {
-    req.tenantContext = {
-      organizationId: req.user?.organizationId || null,
-      isMasterAdmin: false,
-      tenantId: "global"
-    };
-    return next();
-  } catch (error) {
-    return next(error);
-  }
-};
-
-export const checkTenantActive = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
-  return next();
-};
-
-const auditBlockedAccess = async (req: TenantAwareRequest, action: string, details: Record<string, unknown>) => {
+const auditBlockedAccess = async (req: AuthenticatedRequest, action: string, details: Record<string, unknown>) => {
   await prisma.auditLog.create({
     data: {
       userId: req.user?.id,
@@ -46,25 +21,13 @@ const auditBlockedAccess = async (req: TenantAwareRequest, action: string, detai
   }).catch(() => {});
 };
 
-export const checkFeatureEnabled = (featureKey: string, sensitive = true) => {
-  return async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
-    return next();
-  };
-};
-
-export const checkPublicFeatureEnabled = (featureKey: string) => {
-  return async (_req: TenantAwareRequest, res: Response, next: NextFunction) => {
-    return next();
-  };
-};
-
-export const checkOrganizationApproved = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const checkOrganizationApproved = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (
       req.user?.role === Role.SUPER_ADMIN ||
       req.user?.role === Role.GOVERNMENT_OFFICER
     ) return next();
-    const organizationId = req.tenantContext?.organizationId;
+    const organizationId = req.user?.organizationId;
 
     if (!organizationId) {
       await auditBlockedAccess(req, "ONBOARDING_ACCESS_BLOCKED", { reason: "MISSING_ORGANIZATION", path: req.originalUrl });
@@ -98,7 +61,7 @@ export const checkOrganizationApproved = async (req: TenantAwareRequest, res: Re
 };
 
 export const checkPermission = (permissionKey: string) => {
-  return async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized access" });
       if (req.user.role === Role.SUPER_ADMIN) return next();
@@ -108,7 +71,7 @@ export const checkPermission = (permissionKey: string) => {
       // Shared resolver (same logic used by the workflow engine)
       const hasPermission = await resolveUserPermission(req.user.id, permissionKey, {
         role: null, // static fallback already checked above
-        organizationId: req.tenantContext?.organizationId || undefined
+        organizationId: req.user.organizationId || undefined
       });
 
       if (!hasPermission) {

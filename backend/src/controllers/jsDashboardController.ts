@@ -10,7 +10,6 @@ interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: Role;
-    tenantId?: string | null;
     organizationId?: string | null;
   };
 }
@@ -27,7 +26,6 @@ export const getJSDashboard = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
 
     if (!userId) {
       return unauthorizedResponse(res, "User not authenticated");
@@ -325,7 +323,6 @@ export const getJSGovernmentPitches = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const tenantId = req.user?.tenantId;
     const pitches = await prisma.governmentPitch.findMany({
       where: {
         status: {
@@ -373,7 +370,6 @@ export const getJSEscalations = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
 
     if (!userId) {
       return unauthorizedResponse(res, "User not authenticated");
@@ -474,7 +470,6 @@ export const handleEscalationAction = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { action, notes } = req.body;
 

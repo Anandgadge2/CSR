@@ -16,9 +16,9 @@ model User {
   accountStatus        UserAccountStatus         @default(ACTIVE)
   isSystemSeeded       Boolean                   @default(false)
   isVerified           Boolean                   @default(false)
-  otpCode              String?
+  otpCodeHash          String?
   otpExpiresAt         DateTime?
-  refreshToken         String?
+  refreshTokenHash     String?
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
   ngoId                String?
@@ -1120,7 +1120,6 @@ enum OrganizationStatus {
 
 enum RoleScope {
   GLOBAL
-  TENANT
   ORGANIZATION
 }
 

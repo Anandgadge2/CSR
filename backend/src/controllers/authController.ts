@@ -1,28 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
 import prisma from "../config/db";
-import { OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, RoleScope, VerificationStatus } from "@prisma/client";
+import { OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, VerificationStatus } from "@prisma/client";
 import { Role } from "../types/role";
-import { PERMISSIONS, ROLE_PERMISSION_MAP } from "../config/platformAccess";
 import { sendOtpEmail } from "../utils/mailer";
 import { getJwtRefreshSecret, getJwtSecret } from "../config/env";
 import { ensureOrganizationAdminRole } from "../utils/orgRoles";
 import { successResponse, errorResponse, validationErrorResponse, unauthorizedResponse, forbiddenResponse, notFoundResponse } from "../utils/apiResponse";
+import { generateNumericOtp, hashToken, constantTimeEqual } from "../utils/security";
 
 const JWT_SECRET = getJwtSecret();
 const JWT_REFRESH_SECRET = getJwtRefreshSecret();
-
-// In-memory cache for fast password verification (avoids slow bcryptjs.compare for repeated logins)
-const credentialCache = new Map<string, number>();
-const CREDENTIAL_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
 
 const generateTokens = (user: {
   id: string;
   email: string;
   role: Role;
-  tenantId?: string | null;
   organizationId?: string | null;
   accountStatus?: string | null;
   ngoId?: string | null;
@@ -48,44 +42,6 @@ const generateTokens = (user: {
   return { accessToken, refreshToken };
 };
 
-const getDefaultTenant = async () => {
-  return {
-    id: "global",
-    name: "Maharashtra CSR Portal",
-    code: "MH-CSR",
-    state: "Maharashtra",
-    status: "ACTIVE"
-  } as any;
-};
-
-const assertRegistrationFeatureEnabled = async (tenantId: string, role: Role) => {
-  const featureByRole: Partial<Record<Role, string>> = {
-    [Role.NGO_ADMIN]: "enableNGORegistration",
-    [Role.COMPANY_ADMIN]: "enableCompanyRegistration",
-    [Role.BENEFICIARY_AGENCY]: "enableGovernmentDepartmentRegistration"
-  };
-  const featureKey = featureByRole[role];
-  if (!featureKey) return;
-
-  const feature = await ((...args: any[]) => ({ isEnabled: true } as any))({
-    where: { tenantId_featureKey: { tenantId, featureKey } }
-  });
-  if (feature && !feature.isEnabled) {
-    await prisma.auditLog.create({
-      data: {
-        action: "REGISTRATION_FEATURE_BLOCKED",
-        actorRole: role,
-        entityType: "TenantFeature",
-        entityId: feature.id,
-        details: { featureKey, role }
-      }
-    }).catch(() => {});
-    const error = new Error("This feature is not enabled for your portal instance.");
-    (error as any).statusCode = 403;
-    throw error;
-  }
-};
-
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password, role, profile } = req.body;
 
@@ -94,11 +50,11 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     return validationErrorResponse(res, "Email already registered");
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const passwordHash = await bcrypt.hash(password, 12);
+  // OTP is generated with a CSPRNG; only its hash is persisted (see user.create below).
+  const otpCode = generateNumericOtp(6);
+  const otpCodeHash = hashToken(otpCode);
   const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-  const tenant = await getDefaultTenant();
 
   // ---- Validation phase (reads + early returns, before any writes) ----
   if (role === Role.NGO_ADMIN) {
@@ -242,7 +198,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           role,
           organizationId,
           isVerified: false,
-          otpCode,
+          otpCodeHash,
           otpExpiresAt,
           ngoId,
           companyId
@@ -318,7 +274,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     data: {
       userId: user.id,
       action: "USER_REGISTER",
-      details: { email, role, tenantId: tenant.id, organizationId: createdOrganizationId, ngoId: createdNgoId, companyId: createdCompanyId, beneficiaryProfileId: createdBeneficiaryProfileId }
+      details: { email, role, organizationId: createdOrganizationId, ngoId: createdNgoId, companyId: createdCompanyId, beneficiaryProfileId: createdBeneficiaryProfileId }
     }
   });
 
@@ -370,19 +326,25 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
     return validationErrorResponse(res, "User is already verified");
   }
 
-  if (!user.otpCode || !user.otpExpiresAt || user.otpCode !== otpCode) {
+  if (!user.otpCodeHash || !user.otpExpiresAt) {
     return validationErrorResponse(res, "Invalid OTP code");
   }
 
+  // Check expiry before comparing so an expired code is never treated as valid.
   if (new Date() > user.otpExpiresAt) {
     return validationErrorResponse(res, "OTP has expired. Please request a new one.");
+  }
+
+  // Constant-time hash comparison — never compare the raw code directly.
+  if (!constantTimeEqual(user.otpCodeHash, hashToken(String(otpCode)))) {
+    return validationErrorResponse(res, "Invalid OTP code");
   }
 
   await prisma.user.update({
     where: { id: user.id },
     data: {
       isVerified: true,
-      otpCode: null,
+      otpCodeHash: null,
       otpExpiresAt: null
     }
   });
@@ -420,19 +382,10 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     return forbiddenResponse(res, "Account is not active. Please contact your administrator.");
   }
 
-  const credHash = crypto.createHash("sha256").update(`${email}:${password}`).digest("hex");
-  let isValid = false;
-  const cachedTime = credentialCache.get(credHash);
-  
-  if (cachedTime && Date.now() - cachedTime < CREDENTIAL_CACHE_TTL_MS) {
-    isValid = true;
-  } else {
-    isValid = await bcrypt.compare(password, user.passwordHash);
-    if (isValid) {
-      credentialCache.set(credHash, Date.now());
-    }
-  }
-
+  // Always verify against the bcrypt hash. A previous in-memory credential cache
+  // was removed: it skipped bcrypt for up to an hour after a successful login,
+  // so a changed or revoked password kept working until the cache expired.
+  const isValid = await bcrypt.compare(password, user.passwordHash);
   if (!isValid) {
     return unauthorizedResponse(res, "Invalid email or password");
   }
@@ -468,7 +421,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       : Promise.resolve(null),
     prisma.user.update({
       where: { id: user.id },
-      data: { refreshToken }
+      // Store only the hash of the refresh token so a DB leak cannot be replayed.
+      data: { refreshTokenHash: hashToken(refreshToken) }
     }),
     prisma.auditLog.create({
       data: {
@@ -518,8 +472,9 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     return unauthorizedResponse(res, "Refresh token missing");
   }
 
+  // Look up by the stored hash, never by the raw token.
   const user = await prisma.user.findFirst({
-    where: { refreshToken },
+    where: { refreshTokenHash: hashToken(refreshToken) },
     include: { ngo: true, company: true, beneficiaryProfile: true }
   });
 
@@ -527,9 +482,11 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     return forbiddenResponse(res, "Invalid refresh token");
   }
 
-  jwt.verify(refreshToken, JWT_REFRESH_SECRET, (err: any) => {
+  jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err: any) => {
     if (err) return forbiddenResponse(res, "Expired refresh token");
 
+    // Rotate the refresh token on every use so a captured token cannot be
+    // replayed after the legitimate client refreshes.
     const tokens = generateTokens({
       id: user.id,
       email: user.email,
@@ -541,6 +498,19 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
       assignedDistrict: user.assignedDistrict,
       beneficiaryProfileId: user.beneficiaryProfile?.id
     });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshTokenHash: hashToken(tokens.refreshToken) }
+    });
+
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
     return successResponse(res, { accessToken: tokens.accessToken });
   });
 };
@@ -549,8 +519,8 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
   const refreshToken = req.cookies.refreshToken;
   if (refreshToken) {
     await prisma.user.updateMany({
-      where: { refreshToken },
-      data: { refreshToken: null }
+      where: { refreshTokenHash: hashToken(refreshToken) },
+      data: { refreshTokenHash: null }
     });
   }
 
@@ -622,7 +592,6 @@ export const registerInvitedNgo = async (req: Request, res: Response, next: Next
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const tenant = await getDefaultTenant();
 
     // Check if NGO already registered with registration number or PAN
     const existingNgo = await prisma.nGO.findFirst({

@@ -10,13 +10,13 @@ import {
   RoleScope
 } from "@prisma/client";
 import { Role } from "../types/role";
-import { TenantAwareRequest } from "../middlewares/tenantMiddleware";
+import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { ensureOrganizationAdminRole } from "../utils/orgRoles";
 import crypto from "crypto";
 import { createInvitation, InvitationError } from "../services/invitationService";
 import { dispatchNotification } from "../services/notificationOrchestrator";
 
-const audit = async (req: TenantAwareRequest, action: string, entityType: string, entityId: string | null, details: Record<string, unknown>) => {
+const audit = async (req: AuthenticatedRequest, action: string, entityType: string, entityId: string | null, details: Record<string, unknown>) => {
   await prisma.auditLog.create({
     data: {
       userId: req.user?.id,
@@ -53,8 +53,8 @@ const asDateValue = (value: unknown) => {
   return Number.isNaN(date.getTime()) ? undefined : date;
 };
 
-const getOwnedOrganization = async (req: TenantAwareRequest, expectedType?: OrganizationKind) => {
-  const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
+const getOwnedOrganization = async (req: AuthenticatedRequest, expectedType?: OrganizationKind) => {
+  const organizationId = req.user?.organizationId || req.user?.organizationId;
   if (!organizationId) {
     throw Object.assign(new Error("Organization is not assigned to this account"), { statusCode: 400 });
   }
@@ -107,7 +107,7 @@ const hasAnyDocument = (documents: Array<{ documentType: string }>, requiredType
 };
 
 const recordOnboardingReview = async (
-  req: TenantAwareRequest,
+  req: AuthenticatedRequest,
   organizationId: string,
   reviewAction: OnboardingReviewAction,
   remarks?: string
@@ -156,7 +156,7 @@ const buildDepartmentValidationErrors = (organization: any, profile: any, docume
   return errors;
 };
 
-export const listPendingOrganizations = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const listPendingOrganizations = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const where: any = {
       onboardingStatus: {
@@ -180,7 +180,7 @@ export const listPendingOrganizations = async (req: TenantAwareRequest, res: Res
   }
 };
 
-export const listOrganizations = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const listOrganizations = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const where: any = {
       status: { not: OrganizationStatus.DELETED }
@@ -197,7 +197,7 @@ export const listOrganizations = async (req: TenantAwareRequest, res: Response, 
   }
 };
 
-export const getOrganizationById = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const getOrganizationById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await prisma.organization.findUnique({
       where: { id: req.params.id },
@@ -210,9 +210,6 @@ export const getOrganizationById = async (req: TenantAwareRequest, res: Response
       }
     });
     if (!organization) return res.status(404).json({ error: "Organization not found" });
-    if (!req.tenantContext?.isMasterAdmin && false) {
-      return res.status(403).json({ error: "Cannot access another portal instance organization" });
-    }
     return res.json(organization);
   } catch (error) {
     return next(error);
@@ -220,16 +217,13 @@ export const getOrganizationById = async (req: TenantAwareRequest, res: Response
 };
 
 const updateOnboardingStatus = async (
-  req: TenantAwareRequest,
+  req: AuthenticatedRequest,
   res: Response,
   status: OrganizationOnboardingStatus,
   action: string
 ) => {
   const organization = await prisma.organization.findUnique({ where: { id: req.params.id } });
   if (!organization) return res.status(404).json({ error: "Organization not found" });
-  if (!req.tenantContext?.isMasterAdmin && false) {
-    return res.status(403).json({ error: "Cannot modify another portal instance organization" });
-  }
 
   const updated = await prisma.organization.update({
     where: { id: req.params.id },
@@ -257,7 +251,7 @@ const updateOnboardingStatus = async (
   return res.json(updated);
 };
 
-export const approveOrganization = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const approveOrganization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     return updateOnboardingStatus(req, res, OrganizationOnboardingStatus.APPROVED, "ORGANIZATION_ONBOARDING_APPROVED");
   } catch (error) {
@@ -265,7 +259,7 @@ export const approveOrganization = async (req: TenantAwareRequest, res: Response
   }
 };
 
-export const rejectOrganization = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const rejectOrganization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     return updateOnboardingStatus(req, res, OrganizationOnboardingStatus.REJECTED, "ORGANIZATION_ONBOARDING_REJECTED");
   } catch (error) {
@@ -273,7 +267,7 @@ export const rejectOrganization = async (req: TenantAwareRequest, res: Response,
   }
 };
 
-export const requestClarification = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const requestClarification = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     return updateOnboardingStatus(req, res, OrganizationOnboardingStatus.CLARIFICATION_REQUIRED, "ORGANIZATION_ONBOARDING_CLARIFICATION_REQUESTED");
   } catch (error) {
@@ -281,7 +275,7 @@ export const requestClarification = async (req: TenantAwareRequest, res: Respons
   }
 };
 
-export const suspendOrganization = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const suspendOrganization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     return updateOnboardingStatus(req, res, OrganizationOnboardingStatus.SUSPENDED, "ORGANIZATION_SUSPENDED");
   } catch (error) {
@@ -289,9 +283,9 @@ export const suspendOrganization = async (req: TenantAwareRequest, res: Response
   }
 };
 
-export const getOnboardingStatus = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const getOnboardingStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
+    const organizationId = req.user?.organizationId || req.user?.organizationId;
     if (!organizationId) {
       return res.json({
         onboardingStatus: OrganizationOnboardingStatus.REGISTERED,
@@ -314,9 +308,9 @@ export const getOnboardingStatus = async (req: TenantAwareRequest, res: Response
   }
 };
 
-export const updateOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
+    const organizationId = req.user?.organizationId || req.user?.organizationId;
     if (!organizationId) return res.status(400).json({ error: "Organization is not assigned to this account" });
 
     const existing = await prisma.organization.findUnique({ where: { id: organizationId }, select: { onboardingStatus: true } });
@@ -359,11 +353,10 @@ export const updateOnboardingProfile = async (req: TenantAwareRequest, res: Resp
   }
 };
 
-export const uploadOnboardingDocument = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const uploadOnboardingDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
-    const tenantId = req.tenantContext?.tenantId || req.user?.tenantId;
-    if (!organizationId || !tenantId) return res.status(400).json({ error: "Organization is not assigned to this account" });
+    const organizationId = req.user?.organizationId || req.user?.organizationId;
+    if (!organizationId) return res.status(400).json({ error: "Organization is not assigned to this account" });
     const orgState = await prisma.organization.findUnique({ where: { id: organizationId }, select: { onboardingStatus: true } });
     if (!orgState) return res.status(404).json({ error: "Organization not found" });
     assertOnboardingEditable(orgState);
@@ -408,11 +401,10 @@ export const uploadOnboardingDocument = async (req: TenantAwareRequest, res: Res
   }
 };
 
-export const listOnboardingDocuments = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const listOnboardingDocuments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
-    const tenantId = req.tenantContext?.tenantId || req.user?.tenantId;
-    if (!organizationId || !tenantId) return res.status(400).json({ error: "Organization is not assigned to this account" });
+    const organizationId = req.user?.organizationId || req.user?.organizationId;
+    if (!organizationId) return res.status(400).json({ error: "Organization is not assigned to this account" });
     const documents = await prisma.organizationDocument.findMany({
       where: { organizationId },
       orderBy: { createdAt: "desc" }
@@ -423,15 +415,15 @@ export const listOnboardingDocuments = async (req: TenantAwareRequest, res: Resp
   }
 };
 
-export const deleteOnboardingDocument = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const deleteOnboardingDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const document = await prisma.organizationDocument.findUnique({ where: { id: req.params.id } });
     if (!document) return res.status(404).json({ error: "Document not found" });
-    if (!req.tenantContext?.isMasterAdmin && document.organizationId !== req.tenantContext?.organizationId) {
+    if (document.organizationId !== req.user?.organizationId) {
       return res.status(403).json({ error: "Cannot delete another organization document" });
     }
     const owner = await prisma.organization.findUnique({ where: { id: document.organizationId }, select: { onboardingStatus: true } });
-    if (owner && !req.tenantContext?.isMasterAdmin) assertOnboardingEditable(owner);
+    if (owner) assertOnboardingEditable(owner);
     await prisma.organizationDocument.delete({ where: { id: req.params.id } });
     await audit(req, "ORGANIZATION_DOCUMENT_DELETED", "OrganizationDocument", req.params.id, {});
     return res.json({ message: "Document deleted" });
@@ -440,7 +432,7 @@ export const deleteOnboardingDocument = async (req: TenantAwareRequest, res: Res
   }
 };
 
-export const getOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const getOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req);
     return res.json(organization);
@@ -449,7 +441,7 @@ export const getOnboardingProfile = async (req: TenantAwareRequest, res: Respons
   }
 };
 
-export const getCompanyOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const getCompanyOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
     return res.json({ organization, profile: organization.csrCompanyProfile });
@@ -458,7 +450,7 @@ export const getCompanyOnboardingProfile = async (req: TenantAwareRequest, res: 
   }
 };
 
-export const updateCompanyOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateCompanyOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
     assertOnboardingEditable(organization);
@@ -521,7 +513,7 @@ export const updateCompanyOnboardingProfile = async (req: TenantAwareRequest, re
   }
 };
 
-export const updateCompanyCompliance = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateCompanyCompliance = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
     assertOnboardingEditable(organization);
@@ -604,7 +596,7 @@ export const updateCompanyCompliance = async (req: TenantAwareRequest, res: Resp
   }
 };
 
-export const updateCompanyPreferences = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateCompanyPreferences = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
     assertOnboardingEditable(organization);
@@ -647,7 +639,7 @@ export const updateCompanyPreferences = async (req: TenantAwareRequest, res: Res
   }
 };
 
-export const submitCompanyOnboarding = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const submitCompanyOnboarding = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.CSR_COMPANY);
     assertOnboardingEditable(organization);
@@ -684,7 +676,7 @@ export const submitCompanyOnboarding = async (req: TenantAwareRequest, res: Resp
   }
 };
 
-export const getDepartmentOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const getDepartmentOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     return res.json({ organization, profile: organization.governmentDepartmentProfile });
@@ -693,7 +685,7 @@ export const getDepartmentOnboardingProfile = async (req: TenantAwareRequest, re
   }
 };
 
-export const updateDepartmentOnboardingProfile = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateDepartmentOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     assertOnboardingEditable(organization);
@@ -755,7 +747,7 @@ export const updateDepartmentOnboardingProfile = async (req: TenantAwareRequest,
   }
 };
 
-export const updateDepartmentNodalOfficer = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateDepartmentNodalOfficer = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     assertOnboardingEditable(organization);
@@ -799,7 +791,7 @@ export const updateDepartmentNodalOfficer = async (req: TenantAwareRequest, res:
   }
 };
 
-export const updateDepartmentAuthorization = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateDepartmentAuthorization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     assertOnboardingEditable(organization);
@@ -841,7 +833,7 @@ export const updateDepartmentAuthorization = async (req: TenantAwareRequest, res
   }
 };
 
-export const updateDepartmentJurisdiction = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateDepartmentJurisdiction = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     assertOnboardingEditable(organization);
@@ -879,7 +871,7 @@ export const updateDepartmentJurisdiction = async (req: TenantAwareRequest, res:
   }
 };
 
-export const updateDepartmentPermissions = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateDepartmentPermissions = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     assertOnboardingEditable(organization);
@@ -904,7 +896,7 @@ export const updateDepartmentPermissions = async (req: TenantAwareRequest, res: 
   }
 };
 
-export const submitDepartmentOnboarding = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const submitDepartmentOnboarding = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const organization = await getOwnedOrganization(req, OrganizationKind.GOVERNMENT_DEPARTMENT);
     assertOnboardingEditable(organization);
@@ -939,9 +931,9 @@ export const submitDepartmentOnboarding = async (req: TenantAwareRequest, res: R
   }
 };
 
-export const submitOnboarding = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const submitOnboarding = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const organizationId = req.tenantContext?.organizationId || req.user?.organizationId;
+    const organizationId = req.user?.organizationId || req.user?.organizationId;
     if (!organizationId) return res.status(400).json({ error: "Organization is not assigned to this account" });
     const existing = await prisma.organization.findUnique({ where: { id: organizationId }, select: { onboardingStatus: true } });
     if (!existing) return res.status(404).json({ error: "Organization not found" });
@@ -957,7 +949,7 @@ export const submitOnboarding = async (req: TenantAwareRequest, res: Response, n
   }
 };
 
-export const listPermissions = async (_req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const listPermissions = async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const permissions = await prisma.permission.findMany({ orderBy: [{ module: "asc" }, { key: "asc" }] });
     return res.json(permissions);
@@ -966,11 +958,11 @@ export const listPermissions = async (_req: TenantAwareRequest, res: Response, n
   }
 };
 
-export const listOrgRoles = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const listOrgRoles = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const roles = await prisma.organizationRole.findMany({
       where: {
-        organizationId: req.tenantContext?.organizationId || undefined
+        organizationId: req.user?.organizationId || undefined
       },
       include: { rolePermissions: { include: { permission: true } }, _count: { select: { userRoles: true } } },
       orderBy: { name: "asc" }
@@ -981,13 +973,13 @@ export const listOrgRoles = async (req: TenantAwareRequest, res: Response, next:
   }
 };
 
-export const createOrgRole = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const createOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const permissionKeys: string[] = req.body.permissionKeys || [];
     const permissions = await prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
     const role = await prisma.organizationRole.create({
       data: {
-        organizationId: req.tenantContext?.organizationId || null,
+        organizationId: req.user?.organizationId || null,
         name: req.body.name,
         description: req.body.description,
         scope: RoleScope.ORGANIZATION,
@@ -1005,7 +997,7 @@ export const createOrgRole = async (req: TenantAwareRequest, res: Response, next
   }
 };
 
-export const updateOrgRole = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const permissionKeys: string[] | undefined = req.body.permissionKeys;
     const role = await prisma.organizationRole.update({
@@ -1030,7 +1022,7 @@ export const updateOrgRole = async (req: TenantAwareRequest, res: Response, next
   }
 };
 
-export const deleteOrgRole = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const deleteOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const assigned = await prisma.userOrganizationRole.count({ where: { roleId: req.params.id } });
     if (assigned > 0) return res.status(400).json({ error: "Cannot delete a role assigned to users" });
@@ -1042,11 +1034,11 @@ export const deleteOrgRole = async (req: TenantAwareRequest, res: Response, next
   }
 };
 
-export const listOrgUsers = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const listOrgUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const users = await prisma.user.findMany({
       where: {
-        organizationId: req.tenantContext?.organizationId || undefined,
+        organizationId: req.user?.organizationId || undefined,
       },
       select: {
         id: true,
@@ -1066,11 +1058,10 @@ export const listOrgUsers = async (req: TenantAwareRequest, res: Response, next:
   }
 };
 
-export const inviteOrgUser = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const inviteOrgUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const tenantId = req.tenantContext?.tenantId;
-    const organizationId = req.tenantContext?.organizationId;
-    if (!tenantId || !organizationId) return res.status(400).json({ error: "Organization context is required" });
+    const organizationId = req.user?.organizationId;
+    if (!organizationId) return res.status(400).json({ error: "Organization context is required" });
     if (!req.body.email) return res.status(422).json({ error: "email is required" });
 
     const email = String(req.body.email).toLowerCase().trim();
@@ -1122,17 +1113,17 @@ export const inviteOrgUser = async (req: TenantAwareRequest, res: Response, next
   }
 };
 
-export const updateOrgUserRole = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateOrgUserRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.body.roleId) return res.status(400).json({ error: "roleId is required" });
     await prisma.userOrganizationRole.deleteMany({
-      where: { userId: req.params.id, organizationId: req.tenantContext?.organizationId || undefined }
+      where: { userId: req.params.id, organizationId: req.user?.organizationId || undefined }
     });
     const assignment = await prisma.userOrganizationRole.create({
       data: {
         userId: req.params.id,
         roleId: req.body.roleId,
-        organizationId: req.tenantContext?.organizationId || null
+        organizationId: req.user?.organizationId || null
       }
     });
     await audit(req, "ORGANIZATION_USER_ROLE_UPDATED", "User", req.params.id, { roleId: req.body.roleId });
@@ -1142,7 +1133,7 @@ export const updateOrgUserRole = async (req: TenantAwareRequest, res: Response, 
   }
 };
 
-export const updateOrgUserStatus = async (req: TenantAwareRequest, res: Response, next: NextFunction) => {
+export const updateOrgUserStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.update({
       where: { id: req.params.id },

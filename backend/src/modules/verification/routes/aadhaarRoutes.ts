@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../../middlewares/asyncHandler";
 import { validateRequest } from "../../../middlewares/validationMiddleware";
-import { checkPermission } from "../../../middlewares/tenantMiddleware";
+import { checkPermission } from "../../../middlewares/accessControlMiddleware";
 import { createCustomRateLimiter } from "../../../middlewares/rateLimitMiddleware";
 import { aadhaarGenerateOtpSchema, aadhaarStatusSchema, aadhaarVerifyOtpSchema } from "../dto/aadhaarSchemas";
 import { generateAadhaarOtp, getAadhaarStatus, verifyAadhaarOtp } from "../controllers/aadhaarController";

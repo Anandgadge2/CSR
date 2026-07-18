@@ -19,6 +19,7 @@
 
 import prisma from "../config/db";
 import { SLAStage } from "@prisma/client";
+import { sendSlaEscalationNotification } from "./notificationService";
 
 /**
  * SLA Timeline Constants (in days)
@@ -434,14 +435,17 @@ export async function escalateToNextLevel(
       },
     });
 
-    // Send notification to escalated user
-    await prisma.notification.create({
-      data: {
-        userId: escalatedToUserId,
-        title: "SLA Escalation Alert",
-        message: `An ${currentEscalation.entityType} has been escalated to you. Stage: ${nextStage}. Due: ${newDueAt.toLocaleDateString()}`,
-        type: "IN_APP",
-      },
+    // Send notification to escalated user across all channels (in-app + email + SMS).
+    const escalatedToUser = await prisma.user.findUnique({
+      where: { id: escalatedToUserId },
+      select: { email: true },
+    });
+    await sendSlaEscalationNotification({
+      userId: escalatedToUserId,
+      targetEmail: escalatedToUser?.email,
+      title: "SLA escalation alert",
+      message: `A ${currentEscalation.entityType} has been escalated to you. Stage: ${nextStage}. Due: ${newDueAt.toLocaleDateString()}.`,
+      currentStatus: nextStage,
     });
 
     return {

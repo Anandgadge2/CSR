@@ -23,7 +23,6 @@ export const getCurrentUserPermissions = async (
 
     const userId = req.user.id;
     const userRole = req.user.role;
-    const tenantId = req.user.tenantId;
     const organizationId = req.user.organizationId;
 
     // Start with system role permissions as fallback
@@ -102,7 +101,6 @@ export const getModulePermissions = async (
 
     const { module } = req.params;
     const userId = req.user.id;
-    const tenantId = req.user.tenantId;
     const organizationId = req.user.organizationId;
 
     // Get all user permissions
@@ -167,7 +165,6 @@ export const checkUserPermission = async (
 
     const userId = req.user.id;
     const userRole = req.user.role;
-    const tenantId = req.user.tenantId;
     const organizationId = req.user.organizationId;
 
     // Admin bypass

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Role } from "../types/role";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkFeatureEnabled, checkOrganizationApproved, checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
+import { checkOrganizationApproved, checkPermission } from "../middlewares/accessControlMiddleware";
 import {
   confirmAssetHandover,
   convertRequirementToProject,
@@ -14,12 +14,9 @@ import {
 } from "../controllers/csrLifecycleController";
 
 const router = Router();
-const operationalContext = [resolveTenantContext, checkTenantActive];
 const projectReadAccess = [
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.NGO_ADMIN, Role.NGO_MEMBER]),
-  ...operationalContext,
-  checkFeatureEnabled("enableCSRMarketplace"),
   checkPermission("project:view")
 ];
 
@@ -33,8 +30,6 @@ router.post(
   "/admin/projects/convert-from-requirement",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN]),
-  ...operationalContext,
-  checkFeatureEnabled("enableCSRMarketplace"),
   checkPermission("project:create"),
   convertRequirementToProject
 );
@@ -43,8 +38,6 @@ router.post(
   "/projects/:projectId/fund-releases",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.FINANCE_USER]),
-  ...operationalContext,
-  checkFeatureEnabled("enableFundDisbursement"),
   checkPermission("fund:release"),
   createFundRelease
 );
@@ -53,8 +46,6 @@ router.post(
   "/ngo/fund-releases/:id/utilization-certificate",
   authenticateToken,
   authorizeRoles([Role.NGO_ADMIN, Role.NGO_MEMBER]),
-  ...operationalContext,
-  checkFeatureEnabled("enableFundDisbursement"),
   checkOrganizationApproved,
   checkPermission("fund:verify-utilization"),
   submitUtilizationCertificate
@@ -64,8 +55,6 @@ router.post(
   "/admin/utilization-certificates/:id/verify",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN, Role.FINANCE_USER]),
-  ...operationalContext,
-  checkFeatureEnabled("enableFundDisbursement"),
   checkPermission("fund:verify-utilization"),
   verifyUtilizationCertificate
 );
@@ -74,7 +63,6 @@ router.post(
   "/projects/:projectId/confirm-handover",
   authenticateToken,
   authorizeRoles([Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  ...operationalContext,
   checkOrganizationApproved,
   checkPermission("project:update"),
   confirmAssetHandover
@@ -84,8 +72,6 @@ router.post(
   "/district/projects/:id/inspection",
   authenticateToken,
   authorizeRoles([Role.DISTRICT_ADMIN, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  ...operationalContext,
-  checkFeatureEnabled("enableMilestoneMonitoring"),
   checkPermission("milestone:verify"),
   createProjectInspection
 );
@@ -94,8 +80,6 @@ router.post(
   "/projects/:projectId/impact-metrics",
   authenticateToken,
   authorizeRoles([Role.NGO_ADMIN, Role.NGO_MEMBER, Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  ...operationalContext,
-  checkFeatureEnabled("enableMilestoneMonitoring"),
   checkOrganizationApproved,
   checkPermission("project:update"),
   upsertImpactMetric

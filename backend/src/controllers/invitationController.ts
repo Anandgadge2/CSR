@@ -8,6 +8,7 @@ import {
   getInvitationByToken
 } from "../services/invitationService";
 import { successResponse, errorResponse } from "../utils/apiResponse";
+import { hashToken } from "../utils/security";
 
 const JWT_SECRET = getJwtSecret();
 const JWT_REFRESH_SECRET = getJwtRefreshSecret();
@@ -84,7 +85,7 @@ export const activateInvitation = async (req: Request, res: Response) => {
     const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "7d" });
 
-    await prisma.user.update({ where: { id: fullUser.id }, data: { refreshToken } });
+    await prisma.user.update({ where: { id: fullUser.id }, data: { refreshTokenHash: hashToken(refreshToken) } });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,

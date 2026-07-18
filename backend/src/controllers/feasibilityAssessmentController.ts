@@ -6,6 +6,7 @@ import { Role } from "../types/role";
 import { FEASIBILITY_CHECKLIST_TEMPLATE } from "../constants/feasibilityChecklist";
 import { onboardApprovedAssessmentToProject } from "../services/convergenceOnboardingService";
 import { onProjectApprovedByJS, recordNodalOfficerAssignment } from "../services/assignmentWorkflowService";
+import { sendJsDecisionNotification } from "../services/notificationService";
 
 // Extended Request type with user info
 interface AuthenticatedRequest extends Request {
@@ -13,7 +14,6 @@ interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: Role;
-    tenantId?: string | null;
     organizationId?: string | null;
   };
 }
@@ -31,7 +31,6 @@ export const getPendingAssessments = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { search, page = 1, limit = 20 } = req.query;
 
     if (!userId) {
@@ -166,7 +165,6 @@ export const getAssessmentById = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
 
     if (!userId) {
@@ -294,7 +292,6 @@ export const submitJSDecision = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { decision, remarks, conditions } = req.body;
 
@@ -429,6 +426,36 @@ export const submitJSDecision = async (
       }
     }
 
+    // Notify the original applicant of the JS decision across all channels.
+    // Non-fatal: a notification failure must never surface as a failed decision.
+    try {
+      const decisionLabel =
+        decision === "REJECT" ? "not approved" :
+        decision === "APPROVE_WITH_CONDITIONS" ? "approved with conditions" : "approved";
+      if (assessment.corporateEnquiry) {
+        await sendJsDecisionNotification({
+          trackingId: assessment.corporateEnquiry.trackingId,
+          targetEmail: assessment.corporateEnquiry.email,
+          targetMobile: assessment.corporateEnquiry.mobile,
+          title: "Feasibility decision on your CSR enquiry",
+          message: `Your CSR enquiry ${assessment.corporateEnquiry.trackingId} has been ${decisionLabel} by the Joint Secretary.${remarks ? ` Remarks: ${remarks}` : ""}`,
+          currentStatus: decision === "REJECT" ? "JS_REJECTED" : "JS_APPROVED",
+        });
+      }
+      if (assessment.governmentPitch) {
+        await sendJsDecisionNotification({
+          trackingId: assessment.governmentPitch.pitchReferenceId,
+          targetEmail: assessment.governmentPitch.email,
+          targetMobile: assessment.governmentPitch.mobile,
+          title: "Feasibility decision on your development pitch",
+          message: `Your development pitch ${assessment.governmentPitch.pitchReferenceId} has been ${decisionLabel} by the Joint Secretary.${remarks ? ` Remarks: ${remarks}` : ""}`,
+          currentStatus: decision === "REJECT" ? "JS_REJECTED" : "JS_APPROVED",
+        });
+      }
+    } catch (notifyError) {
+      console.error("JS decision notification failed (non-fatal):", notifyError);
+    }
+
     return successResponse(
       res,
       { assessment: updatedAssessment },
@@ -452,7 +479,6 @@ export const appointNodalOfficer = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const {
       district,
@@ -694,7 +720,6 @@ export const updateChecklistItems = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { items } = req.body;
 
@@ -791,7 +816,6 @@ export const getNodalAppointments = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const tenantId = req.user?.tenantId;
     const appointments = await prisma.nodalOfficerAppointment.findMany({
       where: {
       },
@@ -837,7 +861,6 @@ export const getNodalAppointmentById = async (
 ): Promise<Response | void> => {
   try {
     const { id } = req.params;
-    const tenantId = req.user?.tenantId;
     const appointment = await prisma.nodalOfficerAppointment.findFirst({
       where: {
         id,
@@ -903,7 +926,6 @@ export const getNodalOfficers = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const tenantId = req.user?.tenantId;
     const nodalOfficers = await prisma.user.findMany({
       where: {
         role: Role.DISTRICT_NODAL_OFFICER,

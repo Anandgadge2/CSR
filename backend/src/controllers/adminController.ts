@@ -8,9 +8,8 @@ import { runEscalationSweep } from "../services/slaSchedulerService";
 import SLAEscalationService from "../services/slaEscalationService";
 import { createInvitation, InvitationError } from "../services/invitationService";
 import { dispatchNotification } from "../services/notificationOrchestrator";
-
-const getRequestTenantId = (req: AuthenticatedRequest) =>
-  (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
+import { getCronSecret } from "../config/env";
+import { Request } from "express";
 
 const isGlobalAdmin = (req: AuthenticatedRequest) =>
   req.user?.role === Role.SUPER_ADMIN;
@@ -18,15 +17,9 @@ const isGlobalAdmin = (req: AuthenticatedRequest) =>
 const isTopLevelAdminRole = (role: Role) =>
   role === Role.SUPER_ADMIN;
 
-const tenantScope = (req: AuthenticatedRequest) => {
-  const tenantId = getRequestTenantId(req);
-  if (!tenantId || isGlobalAdmin(req)) return {};
-  return {};
-};
-
 export const getAdminOverview = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const where = tenantScope(req);
+    const where = {};
     const [
       users,
       pendingNgos,
@@ -49,7 +42,7 @@ export const getAdminOverview = async (req: AuthenticatedRequest, res: Response,
 
 export const listUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const where = tenantScope(req);
+    const where = {};
     const users = await prisma.user.findMany({
       where,
       select: {
@@ -201,9 +194,6 @@ export const updateUserRole = async (req: AuthenticatedRequest, res: Response, n
 
     const existingUser = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!existingUser) return res.status(404).json({ error: "User not found" });
-    if (!isGlobalAdmin(req) && ((existingUser as any).tenantId) !== getRequestTenantId(req)) {
-      return res.status(403).json({ error: "Cannot update a user outside your portal instance" });
-    }
     if (req.user?.role === Role.PORTAL_ADMIN && (isTopLevelAdminRole(existingUser.role as any) || isTopLevelAdminRole(role))) {
       return res.status(403).json({ error: "Portal Admin cannot modify Super Admin access" });
     }
@@ -276,7 +266,7 @@ export const deleteUser = async (req: AuthenticatedRequest, res: Response, next:
       if (deleteError?.code === "P2003") {
         await prisma.user.update({
           where: { id: req.params.id },
-          data: { accountStatus: "SUSPENDED", isVerified: false, refreshToken: null }
+          data: { accountStatus: "SUSPENDED", isVerified: false, refreshTokenHash: null }
         });
         await prisma.auditLog.create({
           data: {
@@ -327,6 +317,46 @@ export const runSlaEscalations = async (req: AuthenticatedRequest, res: Response
         userId: req.user?.id,
         action: "SLA_ESCALATION_SWEEP_TRIGGERED",
         details: result
+      }
+    });
+    return res.json({ success: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Trigger the SLA escalation sweep from an external cron on serverless
+ * deployments (where in-process interval timers do not run).
+ *
+ * Authenticated by a shared CRON_SECRET rather than a user JWT, since the
+ * caller (e.g. Vercel Cron) has no session. Uses a constant-time comparison
+ * to avoid leaking the secret through timing, and requires the secret to be
+ * configured so the endpoint is never left open with an empty comparison.
+ */
+export const runSlaEscalationsViaCron = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const expected = getCronSecret();
+    if (!expected) {
+      return res.status(503).json({ success: false, message: "Cron trigger not configured" });
+    }
+
+    const headerValue = req.header("x-cron-secret") || "";
+    const expectedBuf = Buffer.from(expected);
+    const providedBuf = Buffer.from(headerValue);
+    const authorized =
+      expectedBuf.length === providedBuf.length &&
+      crypto.timingSafeEqual(expectedBuf, providedBuf);
+
+    if (!authorized) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const result = await runEscalationSweep();
+    await prisma.auditLog.create({
+      data: {
+        action: "SLA_ESCALATION_SWEEP_TRIGGERED",
+        details: { ...result, trigger: "CRON" }
       }
     });
     return res.json({ success: true, ...result });

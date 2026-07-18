@@ -1,6 +1,7 @@
 import prisma from "../config/db";
 import { Role } from "../types/role";
 import { emitNotificationToUser } from "../websocket/notificationSocket";
+import { dispatchToContact } from "./notificationOrchestrator";
 
 /**
  * Create an in-app notification for a single user and push it live over the
@@ -132,54 +133,91 @@ export async function auditLog(
   });
 }
 
-type StubNotificationInput = {
+type ChannelNotificationInput = {
   trackingId?: string;
   targetEmail?: string | null;
   targetMobile?: string | null;
   title: string;
   message: string;
+  /** When set, an in-app Notification is created + pushed over the socket. */
   userId?: string;
+  currentStatus?: string;
+  actionButtonUrl?: string;
+  correlationId?: string;
 };
 
-async function safeNotificationStub(kind: string, input: StubNotificationInput): Promise<void> {
+/**
+ * Multi-channel status notification.
+ *
+ * Guarantees every status-change event reaches the recipient through all
+ * available channels rather than a console.log-only path:
+ *  - IN_APP + SOCKET: created when a userId is known (via `notify`).
+ *  - EMAIL + SMS: fanned out through the notification queue/worker via the
+ *    orchestrator's contact dispatch, which persists a NotificationLog row.
+ *
+ * Public applicants (tracked by tracking ID, no User row) still receive EMAIL
+ * and SMS. Delivery failures are swallowed so a status transition is never
+ * blocked by a downstream email/SMS outage (the failure is logged in
+ * NotificationLog by the worker).
+ */
+async function dispatchChannelNotification(
+  notificationType: string,
+  input: ChannelNotificationInput
+): Promise<void> {
+  // 1. In-app (only possible with a real user).
   if (input.userId) {
-    await notify(input.userId, input.title, input.message);
+    try {
+      await notify(input.userId, input.title, input.message);
+    } catch (err) {
+      console.error(`[notify:${notificationType}] in-app notification failed`, err);
+    }
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    console.info(`[DEV ${kind}] ${input.title}`, {
-      trackingId: input.trackingId,
-      email: input.targetEmail,
-      mobile: input.targetMobile,
-      message: input.message,
-    });
+  // 2. Email + SMS fan-out (works for both users and anonymous contacts).
+  if (input.targetEmail || input.targetMobile) {
+    try {
+      await dispatchToContact({
+        referenceId: input.trackingId || input.userId || `${notificationType}-${Date.now()}`,
+        email: input.targetEmail,
+        phone: input.targetMobile,
+        title: input.title,
+        message: input.message,
+        trackingId: input.trackingId,
+        currentStatus: input.currentStatus,
+        actionButtonUrl: input.actionButtonUrl,
+        correlationId: input.correlationId,
+        notificationType
+      });
+    } catch (err) {
+      console.error(`[notify:${notificationType}] email/SMS dispatch failed`, err);
+    }
   }
 }
 
-export async function sendTrackingIdNotification(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("TRACKING_NOTIFICATION", input);
+export async function sendTrackingIdNotification(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("TRACKING_NOTIFICATION", input);
 }
 
-export async function sendSlaEscalationNotification(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("SLA_ESCALATION", input);
+export async function sendSlaEscalationNotification(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("SLA_ESCALATION", input);
 }
 
-export async function sendGrievanceAcknowledgement(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("GRIEVANCE_ACK", input);
+export async function sendGrievanceAcknowledgement(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("GRIEVANCE_ACK", input);
 }
 
-export async function sendJsDecisionNotification(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("JS_DECISION", input);
+export async function sendJsDecisionNotification(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("JS_DECISION", input);
 }
 
-export async function sendNodalOfficerAppointmentNotification(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("NODAL_APPOINTMENT", input);
+export async function sendNodalOfficerAppointmentNotification(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("NODAL_APPOINTMENT", input);
 }
 
-export async function sendMouStatusNotification(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("MOU_STATUS", input);
+export async function sendMouStatusNotification(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("MOU_STATUS", input);
 }
 
-export async function sendUcVerificationNotification(input: StubNotificationInput): Promise<void> {
-  await safeNotificationStub("UC_VERIFICATION", input);
+export async function sendUcVerificationNotification(input: ChannelNotificationInput): Promise<void> {
+  await dispatchChannelNotification("UC_VERIFICATION", input);
 }

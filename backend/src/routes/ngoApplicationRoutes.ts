@@ -10,16 +10,13 @@ import {
   updateApplicationStatus
 } from "../controllers/ngoApplicationController";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkFeatureEnabled, checkOrganizationApproved, checkPermission, checkTenantActive, resolveTenantContext } from "../middlewares/tenantMiddleware";
+import { checkOrganizationApproved, checkPermission } from "../middlewares/accessControlMiddleware";
 import { Role } from "../types/role";
 
 const router = Router();
 const ngoTransaction = [
   authenticateToken,
   authorizeRoles([Role.NGO_ADMIN, Role.NGO_MEMBER, Role.SUPER_ADMIN]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableCSRMarketplace"),
   checkOrganizationApproved
 ];
 
@@ -29,9 +26,6 @@ router.get(
   "/requirement/:requirementId",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.BENEFICIARY_AGENCY]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableNGOSelection"),
   checkPermission("project:view"),
   getApplicationsForRequirement
 );
@@ -39,9 +33,6 @@ router.patch(
   "/:id/status",
   authenticateToken,
   authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  resolveTenantContext,
-  checkTenantActive,
-  checkFeatureEnabled("enableNGOSelection"),
   checkPermission("project:approve"),
   updateApplicationStatus
 );

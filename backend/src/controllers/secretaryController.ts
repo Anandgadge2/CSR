@@ -9,7 +9,6 @@ interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role: Role;
-    tenantId?: string | null;
     organizationId?: string | null;
   };
 }
@@ -20,7 +19,6 @@ export const getSecretaryEscalations = async (
   next: NextFunction
 ): Promise<Response | void> => {
   try {
-    const tenantId = req.user?.tenantId;
     const now = new Date();
 
     // Fetch all unresolved SLAEscalation records
@@ -156,7 +154,6 @@ export const resolveSecretaryEscalation = async (
 ): Promise<Response | void> => {
   try {
     const userId = req.user?.id;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const { decision, notes } = req.body;
 

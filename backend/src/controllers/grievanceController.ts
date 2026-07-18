@@ -16,6 +16,7 @@ import {
   calculateDueDate,
   SLA_TIMELINES,
 } from "../services/slaEscalationService";
+import { sendGrievanceAcknowledgement, notify } from "../services/notificationService";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface RaiseGrievanceBody {
@@ -108,7 +109,6 @@ export const raiseGrievance = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id: projectId } = req.params;
     const body = req.body as RaiseGrievanceBody;
 
@@ -239,6 +239,24 @@ export const raiseGrievance = async (
       },
     });
 
+    // Acknowledge to the complainant across all channels.
+    await sendGrievanceAcknowledgement({
+      trackingId: grievanceId,
+      userId,
+      targetEmail: grievance.raisedByUser?.email,
+      title: "Grievance registered",
+      message: `Your grievance ${grievanceId} has been registered. Level 1 resolution is due by ${level1DueAt.toDateString()}.`,
+      currentStatus: GrievanceStatus.RAISED,
+    });
+    // Notify the assigned nodal officer of the new grievance.
+    if (project.nodalOfficerUserId) {
+      await notify(
+        project.nodalOfficerUserId,
+        "New grievance assigned",
+        `Grievance ${grievanceId} has been raised on project ${grievance.convergenceProject?.projectId ?? projectId} and requires your review.`
+      );
+    }
+
     return successResponse(
       res,
       { grievance },
@@ -259,7 +277,6 @@ export const getMyGrievances = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { status, page = 1, limit = 20 } = req.query as unknown as GrievanceFilters;
 
     if (!userId) {
@@ -412,7 +429,6 @@ export const getGrievanceById = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
 
     if (!userId) {
@@ -533,7 +549,6 @@ export const respondToGrievance = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const body = req.body as RespondToGrievanceBody;
 
@@ -565,6 +580,9 @@ export const respondToGrievance = async (
             title: true,
             nodalOfficerUserId: true,
           },
+        },
+        raisedByUser: {
+          select: { id: true, email: true },
         },
       },
     });
@@ -711,14 +729,14 @@ export const respondToGrievance = async (
       },
     });
 
-    // Notify the grievance raiser
-    await prisma.notification.create({
-      data: {
-        userId: grievance.raisedByUserId,
-        title: "Grievance Response Received",
-        message: `Your grievance ${grievance.grievanceId} has received a response. Status: ${newStatus}`,
-        type: "IN_APP",
-      },
+    // Notify the grievance raiser across all channels (in-app + email + SMS).
+    await sendGrievanceAcknowledgement({
+      trackingId: grievance.grievanceId,
+      userId: grievance.raisedByUserId,
+      targetEmail: grievance.raisedByUser?.email,
+      title: "Grievance response received",
+      message: `Your grievance ${grievance.grievanceId} has received a response. Status: ${newStatus}.`,
+      currentStatus: newStatus!,
     });
 
     return successResponse(
@@ -741,7 +759,6 @@ export const escalateGrievance = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const body = req.body as EscalateGrievanceBody;
 
@@ -951,7 +968,6 @@ export const closeGrievance = async (
   try {
     const userId = req.user?.id;
     const userRole = req.user?.role;
-    const tenantId = req.user?.tenantId;
     const { id } = req.params;
     const body = req.body as CloseGrievanceBody;
 

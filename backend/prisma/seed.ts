@@ -187,7 +187,7 @@ async function main() {
       });
     };
 
-    const portalRole = await createSystemRole("SUPER_ADMIN", RoleScope.TENANT, portalAdminOrg.id);
+    const portalRole = await createSystemRole("SUPER_ADMIN", RoleScope.ORGANIZATION, portalAdminOrg.id);
 
     const superAdminRole = await tx.organizationRole.create({
       data: {

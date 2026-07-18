@@ -19,7 +19,6 @@ export const inviteNgo = async (req: AuthenticatedRequest, res: Response, next: 
   try {
     const user = req.user;
     const companyId = user?.companyId;
-    const tenantId = (req as any).tenantContext?.tenantId || user?.tenantId || null;
 
     if (!companyId) {
       return errorResponse(res, "User is not associated with a corporate company", 400);
@@ -87,7 +86,6 @@ export const bulkInviteNgos = async (req: AuthenticatedRequest, res: Response, n
   try {
     const user = req.user;
     const companyId = user?.companyId;
-    const tenantId = (req as any).tenantContext?.tenantId || user?.tenantId || null;
 
     if (!companyId) {
       return errorResponse(res, "User is not associated with a corporate company", 400);
@@ -208,7 +206,6 @@ export const revokeNgoAccess = async (req: AuthenticatedRequest, res: Response, 
   try {
     const user = req.user;
     const companyId = user?.companyId;
-    const tenantId = (req as any).tenantContext?.tenantId || user?.tenantId || null;
 
     if (!companyId) {
       return errorResponse(res, "User is not associated with a corporate company", 400);
@@ -270,7 +267,6 @@ export const submitPreliminaryReview = async (req: AuthenticatedRequest, res: Re
   try {
     const user = req.user;
     const companyId = user?.companyId;
-    const tenantId = (req as any).tenantContext?.tenantId || user?.tenantId || null;
 
     if (!companyId) {
       return errorResponse(res, "User is not associated with a corporate company", 400);

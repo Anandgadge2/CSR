@@ -170,6 +170,26 @@ const resources = [
 ];
 
 export default function LandingPage() {
+  const cursorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const dot = cursorRef.current;
+    if (!dot) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      dot.style.transform = `translate(${e.clientX - 6}px, ${e.clientY - 6}px)`;
+      dot.style.opacity = "1";
+    };
+    const handleMouseLeave = () => {
+      dot.style.opacity = "0";
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+    };
+  }, []);
+
   return (
     <div className="bg-slate-50 text-slate-700 min-h-screen font-sans relative overflow-hidden">
       {/* Ambient blobs */}
@@ -598,6 +618,12 @@ export default function LandingPage() {
           </Card>
         </motion.div>
       </main>
+      {/* Custom fast cursor follower — uses direct DOM, zero re-renders */}
+      <div
+        ref={cursorRef}
+        className="pointer-events-none fixed left-0 top-0 z-50 w-2 h-2 rounded-full bg-amber-400/70 mix-blend-difference opacity-0"
+        style={{ willChange: "transform" }}
+      />
     </div>
   );
 }

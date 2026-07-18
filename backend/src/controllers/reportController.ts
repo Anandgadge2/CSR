@@ -4,13 +4,8 @@ import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { CompanyInterestStatus, CSRRequirementStatus, ReportType } from "@prisma/client";
 import { Role } from "../types/role";
 
-const getRequestTenantId = (req: AuthenticatedRequest) =>
-  (req as any).tenantContext?.tenantId || req.user?.tenantId || null;
-
-const tenantScopedWhere = (req: AuthenticatedRequest) => {
-  const tenantId = getRequestTenantId(req);
-  if (!tenantId) return {};
-  return { tenantId };
+const tenantScopedWhere = (_req: AuthenticatedRequest) => {
+  return {};
 };
 
 export const listReports = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -37,7 +32,6 @@ export const listReports = async (req: AuthenticatedRequest, res: Response, next
 export const createReport = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { title, type, content, fileUrl } = req.body;
-    const tenantId = getRequestTenantId(req);
 
     if (!Object.values(ReportType).includes(type)) {
       return res.status(400).json({ error: "Invalid report type" });
@@ -75,7 +69,6 @@ export const createReport = async (req: AuthenticatedRequest, res: Response, nex
 
 export const generateAnnualSummary = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const tenantId = getRequestTenantId(req);
     const projects = await prisma.project.findMany({
       where: {
         ...tenantScopedWhere(req),

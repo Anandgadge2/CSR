@@ -9,7 +9,6 @@ export interface AuthenticatedRequest extends Request {
     email: string;
     role?: Role | null;
     roleId?: string | null;
-    tenantId?: string | null;
     organizationId?: string | null;
     accountStatus?: string | null;
     ngoId?: string | null;
