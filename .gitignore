@@ -67,3 +67,6 @@ hooks.json
 # Temporary extraction files
 temp_docx/
 temp.zip
+
+# Ignore markdown files
+*.md
