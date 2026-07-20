@@ -57,6 +57,7 @@ import companyInterestRoutes from "./routes/companyInterestRoutes";
 // import completionRoutes from "./routes/completionRoutes"; // LEGACY: Replaced by ConvergenceProject completion
 // Still required by the department portal dashboard (/department/dashboard) — do not disable
 import csrDashboardRoutes from "./routes/csrDashboardRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
 
 // MAHA CSR CONVERGENCE FRAMEWORK - New Routes
 import corporateEnquiryRoutes from "./routes/corporateEnquiryRoutes";
@@ -140,6 +141,9 @@ app.use("/api/tracking", trackingRoutes);
 app.use("/api/onboarding", onboardingRoutes);
 app.use("/api/company-interests", companyInterestRoutes);
 app.use("/api/roles", roleRoutes);
+
+// Unified dashboard engine — permission-aware summary for /dashboard
+app.use("/api/dashboard", dashboardRoutes);
 
 // Department portal (BENEFICIARY_AGENCY) — dashboard stats, profile, and requirements
 app.use("/api/csr-dashboard", csrDashboardRoutes);
