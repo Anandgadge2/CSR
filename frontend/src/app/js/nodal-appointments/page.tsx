@@ -114,6 +114,11 @@ export default function JSNodalAppointmentsPage() {
         breadcrumb="Home / Nodal Appointments"
         title="Nodal Appointments Queue"
         description="Monitor, view, and replace Nodal Officers appointed to oversee approved CSR projects."
+        actions={
+          <GovButton variant="primary" onClick={() => router.push("/js/nodal-appointments/new")}>
+            New Appointment
+          </GovButton>
+        }
       >
         {error && <GovAlert variant="danger">{error}</GovAlert>}
 

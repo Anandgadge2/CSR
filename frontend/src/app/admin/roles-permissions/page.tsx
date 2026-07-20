@@ -15,6 +15,15 @@ type Permission = {
   key: string;
   description: string;
   module: string;
+  type?: "ACTION" | "PAGE";
+};
+
+type PageDef = {
+  slug: string;
+  label: string;
+  route: string;
+  group: string;
+  permissionKey: string;
 };
 
 type PermissionGroup = {
@@ -56,8 +65,12 @@ export default function AdminRolesPermissionsPage() {
   const [roleSearchTerm, setRoleSearchTerm] = useState("");
   const [roleTypeFilter, setRoleTypeFilter] = useState<"all" | "system" | "custom">("all");
 
+  const [pages, setPages] = useState<PageDef[]>([]);
+
   const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [cloneModalOpen, setCloneModalOpen] = useState(false);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameForm, setRenameForm] = useState({ name: "", description: "" });
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -89,7 +102,13 @@ export default function AdminRolesPermissionsPage() {
 
       const groupsResponse = await apiFetch<any>("/roles/permission-groups");
       const groupsData = groupsResponse?.data || groupsResponse || [];
-      setPermissionGroups(Array.isArray(groupsData) ? groupsData : []);
+      // Controller may return { groups: [...] } or a bare array.
+      const groupsList = Array.isArray(groupsData) ? groupsData : (groupsData?.groups || []);
+      setPermissionGroups(Array.isArray(groupsList) ? groupsList : []);
+
+      const pagesResponse = await apiFetch<any>("/roles/pages");
+      const pagesData = pagesResponse?.data || pagesResponse || {};
+      setPages(Array.isArray(pagesData?.pages) ? pagesData.pages : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load roles");
     } finally {
@@ -192,6 +211,33 @@ export default function AdminRolesPermissionsPage() {
       fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete role");
+    }
+  };
+
+  const handleRenameRole = async () => {
+    if (!selectedRole) return;
+    if (!renameForm.name.trim()) {
+      setError("Role name cannot be empty.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await apiFetch(`/roles/${selectedRole.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: renameForm.name.trim(),
+          description: renameForm.description.trim(),
+        }),
+      });
+      setSuccess("Role details updated.");
+      setRenameModalOpen(false);
+      await fetchData(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to rename role");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -388,6 +434,15 @@ export default function AdminRolesPermissionsPage() {
                         <GovButton
                           variant="secondary"
                           onClick={() => {
+                            setRenameForm({ name: selectedRole.name, description: selectedRole.description || "" });
+                            setRenameModalOpen(true);
+                          }}
+                        >
+                          Rename
+                        </GovButton>
+                        <GovButton
+                          variant="secondary"
+                          onClick={() => {
                             setCloneForm({ name: `${selectedRole.name} (Copy)`, description: selectedRole.description || "" });
                             setCloneModalOpen(true);
                           }}
@@ -479,17 +534,20 @@ export default function AdminRolesPermissionsPage() {
                     </table>
                   </div>
 
-                  {/* Non-standard Permissions list */}
+                  {/* Non-standard Permissions list — excludes PAGE perms (page:*),
+                      which get their own Page Access section below. */}
                   {permissionGroups.some((g) =>
                     g.permissions.some((p) =>
+                      !p.key.startsWith("page:") &&
                       !MATRIX_COLUMNS.some((col) => col.suffix.some((suf) => p.key.endsWith(suf)))
                     )
                   ) && (
                     <div style={{ marginTop: 24 }}>
-                      <h5 style={{ fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Miscellaneous / Specific Permissions</h5>
+                      <h5 style={{ fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Bulk / Miscellaneous Capabilities</h5>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12 }}>
                         {permissionGroups.flatMap((g) =>
                           g.permissions.filter((p) =>
+                            !p.key.startsWith("page:") &&
                             !MATRIX_COLUMNS.some((col) => col.suffix.some((suf) => p.key.endsWith(suf)))
                           )
                         ).map((perm) => {
@@ -524,6 +582,68 @@ export default function AdminRolesPermissionsPage() {
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Page Access — PAGE-visibility permissions (checkbox lit = page
+                      visible in nav and reachable; unlit = hidden + route blocked). */}
+                  {pages.length > 0 && (
+                    <div style={{ marginTop: 28 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <h5 style={{ fontWeight: 600, color: "#1e293b", margin: 0 }}>Page Access</h5>
+                        <span style={{ fontSize: 12, color: "#64748b" }}>
+                          Lit = page visible & reachable · Unlit = hidden + route blocked
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 11, color: "#94a3b8", margin: "0 0 12px" }}>
+                        Controls which pages this role sees in the sidebar and can open directly. Super Admin always sees every page.
+                      </p>
+                      {Object.entries(
+                        pages.reduce((acc, pg) => {
+                          (acc[pg.group] ||= []).push(pg);
+                          return acc;
+                        }, {} as Record<string, PageDef[]>)
+                      ).map(([groupName, groupPages]) => (
+                        <div key={groupName} style={{ marginBottom: 16 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", marginBottom: 8 }}>
+                            {groupName}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 8 }}>
+                            {groupPages.map((pg) => {
+                              const isChecked = selectedRolePerms.includes(pg.permissionKey);
+                              const disabled = selectedRole.isPermanent;
+                              return (
+                                <label
+                                  key={pg.slug}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    padding: "9px 12px",
+                                    backgroundColor: isChecked ? "#eff6ff" : "#f8fafc",
+                                    borderRadius: 6,
+                                    border: "1px solid " + (isChecked ? "#bfdbfe" : "#e2e8f0"),
+                                    cursor: disabled ? "not-allowed" : "pointer",
+                                  }}
+                                  title={pg.route}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    disabled={disabled}
+                                    onChange={() => togglePermission(pg.permissionKey)}
+                                    style={{ width: 16, height: 16, accentColor: "#1e3a8a", cursor: disabled ? "not-allowed" : "pointer" }}
+                                  />
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontWeight: 600, fontSize: 13, color: "#334155" }}>{pg.label}</div>
+                                    <div style={{ fontSize: 11, color: "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pg.route}</div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -669,6 +789,37 @@ export default function AdminRolesPermissionsPage() {
             </GovButton>
             <GovButton type="submit" variant="primary" disabled={saving}>
               {saving ? "Cloning..." : "Clone Role"}
+            </GovButton>
+          </div>
+        </form>
+      </GovModal>
+
+      <GovModal open={renameModalOpen} onClose={() => setRenameModalOpen(false)} title="Rename Role" width={500}>
+        <form onSubmit={handleRenameRole}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <p style={{ fontSize: 13, color: "#64748b", margin: 0 }}>
+              The role&apos;s display name and description are editable. Its internal
+              identity (used by workflows and permissions) never changes when you rename it.
+            </p>
+            <GovInput
+              label="Role Name"
+              required
+              value={renameForm.name}
+              onChange={(e) => setRenameForm((prev) => ({ ...prev, name: e.target.value }))}
+            />
+            <GovInput
+              label="Description"
+              value={renameForm.description}
+              onChange={(e) => setRenameForm((prev) => ({ ...prev, description: e.target.value }))}
+            />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 24 }}>
+            <GovButton type="button" variant="secondary" onClick={() => setRenameModalOpen(false)}>
+              Cancel
+            </GovButton>
+            <GovButton type="submit" variant="primary" disabled={saving}>
+              {saving ? "Saving..." : "Save Changes"}
             </GovButton>
           </div>
         </form>

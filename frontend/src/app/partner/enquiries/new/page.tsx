@@ -388,7 +388,7 @@ export default function NewPartnerEnquiryPage() {
                 <GovCardTitle>Contact Information</GovCardTitle>
               </GovCardHeader>
               <GovCardBody>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="gov-grid-3">
                   <GovInput
                     label="Contact Person Name"
                     required

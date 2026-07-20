@@ -4,6 +4,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { CorporateEnquiryStatus, GovernmentPitchStatus, ChecklistAnswer, FeasibilityResult } from "@prisma/client";
 import { Role } from "../types/role";
+import { userHasAnyRole } from "../services/roleResolver";
 import { notify, notifyByRole, auditLog } from "../services/notificationService";
 import { FEASIBILITY_CHECKLIST_TEMPLATE, getFailedCriticalItems } from "../constants/feasibilityChecklist";
 import { SLAEscalationService, calculateDueDate } from "../services/slaEscalationService";
@@ -137,7 +138,7 @@ export const getDashboardStats = async (
       Role.STATE_CSR_CELL
     ];
 
-    if (!allowedRoles.includes(userRole)) {
+    if (!userHasAnyRole(req.user, allowedRoles)) {
       return res.status(403).json({ error: "Not authorized to access RM dashboard" });
     }
 
@@ -345,7 +346,7 @@ export const getPendingEnquiries = async (
       Role.STATE_CSR_CELL
     ];
 
-    if (!allowedRoles.includes(userRole)) {
+    if (!userHasAnyRole(req.user, allowedRoles)) {
       return res.status(403).json({ error: "Not authorized" });
     }
 
@@ -543,7 +544,7 @@ export const getPendingPitches = async (
       Role.DISTRICT_ADMIN
     ];
 
-    if (!allowedRoles.includes(userRole)) {
+    if (!userHasAnyRole(req.user, allowedRoles)) {
       return res.status(403).json({ error: "Not authorized" });
     }
 

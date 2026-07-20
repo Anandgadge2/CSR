@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import prisma from "../config/db";
 import { OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, VerificationStatus } from "@prisma/client";
 import { Role } from "../types/role";
+import { userHasAnyRole } from "../services/roleResolver";
 import { sendOtpEmail } from "../utils/mailer";
 import { getJwtRefreshSecret, getJwtSecret } from "../config/env";
 import { ensureOrganizationAdminRole } from "../utils/orgRoles";
@@ -17,6 +18,7 @@ const generateTokens = (user: {
   id: string;
   email: string;
   role: Role;
+  roleSlug?: string | null;
   organizationId?: string | null;
   accountStatus?: string | null;
   ngoId?: string | null;
@@ -28,6 +30,7 @@ const generateTokens = (user: {
     id: user.id,
     email: user.email,
     role: user.role,
+    roleSlug: user.roleSlug ?? null,
     organizationId: user.organizationId,
     accountStatus: user.accountStatus,
     ngoId: user.ngoId,
@@ -390,11 +393,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     return unauthorizedResponse(res, "Invalid email or password");
   }
 
-  if (user.role === Role.NGO_ADMIN || user.role === Role.NGO_MEMBER) {
+  const loginPrincipal = { role: user.role, roleSlug: user.roleRelation?.slug ?? null };
+  if (userHasAnyRole(loginPrincipal, [Role.NGO_ADMIN, Role.NGO_MEMBER])) {
     if (user.ngo && user.ngo.status === VerificationStatus.REJECTED) {
       return forbiddenResponse(res, "NGO organization verification was rejected. Access denied.");
     }
-  } else if (user.role === Role.COMPANY_ADMIN || user.role === Role.COMPANY_MEMBER) {
+  } else if (userHasAnyRole(loginPrincipal, [Role.COMPANY_ADMIN, Role.COMPANY_MEMBER])) {
     if (user.company && user.company.status === VerificationStatus.REJECTED) {
       return forbiddenResponse(res, "Company organization verification was rejected. Access denied.");
     }
@@ -403,7 +407,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   const { accessToken, refreshToken } = generateTokens({
     id: user.id,
     email: user.email,
-    role: user.role,
+    role: user.role ?? Role.GOVERNMENT_OFFICER,
+    roleSlug: user.roleRelation?.slug ?? null,
     organizationId: user.organizationId,
     accountStatus: user.accountStatus,
     ngoId: user.ngoId,
@@ -475,7 +480,7 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
   // Look up by the stored hash, never by the raw token.
   const user = await prisma.user.findFirst({
     where: { refreshTokenHash: hashToken(refreshToken) },
-    include: { ngo: true, company: true, beneficiaryProfile: true }
+    include: { ngo: true, company: true, beneficiaryProfile: true, roleRelation: true }
   });
 
   if (!user) {
@@ -490,7 +495,8 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     const tokens = generateTokens({
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role ?? Role.GOVERNMENT_OFFICER,
+      roleSlug: user.roleRelation?.slug ?? null,
       organizationId: user.organizationId,
       accountStatus: user.accountStatus,
       ngoId: user.ngoId,
@@ -655,7 +661,8 @@ export const registerInvitedNgo = async (req: Request, res: Response, next: Next
       data: {
         email: invitation.email,
         passwordHash,
-        role: Role.NGO_ADMIN,
+        // TODO(dynamic-role): assign roleId for ngo-admin
+        role: Role.CORPORATE_USER,
         organizationId: organization.id,
         isVerified: true, // Email is verified since they completed register through email token
         ngoId: ngo.id,

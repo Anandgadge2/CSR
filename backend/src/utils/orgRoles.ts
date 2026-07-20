@@ -1,5 +1,6 @@
 import prisma from "../config/db";
-import { ROLE_PERMISSION_MAP } from "../config/platformAccess";
+import { SEED_ROLE_PERMISSIONS } from "../config/platformAccess";
+import { ROLE_SLUG } from "../types/role";
 import { RoleScope, OrganizationKind } from "@prisma/client";
 
 /**
@@ -17,18 +18,18 @@ export async function ensureOrganizationAdminRole(organizationId: string) {
       return;
     }
 
-    // 2. Map organization kind to role name
+    // 2. Map organization kind to role name (seed key) + stable role slug.
     let roleName = "";
-    let userRoleSearch = "";
+    let roleSlug = "";
     if (organization.organizationType === OrganizationKind.NGO) {
       roleName = "NGO_ADMIN";
-      userRoleSearch = "NGO_ADMIN";
+      roleSlug = ROLE_SLUG.NGO_ADMIN;
     } else if (organization.organizationType === OrganizationKind.CSR_COMPANY) {
       roleName = "COMPANY_ADMIN";
-      userRoleSearch = "COMPANY_ADMIN";
+      roleSlug = ROLE_SLUG.COMPANY_ADMIN;
     } else if (organization.organizationType === OrganizationKind.GOVERNMENT_DEPARTMENT) {
       roleName = "BENEFICIARY_AGENCY";
-      userRoleSearch = "BENEFICIARY_AGENCY";
+      roleSlug = ROLE_SLUG.BENEFICIARY_AGENCY;
     } else {
       console.log(`[ensureOrganizationAdminRole] Organization type ${organization.organizationType} does not require default roles`);
       return;
@@ -47,30 +48,33 @@ export async function ensureOrganizationAdminRole(organizationId: string) {
     if (!orgRole) {
       const permissions = await prisma.permission.findMany();
       const permissionIdByKey = new Map(permissions.map(p => [p.key, p.id]));
-      const rolePermissions = ROLE_PERMISSION_MAP[roleName] || [];
+      const rolePermissions = SEED_ROLE_PERMISSIONS[roleName] || [];
 
       orgRole = await prisma.organizationRole.create({
         data: {
           organizationId,
           name: roleName,
+          slug: roleSlug,
           description: `${roleName.replace(/_/g, " ")} system role`,
           scope: RoleScope.ORGANIZATION,
           isSystemRole: true,
           rolePermissions: {
             create: rolePermissions
-              .map(key => ({ permissionId: permissionIdByKey.get(key)! }))
-              .filter(item => !!item.permissionId)
+              .map((key: string) => ({ permissionId: permissionIdByKey.get(key)! }))
+              .filter((item: { permissionId: string | undefined }) => !!item.permissionId)
           }
         }
       });
       console.log(`[ensureOrganizationAdminRole] Created system role: ${orgRole.id} (${orgRole.name})`);
     }
 
-    // 4. Find all users in this organization who have the admin role
+    // 4. Find all users in this organization mapped to this dynamic role
+    //    (via User.roleId). The legacy `User.role` enum no longer carries
+    //    org-specific identities, so we match on the dynamic role relation.
     const users = await prisma.user.findMany({
       where: {
         organizationId,
-        role: userRoleSearch as any
+        roleId: orgRole.id
       }
     });
 

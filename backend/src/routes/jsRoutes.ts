@@ -16,6 +16,7 @@ import {
   getNodalAppointments,
   getNodalAppointmentById,
   getNodalOfficers,
+  getApprovedProjectsForAppointment,
 } from "../controllers/feasibilityAssessmentController";
 
 const router = Router();
@@ -90,6 +91,14 @@ router.post(
   authenticateToken,
   authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
   asyncHandler(handleEscalationAction)
+);
+
+// Approved projects awaiting a District Nodal Consultant (JS appointment cascade)
+router.get(
+  "/approved-projects",
+  authenticateToken,
+  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
+  asyncHandler(getApprovedProjectsForAppointment)
 );
 
 // Nodal Officers List for Dropdown

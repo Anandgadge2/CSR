@@ -66,22 +66,22 @@ export default memo(function GisMap() {
   };
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-[#d8e2ef] bg-white text-[#10244a]">
+    <div className="w-full overflow-hidden rounded-3xl border border-slate-200/60 bg-white text-[#10244a] shadow-sm">
       <div className="grid gap-5 p-4 lg:grid-cols-[1fr_300px] lg:p-5">
-        <div className="flex min-w-0 flex-col rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-4">
+        <div className="flex min-w-0 flex-col rounded-2xl bg-slate-50/50 p-4">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <h3 className="font-heading text-base font-extrabold text-[#102c60]">Territorial CSR Distribution Heatmap</h3>
               <p className="mt-1 text-xs font-medium text-[#5b6b80]">Click a district to view budget, projects, NGOs, and beneficiaries.</p>
             </div>
-            <div className="flex flex-wrap gap-3 rounded-md border border-[#d8e2ef] bg-white px-3 py-2 text-[10px] font-extrabold text-[#516986]">
+            <div className="flex flex-wrap gap-3 rounded-md bg-white px-3 py-2 text-[10px] font-extrabold text-[#516986] shadow-sm border border-slate-100">
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#1557c4]" /> High</span>
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#3f7ee8]" /> Medium</span>
               <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#b9d5fb]" /> Low</span>
             </div>
           </div>
 
-          <div className="relative mt-4 flex aspect-[1.62/1] min-h-[300px] items-center justify-center rounded-md border border-[#d8e2ef] bg-white p-2 sm:p-4">
+          <div className="relative mt-4 flex aspect-[1.62/1] min-h-[300px] items-center justify-center rounded-2xl bg-white p-2 sm:p-4 shadow-sm border border-slate-100/50">
             <svg viewBox="0 0 730 420" className="h-full w-full max-h-[430px]" role="img" aria-label="Maharashtra CSR heat map">
               {districts.map((district) => {
                 const isSelected = selectedDistrict.name === district.name;
@@ -116,7 +116,7 @@ export default memo(function GisMap() {
 
         <aside
           key={selectedDistrict.name}
-          className="flex min-w-0 flex-col justify-between rounded-md border border-[#d8e2ef] bg-white p-5 shadow-sm"
+          className="flex min-w-0 flex-col justify-between rounded-2xl bg-white p-5 shadow-sm border border-slate-150"
         >
           <div>
             <div className="flex items-start justify-between gap-4">
@@ -145,7 +145,7 @@ export default memo(function GisMap() {
             </div>
           </div>
 
-          <div className="group relative mt-6 flex flex-col gap-1.5 overflow-hidden rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-5">
+          <div className="group relative mt-6 flex flex-col gap-1.5 overflow-hidden rounded-2xl bg-slate-50/50 p-5 border border-slate-150/40">
             <div className="z-10 flex items-center justify-between gap-3 text-xs font-semibold text-[#5b6b80]">
               <span className="flex items-center gap-1"><Users size={12} /> Beneficiaries Served</span>
               <span className="flex items-center gap-0.5 text-emerald-700"><TrendingUp size={10} /> +8% YoY</span>
@@ -185,7 +185,7 @@ function Metric({
       </div>
       <div className="min-w-0">
         <span className="block text-[10px] font-semibold text-[#5b6b80]">{label}</span>
-        <span className="block truncate font-heading text-base font-bold text-[#102c60]">{value}</span>
+        <span className="block font-heading text-base font-bold text-[#102c60] break-words">{value}</span>
       </div>
     </div>
   );

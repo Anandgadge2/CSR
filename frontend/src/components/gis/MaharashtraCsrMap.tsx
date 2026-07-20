@@ -213,10 +213,10 @@ export default function MaharashtraCsrMap() {
   }, []);
 
   return (
-    <div className="w-full overflow-hidden rounded-lg border border-[#d8e2ef] bg-white text-[#10244a]">
+    <div className="w-full overflow-hidden rounded-3xl border border-slate-200/60 bg-white text-[#10244a] shadow-sm">
       <div className={cn("grid gap-5 p-4 lg:p-5", selected ? "lg:grid-cols-[1fr_340px]" : "lg:grid-cols-1")}>
         {/* ------------------------------ Map panel ------------------------------ */}
-        <div className="flex min-w-0 flex-col rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-4">
+        <div className="flex min-w-0 flex-col rounded-2xl bg-slate-50/50 p-4">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <h3 className="font-heading text-base font-extrabold text-[#102c60]">Geographical Distribution</h3>
@@ -224,7 +224,7 @@ export default function MaharashtraCsrMap() {
                 Hover a district for a quick summary. Click to open full details with charts.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 rounded-md border border-[#d8e2ef] bg-white px-3 py-2 text-[10px] font-bold text-[#516986]">
+            <div className="flex flex-wrap items-center gap-2 rounded-md bg-white px-3 py-2 text-[10px] font-bold text-[#516986] shadow-sm border border-slate-100">
               <span className="mr-1 font-extrabold uppercase tracking-wide">CSR Expenditure (₹)</span>
               {BUCKETS.map((bucket) => (
                 <span key={bucket.label} className="flex items-center gap-1">
@@ -237,7 +237,7 @@ export default function MaharashtraCsrMap() {
 
           <div
             ref={containerRef}
-            className="relative mt-4 min-h-[320px] flex-1 rounded-md border border-[#d8e2ef] bg-white p-2 sm:p-3"
+            className="relative mt-4 min-h-[320px] flex-1 rounded-2xl bg-white p-2 sm:p-3 shadow-sm border border-slate-100/50"
           >
             {!geo && !geoError && (
               <div className="flex h-full min-h-[320px] items-center justify-center text-xs font-semibold text-[#5b6b80]">
@@ -361,7 +361,7 @@ export default function MaharashtraCsrMap() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 24 }}
               transition={{ duration: 0.18 }}
-              className="flex min-w-0 flex-col rounded-md border border-[#d8e2ef] bg-white p-4 shadow-sm"
+              className="flex min-w-0 flex-col rounded-2xl bg-white p-4 shadow-sm border border-slate-150"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -380,7 +380,7 @@ export default function MaharashtraCsrMap() {
                 </button>
               </div>
 
-              <div className="mt-4 rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-4">
+              <div className="mt-4 rounded-xl bg-slate-50/50 p-4 border border-slate-150/40">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-[#5b6b80]">
                   <span className="flex items-center gap-1"><Banknote size={12} /> CSR Spent</span>
                   <span className="flex items-center gap-0.5 font-bold text-emerald-600">
@@ -534,15 +534,15 @@ function StateStat({
   sub?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-md border border-[#d8e2ef] bg-white p-3">
+    <div className="flex items-center gap-3 rounded-xl border border-slate-150 bg-white p-3 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-blue-200 bg-blue-50 text-[#1557c4]">
         <Icon size={16} />
       </div>
-      <div className="min-w-0">
-        <span className="block truncate text-[10px] font-semibold text-[#5b6b80]">{label}</span>
-        <span className="block truncate font-heading text-sm font-extrabold text-[#102c60]">{value}</span>
-        {delta && <span className="text-[10px] font-bold text-emerald-600">{delta}</span>}
-        {sub && <span className="text-[10px] font-semibold text-[#5b6b80]">{sub}</span>}
+      <div className="min-w-0 flex-1">
+        <span className="block text-[10px] font-semibold text-[#5b6b80] leading-tight break-words">{label}</span>
+        <span className="block font-heading text-sm font-extrabold text-[#102c60] leading-tight mt-0.5 break-words">{value}</span>
+        {delta && <span className="block text-[10px] font-bold text-emerald-600 mt-0.5">{delta}</span>}
+        {sub && <span className="block text-[10px] font-semibold text-[#5b6b80] mt-0.5 break-words">{sub}</span>}
       </div>
     </div>
   );
@@ -558,11 +558,11 @@ function MiniStat({
   value: string;
 }) {
   return (
-    <div className="rounded-md border border-[#d8e2ef] bg-[#f8fbff] p-3">
-      <span className="flex items-center gap-1 text-[10px] font-semibold text-[#5b6b80]">
+    <div className="rounded-xl border border-slate-150 bg-slate-50/50 p-3">
+      <span className="flex items-center gap-1 text-[10px] font-semibold text-[#5b6b80] break-words">
         <Icon size={11} className="text-[#1557c4]" /> {label}
       </span>
-      <span className="mt-0.5 block font-heading text-lg font-extrabold text-[#102c60]">{value}</span>
+      <span className="mt-0.5 block font-heading text-lg font-extrabold text-[#102c60] break-words">{value}</span>
     </div>
   );
 }

@@ -853,7 +853,7 @@ export const escalateGrievance = async (
     if (targetRole) {
       const targetUser = await prisma.user.findFirst({
         where: {
-          role: targetRole,
+          roleRelation: { slug: targetRole },
           ...((targetRole as Role) === Role.DISTRICT_NODAL_OFFICER && {
             assignedDistrict: grievance.convergenceProject.district,
           }),

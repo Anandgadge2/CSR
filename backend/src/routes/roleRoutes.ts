@@ -7,6 +7,7 @@ import {
   cloneRole,
   deleteRole,
   getPermissions,
+  getPageRegistry,
   getPermissionGroups,
   createPermissionGroup,
   assignUserRoles,
@@ -22,6 +23,7 @@ router.use(authenticateToken);
 
 // Permissions listing
 router.get("/permissions", checkPermission("permission:view"), asyncHandler(getPermissions));
+router.get("/pages", checkPermission("permission:view"), asyncHandler(getPageRegistry));
 router.get("/permission-groups", checkPermission("permission:view"), asyncHandler(getPermissionGroups));
 router.post("/permission-groups", checkPermission("permission:configure"), asyncHandler(createPermissionGroup));
 

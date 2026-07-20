@@ -190,10 +190,10 @@ export const getPublicDirectory = async (req: Request, res: Response) => {
     const [officials, appointments] = await Promise.all([
       prisma.user.findMany({
         where: {
-          role: { in: [Role.STATE_CSR_CELL, Role.CSR_RELATIONSHIP_MANAGER] },
+          roleRelation: { slug: { in: [Role.STATE_CSR_CELL, Role.CSR_RELATIONSHIP_MANAGER] } },
           accountStatus: "ACTIVE",
         },
-        select: { id: true, email: true, role: true, assignedDistrict: true },
+        select: { id: true, email: true, role: true, roleRelation: { select: { slug: true } }, assignedDistrict: true },
         orderBy: { role: "asc" },
       }),
       // Nodal officers surface through their formal appointments (letter signed by JS)
@@ -232,10 +232,10 @@ export const getPublicDirectory = async (req: Request, res: Response) => {
 
     return successResponse(res, {
       stateCell: officials
-        .filter((o) => o.role === Role.STATE_CSR_CELL)
+        .filter((o) => o.roleRelation?.slug === Role.STATE_CSR_CELL)
         .map((o) => ({ role: "State CSR Cell", email: o.email, district: "Maharashtra" })),
       relationshipManagers: officials
-        .filter((o) => o.role === Role.CSR_RELATIONSHIP_MANAGER)
+        .filter((o) => o.roleRelation?.slug === Role.CSR_RELATIONSHIP_MANAGER)
         .map((o) => ({
           role: "CSR Relationship Manager",
           email: o.email,

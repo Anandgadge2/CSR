@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { VerificationEntityType, VerificationModuleType } from "@prisma/client";
 import { Role } from "../../../types/role";
+import { userHasAnyRole } from "../../../services/roleResolver";
 import { successResponse } from "../../../utils/apiResponse";
 import { CorrelatedRequest } from "../utils/correlationId";
 import { isVerificationError } from "../utils/errors";
@@ -12,6 +13,10 @@ import { GstReverifyBody, GstVerifyBody } from "../dto/gstSchemas";
 export type VerificationRequest = CorrelatedRequest;
 
 export const ADMIN_ROLES = [Role.SUPER_ADMIN, Role.GOVERNMENT_OFFICER];
+
+/** True if the request principal holds an admin-tier role (super admin or gov officer). */
+export const isAdminRequest = (req: { user?: { role?: string | null; roleSlug?: string | null } }) =>
+  userHasAnyRole(req.user, ADMIN_ROLES);
 
 /**
  * Respond with a stable machine errorCode (+ meta like attemptsLeft) for
@@ -91,7 +96,7 @@ export const getGstHistory = async (req: VerificationRequest, res: Response, nex
     const entityType = req.query.entityType as VerificationEntityType;
 
     // Ownership guard: non-admin roles may only view history of their own org entities.
-    const isAdmin = ADMIN_ROLES.includes(req.user?.role);
+    const isAdmin = isAdminRequest(req);
     if (!isAdmin) {
       const owned = [req.user?.companyId, req.user?.ngoId, req.user?.organizationId, req.user?.id].filter(Boolean);
       if (!owned.includes(entityId)) {

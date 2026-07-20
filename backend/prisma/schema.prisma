@@ -51,6 +51,8 @@ model User {
   rmEnquiries              CorporateEnquiry[]            @relation("RMEnquiries")
   rmAssessments            FeasibilityAssessment[]       @relation("RMAssessments")
   rmPitches                GovernmentPitch[]             @relation("RMPitches")
+  submittedEnquiries       CorporateEnquiry[]            @relation("CorporateEnquiriesSubmitted")
+  submittedPitches         GovernmentPitch[]             @relation("GovernmentPitchesSubmitted")
   jsAssessments            FeasibilityAssessment[]       @relation("JSAssessments")
   jsNodalAppointments      NodalOfficerAppointment[]     @relation("JSNodalAppointments")
   nodalOfficerAppointments NodalOfficerAppointment[]     @relation("NodalOfficerAppointments")
@@ -752,6 +754,9 @@ model Permission {
   key                     String                       @unique
   description             String?
   module                  String
+  // ACTION = a capability/action permission (view/create/delete/...);
+  // PAGE   = a page-visibility permission (key format "page:<slug>:view").
+  type                    PermissionType               @default(ACTION)
   createdAt               DateTime                     @default(now())
   rolePermissions         OrganizationRolePermission[]
   groupId                 String?
@@ -772,12 +777,22 @@ model PermissionGroup {
 
 model OrganizationRole {
   id              String                       @id @default(uuid())
+  numericId       Int                          @unique @default(autoincrement())
   organizationId  String?
   name            String
+  // Stable machine key for business-logic role checks. NEVER changes even when
+  // `name` is edited. Global system roles use canonical slugs (e.g.
+  // "joint-secretary", "relationship-manager"). Org-scoped roles reuse the same
+  // canonical slug across organizations (one "ngo-admin" per org), so this is
+  // indexed but NOT globally unique. Nullable for legacy rows.
+  slug            String?
   description     String?
   scope           RoleScope
   isSystemRole    Boolean                      @default(false)
   isPermanent     Boolean                      @default(false)
+  // Protected roles (Super Admin) may be renamed but never deleted or stripped
+  // of permissions, and always bypass permission checks.
+  isProtected     Boolean                      @default(false)
   status          String                       @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
   category        String?
   displayOrder    Int                          @default(0)
@@ -797,6 +812,7 @@ model OrganizationRole {
   @@unique([organizationId, name])
   @@index([organizationId])
   @@index([scope])
+  @@index([slug])
 }
 
 model RoleHierarchy {
@@ -1121,6 +1137,11 @@ enum OrganizationStatus {
 enum RoleScope {
   GLOBAL
   ORGANIZATION
+}
+
+enum PermissionType {
+  ACTION
+  PAGE
 }
 
 enum DocumentVerificationStatus {
@@ -1922,6 +1943,11 @@ model CorporateEnquiry {
   assignedRelationshipManager   User?                  @relation("RMEnquiries", fields: [assignedRelationshipManagerId], references: [id], onDelete: SetNull)
   status                        CorporateEnquiryStatus @default(SUBMITTED)
 
+  // Submitter — the authenticated corporate user who filed this enquiry from
+  // their dashboard. Nullable for legacy/pre-auth rows; set on all new submissions.
+  submittedByUserId String?
+  submittedByUser   User?   @relation("CorporateEnquiriesSubmitted", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+
   // Timeline
   submittedAt            DateTime  @default(now())
   firstResponseDueAt     DateTime?
@@ -2067,6 +2093,11 @@ model GovernmentPitch {
   // Certification
   certificationType        String // SELF / HOD
   hodCertificationDocument String?
+
+  // Submitter — the authenticated government officer who filed this pitch from
+  // their dashboard. Nullable for legacy/pre-auth rows; set on all new submissions.
+  submittedByUserId String?
+  submittedByUser   User?   @relation("GovernmentPitchesSubmitted", fields: [submittedByUserId], references: [id], onDelete: SetNull)
 
   // Status & Assignment
   status                        GovernmentPitchStatus @default(DRAFT)

@@ -5,7 +5,8 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { Role } from "../types/role";
 import { runEscalationSweep } from "../services/slaSchedulerService";
-import SLAEscalationService from "../services/slaEscalationService";
+import SLAEscalationService, { SLA_TIMELINES } from "../services/slaEscalationService";
+import { getSlaConfig, updateSlaConfig } from "../services/slaConfigService";
 import { createInvitation, InvitationError } from "../services/invitationService";
 import { dispatchNotification } from "../services/notificationOrchestrator";
 import { getCronSecret } from "../config/env";
@@ -373,6 +374,40 @@ export const getSlaStatistics = async (req: AuthenticatedRequest, res: Response,
     const stats = await SLAEscalationService.getStatistics();
     return res.json(stats);
   } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Return the current dynamic SLA windows (stored overrides merged over the
+ * compiled defaults). Super-admin only. Also exposes the compiled defaults so
+ * the UI can show a "reset to default" affordance.
+ */
+export const getSlaConfiguration = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const config = await getSlaConfig(true);
+    return res.json({ config, defaults: SLA_TIMELINES });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Persist SLA window overrides (days per stage). Super-admin only. Body:
+ * { updates: { RM_RESPONSE?: number, JS_DECISION?: number, ... } }.
+ */
+export const updateSlaConfiguration = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const updates = (req.body?.updates ?? req.body) as Record<string, unknown>;
+    if (!updates || typeof updates !== "object") {
+      return res.status(400).json({ error: "updates object is required" });
+    }
+    const config = await updateSlaConfig(updates, req.user?.id);
+    return res.json({ success: true, config });
+  } catch (error) {
+    if (error instanceof Error && /must be|Unknown SLA/.test(error.message)) {
+      return res.status(400).json({ error: error.message });
+    }
     next(error);
   }
 };

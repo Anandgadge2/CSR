@@ -14,8 +14,10 @@ import {
 } from "../utils/apiResponse";
 import { generateCorporateEnquiryTrackingId } from "../services/trackingIdService";
 import { assertOtpVerified } from "../services/otpService";
-import { sendTrackingIdNotification } from "../services/notificationService";
+import { sendTrackingIdNotification, notify } from "../services/notificationService";
 import { SLAEscalationService, calculateDueDate } from "../services/slaEscalationService";
+import { pickRelationshipManager } from "../services/rmAssignmentService";
+import { calculateDueDateDynamic } from "../services/slaConfigService";
 
 // ─── Types ─────────────────────────────────────────────────────────
 interface SubmitEnquiryBody {
@@ -146,6 +148,10 @@ export const submitEnquiry = async (
     // any authenticated user has already verified their identity at login
     const isAuthenticatedUser = Boolean(req.user);
 
+    // Link the enquiry to the submitting user when authenticated; anonymous
+    // public submissions leave this null (field is nullable in schema).
+    const submittedByUserId = req.user?.id ?? null;
+
     if (!isAuthenticatedUser) {
       try {
         await assertOtpVerified("CORPORATE_ENQUIRY", "MOBILE", body.mobile, body.mobileVerificationToken);
@@ -183,6 +189,9 @@ export const submitEnquiry = async (
     // Generate tracking ID
     const trackingId = await generateCorporateEnquiryTrackingId();
 
+    // SLA first-response window is super-admin configurable (dynamic).
+    const firstResponseDueAt = await calculateDueDateDynamic("RM_RESPONSE");
+
     // Create enquiry
     const enquiry = await prisma.corporateEnquiry.create({
       data: {
@@ -201,7 +210,8 @@ export const submitEnquiry = async (
         proposedCsrWork: body.proposedCsrWork.trim(),
         status: CorporateEnquiryStatus.TRACKING_ID_GENERATED,
         submittedAt: new Date(),
-        firstResponseDueAt: calculateDueDate("RM_RESPONSE"),
+        firstResponseDueAt,
+        submittedByUserId,
       },
     });
 
@@ -220,6 +230,47 @@ export const submitEnquiry = async (
         },
       },
     });
+
+    // Auto-assign to a Relationship Manager from the workload-balanced pool.
+    // Non-fatal: if no RM exists the enquiry stays unassigned; the SLA clock on
+    // firstResponseDueAt still runs and the escalation sweep will surface it.
+    try {
+      const rm = await pickRelationshipManager(body.preferredDistricts?.[0] || null);
+      if (rm) {
+        await prisma.corporateEnquiry.update({
+          where: { id: enquiry.id },
+          data: {
+            assignedRelationshipManagerId: rm.id,
+            status: CorporateEnquiryStatus.RM_ASSIGNED,
+          },
+        });
+
+        await SLAEscalationService.create({
+          entityType: "CORPORATE_ENQUIRY",
+          entityId: enquiry.id,
+          stage: "RM_RESPONSE",
+          responsibleUserId: rm.id,
+          dueAt: enquiry.firstResponseDueAt || calculateDueDate("RM_RESPONSE", enquiry.submittedAt),
+        });
+
+        await notify(
+          rm.id,
+          "New Corporate Enquiry Assigned",
+          `Corporate enquiry ${trackingId} (${body.companyName}) has been auto-assigned to you. First response due within SLA.`
+        ).catch(() => {});
+
+        await prisma.auditLog.create({
+          data: {
+            action: "CORPORATE_ENQUIRY_RM_AUTO_ASSIGNED",
+            entityType: "CorporateEnquiry",
+            entityId: enquiry.id,
+            details: { trackingId, assignedRMId: rm.id, activeWorkload: rm.activeCount },
+          },
+        }).catch(() => {});
+      }
+    } catch (assignErr) {
+      console.error("RM auto-assignment failed for enquiry", enquiry.id, assignErr);
+    }
 
     await sendTrackingIdNotification({
       trackingId,
@@ -505,11 +556,12 @@ export const assignRM = async (
       return validationErrorResponse(res, "Relationship Manager ID is required");
     }
 
-    // Verify RM exists and has correct role
+    // Verify RM exists and has correct role (matched via the dynamic role slug,
+    // since the legacy `User.role` enum no longer carries staff identities).
     const rmUser = await prisma.user.findFirst({
       where: {
         id: body.relationshipManagerId,
-        role: Role.CSR_RELATIONSHIP_MANAGER,
+        roleRelation: { slug: Role.CSR_RELATIONSHIP_MANAGER },
       },
     });
 
@@ -870,7 +922,7 @@ export const getRelationshipManagers = async (
   try {
     const rms = await prisma.user.findMany({
       where: {
-        role: Role.CSR_RELATIONSHIP_MANAGER,
+        roleRelation: { slug: Role.CSR_RELATIONSHIP_MANAGER },
         accountStatus: "ACTIVE",
       },
       select: {
@@ -883,5 +935,64 @@ export const getRelationshipManagers = async (
   } catch (error) {
     console.error("Error in getRelationshipManagers:", error);
     return errorResponse(res, "Failed to retrieve Relationship Managers", 500);
+  }
+};
+
+// ─── Get My Enquiries (Corporate dashboard) ─────────────────────────
+/**
+ * Enquiries submitted by the authenticated corporate user, for their
+ * own dashboard. Scoped strictly to submittedByUserId — a corporate user
+ * never sees another company's enquiries.
+ */
+export const getMyEnquiries = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return unauthorizedResponse(res, "User not authenticated");
+    }
+
+    const { status, page = 1, limit = 20 } = req.query;
+    const pageNum = Number(page) || 1;
+    const pageSize = Number(limit) || 20;
+    const skip = (pageNum - 1) * pageSize;
+
+    const where: Prisma.CorporateEnquiryWhereInput = { submittedByUserId: userId };
+    if (status) {
+      where.status = status as CorporateEnquiryStatus;
+    }
+
+    const [enquiries, total] = await Promise.all([
+      prisma.corporateEnquiry.findMany({
+        where,
+        include: {
+          assignedRelationshipManager: { select: { id: true, email: true } },
+        },
+        orderBy: { submittedAt: "desc" },
+        skip,
+        take: pageSize,
+      }),
+      prisma.corporateEnquiry.count({ where }),
+    ]);
+
+    return successResponse(
+      res,
+      {
+        enquiries,
+        pagination: {
+          page: pageNum,
+          limit: pageSize,
+          total,
+          pages: Math.ceil(total / pageSize),
+        },
+      },
+      "Your enquiries retrieved successfully"
+    );
+  } catch (error) {
+    console.error("Error in getMyEnquiries:", error);
+    return errorResponse(res, "Failed to retrieve your enquiries", 500);
   }
 };

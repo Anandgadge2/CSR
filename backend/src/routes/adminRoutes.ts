@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Role } from "../types/role";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import { checkPermission } from "../middlewares/accessControlMiddleware";
-import { createAdminUser, getAdminOverview, listUsers, updateUserRole, deleteUser, runSlaEscalations, runSlaEscalationsViaCron, getSlaStatistics } from "../controllers/adminController";
+import { createAdminUser, getAdminOverview, listUsers, updateUserRole, deleteUser, runSlaEscalations, runSlaEscalationsViaCron, getSlaStatistics, getSlaConfiguration, updateSlaConfiguration } from "../controllers/adminController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import {
   approveRequirement,
@@ -90,6 +90,10 @@ router.get("/convergence-report", ...requireStateCell, checkPermission("report:v
 // SLA escalation monitoring & manual sweep trigger
 router.get("/sla/statistics", ...requireSuperAdmin, getSlaStatistics);
 router.post("/sla/run-escalations", ...requireSuperAdmin, runSlaEscalations);
+
+// Dynamic SLA windows — super-admin controlled (days per stage)
+router.get("/sla/config", ...requireSuperAdmin, getSlaConfiguration);
+router.put("/sla/config", ...requireSuperAdmin, updateSlaConfiguration);
 // Serverless external-cron entry point — authenticated via CRON_SECRET header,
 // not a user JWT (no auth middleware here by design).
 router.post("/sla/cron-escalations", runSlaEscalationsViaCron);

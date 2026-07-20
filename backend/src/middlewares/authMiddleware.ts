@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { Role } from "../types/role";
+import { userHasAnyRole } from "../services/roleResolver";
 import { getJwtSecret } from "../config/env";
 
 export interface AuthenticatedRequest extends Request {
@@ -8,6 +9,8 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     email: string;
     role?: Role | null;
+    /** Stable slug of the user's dynamic OrganizationRole (e.g. "joint-secretary"). */
+    roleSlug?: string | null;
     roleId?: string | null;
     organizationId?: string | null;
     accountStatus?: string | null;
@@ -51,13 +54,21 @@ export const optionalAuthenticateToken = (req: AuthenticatedRequest, res: Respon
   });
 };
 
+/**
+ * Legacy role-gate. Checks the principal against the allowed identities on BOTH
+ * axes (base enum bucket + dynamic role slug), so a Joint Secretary — who is
+ * `GOVERNMENT_OFFICER` at the enum level with slug "joint-secretary" — still
+ * matches `authorizeRoles([Role.JOINT_SECRETARY])`.
+ *
+ * Prefer `checkPermission(...)` for new routes; this remains for existing gates.
+ */
 export const authorizeRoles = (allowedRoles: Role[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized access" });
     }
 
-    if (!req.user.role || !allowedRoles.includes(req.user.role)) {
+    if (!userHasAnyRole(req.user, allowedRoles)) {
       return res.status(403).json({ error: `Forbidden: role '${req.user.role}' lacks permissions` });
     }
 

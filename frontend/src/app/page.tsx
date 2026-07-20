@@ -207,49 +207,51 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-col gap-6"
           >
-            <Card hover={false} tilt={false} className="p-6 sm:p-8">
-              <div className="flex flex-col gap-4 border-b border-slate-100/80 pb-6 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+                  How the partnership works
+                </h2>
+                <div className="mt-2.5">
+                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
                     State-Led, District-Executed Convergence
                   </span>
-                  <h2 className="mt-3 break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
-                    How the partnership works
-                  </h2>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50/50 px-5 py-4 text-xs font-medium leading-relaxed text-slate-500 md:max-w-[400px]">
-                  A single State CSR Coordinating Unit routes every corporate to one accountable District Nodal Officer.
                 </div>
               </div>
+              <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-xs font-medium leading-relaxed text-slate-500 md:max-w-[400px] shadow-sm">
+                A single State CSR Coordinating Unit routes every corporate to one accountable District Nodal Officer.
+              </div>
+            </div>
 
-              <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
-                style={{ perspective: "800px" }}
-              >
-                {workflow.map((step, index) => (
-                  <motion.div key={step.title} variants={cardFadeUp} style={{ transformStyle: "preserve-3d" }}>
-                    <Card
-                      index={index}
-                      className="relative p-6 pt-8 bg-white/60 border border-slate-100"
-                    >
-                      <div className="absolute -top-4 left-6 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-lg shadow-blue-500/30">
-                        {index + 1}
-                      </div>
-                      <div className="text-blue-600 p-2.5 bg-blue-50/60 rounded-xl inline-block shadow-sm">
-                        <step.icon size={22} />
-                      </div>
-                      <h3 className="mt-4 text-sm font-bold text-slate-900 tracking-tight">{step.title}</h3>
-                      <p className="mt-2 text-xs leading-relaxed text-slate-500">{step.detail}</p>
-                    </Card>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </Card>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+              style={{ perspective: "800px" }}
+            >
+              {workflow.map((step, index) => (
+                <motion.div key={step.title} variants={cardFadeUp} style={{ transformStyle: "preserve-3d" }}>
+                  <Card
+                    index={index}
+                    variant="default"
+                    className="relative p-6 pt-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all"
+                  >
+                    <div className="absolute -top-4 left-6 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-lg shadow-blue-500/30">
+                      {index + 1}
+                    </div>
+                    <div className="text-blue-600 p-2.5 bg-blue-50/60 rounded-xl inline-block shadow-sm">
+                      <step.icon size={22} />
+                    </div>
+                    <h3 className="mt-4 text-sm font-bold text-slate-900 tracking-tight">{step.title}</h3>
+                    <p className="mt-2 text-xs leading-relaxed text-slate-500">{step.detail}</p>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
           </motion.div>
         </Parallax3DSection>
 
@@ -359,43 +361,44 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-col gap-6"
           >
-            <Card hover={false} tilt={false} className="p-6 sm:p-8">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+            <div>
+              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+                MahaCSR Setu Resources
+              </h2>
+              <div className="mt-2.5">
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
                   Public Information Directory
                 </span>
-                <h2 className="mt-3 break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
-                  MahaCSR Setu Resources
-                </h2>
               </div>
+            </div>
 
-              <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              >
-                {resources.map((item, index) => (
-                  <motion.div key={item.title} variants={cardFadeUp}>
-                    <Link href={item.href} className="hover:no-underline flex">
-                      <Card
-                        index={index}
-                        variant="default"
-                        className="flex items-start gap-4 p-5 bg-white border border-slate-100 hover:border-blue-200/50 w-full group"
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 shrink-0 mt-1.5 shadow-sm shadow-blue-500/30" />
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors tracking-tight">{item.title}</h3>
-                          <p className="mt-2 text-xs leading-relaxed text-slate-500">{item.description}</p>
-                        </div>
-                      </Card>
-                    </Link>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </Card>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {resources.map((item, index) => (
+                <motion.div key={item.title} variants={cardFadeUp}>
+                  <Link href={item.href} className="hover:no-underline flex">
+                    <Card
+                      index={index}
+                      variant="default"
+                      className="flex items-start gap-4 p-5 bg-white border border-slate-200/60 hover:border-blue-300 hover:shadow-md w-full group transition-all"
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 shrink-0 mt-1.5 shadow-sm shadow-blue-500/30" />
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors tracking-tight">{item.title}</h3>
+                        <p className="mt-2 text-xs leading-relaxed text-slate-500">{item.description}</p>
+                      </div>
+                    </Card>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
           </motion.div>
         </Parallax3DSection>
 
@@ -406,37 +409,47 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-col gap-6"
           >
-            <Card hover={false} tilt={false} className="p-6 sm:p-8">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                  MahaCSR at a Glance
+            <div>
+              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+                MahaCSR at a Glance
+              </h2>
+              <div className="mt-2.5">
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                  Live Portal Statistics
                 </span>
-                <p className="mt-2 text-xs font-normal text-slate-400">
-                  Live figures drawn only from projects onboarded and certified on the portal.
-                </p>
               </div>
-              <div className="mt-6">
-                <HomeStatsStrip />
-              </div>
-            </Card>
+              <p className="mt-3 text-xs font-normal text-slate-400">
+                Live figures drawn only from projects onboarded and certified on the portal.
+              </p>
+            </div>
+            <div>
+              <HomeStatsStrip />
+            </div>
           </motion.div>
         </Parallax3DSection>
 
         {/* ── Guidelines & Circulars ── */}
-        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <Parallax3DSection>
+        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] w-full min-w-0">
+          <Parallax3DSection className="w-full min-w-0">
             <motion.div
               variants={sectionFade}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
+              className="h-full w-full min-w-0"
             >
-              <Card hover={false} tilt={false} className="p-6 sm:p-8 h-full">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+              <Card hover={false} tilt={false} variant="default" className="p-6 sm:p-8 h-full bg-white border border-slate-200/60 shadow-sm rounded-3xl w-full min-w-0 overflow-hidden">
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="break-words text-xl font-bold text-slate-900 tracking-tight">
                     Framework Principles
-                  </span>
+                  </h3>
+                  <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                      Guidelines & Implementation
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-6 flex flex-col gap-3">
                   {recommendations.map((item) => (
@@ -444,7 +457,7 @@ export default function LandingPage() {
                       key={item}
                       whileHover={{ x: 6, scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="flex items-start gap-4 rounded-xl border border-slate-100 bg-slate-50/30 p-4 transition-colors hover:bg-slate-50/60 hover:border-blue-200/40 cursor-default"
+                      className="flex items-start gap-4 rounded-xl border border-slate-150 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50/80 hover:border-blue-200 cursor-default"
                     >
                       <CheckCircle2 className="shrink-0 text-emerald-500 mt-0.5" size={18} />
                       <p className="flex-1 text-xs font-medium leading-relaxed text-slate-600">{item}</p>
@@ -456,21 +469,29 @@ export default function LandingPage() {
             </motion.div>
           </Parallax3DSection>
 
-          <Parallax3DSection>
+          <Parallax3DSection className="w-full min-w-0">
             <motion.div
               variants={sectionFade}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
+              className="h-full w-full min-w-0"
             >
-              <Card hover={false} tilt={false} className="p-6 sm:p-8 h-full">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                    Circulars & Notices
-                  </span>
-                  <Link href="/circulars" className="text-xs font-bold text-blue-600 hover:underline">
-                    View All
-                  </Link>
+              <Card hover={false} tilt={false} variant="default" className="p-6 sm:p-8 h-full bg-white border border-slate-200/60 shadow-sm rounded-3xl w-full min-w-0 overflow-hidden">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="break-words text-xl font-bold text-slate-900 tracking-tight">
+                      Circulars & Notices
+                    </h3>
+                    <Link href="/circulars" className="text-xs font-bold text-blue-600 hover:underline">
+                      View All
+                    </Link>
+                  </div>
+                  <div>
+                    <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                      Official Updates
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-5 flex flex-wrap gap-2 border-b border-slate-100 pb-3 text-xs font-bold">
                   <span className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-white shadow-sm shadow-blue-500/20">All</span>
@@ -478,7 +499,7 @@ export default function LandingPage() {
                   <span className="px-3 py-1.5 text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">Government Resolutions</span>
                   <span className="px-3 py-1.5 text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">Circulars</span>
                 </div>
-                <div className="mt-4 overflow-x-auto rounded-xl border border-slate-100">
+                <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200/60">
                   <table className="w-full min-w-[500px] border-collapse text-left text-xs">
                     <thead>
                       <tr className="bg-slate-50/50 text-slate-900 border-b border-slate-100">
@@ -512,20 +533,21 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-col gap-6"
           >
-            <Card hover={false} tilt={false} className="p-6 sm:p-8">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+            <div>
+              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+                Visualize CSR activity across Maharashtra
+              </h2>
+              <div className="mt-2.5">
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
                   District CSR Register
                 </span>
-                <h2 className="mt-3 break-words text-lg font-bold text-slate-900 tracking-tight">
-                  Visualize CSR activity across Maharashtra
-                </h2>
               </div>
-              <div className="mt-6 rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-white">
-                <GisMap />
-              </div>
-            </Card>
+            </div>
+            <div className="mt-6">
+              <GisMap />
+            </div>
           </motion.div>
         </Parallax3DSection>
 
@@ -536,50 +558,52 @@ export default function LandingPage() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
+            className="flex flex-col gap-6"
           >
-            <Card hover={false} tilt={false} className="p-6 sm:p-8">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+            <div>
+              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+                State-Led, District-Executed
+              </h2>
+              <div className="mt-2.5">
+                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
                   The Convergence Model
                 </span>
-                <h2 className="mt-3 text-lg font-bold text-slate-900 tracking-tight">
-                  State-Led, District-Executed
-                </h2>
               </div>
-              <motion.div
-                variants={staggerContainer}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                className="mt-6 grid gap-6 lg:grid-cols-3"
-                style={{ perspective: "800px" }}
-              >
-                {pillars.map((pillar, index) => (
-                  <motion.div key={pillar.title} variants={cardFadeUp} style={{ transformStyle: "preserve-3d" }}>
-                    <Card
-                      index={index}
-                      className="p-6 bg-white/60 border border-slate-100"
-                    >
-                      <div className="flex items-start gap-5">
-                        <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
-                          <span className="absolute -left-2.5 -top-2.5 grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[10px] font-bold text-white shadow-lg shadow-blue-500/30">
-                            0{index + 1}
-                          </span>
-                          <pillar.icon size={24} />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900 tracking-tight">{pillar.title}</h3>
-                          <p className="mt-2 text-xs font-normal leading-relaxed text-slate-500">{pillar.detail}</p>
-                          <Link href="/knowledge" className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline">
-                            Learn more <ArrowRight size={13} />
-                          </Link>
-                        </div>
+            </div>
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid gap-5 lg:grid-cols-3"
+              style={{ perspective: "800px" }}
+            >
+              {pillars.map((pillar, index) => (
+                <motion.div key={pillar.title} variants={cardFadeUp} style={{ transformStyle: "preserve-3d" }}>
+                  <Card
+                    index={index}
+                    variant="default"
+                    className="p-6 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all h-full"
+                  >
+                    <div className="flex items-start gap-5">
+                      <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+                        <span className="absolute -left-2.5 -top-2.5 grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[10px] font-bold text-white shadow-lg shadow-blue-500/30">
+                          0{index + 1}
+                        </span>
+                        <pillar.icon size={24} />
                       </div>
-                    </Card>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </Card>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 tracking-tight">{pillar.title}</h3>
+                        <p className="mt-2 text-xs font-normal leading-relaxed text-slate-500">{pillar.detail}</p>
+                        <Link href="/knowledge" className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline">
+                          Learn more <ArrowRight size={13} />
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
           </motion.div>
         </Parallax3DSection>
 

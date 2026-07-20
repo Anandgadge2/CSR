@@ -5,11 +5,12 @@ interface GovSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   required?: boolean;
   error?: string;
   help?: string;
-  children: ReactNode;
+  options?: { value: string | number; label: string }[];
+  children?: ReactNode;
 }
 
 const GovSelect = forwardRef<HTMLSelectElement, GovSelectProps>(
-  ({ label, required, error, help, className = "", children, ...props }, ref) => {
+  ({ label, required, error, help, className = "", children, options, ...props }, ref) => {
     return (
       <div className="gov-field">
         {label && (
@@ -23,6 +24,11 @@ const GovSelect = forwardRef<HTMLSelectElement, GovSelectProps>(
           {...props}
         >
           {children}
+          {options?.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
         </select>
         {error && <div className="gov-error-text">{error}</div>}
         {help && !error && <div className="gov-help">{help}</div>}

@@ -13,7 +13,9 @@ import {
   searchOfficers
 } from "../services/assignmentService";
 import { InvitationError } from "../services/invitationService";
-import { resumePendingAssignments } from "../services/assignmentWorkflowService";
+import { resumePendingAssignments, recordNodalOfficerAssignment } from "../services/assignmentWorkflowService";
+import { maharashtraDistricts } from "../utils/maharashtraData";
+import { ROLE_SLUG } from "../types/role";
 import { getInstanceForEntity } from "../services/workflowEngineService";
 import { auditLog } from "../services/notificationService";
 import { successResponse, errorResponse, createdResponse } from "../utils/apiResponse";
@@ -361,5 +363,113 @@ export const createDistrictNodalMapping = async (req: AuthenticatedRequest, res:
   } catch (error) {
     console.error("createDistrictNodalMapping error:", error);
     return errorResponse(res, "Failed to create district mapping", 500);
+  }
+};
+
+/**
+ * GET /api/assignments/districts
+ * Canonical Maharashtra district list for the JS assignment cascade.
+ * Districts are free-string values portal-wide; this is the authoritative list.
+ */
+export const listDistrictsHandler = async (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const districts = maharashtraDistricts.map((d) => d.district);
+    return successResponse(res, { districts }, "Districts retrieved");
+  } catch (error) {
+    console.error("listDistrictsHandler error:", error);
+    return errorResponse(res, "Failed to load districts", 500);
+  }
+};
+
+/**
+ * GET /api/assignments/nodal-consultants?district=Pune
+ * District Nodal Consultants available for a district — the second step of the
+ * JS assignment cascade. A DNC is a user with role slug district-nodal-consultant
+ * that is active in the district via an active DistrictNodalMapping (preferred)
+ * or a matching User.assignedDistrict (fallback). Organisation is display-only.
+ */
+export const listNodalConsultantsHandler = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const district = String(req.query.district || "").trim();
+    if (!district) return errorResponse(res, "district query parameter is required", 422);
+
+    const consultants = await prisma.user.findMany({
+      where: {
+        accountStatus: "ACTIVE",
+        roleRelation: { slug: ROLE_SLUG.DISTRICT_NODAL_CONSULTANT },
+        OR: [
+          { nodalDistrictMappings: { some: { district, isActive: true } } },
+          { assignedDistrict: district }
+        ]
+      },
+      select: {
+        id: true,
+        email: true,
+        assignedDistrict: true,
+        officerProfile: { select: { fullName: true, designation: true, department: true } },
+        organizationId: true
+      }
+    });
+
+    return successResponse(res, { district, consultants }, "Nodal consultants retrieved");
+  } catch (error) {
+    console.error("listNodalConsultantsHandler error:", error);
+    return errorResponse(res, "Failed to load nodal consultants", 500);
+  }
+};
+
+/**
+ * POST /api/assignments/appoint-nodal-consultant
+ * JS appoints a District Nodal Consultant to an approved enquiry/pitch.
+ * body: { entityType, entityId, nodalOfficerId, district, remarks? }
+ * Ensures the DNC↔district mapping exists (creating it if needed), then records
+ * the nodal-officer assignment (workflow → FIELD_OFFICER_ASSIGNMENT, notify, SLA).
+ */
+export const appointNodalConsultantHandler = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return errorResponse(res, "Unauthorized", 401);
+    const { entityType: rawType, entityId, nodalOfficerId, district, remarks } = req.body || {};
+    if (!entityId || !nodalOfficerId || !district) {
+      return errorResponse(res, "entityType, entityId, nodalOfficerId and district are required", 422);
+    }
+    const entityType = parseEntityType(rawType);
+
+    const consultant = await prisma.user.findFirst({
+      where: {
+        id: nodalOfficerId,
+        accountStatus: "ACTIVE",
+        roleRelation: { slug: ROLE_SLUG.DISTRICT_NODAL_CONSULTANT }
+      },
+      select: { id: true }
+    });
+    if (!consultant) {
+      return errorResponse(res, "Selected user is not an active District Nodal Consultant", 422);
+    }
+
+    // Ensure an active DNC↔district mapping exists so future auto-resume works.
+    const existingMapping = await prisma.districtNodalMapping.findFirst({
+      where: { district, userId: nodalOfficerId, isActive: true }
+    });
+    if (!existingMapping) {
+      await prisma.districtNodalMapping.create({
+        data: { district, userId: nodalOfficerId, isActive: true, assignedById: req.user.id }
+      });
+    }
+
+    await recordNodalOfficerAssignment({
+      entityType,
+      entityId,
+      nodalOfficerId,
+      assignedById: req.user.id,
+      remarks: remarks || null,
+      ipAddress: req.ip
+    });
+
+    return successResponse(res, { entityType, entityId, nodalOfficerId }, "District Nodal Consultant appointed");
+  } catch (error) {
+    const handled = handleKnownError(res, error);
+    if (handled) return handled;
+    console.error("appointNodalConsultantHandler error:", error);
+    return errorResponse(res, "Failed to appoint nodal consultant", 500);
   }
 };

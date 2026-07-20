@@ -3,6 +3,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { CompanyInterestStatus, CSRFundMilestoneStatus, CSRRequirementStatus } from "@prisma/client";
 import { Role } from "../types/role";
+import { userHasRole, userHasAnyRole, RolePrincipal } from "../services/roleResolver";
 import { auditLog, notify, notifyCompanyUsers, notifyDistrictAdmins, notifyNGOUsers } from "../services/notificationService";
 
 const toNumber = (value: unknown, fallback = 0) => {
@@ -10,8 +11,8 @@ const toNumber = (value: unknown, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const isStateCell = (role?: Role) =>
-  role === Role.SUPER_ADMIN || role === Role.PORTAL_ADMIN || role === Role.CSR_ADMIN || role === Role.DISTRICT_ADMIN;
+const isStateCell = (user?: RolePrincipal | null) =>
+  userHasAnyRole(user, [Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN]);
 
 export const convertRequirementToProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -280,8 +281,8 @@ export const confirmAssetHandover = async (req: AuthenticatedRequest, res: Respo
     });
     if (!project) return res.status(404).json({ error: "CSR project not found" });
 
-    const ownsProject = req.user?.role === Role.BENEFICIARY_AGENCY && project.beneficiaryProfile.userId === req.user?.id;
-    if (!ownsProject && !isStateCell(req.user?.role)) {
+    const ownsProject = userHasRole(req.user, Role.BENEFICIARY_AGENCY) && project.beneficiaryProfile.userId === req.user?.id;
+    if (!ownsProject && !isStateCell(req.user)) {
       return res.status(403).json({ error: "Only the owning government department can confirm handover" });
     }
 

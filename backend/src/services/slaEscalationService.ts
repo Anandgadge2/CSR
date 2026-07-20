@@ -28,8 +28,10 @@ export const SLA_TIMELINES = {
   /** Relationship Manager has 5 days to respond to corporate enquiry */
   RM_RESPONSE: 5,
 
-  /** Joint Secretary has 5 days for report decision / nodal appointment */
-  JS_DECISION: 5,
+  /** Joint Secretary has 7 days to verify/decide on a forwarded application
+   *  (spec: submission→first RM contact = 5d; RM forward→JS verification = 7d).
+   *  Dynamic at runtime via slaConfigService; this is the seed default. */
+  JS_DECISION: 7,
 
   /** Joint Secretary has only 3 days when an RM-missed enquiry escalates to them */
   JS_ESCALATED_RESPONSE: 3,

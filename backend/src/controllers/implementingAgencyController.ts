@@ -98,7 +98,8 @@ export const createSubLogin = async (
       data: {
         email: email.toLowerCase(),
         passwordHash,
-        role: Role.IMPLEMENTING_AGENCY_USER,
+        // TODO(dynamic-role): assign roleId for implementing-agency-user
+        role: Role.CORPORATE_USER,
         accountStatus: UserAccountStatus.PENDING_APPROVAL,
         isVerified: true, // credential delivery handled by corporate; activation gated on nodal approval
         parentCorporateUserId: userId,
@@ -154,7 +155,7 @@ export const listMySubLogins = async (
     if (!userId) return unauthorizedResponse(res, "User not authenticated");
 
     const subLogins = await prisma.user.findMany({
-      where: { parentCorporateUserId: userId, role: Role.IMPLEMENTING_AGENCY_USER },
+      where: { parentCorporateUserId: userId, roleRelation: { slug: Role.IMPLEMENTING_AGENCY_USER } },
       select: {
         id: true,
         email: true,
@@ -203,7 +204,7 @@ export const assignAgencyToProject = async (
         },
       }),
       prisma.user.findFirst({
-        where: { id: iaUserId, parentCorporateUserId: userId, role: Role.IMPLEMENTING_AGENCY_USER },
+        where: { id: iaUserId, parentCorporateUserId: userId, roleRelation: { slug: Role.IMPLEMENTING_AGENCY_USER } },
       }),
     ]);
 
@@ -261,7 +262,7 @@ export const listPendingApprovals = async (
     }
 
     const pending = await prisma.user.findMany({
-      where: { role: Role.IMPLEMENTING_AGENCY_USER, accountStatus: UserAccountStatus.PENDING_APPROVAL },
+      where: { roleRelation: { slug: Role.IMPLEMENTING_AGENCY_USER }, accountStatus: UserAccountStatus.PENDING_APPROVAL },
       select: {
         id: true,
         email: true,
@@ -307,7 +308,7 @@ export const decideSubLogin = async (
     }
 
     const iaUser = await prisma.user.findFirst({
-      where: { id, role: Role.IMPLEMENTING_AGENCY_USER, accountStatus: UserAccountStatus.PENDING_APPROVAL },
+      where: { id, roleRelation: { slug: Role.IMPLEMENTING_AGENCY_USER }, accountStatus: UserAccountStatus.PENDING_APPROVAL },
       select: { id: true, email: true, iaAgencyName: true, parentCorporateUserId: true },
     });
     if (!iaUser) return notFoundResponse(res, "Pending implementing agency sub-login not found");

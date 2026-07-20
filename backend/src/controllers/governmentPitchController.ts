@@ -7,6 +7,8 @@ import { Role } from "../types/role";
 import { notify, notifyByRole, auditLog, sendTrackingIdNotification } from "../services/notificationService";
 import { assertOtpVerified } from "../services/otpService";
 import { SLAEscalationService, calculateDueDate } from "../services/slaEscalationService";
+import { calculateDueDateDynamic } from "../services/slaConfigService";
+import { pickRelationshipManager } from "../services/rmAssignmentService";
 import { onboardApprovedAssessmentToProject } from "../services/convergenceOnboardingService";
 import { FEASIBILITY_CHECKLIST_SEED } from "../constants/mahacsr-framework";
 
@@ -228,7 +230,7 @@ export const submitPitch = async (
 
     const pitchReferenceId = await generatePitchReferenceId();
 
-    const verificationDueAt = calculateDueDate("GOVERNMENT_PITCH_VERIFICATION");
+    const verificationDueAt = await calculateDueDateDynamic("GOVERNMENT_PITCH_VERIFICATION");
 
     // Create pitch with photos
     const pitch = await prisma.governmentPitch.create({
@@ -254,6 +256,7 @@ export const submitPitch = async (
         status: GovernmentPitchStatus.SUBMITTED,
         submittedAt: new Date(),
         verificationDueAt,
+        submittedByUserId: req.user?.id ?? null,
         photos: {
           create: body.photos.map((photo) => ({
             fileUrl: photo.fileUrl,
@@ -269,13 +272,10 @@ export const submitPitch = async (
       }
     });
 
-    // Auto-assign to RM based on district
-    const rm = await prisma.user.findFirst({
-      where: {
-        role: Role.CSR_RELATIONSHIP_MANAGER,
-        assignedDistrict: body.district
-      }
-    });
+    // Auto-assign to a Relationship Manager from the workload-balanced pool.
+    // District is passed only as a secondary tie-break, not a hard filter, so a
+    // pitch is never left unassigned just because its district has no local RM.
+    const rm = await pickRelationshipManager(body.district);
 
     if (rm) {
       await prisma.governmentPitch.update({
@@ -881,7 +881,7 @@ export const getMyPitches = async (
       Role.PORTAL_ADMIN
     ];
 
-    if (!allowedRoles.includes(req.user!.role)) {
+    if (!allowedRoles.includes(req.user!.role ?? Role.GOVERNMENT_OFFICER)) {
       return res.status(403).json({ error: "Only government officers can view their pitches" });
     }
 
@@ -889,9 +889,8 @@ export const getMyPitches = async (
     const pageSize = parseInt(limit as string) || 20;
     const skip = (pageNum - 1) * pageSize;
 
-    // Build filter - get pitches by matching mobile/email with the user
-    // In a real system, you'd have a createdBy field, here we match by contact info
-    const where: any = {};
+    // Scope to pitches this user actually submitted from their dashboard.
+    const where: any = { submittedByUserId: userId };
 
     if (status) {
       where.status = status as GovernmentPitchStatus;

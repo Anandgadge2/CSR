@@ -504,7 +504,7 @@ export const appointNodalOfficer = async (
     const nodalOfficer = await prisma.user.findFirst({
       where: {
         id: nodalOfficerUserId,
-        role: Role.DISTRICT_NODAL_OFFICER,
+        roleRelation: { slug: Role.DISTRICT_NODAL_OFFICER },
       },
     });
 
@@ -810,6 +810,79 @@ export const updateChecklistItems = async (
  * @route GET /api/js/nodal-appointments
  * @access Private (JOINT_SECRETARY, SUPER_ADMIN, PORTAL_ADMIN)
  */
+/**
+ * @desc  Approved enquiries/pitches awaiting a District Nodal Consultant.
+ *        Feeds the JS "New Appointment" cascade (project → district → DNC).
+ *        A project qualifies while its status is JS_APPROVED (i.e. approved by
+ *        the JS but no nodal officer appointed yet). Returns a unified shape
+ *        with an explicit entityType so the client never guesses from prefixes.
+ * @route GET /api/js/approved-projects
+ * @access Private (JOINT_SECRETARY, SUPER_ADMIN, PORTAL_ADMIN, CSR_ADMIN)
+ */
+export const getApprovedProjectsForAppointment = async (
+  _req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<Response | void> => {
+  try {
+    const [enquiries, pitches] = await Promise.all([
+      prisma.corporateEnquiry.findMany({
+        where: { status: CorporateEnquiryStatus.JS_APPROVED },
+        select: {
+          id: true,
+          trackingId: true,
+          companyName: true,
+          sector: true,
+          preferredDistricts: true,
+          status: true,
+          feasibilityAssessment: { select: { proposedLocationDistrict: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+      prisma.governmentPitch.findMany({
+        where: { status: GovernmentPitchStatus.JS_APPROVED },
+        select: {
+          id: true,
+          pitchReferenceId: true,
+          department: true,
+          officialName: true,
+          district: true,
+          status: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+    ]);
+
+    const projects = [
+      ...enquiries.map((e) => ({
+        id: e.id,
+        entityType: "CORPORATE_ENQUIRY" as const,
+        trackingId: e.trackingId,
+        companyName: e.companyName,
+        sector: e.sector,
+        preferredDistricts: e.preferredDistricts,
+        status: e.status,
+        feasibilityAssessment: e.feasibilityAssessment,
+      })),
+      ...pitches.map((p) => ({
+        id: p.id,
+        entityType: "GOVERNMENT_PITCH" as const,
+        trackingId: p.pitchReferenceId,
+        companyName: p.department || p.officialName,
+        sector: "Government Pitch",
+        preferredDistricts: p.district ? [p.district] : [],
+        status: p.status,
+        feasibilityAssessment: null,
+      })),
+    ];
+
+    return successResponse(res, projects, "Approved projects awaiting nodal appointment retrieved");
+  } catch (error) {
+    console.error("Error in getApprovedProjectsForAppointment:", error);
+    return errorResponse(res, "Failed to retrieve approved projects", 500);
+  }
+};
+
 export const getNodalAppointments = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -928,7 +1001,7 @@ export const getNodalOfficers = async (
   try {
     const nodalOfficers = await prisma.user.findMany({
       where: {
-        role: Role.DISTRICT_NODAL_OFFICER,
+        roleRelation: { slug: Role.DISTRICT_NODAL_OFFICER },
         accountStatus: "ACTIVE",
       },
       select: {

@@ -1,542 +1,369 @@
-// Create Pitch Form Page
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Layers,
-  ChevronLeft,
-  Save,
-  Send,
-  Building2,
-  MapPin,
-  IndianRupee,
-  Calendar,
-  FileText,
-  Upload,
-  AlertCircle,
-  CheckCircle2,
-  Info
-} from "lucide-react";
+import { apiFetch } from "@/lib/api";
+import GovInput from "@/components/gov/GovInput";
+import GovSelect from "@/components/gov/GovSelect";
+import GovTextarea from "@/components/gov/GovTextarea";
+import GovButton from "@/components/gov/GovButton";
+import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
+import GovAlert from "@/components/gov/GovAlert";
+import GovPortalLayout from "@/components/layout/GovPortalLayout";
+import GovPageHeader from "@/components/layout/GovPageHeader";
+import { Building2, CheckCircle, Loader2, Camera, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
-import { DashboardLayout } from "@/components/layout";
-import { PageHeader } from "@/components/layout";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input, TextArea, Select } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
-import { Alert } from "@/components/ui";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
-
-const sidebarItems = [
-  { label: "Dashboard", href: "/department/dashboard", icon: Layers },
-  { label: "Create Pitch", href: "/department/pitches/create", icon: Building2 },
-  { label: "My Pitches", href: "/department/pitches", icon: Building2 },
+const SERVICE_CLASSES = [
+  { value: "", label: "Select Service Class" },
+  { value: "CLASS_1", label: "Class-1" },
+  { value: "CLASS_2", label: "Class-2" },
+  { value: "BELOW_CLASS_2", label: "below Class-2" },
 ];
 
-const districts = [
-  { value: "", label: "Select District" },
-  { value: "mumbai", label: "Mumbai" },
-  { value: "pune", label: "Pune" },
-  { value: "thane", label: "Thane" },
-  { value: "nashik", label: "Nashik" },
-  { value: "nagpur", label: "Nagpur" },
-  { value: "aurangabad", label: "Aurangabad" },
+const getCertificationOptions = (serviceClass: string) => {
+  if (serviceClass === "CLASS_1" || serviceClass === "CLASS_2") {
+    return [{ value: "SELF", label: "Self certification" }];
+  }
+  if (serviceClass === "BELOW_CLASS_2") {
+    return [{ value: "HOD", label: "HOD certification" }];
+  }
+  return [{ value: "", label: "Select Service Class first" }];
+};
+
+const DISTRICTS = [
+  "Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara", "Buldhana",
+  "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna",
+  "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded",
+  "Nandurbar", "Nashik", "Osmanabad", "Palghar", "Parbhani", "Pune", "Raigad",
+  "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane", "Wardha",
+  "Washim", "Yavatmal"
 ];
 
-const sectors = [
-  { value: "", label: "Select Sector" },
-  { value: "education", label: "Education" },
-  { value: "health", label: "Health" },
-  { value: "environment", label: "Environment" },
-  { value: "livelihood", label: "Livelihood" },
-  { value: "rural_development", label: "Rural Development" },
-  { value: "infrastructure", label: "Infrastructure" },
-];
-
-const budgetRanges = [
-  { value: "", label: "Select Budget Range" },
-  { value: "under_10l", label: "Under ₹10 Lakhs" },
-  { value: "10l_to_50l", label: "₹10 Lakhs - ₹50 Lakhs" },
-  { value: "50l_to_1cr", label: "₹50 Lakhs - ₹1 Crore" },
-  { value: "1cr_to_5cr", label: "₹1 Crore - ₹5 Crore" },
-  { value: "above_5cr", label: "Above ₹5 Crore" },
-];
-
-interface FormData {
-  title: string;
-  description: string;
+interface PitchForm {
+  officialName: string;
+  designation: string;
+  department: string;
+  officeName: string;
+  serviceClass: string;
+  mobile: string;
+  email: string;
   district: string;
-  sector: string;
-  budgetRange: string;
+  taluka: string;
+  exactLocation: string;
+  csrRequirement: string;
   estimatedCost: string;
-  duration: string;
-  beneficiaries: string;
-  location: string;
-  documents: File[];
+  govtFundDeclaration: boolean;
+  certificationType: string;
+  hodDocument?: File | null;
+  geoTaggedPhotos: File[];
 }
 
 interface FormErrors {
   [key: string]: string;
 }
 
-export default function CreatePitchPage() {
+/**
+ * Government-department dashboard: create a development pitch.
+ * Authenticated + verified GOVERNMENT_DEPARTMENT onboarding is enforced by the
+ * backend route (requireApprovedOrganization). Identity is prepopulated from the
+ * logged-in session — no OTP step (that only existed for anonymous public forms,
+ * which have been retired).
+ */
+export default function CreatePitchDashboardPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  
-  const [formData, setFormData] = useState<FormData>({
-    title: "",
-    description: "",
-    district: "",
-    sector: "",
-    budgetRange: "",
-    estimatedCost: "",
-    duration: "",
-    beneficiaries: "",
-    location: "",
-    documents: [],
-  });
-  
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [referenceId, setReferenceId] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
-  const [touched, setTouched] = useState<{[key: string]: boolean}>({});
 
-  const validateStep = (step: number): boolean => {
-    const newErrors: FormErrors = {};
-    
-    if (step === 1) {
-      if (!formData.title.trim()) newErrors.title = "Title is required";
-      if (!formData.description.trim()) newErrors.description = "Description is required";
-      if (formData.description.length < 50) newErrors.description = "Description must be at least 50 characters";
+  const [form, setForm] = useState<PitchForm>({
+    officialName: "",
+    designation: "",
+    department: "",
+    officeName: "",
+    serviceClass: "",
+    mobile: "",
+    email: "",
+    district: "",
+    taluka: "",
+    exactLocation: "",
+    csrRequirement: "",
+    estimatedCost: "",
+    govtFundDeclaration: false,
+    certificationType: "",
+    hodDocument: null,
+    geoTaggedPhotos: [],
+  });
+
+  // Prepopulate from the authenticated user's session / organization profile.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem("user");
+    if (!raw) return;
+    try {
+      const u = JSON.parse(raw);
+      setForm((prev) => ({
+        ...prev,
+        officialName: u.officialName || u.name || prev.officialName,
+        department: u.organization?.name || u.department || prev.department,
+        officeName: u.organization?.name || prev.officeName,
+        email: u.email || prev.email,
+        mobile: u.mobile || prev.mobile,
+        district: u.organization?.district || u.assignedDistrict || prev.district,
+      }));
+    } catch {
+      /* ignore malformed session */
     }
-    
-    if (step === 2) {
-      if (!formData.district) newErrors.district = "District is required";
-      if (!formData.sector) newErrors.sector = "Sector is required";
-      if (!formData.location.trim()) newErrors.location = "Location is required";
-    }
-    
-    if (step === 3) {
-      if (!formData.budgetRange) newErrors.budgetRange = "Budget range is required";
-      if (!formData.estimatedCost.trim()) newErrors.estimatedCost = "Estimated cost is required";
-      if (!formData.duration.trim()) newErrors.duration = "Duration is required";
-      if (!formData.beneficiaries.trim()) newErrors.beneficiaries = "Beneficiaries count is required";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  }, []);
+
+  const set = (field: keyof PitchForm, value: string | boolean | File[] | File | null) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+  const validateForm = (): boolean => {
+    const e: FormErrors = {};
+    if (!form.officialName.trim()) e.officialName = "Official name is required";
+    if (!form.designation.trim()) e.designation = "Designation is required";
+    if (!form.department.trim()) e.department = "Department is required";
+    if (!form.officeName.trim()) e.officeName = "Office name is required";
+    if (!form.serviceClass) e.serviceClass = "Service class is required";
+    if (!form.mobile.trim() || !/^[6-9]\d{9}$/.test(form.mobile)) e.mobile = "Valid 10-digit mobile is required";
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Valid email is required";
+    if (!form.district) e.district = "District is required";
+    if (!form.taluka.trim()) e.taluka = "Taluka is required";
+    if (!form.exactLocation.trim()) e.exactLocation = "Exact location is required";
+    if (!form.csrRequirement.trim()) e.csrRequirement = "CSR requirement is required";
+    const words = form.csrRequirement.trim().split(/\s+/).filter(Boolean).length;
+    if (words > 200) e.csrRequirement = "Requirement must not exceed 200 words";
+    if (!form.estimatedCost.trim() || Number.isNaN(parseFloat(form.estimatedCost))) e.estimatedCost = "Valid estimated cost is required";
+    if (!form.govtFundDeclaration) e.govtFundDeclaration = "You must declare government fund status";
+    if ((form.serviceClass === "CLASS_1" || form.serviceClass === "CLASS_2") && form.certificationType !== "SELF") {
+      e.certificationType = "Class-1 and Class-2 officials must use self certification";
+    }
+    if (form.serviceClass === "BELOW_CLASS_2" && form.certificationType !== "HOD") {
+      e.certificationType = "below Class-2 officials must use HOD certification";
+    }
+    if (form.certificationType === "HOD" && !form.hodDocument) {
+      e.hodDocument = "HOD certification document is required";
+    }
+    if (form.geoTaggedPhotos.length < 2) e.geoTaggedPhotos = "At least 2 geo-tagged photos are required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handlePhotoUpload = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    if (ev.target.files) {
+      const list = Array.from(ev.target.files);
+      set("geoTaggedPhotos", [...form.geoTaggedPhotos, ...list]);
     }
   };
 
-  const handleBack = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+  const removePhoto = (index: number) => {
+    set("geoTaggedPhotos", form.geoTaggedPhotos.filter((_, i) => i !== index));
   };
 
-  const handleChange = (field: keyof FormData, value: string | File[]) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setTouched(prev => ({ ...prev, [field]: true }));
-    
-    // Clear error when user types
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+  const handleHodDocumentUpload = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    if (ev.target.files && ev.target.files[0]) set("hodDocument", ev.target.files[0]);
+  };
+
+  // Placeholder uploader (dev): mirrors the retired public form. Swap for the
+  // real Cloudinary/upload endpoint when wiring production storage.
+  const uploadFile = async (file: File): Promise<string> =>
+    `https://dev.mahacsr.local/uploads/${encodeURIComponent(file.name)}`;
+
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
+    try {
+      const photoUrls: string[] = [];
+      for (const photo of form.geoTaggedPhotos) photoUrls.push(await uploadFile(photo));
+      let hodCertificationDocument = "";
+      if (form.hodDocument) hodCertificationDocument = await uploadFile(form.hodDocument);
+
+      const response = await apiFetch<any>("/government-pitches", {
+        method: "POST",
+        body: JSON.stringify({
+          officialName: form.officialName,
+          designation: form.designation,
+          department: form.department,
+          officeName: form.officeName,
+          serviceClass: form.serviceClass,
+          mobile: form.mobile,
+          email: form.email,
+          district: form.district,
+          taluka: form.taluka,
+          exactLocation: form.exactLocation,
+          csrRequirement: form.csrRequirement,
+          estimatedCost: parseFloat(form.estimatedCost),
+          govtFundDeclaration: form.govtFundDeclaration,
+          certificationType: form.certificationType,
+          hodCertificationDocument,
+          photos: photoUrls.map((fileUrl, index) => ({
+            fileUrl,
+            latitude: 18.5204 + index / 1000,
+            longitude: 73.8567 + index / 1000,
+            capturedAt: new Date().toISOString(),
+          })),
+        }),
+      });
+      setReferenceId(
+        response.pitchReferenceId ??
+          response.pitch?.pitchReferenceId ??
+          response.data?.pitch?.pitchReferenceId ??
+          ""
+      );
+      setSubmitted(true);
+    } catch (err: any) {
+      setErrors({ submit: err?.message || "Failed to submit pitch. Please try again." });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async () => {
-    if (!validateStep(4)) return;
-    
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setShowSuccess(true);
-    
-    // Redirect after showing success
-    setTimeout(() => {
-      router.push("/department/pitches");
-    }, 2000);
-  };
+  const wordCount = form.csrRequirement.trim().split(/\s+/).filter(Boolean).length;
+  const certOptions = getCertificationOptions(form.serviceClass);
 
-  const steps = [
-    { number: 1, title: "Basic Information", description: "Enter pitch details" },
-    { number: 2, title: "Location & Sector", description: "Specify location and sector" },
-    { number: 3, title: "Budget & Timeline", description: "Set budget and duration" },
-    { number: 4, title: "Review & Submit", description: "Review and submit pitch" },
-  ];
+  if (submitted) {
+    return (
+      <GovPortalLayout userRole="GOVERNMENT_OFFICER">
+        <div style={{ maxWidth: 800, margin: "0 auto", padding: 20 }}>
+          <GovPageHeader title="Pitch Submitted Successfully" breadcrumb="Home / Pitches / Create" />
+          <GovCard className="mt-4">
+            <GovCardBody className="text-center py-8">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={32} className="text-green-600" />
+              </div>
+              <h2 className="text-xl font-bold text-[#14274e] mb-2">Your development pitch has been submitted</h2>
+              <p className="text-slate-600 mb-6">
+                A CSR Relationship Manager will be auto-assigned and will verify your pitch within the SLA window.
+              </p>
+              {referenceId && (
+                <div className="bg-slate-50 border border-slate-200 rounded p-4 mb-6" style={{ maxWidth: 400, margin: "0 auto 24px" }}>
+                  <p className="text-sm text-slate-500 mb-1">Your Pitch Reference ID</p>
+                  <p className="text-lg font-bold text-[#14274e]">{referenceId}</p>
+                </div>
+              )}
+              <div className="flex gap-3 justify-center">
+                <GovButton variant="secondary" onClick={() => router.push("/department/pitches")}>View My Pitches</GovButton>
+                <GovButton variant="primary" onClick={() => window.location.reload()}>Submit Another</GovButton>
+              </div>
+            </GovCardBody>
+          </GovCard>
+        </div>
+      </GovPortalLayout>
+    );
+  }
 
   return (
-    <DashboardLayout
-      userRole="Department Officer"
-      userName="Department Officer"
-      userEmail="officer@dept.gov.in"
-      sidebarItems={sidebarItems}
-    >
-      <PageHeader
-        title="Create Development Pitch"
-        description="Submit a new development need for CSR funding"
-        breadcrumbs={[
-          { label: "Dashboard", href: "/department/dashboard" },
-          { label: "My Pitches", href: "/department/pitches" },
-          { label: "Create Pitch" },
-        ]}
-      />
+    <GovPortalLayout userRole="GOVERNMENT_OFFICER">
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: 20 }}>
+        <Link href="/department/pitches" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-3">
+          <ArrowLeft size={16} /> Back to My Pitches
+        </Link>
+        <GovPageHeader
+          title="Create Development Pitch"
+          description="Submit a development need for CSR convergence. A Relationship Manager is auto-assigned on submission."
+          breadcrumb="Home / Pitches / Create"
+        />
 
-      {/* Success Message */}
-      <AnimatePresence>
-        {showSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="mb-6"
-          >
-            <div className="bg-success-50 border border-success-200 rounded-lg p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-success-100 rounded-full flex items-center justify-center text-success-600">
-                <CheckCircle2 size={20} />
-              </div>
-              <div>
-                <h3 className="font-semibold text-success-900">Pitch Submitted Successfully!</h3>
-                <p className="text-sm text-success-700">
-                  Your pitch has been submitted with ID: PIT-2026-0056. Redirecting...
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        {errors.submit && <GovAlert variant="danger" className="mt-4">{errors.submit}</GovAlert>}
 
-      {/* Stepper */}
-      <Card className="mb-6" hover={false}>
-        <CardContent className="py-6">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.number} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm transition-colors",
-                      currentStep === step.number
-                        ? "bg-primary-600 text-white"
-                        : currentStep > step.number
-                        ? "bg-success-500 text-white"
-                        : "bg-gray-100 text-gray-400"
-                    )}
-                  >
-                    {currentStep > step.number ? (
-                      <CheckCircle2 size={18} />
-                    ) : (
-                      step.number
-                    )}
-                  </div>
-                  <div className="mt-2 text-center">
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        currentStep >= step.number ? "text-gray-900" : "text-gray-400"
-                      )}
-                    >
-                      {step.title}
-                    </p>
-                    <p className="text-xs text-gray-500 hidden sm:block">
-                      {step.description}
-                    </p>
-                  </div>
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-5">
+          <GovCard>
+            <GovCardHeader><GovCardTitle>Official Details</GovCardTitle></GovCardHeader>
+            <GovCardBody>
+              <div className="gov-grid-2">
+                <GovInput label="Official Name" required value={form.officialName} error={errors.officialName} onChange={(e) => set("officialName", e.target.value)} />
+                <GovInput label="Designation" required value={form.designation} error={errors.designation} onChange={(e) => set("designation", e.target.value)} />
+                <GovInput label="Department" required value={form.department} error={errors.department} onChange={(e) => set("department", e.target.value)} />
+                <GovInput label="Office Name" required value={form.officeName} error={errors.officeName} onChange={(e) => set("officeName", e.target.value)} />
+                <GovSelect label="Service Class" required value={form.serviceClass} error={errors.serviceClass}
+                  onChange={(e) => { set("serviceClass", e.target.value); set("certificationType", ""); }} options={SERVICE_CLASSES} />
+                <GovSelect label="Certification Type" required value={form.certificationType} error={errors.certificationType}
+                  onChange={(e) => set("certificationType", e.target.value)} options={certOptions} />
+                <GovInput label="Mobile" required value={form.mobile} error={errors.mobile} onChange={(e) => set("mobile", e.target.value)} />
+                <GovInput label="Email" required value={form.email} error={errors.email} onChange={(e) => set("email", e.target.value)} />
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          <GovCard>
+            <GovCardHeader><GovCardTitle>Location</GovCardTitle></GovCardHeader>
+            <GovCardBody>
+              <div className="gov-grid-2">
+                <GovSelect label="District" required value={form.district} error={errors.district}
+                  onChange={(e) => set("district", e.target.value)}
+                  options={[{ value: "", label: "Select District" }, ...DISTRICTS.map((d) => ({ value: d, label: d }))]} />
+                <GovInput label="Taluka" required value={form.taluka} error={errors.taluka} onChange={(e) => set("taluka", e.target.value)} />
+                <div className="md:col-span-2">
+                  <GovTextarea label="Exact Location" required value={form.exactLocation} error={errors.exactLocation} onChange={(e) => set("exactLocation", e.target.value)} rows={2} />
                 </div>
-                {index < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      "w-16 sm:w-24 h-0.5 mx-2 sm:mx-4",
-                      currentStep > step.number ? "bg-success-500" : "bg-gray-200"
-                    )}
-                  />
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          <GovCard>
+            <GovCardHeader><GovCardTitle>Requirement & Budget</GovCardTitle></GovCardHeader>
+            <GovCardBody>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <GovTextarea label="CSR Requirement (max 200 words)" required value={form.csrRequirement} error={errors.csrRequirement}
+                    onChange={(e) => set("csrRequirement", e.target.value)} rows={5} />
+                  <p className={`text-xs mt-1 ${wordCount > 200 ? "text-rose-600" : "text-slate-400"}`}>{wordCount}/200 words</p>
+                </div>
+                <GovInput label="Estimated Cost (₹)" required type="number" value={form.estimatedCost} error={errors.estimatedCost} onChange={(e) => set("estimatedCost", e.target.value)} />
+                <label className="flex items-start gap-2 text-sm text-slate-700">
+                  <input type="checkbox" className="mt-1" checked={form.govtFundDeclaration} onChange={(e) => set("govtFundDeclaration", e.target.checked)} />
+                  <span>I declare that no government fund is currently available/sanctioned for this specific requirement.</span>
+                </label>
+                {errors.govtFundDeclaration && <p className="text-xs text-rose-600">{errors.govtFundDeclaration}</p>}
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          <GovCard>
+            <GovCardHeader><GovCardTitle>Geo-tagged Photos & Certification</GovCardTitle></GovCardHeader>
+            <GovCardBody>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <label className="gov-label flex items-center gap-2"><Camera size={16} /> Site Photos (min 2)</label>
+                  <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="block mt-1 text-sm" />
+                  {errors.geoTaggedPhotos && <p className="text-xs text-rose-600 mt-1">{errors.geoTaggedPhotos}</p>}
+                  {form.geoTaggedPhotos.length > 0 && (
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {form.geoTaggedPhotos.map((p, i) => (
+                        <li key={i} className="flex items-center justify-between text-sm bg-slate-50 border border-slate-200 rounded px-3 py-1.5">
+                          <span className="truncate">{p.name}</span>
+                          <button type="button" onClick={() => removePhoto(i)} className="text-rose-600 text-xs font-semibold">Remove</button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {form.certificationType === "HOD" && (
+                  <div>
+                    <label className="gov-label">HOD Certification Document</label>
+                    <input type="file" accept="application/pdf,image/*" onChange={handleHodDocumentUpload} className="block mt-1 text-sm" />
+                    {errors.hodDocument && <p className="text-xs text-rose-600 mt-1">{errors.hodDocument}</p>}
+                    {form.hodDocument && <p className="text-xs text-slate-500 mt-1">{form.hodDocument.name}</p>}
+                  </div>
                 )}
               </div>
-            ))}
+            </GovCardBody>
+          </GovCard>
+
+          <div className="flex justify-end gap-3">
+            <GovButton type="button" variant="secondary" onClick={() => router.push("/department/pitches")}>Cancel</GovButton>
+            <GovButton type="submit" variant="primary" disabled={loading}>
+              {loading ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Submitting…</span> : "Submit Pitch"}
+            </GovButton>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Form */}
-      <Card hover={false}>
-        <CardHeader>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {steps[currentStep - 1].title}
-          </h3>
-          <p className="text-sm text-gray-500">{steps[currentStep - 1].description}</p>
-        </CardHeader>
-        
-        <CardContent>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* Step 1: Basic Information */}
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  <Input
-                    label="Pitch Title"
-                    required
-                    placeholder="e.g., School Infrastructure Development"
-                    value={formData.title}
-                    onChange={(e) => handleChange("title", e.target.value)}
-                    error={touched.title ? errors.title : undefined}
-                  />
-                  
-                  <TextArea
-                    label="Description"
-                    required
-                    rows={5}
-                    placeholder="Describe the development need in detail..."
-                    value={formData.description}
-                    onChange={(e) => handleChange("description", e.target.value)}
-                    error={touched.description ? errors.description : undefined}
-                    help="Minimum 50 characters"
-                  />
-
-                  <div className="bg-primary-50 border border-primary-100 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <Info size={18} className="text-primary-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-primary-900">Tips for a good pitch</p>
-                        <ul className="text-sm text-primary-700 mt-1 list-disc list-inside">
-                          <li>Be specific about the development need</li>
-                          <li>Include expected outcomes and beneficiaries</li>
-                          <li>Mention any previous CSR work in the area</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Location & Sector */}
-              {currentStep === 2 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Select
-                      label="District"
-                      required
-                      options={districts}
-                      value={formData.district}
-                      onChange={(e) => handleChange("district", e.target.value)}
-                      error={touched.district ? errors.district : undefined}
-                    />
-                    
-                    <Select
-                      label="Sector"
-                      required
-                      options={sectors}
-                      value={formData.sector}
-                      onChange={(e) => handleChange("sector", e.target.value)}
-                      error={touched.sector ? errors.sector : undefined}
-                    />
-                  </div>
-                  
-                  <Input
-                    label="Specific Location"
-                    required
-                    placeholder="e.g., Village XYZ, Taluka ABC"
-                    value={formData.location}
-                    onChange={(e) => handleChange("location", e.target.value)}
-                    error={touched.location ? errors.location : undefined}
-                  />
-
-                  <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin size={32} className="text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Map integration placeholder</p>
-                      <p className="text-xs text-gray-400">Pin exact location on map</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Budget & Timeline */}
-              {currentStep === 3 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Select
-                      label="Budget Range"
-                      required
-                      options={budgetRanges}
-                      value={formData.budgetRange}
-                      onChange={(e) => handleChange("budgetRange", e.target.value)}
-                      error={touched.budgetRange ? errors.budgetRange : undefined}
-                    />
-                    
-                    <Input
-                      label="Estimated Cost (₹)"
-                      required
-                      type="number"
-                      placeholder="e.g., 2500000"
-                      value={formData.estimatedCost}
-                      onChange={(e) => handleChange("estimatedCost", e.target.value)}
-                      error={touched.estimatedCost ? errors.estimatedCost : undefined}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input
-                      label="Project Duration (in months)"
-                      required
-                      type="number"
-                      placeholder="e.g., 12"
-                      value={formData.duration}
-                      onChange={(e) => handleChange("duration", e.target.value)}
-                      error={touched.duration ? errors.duration : undefined}
-                    />
-                    
-                    <Input
-                      label="Expected Beneficiaries"
-                      required
-                      type="number"
-                      placeholder="e.g., 500"
-                      value={formData.beneficiaries}
-                      onChange={(e) => handleChange("beneficiaries", e.target.value)}
-                      error={touched.beneficiaries ? errors.beneficiaries : undefined}
-                    />
-                  </div>
-
-                  <div className="bg-warning-50 border border-warning-100 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle size={18} className="text-warning-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-warning-900">Budget Guidelines</p>
-                        <p className="text-sm text-warning-700 mt-1">
-                          Ensure your budget aligns with CSR Rules 2014 and Schedule VII activities. 
-                          Large budgets may require additional documentation.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Review & Submit */}
-              {currentStep === 4 && (
-                <div className="space-y-6">
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <h4 className="font-semibold text-gray-900 mb-4">Pitch Summary</h4>
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <dt className="text-sm text-gray-500">Title</dt>
-                        <dd className="font-medium text-gray-900">{formData.title}</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-gray-500">Sector</dt>
-                        <dd className="font-medium text-gray-900">
-                          {sectors.find(s => s.value === formData.sector)?.label}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-gray-500">District</dt>
-                        <dd className="font-medium text-gray-900">
-                          {districts.find(d => d.value === formData.district)?.label}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-gray-500">Estimated Cost</dt>
-                        <dd className="font-medium text-gray-900">
-                          ₹{Number(formData.estimatedCost).toLocaleString()}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-gray-500">Duration</dt>
-                        <dd className="font-medium text-gray-900">{formData.duration} months</dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm text-gray-500">Beneficiaries</dt>
-                        <dd className="font-medium text-gray-900">{formData.beneficiaries}</dd>
-                      </div>
-                    </dl>
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <dt className="text-sm text-gray-500 mb-2">Description</dt>
-                      <dd className="text-sm text-gray-700">{formData.description}</dd>
-                    </div>
-                  </div>
-
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                    <Upload size={32} className="text-gray-400 mx-auto mb-3" />
-                    <p className="text-sm font-medium text-gray-700">Upload Supporting Documents</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Drag and drop files here, or click to browse
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Supported: PDF, DOC, DOCX, JPG, PNG (Max 10MB each)
-                    </p>
-                  </div>
-
-                  <div className="bg-success-50 border border-success-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 size={18} className="text-success-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-success-900">Ready to Submit</p>
-                        <p className="text-sm text-success-700 mt-1">
-                          By submitting, you confirm that all information provided is accurate and 
-                          the pitch aligns with your department's development priorities.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </CardContent>
-
-        <CardFooter className="flex justify-between border-t border-gray-100 pt-6">
-          <div>
-            {currentStep > 1 && (
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={isSubmitting}
-              >
-                <ChevronLeft size={16} className="mr-1" />
-                Back
-              </Button>
-            )}
-          </div>
-          
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/department/pitches")}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            
-            {currentStep < 4 ? (
-              <Button onClick={handleNext}>
-                Next Step
-                <ChevronLeft size={16} className="ml-1 rotate-180" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleSubmit}
-                loading={isSubmitting}
-              >
-                <Send size={16} className="mr-2" />
-                Submit Pitch
-              </Button>
-            )}
-          </div>
-        </CardFooter>
-      </Card>
-    </DashboardLayout>
+        </form>
+      </div>
+    </GovPortalLayout>
   );
 }

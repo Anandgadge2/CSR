@@ -10,7 +10,10 @@ import {
   createOfficerAndAssign,
   getMyAssignments,
   getWorkflowStatus,
-  createDistrictNodalMapping
+  createDistrictNodalMapping,
+  listDistrictsHandler,
+  listNodalConsultantsHandler,
+  appointNodalConsultantHandler
 } from "../controllers/assignmentController";
 
 const router = Router();
@@ -69,6 +72,25 @@ router.post(
   "/district-nodal-mappings",
   checkPermission("district_mapping:manage"),
   asyncHandler(createDistrictNodalMapping)
+);
+
+// JS appointment cascade: list districts → list DNCs for a district → appoint
+router.get(
+  "/districts",
+  checkPermission("project:assign"),
+  asyncHandler(listDistrictsHandler)
+);
+
+router.get(
+  "/nodal-consultants",
+  checkPermission("project:assign"),
+  asyncHandler(listNodalConsultantsHandler)
+);
+
+router.post(
+  "/appoint-nodal-consultant",
+  checkPermission("project:assign"),
+  asyncHandler(appointNodalConsultantHandler)
 );
 
 export default router;

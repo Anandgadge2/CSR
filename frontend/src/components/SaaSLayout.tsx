@@ -13,6 +13,8 @@ import {
 import { Button } from "./ui/Button";
 import { apiFetch, getStoredUser } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import PageGuard from "@/components/auth/PageGuard";
+import { isNavItemVisible } from "@/lib/pageRegistry";
 
 interface SaaSLayoutProps {
   children: React.ReactNode;
@@ -709,7 +711,11 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
   const dashboardNavigationItems = getSidebarItems()
     .filter((item) => !("featureKey" in item) || !item.featureKey || tenantFeatures[item.featureKey] !== false)
-    .filter((item) => !("requiredPermission" in item) || !item.requiredPermission || hasPermission(item.requiredPermission));
+    .filter((item) => !("requiredPermission" in item) || !item.requiredPermission || hasPermission(item.requiredPermission))
+    // Page-visibility: hide any nav entry whose destination is a registered page
+    // the user's role lacks `page:<slug>:view` for. SUPER_ADMIN bypasses (isAdmin
+    // short-circuits hasPermission). Unregistered hrefs are always shown.
+    .filter((item) => isNavItemVisible(item.href, hasPermission));
   const routeFeatureKey =
     pathname.includes("/requirements") ? "enableRequirementCreation" :
     pathname.includes("/marketplace") ? "enableCSRMarketplace" :
@@ -729,7 +735,12 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       <h1 className="mt-2 text-2xl font-extrabold text-gov-navy">This feature is not enabled for your portal instance.</h1>
       <p className="mt-2 text-sm leading-6">Contact your Portal Admin to enable this module for your State Portal.</p>
     </div>
-  ) : children;
+  ) : (
+    // Page-visibility enforcement: if the current route maps to a known page
+    // slug the user lacks `page:<slug>:view` for, PageGuard renders a 403 in
+    // place of the content. SUPER_ADMIN / isAdmin bypasses inside the guard.
+    isDashboard ? <PageGuard>{children}</PageGuard> : children
+  );
 
 
   if (isDashboard && !mounted) {

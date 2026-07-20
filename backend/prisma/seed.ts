@@ -2,7 +2,8 @@ import "dotenv/config";
 import { PrismaClient, Role, OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, RoleScope, CSRCategory, CompanyInterestStatus, CSRRequirementStatus, CorporateEnquiryStatus, FeasibilityResult, ChecklistAnswer, SLAStage, GrievanceStatus, SimpleMilestoneStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { PERMISSIONS, ROLE_PERMISSION_MAP } from "../src/config/platformAccess";
+import { PERMISSIONS, PAGE_PERMISSIONS, SEED_ROLE_PERMISSIONS, resolveRolePermissionKeys } from "../src/config/platformAccess";
+import { ROLE_SLUG } from "../src/types/role";
 
 const prisma = new PrismaClient();
 
@@ -87,7 +88,10 @@ async function main() {
     // ============================================
 
     await tx.permission.createMany({
-      data: PERMISSIONS.map(([key, description, module]) => ({ key, description, module })),
+      data: [
+        ...PERMISSIONS.map(([key, description, module]) => ({ key, description, module, type: "ACTION" as const })),
+        ...PAGE_PERMISSIONS.map(([key, description, module]) => ({ key, description, module, type: "PAGE" as const })),
+      ],
       skipDuplicates: true
     });
     const permissions = await tx.permission.findMany();
@@ -170,16 +174,25 @@ async function main() {
       data: { organizationId: portalAdminOrg.id }
     });
 
-    const createSystemRole = async (name: string, scope: RoleScope, organizationId?: string | null) => {
+    // permKey = key into SEED_ROLE_PERMISSIONS (underscore form, e.g. "NGO_ADMIN")
+    // slug    = stable machine identity stored on the role and carried in the JWT
+    const createSystemRole = async (
+      name: string,
+      slug: string,
+      permKey: string,
+      scope: RoleScope,
+      organizationId?: string | null
+    ) => {
       return tx.organizationRole.create({
         data: {
           organizationId: organizationId || null,
           name,
+          slug,
           description: `${name.replace(/_/g, " ")} system role`,
           scope,
           isSystemRole: true,
           rolePermissions: {
-            create: (ROLE_PERMISSION_MAP[name] || ROLE_PERMISSION_MAP.VIEWER || [])
+            create: resolveRolePermissionKeys(permKey)
               .map((key) => ({ permissionId: permissionIdByKey.get(key)! }))
               .filter((item) => item.permissionId)
           }
@@ -187,16 +200,18 @@ async function main() {
       });
     };
 
-    const portalRole = await createSystemRole("SUPER_ADMIN", RoleScope.ORGANIZATION, portalAdminOrg.id);
+    const portalRole = await createSystemRole("SUPER_ADMIN", ROLE_SLUG.PORTAL_ADMIN, "SUPER_ADMIN", RoleScope.ORGANIZATION, portalAdminOrg.id);
 
     const superAdminRole = await tx.organizationRole.create({
       data: {
         organizationId: null,
         name: "Super Admin",
+        slug: ROLE_SLUG.SUPER_ADMIN,
         description: "Super Admin permanent system role",
         scope: RoleScope.GLOBAL,
         isSystemRole: true,
         isPermanent: true,
+        isProtected: true,
         rolePermissions: {
           create: permissions.map((p) => ({ permissionId: p.id }))
         }
@@ -211,17 +226,27 @@ async function main() {
       skipDuplicates: true
     });
 
-    const createEditableRole = async (name: string, scope: RoleScope, organizationId?: string | null) => {
+    // Editable dynamic roles. `name` is the human-facing (renameable) label;
+    // `slug` is the stable identity used by business logic; `permKey` selects
+    // the default permission set from SEED_ROLE_PERMISSIONS (underscore form).
+    const createEditableRole = async (
+      name: string,
+      slug: string,
+      permKey: string,
+      scope: RoleScope,
+      organizationId?: string | null
+    ) => {
       return tx.organizationRole.create({
         data: {
           organizationId: organizationId || null,
           name,
+          slug,
           description: `${name} role`,
           scope,
           isSystemRole: false,
           isPermanent: false,
           rolePermissions: {
-            create: (ROLE_PERMISSION_MAP[name] || [])
+            create: resolveRolePermissionKeys(permKey)
               .map((key) => ({ permissionId: permissionIdByKey.get(key)! }))
               .filter((item) => item.permissionId)
           }
@@ -230,15 +255,15 @@ async function main() {
     };
 
     // Create system/custom editable roles so they are available
-    const ngoAdminRole = await createEditableRole("NGO Admin", RoleScope.GLOBAL, null);
-    const companyAdminRole = await createEditableRole("Company Admin", RoleScope.GLOBAL, null);
-    const beneficiaryAgencyRole = await createEditableRole("Beneficiary Agency", RoleScope.GLOBAL, null);
-    const rmRole = await createEditableRole("Relationship Manager", RoleScope.GLOBAL, null);
-    const jsRole = await createEditableRole("Joint Secretary", RoleScope.GLOBAL, null);
-    const secretaryRole = await createEditableRole("Planning Secretary", RoleScope.GLOBAL, null);
-    const stateCellRole = await createEditableRole("State CSR Cell", RoleScope.GLOBAL, null);
-    const nodalRole = await createEditableRole("District Nodal Officer", RoleScope.GLOBAL, null);
-    const nodalConsultantRole = await createEditableRole("District Nodal Consultant", RoleScope.GLOBAL, null);
+    const ngoAdminRole = await createEditableRole("NGO Admin", ROLE_SLUG.NGO_ADMIN, "NGO_ADMIN", RoleScope.GLOBAL, null);
+    const companyAdminRole = await createEditableRole("Company Admin", ROLE_SLUG.COMPANY_ADMIN, "COMPANY_ADMIN", RoleScope.GLOBAL, null);
+    const beneficiaryAgencyRole = await createEditableRole("Beneficiary Agency", ROLE_SLUG.BENEFICIARY_AGENCY, "BENEFICIARY_AGENCY", RoleScope.GLOBAL, null);
+    const rmRole = await createEditableRole("Relationship Manager", ROLE_SLUG.RELATIONSHIP_MANAGER, "RELATIONSHIP_MANAGER", RoleScope.GLOBAL, null);
+    const jsRole = await createEditableRole("Joint Secretary", ROLE_SLUG.JOINT_SECRETARY, "JOINT_SECRETARY", RoleScope.GLOBAL, null);
+    const secretaryRole = await createEditableRole("Planning Secretary", ROLE_SLUG.PLANNING_SECRETARY, "PLANNING_SECRETARY", RoleScope.GLOBAL, null);
+    const stateCellRole = await createEditableRole("State CSR Cell", ROLE_SLUG.STATE_CSR_CELL, "STATE_CSR_CELL", RoleScope.GLOBAL, null);
+    const nodalRole = await createEditableRole("District Nodal Officer", ROLE_SLUG.DISTRICT_NODAL_OFFICER, "DISTRICT_NODAL_OFFICER", RoleScope.GLOBAL, null);
+    const nodalConsultantRole = await createEditableRole("District Nodal Consultant", ROLE_SLUG.DISTRICT_NODAL_CONSULTANT, "DISTRICT_NODAL_CONSULTANT", RoleScope.GLOBAL, null);
     console.log("✓ Dynamic roles initialized");
 
     const rmUser = await tx.user.create({

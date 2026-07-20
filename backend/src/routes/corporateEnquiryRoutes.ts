@@ -1,22 +1,33 @@
 import { Router } from "express";
 import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
+import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import {
   submitEnquiry,
   getEnquiryByTrackingId,
   getAllEnquiries,
   getEnquiryById,
+  getMyEnquiries,
   assignRM,
   recordContact,
   getRelationshipManagers
 } from "../controllers/corporateEnquiryController";
-import { checkPermission } from "../middlewares/accessControlMiddleware";
+import { checkPermission, requireApprovedOrganization } from "../middlewares/accessControlMiddleware";
+import { OrganizationKind } from "@prisma/client";
 
 const router = Router();
 
-// Public routes (no authentication required, optional token)
-router.post("/", optionalAuthenticateToken, submitEnquiry);
+// Corporate enquiry creation — authenticated + verified CSR_COMPANY onboarding only.
+// (Public anonymous creation removed; tracking-by-ID stays public read-only.)
+router.post(
+  "/",
+  authenticateToken,
+  requireApprovedOrganization(OrganizationKind.CSR_COMPANY),
+  submitEnquiry
+);
 router.get("/track/:trackingId", getEnquiryByTrackingId);
+
+// Corporate — list my organization's enquiries (dashboard)
+router.get("/my", authenticateToken, requireApprovedOrganization(OrganizationKind.CSR_COMPANY), getMyEnquiries);
 
 // Protected routes - RM, JS, Admin only
 const requireStateCellStaff = [

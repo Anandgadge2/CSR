@@ -5,7 +5,7 @@ import { isVerificationError } from "../utils/errors";
 import * as aadhaarService from "../services/aadhaarVerificationService";
 import { logVerificationEvent } from "../services/verificationAuditService";
 import { AadhaarGenerateOtpBody, AadhaarVerifyOtpBody } from "../dto/aadhaarSchemas";
-import { ADMIN_ROLES, VerificationRequest, respondVerificationError } from "./gstController";
+import { isAdminRequest, VerificationRequest, respondVerificationError } from "./gstController";
 
 export const generateAadhaarOtp = async (req: VerificationRequest, res: Response, next: NextFunction) => {
   const body = req.body as AadhaarGenerateOtpBody;
@@ -52,7 +52,7 @@ export const generateAadhaarOtp = async (req: VerificationRequest, res: Response
 
 export const verifyAadhaarOtp = async (req: VerificationRequest, res: Response, next: NextFunction) => {
   const body = req.body as AadhaarVerifyOtpBody;
-  const isAdmin = ADMIN_ROLES.includes(req.user?.role);
+  const isAdmin = isAdminRequest(req);
 
   try {
     const result = await aadhaarService.verifyOtp({
@@ -91,7 +91,7 @@ export const verifyAadhaarOtp = async (req: VerificationRequest, res: Response, 
 
 export const getAadhaarStatus = async (req: VerificationRequest, res: Response, next: NextFunction) => {
   try {
-    const canViewAll = ADMIN_ROLES.includes(req.user?.role);
+    const canViewAll = isAdminRequest(req);
     const result = await aadhaarService.getStatus(req.params.id, req.user!.id, canViewAll);
     return successResponse(res, result);
   } catch (err) {

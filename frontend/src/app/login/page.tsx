@@ -68,7 +68,7 @@ function LoginForm() {
       localStorage.setItem("user", JSON.stringify(user));
 
       // Redirect depending on user role
-      const nextPath = searchParams.get("next");
+      const nextPath = searchParams.get("next") || searchParams.get("redirect");
       if (nextPath?.startsWith("/")) {
         router.push(nextPath);
         return;

@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
+import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { checkPermission, requireApprovedOrganization } from "../middlewares/accessControlMiddleware";
+import { OrganizationKind } from "@prisma/client";
 import { asyncHandler } from "../middlewares/asyncHandler";
 import {
   submitPitch,
@@ -14,10 +16,11 @@ import {
 
 const router = Router();
 
-// Government Officer - Submit pitch
+// Government Officer — Submit pitch: authenticated + verified GOVERNMENT_DEPARTMENT onboarding only.
 router.post(
   "/",
-  optionalAuthenticateToken,
+  authenticateToken,
+  requireApprovedOrganization(OrganizationKind.GOVERNMENT_DEPARTMENT),
   asyncHandler(submitPitch)
 );
 
@@ -25,10 +28,11 @@ router.post(
 router.get("/public", asyncHandler(getPublicPitches));
 router.get("/public/:id", asyncHandler(getPitchById));
 
-// Corporate - Submit interest on a public pitch
+// Corporate - Submit interest on a public pitch (verified corporate only)
 router.post(
   "/public/:id/interests",
-  optionalAuthenticateToken,
+  authenticateToken,
+  requireApprovedOrganization(OrganizationKind.CSR_COMPANY),
   asyncHandler(submitInterest)
 );
 

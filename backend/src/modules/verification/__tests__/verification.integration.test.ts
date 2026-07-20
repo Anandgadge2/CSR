@@ -10,6 +10,10 @@ import jwt from "jsonwebtoken";
 const mockPrisma = {
   tenant: { findUnique: jest.fn() },
   tenantFeature: { findUnique: jest.fn() },
+  // Permission resolution is DB-driven: resolveUserPermission() reads User.roleId →
+  // OrganizationRole → permissions. Default to null so non-admin roles resolve to
+  // "no permission" (403); individual tests can override for the granted case.
+  user: { findUnique: jest.fn().mockResolvedValue(null) },
   userOrganizationRole: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
   verificationRecord: {
     findFirst: jest.fn(),
@@ -71,7 +75,9 @@ const activeTenant = { id: "tenant-1", status: "ACTIVE", isHidden: false };
 beforeEach(() => {
   jest.clearAllMocks();
   mockPrisma.tenant.findUnique.mockResolvedValue(activeTenant);
+  mockPrisma.user.findUnique.mockResolvedValue(null);
   mockPrisma.userOrganizationRole.findMany.mockResolvedValue([]);
+  mockPrisma.userOrganizationRole.count.mockResolvedValue(0);
   mockPrisma.auditLog.create.mockResolvedValue({});
   mockPrisma.$transaction.mockImplementation(async (fn: any) => fn(mockPrisma));
 });
@@ -151,13 +157,13 @@ describe("POST /api/verification/gst/verify", () => {
     );
   });
 
-  it("allows CORPORATE_USER to verify (static permission map)", async () => {
-    setupSuccessfulGstCall();
+  it("403s for CORPORATE_USER without verification:execute (dynamic RBAC)", async () => {
     const res = await request(buildApp())
       .post("/api/verification/gst/verify")
       .set("Authorization", `Bearer ${corporateToken}`)
       .send({ gstin: GSTIN, entityType: "COMPANY", entityId: ENTITY_ID });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain("verification:execute");
   });
 
   it("409s with errorCode ALREADY_VERIFIED on duplicate verify", async () => {

@@ -3,6 +3,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { CompanyInterestStatus, CSRRequirementStatus } from "@prisma/client";
 import { Role } from "../types/role";
+import { userHasAnyRole } from "../services/roleResolver";
 import { notify, notifyDistrictAdmins, auditLog } from "../services/notificationService";
 
 // ─── Create CSR Requirement ────────────────────────────────────────
@@ -687,7 +688,7 @@ export const getDepartmentCompanyInterests = async (req: AuthenticatedRequest, r
 
     const isOwner = requirement.beneficiaryProfile.userId === req.user!.id;
     const interestViewerRoles: Role[] = [Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN];
-    const isAdmin = interestViewerRoles.includes(req.user!.role);
+    const isAdmin = userHasAnyRole(req.user, interestViewerRoles);
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: "Not authorized to view company interest for this department requirement" });
     }

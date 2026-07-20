@@ -3,6 +3,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { RoleScope } from "@prisma/client";
 import { CacheService } from "../services/cacheService";
+import { PAGE_REGISTRY, pageViewKey } from "../config/platformAccess";
 import {
   successResponse,
   errorResponse,
@@ -439,6 +440,30 @@ export const getPermissions = async (
     return successResponse(res, {
       grouped,
       all: permissions });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Return the canonical page-visibility registry: every navigable page, its
+ * label/route/group, and the permission key that governs it. The frontend
+ * uses this to build the nav (hide pages the user lacks) and to guard routes
+ * (block direct navigation to a page whose permission is absent).
+ */
+export const getPageRegistry = async (
+  _req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const pages = PAGE_REGISTRY.map(([slug, label, route, group]) => ({
+      slug,
+      label,
+      route,
+      group,
+      permissionKey: pageViewKey(slug) }));
+    return successResponse(res, { pages });
   } catch (error) {
     next(error);
   }

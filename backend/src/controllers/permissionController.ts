@@ -1,15 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { ROLE_PERMISSION_MAP } from "../config/platformAccess";
 import { Role } from "../types/role";
 import { successResponse } from "../utils/apiResponse";
 
 /**
- * Get current user's permissions dynamically from database
- * Combines:
- * 1. System role permissions (from ROLE_PERMISSION_MAP fallback)
- * 2. Organization role permissions (from UserOrganizationRole assignments)
+ * Get current user's permissions dynamically from database.
+ * 100 % DB-driven — no hardcoded fallback map.
  */
 export const getCurrentUserPermissions = async (
   req: AuthenticatedRequest,
@@ -25,11 +22,27 @@ export const getCurrentUserPermissions = async (
     const userRole = req.user.role;
     const organizationId = req.user.organizationId;
 
-    // Start with system role permissions as fallback
-    const systemPermissions = userRole ? (ROLE_PERMISSION_MAP[userRole] || []) : [];
-    const permissionSet = new Set<string>(systemPermissions);
+    const permissionSet = new Set<string>();
 
-    // Fetch dynamic organization role permissions
+    // 1. Permissions from User.roleId → OrganizationRole
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        roleRelation: {
+          include: {
+            rolePermissions: { include: { permission: true } },
+          },
+        },
+      },
+    });
+
+    if (user?.roleRelation) {
+      user.roleRelation.rolePermissions.forEach((rp) => {
+        permissionSet.add(rp.permission.key);
+      });
+    }
+
+    // 2. Permissions from UserOrganizationRole assignments
     const userOrgRoles = await prisma.userOrganizationRole.findMany({
       where: {
         userId,
@@ -48,37 +61,50 @@ export const getCurrentUserPermissions = async (
       },
     });
 
-    // Add permissions from organization roles
     userOrgRoles.forEach((assignment: any) => {
       assignment.role.rolePermissions.forEach((rolePermission: any) => {
         permissionSet.add(rolePermission.permission.key);
       });
     });
 
-    // Fetch user's assigned roles
-    const roles = userOrgRoles.map((assignment) => ({
-      id: assignment.role.id,
-      name: assignment.role.name,
-      scope: assignment.role.scope,
-      isSystemRole: assignment.role.isSystemRole,
-    }));
+    // Build role list
+    const roles: { id: string; numericId: number; name: string; scope: string; isSystemRole: boolean }[] = [];
 
-    // Add system role if not already in organization roles
-    const hasSystemRole = roles.some((r) => r.name === userRole);
-    if (!hasSystemRole && userRole) {
+    if (user?.roleRelation) {
       roles.push({
-        id: userRole,
-        name: userRole,
-        scope: "GLOBAL" as const,
-        isSystemRole: true,
+        id: user.roleRelation.id,
+        numericId: (user.roleRelation as any).numericId,
+        name: user.roleRelation.name,
+        scope: user.roleRelation.scope,
+        isSystemRole: user.roleRelation.isSystemRole,
       });
+    }
+
+    userOrgRoles.forEach((assignment) => {
+      if (!roles.some((r) => r.id === assignment.role.id)) {
+        roles.push({
+          id: assignment.role.id,
+          numericId: (assignment.role as any).numericId,
+          name: assignment.role.name,
+          scope: assignment.role.scope,
+          isSystemRole: assignment.role.isSystemRole,
+        });
+      }
+    });
+
+    const isAdmin = userRole === Role.SUPER_ADMIN;
+
+    // SUPER_ADMIN gets all permissions
+    if (isAdmin) {
+      const allPerms = await prisma.permission.findMany({ select: { key: true } });
+      allPerms.forEach((p) => permissionSet.add(p.key));
     }
 
     return successResponse(res, {
       permissions: Array.from(permissionSet),
       roles: roles.map((r) => r.name),
       roleDetails: roles,
-      isAdmin: ([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN] as string[]).includes(userRole || ""),
+      isAdmin,
     });
   } catch (error) {
     next(error);
@@ -87,7 +113,6 @@ export const getCurrentUserPermissions = async (
 
 /**
  * Get permissions for a specific module
- * Useful for loading module-specific permissions on demand
  */
 export const getModulePermissions = async (
   req: AuthenticatedRequest,
@@ -103,12 +128,41 @@ export const getModulePermissions = async (
     const userId = req.user.id;
     const organizationId = req.user.organizationId;
 
-    // Get all user permissions
-    const systemPermissions = req.user.role ? (ROLE_PERMISSION_MAP[req.user.role] || []) : [];
-    const permissionSet = new Set<string>(
-      systemPermissions.filter((p: string) => p.startsWith(`${module}:`))
-    );
+    const permissionSet = new Set<string>();
 
+    // SUPER_ADMIN gets all module permissions
+    if (req.user.role === Role.SUPER_ADMIN) {
+      const allPerms = await prisma.permission.findMany({
+        where: { module },
+        select: { key: true },
+      });
+      allPerms.forEach((p) => permissionSet.add(p.key));
+      return successResponse(res, { module, permissions: Array.from(permissionSet) });
+    }
+
+    // User.roleRelation permissions
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        roleRelation: {
+          include: {
+            rolePermissions: {
+              include: { permission: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (user?.roleRelation) {
+      user.roleRelation.rolePermissions.forEach((rp) => {
+        if (rp.permission.module === module) {
+          permissionSet.add(rp.permission.key);
+        }
+      });
+    }
+
+    // UserOrganizationRole permissions
     const userOrgRoles = await prisma.userOrganizationRole.findMany({
       where: {
         userId,
@@ -165,20 +219,33 @@ export const checkUserPermission = async (
 
     const userId = req.user.id;
     const userRole = req.user.role;
-    const organizationId = req.user.organizationId;
 
     // Admin bypass
     if (userRole === Role.SUPER_ADMIN) {
       return successResponse(res, { hasPermission: true, permission });
     }
 
-    // Check system role permissions
-    const systemPermissions = userRole ? (ROLE_PERMISSION_MAP[userRole] || []) : [];
-    if (systemPermissions.includes(permission)) {
+    // Check via User.roleRelation
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        roleRelation: {
+          select: {
+            rolePermissions: {
+              where: { permission: { key: permission } },
+              select: { permissionId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (user?.roleRelation && user.roleRelation.rolePermissions.length > 0) {
       return successResponse(res, { hasPermission: true, permission });
     }
 
-    // Check organization role permissions
+    // Check via UserOrganizationRole
+    const organizationId = req.user.organizationId;
     const userOrgRoles = await prisma.userOrganizationRole.findMany({
       where: {
         userId,

@@ -283,9 +283,10 @@ export const submitApplication = async (
     // Create notification for admins
     const admins = await prisma.user.findMany({
       where: {
-        role: {
-          in: [Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.ANALYST_REVIEWER]
-        }
+        OR: [
+          { role: Role.SUPER_ADMIN },
+          { roleRelation: { slug: { in: [Role.PORTAL_ADMIN, Role.ANALYST_REVIEWER] } } }
+        ]
       }
     });
 

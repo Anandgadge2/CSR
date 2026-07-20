@@ -787,7 +787,7 @@ export default function PublicDevelopmentNeedsPage() {
               ) : (
                 <>
                   <div style={{ padding: 22, overflowY: "auto" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+                    <div className="gov-grid-3">
                       <GovInput label="Pitch Reference ID" value={selectedNeed.trackingId} disabled />
                       <GovInput label="Company Name" required value={interestForm.companyName} onChange={(e) => setInterestForm({ ...interestForm, companyName: e.target.value })} />
                       <GovInput label="MCA21 CIN" required format="cin" value={interestForm.mca21Cin} onChange={(e) => setInterestForm({ ...interestForm, mca21Cin: e.target.value })} />

@@ -249,11 +249,14 @@ const assignGrievance = asyncHandler(async (req, res) => {
   const grievance = await prisma.grievance.findUnique({ where: { id } });
   if (!grievance) return res.status(404).json({ error: "Grievance not found" });
 
-  const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { roleRelation: { select: { slug: true } } }
+  });
   if (!targetUser) return res.status(404).json({ error: "Target user not found" });
 
   const updateData: any = {};
-  if (targetUser.role === Role.DISTRICT_NODAL_OFFICER) {
+  if (targetUser.roleRelation?.slug === Role.DISTRICT_NODAL_OFFICER) {
     updateData.assignedNodalOfficerId = userId;
   } else {
     updateData.assignedStateCellUserId = userId;
@@ -283,7 +286,7 @@ const assignGrievance = asyncHandler(async (req, res) => {
 const getAssignableUsers = asyncHandler(async (req, res) => {
   const users = await prisma.user.findMany({
     where: {
-      role: { in: [Role.DISTRICT_NODAL_OFFICER, Role.STATE_CSR_CELL] },
+      roleRelation: { slug: { in: [Role.DISTRICT_NODAL_OFFICER, Role.STATE_CSR_CELL] } },
       accountStatus: "ACTIVE"
     },
     select: { id: true, email: true, role: true, assignedDistrict: true }
