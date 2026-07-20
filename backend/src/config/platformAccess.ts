@@ -7,7 +7,18 @@
  */
 export const PERMISSIONS = [
   // ── Dashboard ──
+  // Core access + the permission-gated widget/section families the unified
+  // Dashboard Engine renders. Each key gates a cross-cutting dashboard block;
+  // entity-specific widgets reuse their own module perms (enquiry:view, etc.).
   ["dashboard:view", "View dashboard", "dashboard"],
+  ["dashboard:widget-kpis", "See headline KPI cards on the dashboard", "dashboard"],
+  ["dashboard:widget-workqueue", "See the personal work-queue widget", "dashboard"],
+  ["dashboard:widget-sla", "See SLA / escalation timers on the dashboard", "dashboard"],
+  ["dashboard:widget-approvals", "See the pending-approvals widget", "dashboard"],
+  ["dashboard:widget-charts", "See analytics charts on the dashboard", "dashboard"],
+  ["dashboard:widget-activity", "See the recent-activity feed on the dashboard", "dashboard"],
+  ["dashboard:widget-quick-actions", "See quick-action shortcuts on the dashboard", "dashboard"],
+  ["dashboard:analytics-global", "See platform-wide (unscoped) analytics on the dashboard", "dashboard"],
 
   // ── Requirements ──
   ["requirement:view", "View CSR requirements", "requirements"],
@@ -227,6 +238,9 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   PLANNING_SECRETARY: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-approvals", "dashboard:widget-sla",
+    "dashboard:widget-charts", "dashboard:widget-activity", "dashboard:widget-quick-actions",
+    "dashboard:analytics-global",
     "organization:view", "organization:approve", "organization:suspend",
     "requirement:view", "requirement:approve", "requirement:publish", "requirement:export",
     "interest:view",
@@ -239,6 +253,9 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   JOINT_SECRETARY: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-approvals", "dashboard:widget-sla",
+    "dashboard:widget-workqueue", "dashboard:widget-charts", "dashboard:widget-activity",
+    "dashboard:widget-quick-actions",
     "organization:view", "organization:approve",
     "requirement:view", "requirement:approve", "requirement:publish", "requirement:export",
     "interest:view", "interest:approve",
@@ -252,6 +269,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   DISTRICT_NODAL_OFFICER: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue", "dashboard:widget-sla",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view",
     "requirement:view",
     "project:view", "project:update", "project:assign",
@@ -272,6 +291,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   RELATIONSHIP_MANAGER: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue", "dashboard:widget-sla",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view",
     "requirement:view",
     "interest:view",
@@ -282,6 +303,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   NGO_ADMIN: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view", "organization:update",
     "user:view", "user:invite", "user:update",
     "marketplace:view",
@@ -293,6 +316,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   COMPANY_ADMIN: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view", "organization:update",
     "user:view", "user:invite", "user:update",
     "marketplace:view",
@@ -304,6 +329,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   BENEFICIARY_AGENCY: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view", "organization:update",
     "user:view", "user:invite", "user:update",
     "requirement:view", "requirement:create", "requirement:update", "requirement:submit",
@@ -313,6 +340,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   STATE_CSR_CELL: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-charts", "dashboard:widget-activity",
+    "dashboard:analytics-global",
     "organization:view",
     "requirement:view",
     "project:view",
@@ -321,6 +350,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   CORPORATE_USER: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view", "organization:update",
     "user:view", "user:invite", "user:update",
     "marketplace:view",
@@ -332,6 +363,8 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
 
   GOVERNMENT_OFFICER: [
     "dashboard:view",
+    "dashboard:widget-kpis", "dashboard:widget-workqueue",
+    "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "organization:view", "organization:update",
     "user:view", "user:invite", "user:update",
     "requirement:view", "requirement:create", "requirement:update", "requirement:submit",
