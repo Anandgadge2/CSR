@@ -160,6 +160,29 @@ export default function NodalAssignmentPanel({ entityType, entityId, defaultDist
         />
       </div>
 
+      {/* Confirmation preview — who is about to be appointed */}
+      {consultantId && (() => {
+        const c = consultants.find((x) => x.id === consultantId);
+        if (!c) return null;
+        return (
+          <div style={{
+            border: "1px solid var(--gov-border, #e2e8f0)",
+            borderLeft: "4px solid var(--gov-blue, #1e3a8a)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            background: "var(--gov-bg-subtle, #f8fafc)",
+          }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--gov-text-muted)" }}>
+              About to appoint
+            </div>
+            <div style={{ fontWeight: 700, marginTop: 2 }}>{c.officerProfile?.fullName || c.email}</div>
+            <div style={{ fontSize: 12, color: "var(--gov-text-muted)", marginTop: 2 }}>
+              {[c.officerProfile?.designation, c.officerProfile?.department, district].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+        );
+      })()}
+
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <GovButton variant="primary" onClick={appoint} disabled={!district || !consultantId || appointing}>
           {appointing ? "Appointing…" : "Appoint Nodal Consultant"}

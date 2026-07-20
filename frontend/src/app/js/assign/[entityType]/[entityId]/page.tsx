@@ -74,6 +74,7 @@ export default function JSAssignPage() {
 
   return (
     <GovPortalLayout>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       <GovPageShell
         breadcrumb="Home / Assignments / Appoint Nodal Consultant"
         title="Appoint District Nodal Consultant"
@@ -82,9 +83,16 @@ export default function JSAssignPage() {
         {error && <GovAlert variant="danger">{error}</GovAlert>}
 
         {loading ? (
-          <GovCard><GovCardBody>Loading application context…</GovCardBody></GovCard>
+          <GovCard>
+            <GovCardBody>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--gov-text-muted)", padding: "8px 0" }}>
+                <span className="gov-spinner" style={{ width: 18, height: 18, border: "2px solid var(--gov-border)", borderTopColor: "var(--gov-blue)", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                Loading application context…
+              </div>
+            </GovCardBody>
+          </GovCard>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
             {/* Context */}
             <GovCard>
               <GovCardHeader><GovCardTitle>Application</GovCardTitle></GovCardHeader>
