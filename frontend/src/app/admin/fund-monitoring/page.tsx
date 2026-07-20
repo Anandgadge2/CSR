@@ -9,7 +9,7 @@ import GovDataTable from "@/components/gov/GovDataTable";
 import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, ADMIN_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, ADMIN_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface FundProject {
   id: string;
@@ -40,7 +40,7 @@ interface FundSummary {
   projects: FundProject[];
 }
 
-const ACCESS_ROLES = [...ADMIN_ROLES, "DISTRICT_ADMIN"];
+const ACCESS_PERMS = ADMIN_ACCESS_PERMS;
 
 export default function FundMonitoringPage() {
   const router = useRouter();
@@ -66,12 +66,12 @@ export default function FundMonitoringPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(ACCESS_ROLES)) fetchSummary();
+    if (mounted && hasPageAccess(ACCESS_PERMS)) fetchSummary();
   }, [mounted, fetchSummary]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(ACCESS_ROLES)) {
-    return <AccessDenied requiredRoles={[...ACCESS_ROLES]} />;
+  if (!hasPageAccess(ACCESS_PERMS)) {
+    return <AccessDenied requiredRoles={["Administrator"]} />;
   }
 
   const fmtCurrency = (v: number | string | null | undefined) => {

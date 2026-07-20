@@ -8,7 +8,7 @@ import GovDataTable from "@/components/gov/GovDataTable";
 import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, ADMIN_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, ADMIN_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface PitchInterest {
   id: string;
@@ -32,7 +32,7 @@ interface PitchInterest {
   } | null;
 }
 
-const ACCESS_ROLES = [...ADMIN_ROLES, "DISTRICT_ADMIN"];
+const ACCESS_PERMS = ADMIN_ACCESS_PERMS;
 
 export default function CompanyInterestsPage() {
   const [mounted, setMounted] = useState(false);
@@ -57,12 +57,12 @@ export default function CompanyInterestsPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(ACCESS_ROLES)) fetchInterests();
+    if (mounted && hasPageAccess(ACCESS_PERMS)) fetchInterests();
   }, [mounted, fetchInterests]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(ACCESS_ROLES)) {
-    return <AccessDenied requiredRoles={[...ACCESS_ROLES]} />;
+  if (!hasPageAccess(ACCESS_PERMS)) {
+    return <AccessDenied requiredRoles={["Administrator"]} />;
   }
 
   const filtered = filterStatus ? interests.filter((i) => i.status === filterStatus) : interests;

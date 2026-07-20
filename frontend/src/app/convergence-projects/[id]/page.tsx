@@ -11,7 +11,7 @@ import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge
 import GovAlert from "@/components/gov/GovAlert";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, CONVERGENCE_PROJECT_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, CONVERGENCE_PROJECT_PERMS } from "@/lib/roleAccess";
 import { useAuthStore } from "@/store/authStore";
 
 interface Milestone {
@@ -109,11 +109,11 @@ export default function ConvergenceProjectDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(CONVERGENCE_PROJECT_ROLES)) fetchProject();
+    if (mounted && hasPageAccess(CONVERGENCE_PROJECT_PERMS)) fetchProject();
   }, [mounted, fetchProject]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(CONVERGENCE_PROJECT_ROLES)) return <AccessDenied />;
+  if (!hasPageAccess(CONVERGENCE_PROJECT_PERMS)) return <AccessDenied />;
 
   const fmtCurrency = (v: number | string) => `₹${Number(v).toLocaleString("en-IN")}`;
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";

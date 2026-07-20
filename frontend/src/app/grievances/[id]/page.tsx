@@ -15,11 +15,11 @@ import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, clearApiCache } from "@/lib/api";
 import {
   getCurrentUser,
-  hasRoleAccess,
-  GRIEVANCE_ACCESS_ROLES,
-  GRIEVANCE_RESPOND_ROLES,
-  GRIEVANCE_ESCALATE_ROLES,
-  GRIEVANCE_CLOSE_ROLES,
+  hasPageAccess,
+  GRIEVANCE_ACCESS_PERMS,
+  GRIEVANCE_RESPOND_PERMS,
+  GRIEVANCE_ESCALATE_PERMS,
+  GRIEVANCE_CLOSE_PERMS,
 } from "@/lib/roleAccess";
 
 interface ActionLog {
@@ -130,15 +130,15 @@ export default function GrievanceDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(GRIEVANCE_ACCESS_ROLES)) fetchGrievance();
+    if (mounted && hasPageAccess(GRIEVANCE_ACCESS_PERMS)) fetchGrievance();
   }, [mounted, fetchGrievance]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(GRIEVANCE_ACCESS_ROLES)) return <AccessDenied />;
+  if (!hasPageAccess(GRIEVANCE_ACCESS_PERMS)) return <AccessDenied />;
 
-  const canRespond = hasRoleAccess(GRIEVANCE_RESPOND_ROLES);
-  const canEscalate = hasRoleAccess(GRIEVANCE_ESCALATE_ROLES);
-  const canClose = hasRoleAccess(GRIEVANCE_CLOSE_ROLES);
+  const canRespond = hasPageAccess(GRIEVANCE_RESPOND_PERMS);
+  const canEscalate = hasPageAccess(GRIEVANCE_ESCALATE_PERMS);
+  const canClose = hasPageAccess(GRIEVANCE_CLOSE_PERMS);
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
   const getLevel = (status: string) => {

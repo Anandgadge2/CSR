@@ -9,7 +9,7 @@ import GovAlert from "@/components/gov/GovAlert";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 import NodalAssignmentPanel from "@/components/js/NodalAssignmentPanel";
 
 /**
@@ -66,11 +66,11 @@ export default function JSAssignPage() {
   }, [entityType, entityId]);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) fetchContext();
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) fetchContext();
   }, [mounted, fetchContext]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
+  if (!hasPageAccess(JS_ACCESS_PERMS)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
 
   return (
     <GovPortalLayout>

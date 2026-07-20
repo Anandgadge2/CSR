@@ -139,14 +139,14 @@ export const convertRequirementToProject = async (req: AuthenticatedRequest, res
 export const listCsrProjects = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const where: any = {};
-    if (req.user?.role === Role.COMPANY_ADMIN || req.user?.role === Role.COMPANY_MEMBER) {
+    if (userHasAnyRole(req.user, [Role.COMPANY_ADMIN, Role.COMPANY_MEMBER])) {
       where.companyId = req.user?.companyId || "__none__";
-    } else if (req.user?.role === Role.NGO_ADMIN || req.user?.role === Role.NGO_MEMBER) {
+    } else if (userHasAnyRole(req.user, [Role.NGO_ADMIN, Role.NGO_MEMBER])) {
       where.ngoId = req.user?.ngoId || "__none__";
-    } else if (req.user?.role === Role.BENEFICIARY_AGENCY) {
+    } else if (userHasRole(req.user, Role.BENEFICIARY_AGENCY)) {
       const profile = await prisma.beneficiaryProfile.findUnique({ where: { userId: req.user?.id } });
       where.beneficiaryProfileId = profile?.id || "__none__";
-    } else if (req.user?.role === Role.DISTRICT_ADMIN && req.user?.assignedDistrict) {
+    } else if (userHasRole(req.user, Role.DISTRICT_ADMIN) && req.user?.assignedDistrict) {
       where.csrRequirement = { district: req.user?.assignedDistrict };
     }
 

@@ -11,7 +11,7 @@ import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge
 import GovAlert from "@/components/gov/GovAlert";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface Assessment {
   id: string;
@@ -62,13 +62,13 @@ export default function JSAssessmentsPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) {
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) {
       fetchAssessments();
     }
   }, [mounted, fetchAssessments]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) {
+  if (!hasPageAccess(JS_ACCESS_PERMS)) {
     return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
   }
 

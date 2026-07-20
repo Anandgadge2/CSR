@@ -11,7 +11,7 @@ import GovAlert from "@/components/gov/GovAlert";
 import GovTextarea from "@/components/gov/GovTextarea";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, clearApiCache } from "@/lib/api";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface Escalation {
   id: string;
@@ -57,13 +57,13 @@ export default function JSEscalationsPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) {
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) {
       fetchEscalations();
     }
   }, [mounted, fetchEscalations]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) {
+  if (!hasPageAccess(JS_ACCESS_PERMS)) {
     return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
   }
 

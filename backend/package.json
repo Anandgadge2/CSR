@@ -10,6 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "roles:migrate-to-9": "ts-node prisma/migrate-roles-to-9.ts",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand"
   },

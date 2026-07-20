@@ -21,7 +21,7 @@ import GovTextarea from "@/components/gov/GovTextarea";
 import GovAlert from "@/components/gov/GovAlert";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, invalidateCache } from "@/lib/api";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 import { Loader2, UserCheck } from "lucide-react";
 
 interface ApprovedProject {
@@ -79,7 +79,7 @@ export default function NewNodalAppointmentPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) loadProjects();
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) loadProjects();
   }, [mounted, loadProjects]);
 
   // When a project (hence district) is chosen, load the DNCs for that district.
@@ -136,7 +136,7 @@ export default function NewNodalAppointmentPage() {
   };
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) {
+  if (!hasPageAccess(JS_ACCESS_PERMS)) {
     return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
   }
 

@@ -9,6 +9,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { ProjectStatus, MilestoneStatus, VerificationStatus } from "@prisma/client";
 import { Role } from "../types/role";
+import { userHasRole, userHasAnyRole } from "../services/roleResolver";
 
 // Get all projects with filters
 export const getProjects = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -31,7 +32,7 @@ export const getProjects = async (req: AuthenticatedRequest, res: Response, next
       }
     } else {
       // NGO can see drafts; others see only submitted or beyond
-      if (req.user?.role === Role.NGO_ADMIN || req.user?.role === Role.NGO_MEMBER) {
+      if (userHasAnyRole(req.user, [Role.NGO_ADMIN, Role.NGO_MEMBER])) {
         filter.ngoId = req.user?.ngoId;
       } else {
         filter.status = { notIn: ["DRAFT", "REJECTED"] };
@@ -99,7 +100,7 @@ export const createProject = async (req: AuthenticatedRequest, res: Response, ne
   try {
     const { title, description, focusArea, sdgGoal, beneficiaryCount, budgetRequested, district, taluka, village, startDate, endDate } = req.body;
 
-    if (!req.user?.ngoId || (req.user.role !== Role.NGO_ADMIN && req.user.role !== Role.NGO_MEMBER)) {
+    if (!req.user?.ngoId || !userHasAnyRole(req.user, [Role.NGO_ADMIN, Role.NGO_MEMBER])) {
       return res.status(403).json({ error: "Only users linked to an NGO can create project proposals" });
     }
 
@@ -154,7 +155,7 @@ export const updateProjectStatus = async (req: AuthenticatedRequest, res: Respon
 
     // Auth validation
     if (status === ProjectStatus.SUBMITTED) {
-      if ((req.user?.role !== Role.NGO_ADMIN && req.user?.role !== Role.NGO_MEMBER) || req.user?.ngoId !== project.ngoId) {
+      if (!userHasAnyRole(req.user, [Role.NGO_ADMIN, Role.NGO_MEMBER]) || req.user?.ngoId !== project.ngoId) {
         return res.status(403).json({ error: "Unauthorized operation" });
       }
     } else if (status === ProjectStatus.APPROVED || status === ProjectStatus.REJECTED || status === ProjectStatus.UNDER_REVIEW) {
@@ -289,7 +290,7 @@ export const releaseMilestoneFunding = async (req: AuthenticatedRequest, res: Re
 
     if (!milestone) return res.status(404).json({ error: "Milestone not found" });
 
-    if (req.user?.role !== Role.COMPANY_ADMIN && req.user?.role !== Role.COMPANY_MEMBER) {
+    if (!userHasAnyRole(req.user, [Role.COMPANY_ADMIN, Role.COMPANY_MEMBER])) {
       return res.status(403).json({ error: "Only companies can release milestone funds" });
     }
 

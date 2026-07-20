@@ -9,7 +9,7 @@ import GovDataTable from "@/components/gov/GovDataTable";
 import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, NODAL_GRIEVANCE_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, NODAL_GRIEVANCE_PERMS } from "@/lib/roleAccess";
 
 interface Grievance {
   id: string;
@@ -46,11 +46,11 @@ export default function NodalGrievancesPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(NODAL_GRIEVANCE_ROLES)) fetchGrievances();
+    if (mounted && hasPageAccess(NODAL_GRIEVANCE_PERMS)) fetchGrievances();
   }, [mounted, fetchGrievances]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(NODAL_GRIEVANCE_ROLES)) {
+  if (!hasPageAccess(NODAL_GRIEVANCE_PERMS)) {
     return <AccessDenied requiredRoles={["District Nodal Officer", "Admin"]} />;
   }
 

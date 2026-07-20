@@ -213,6 +213,10 @@ export const PAGE_PERMISSIONS = PAGE_REGISTRY.map(
  * even if the role is renamed. Used for dashboard routing only —
  * permission checks always go through the DB.
  */
+// The 9 seeded, assignable roles. IDs are stable and never change; dropped
+// roles (BENEFICIARY_AGENCY=9 folded into GOVERNMENT_OFFICER, STATE_CSR_CELL=10
+// dropped, CORPORATE_USER=11 is a base-enum companion, not a seeded org role)
+// leave intentional gaps so surviving IDs stay put.
 export const SYSTEM_ROLE_IDS = {
   SUPER_ADMIN: 1,
   PLANNING_SECRETARY: 2,
@@ -222,9 +226,6 @@ export const SYSTEM_ROLE_IDS = {
   RELATIONSHIP_MANAGER: 6,
   NGO_ADMIN: 7,
   COMPANY_ADMIN: 8,
-  BENEFICIARY_AGENCY: 9,
-  STATE_CSR_CELL: 10,
-  CORPORATE_USER: 11,
   GOVERNMENT_OFFICER: 12,
 } as const;
 
@@ -327,27 +328,6 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "report:view",
   ],
 
-  BENEFICIARY_AGENCY: [
-    "dashboard:view",
-    "dashboard:widget-kpis", "dashboard:widget-workqueue",
-    "dashboard:widget-activity", "dashboard:widget-quick-actions",
-    "organization:view", "organization:update",
-    "user:view", "user:invite", "user:update",
-    "requirement:view", "requirement:create", "requirement:update", "requirement:submit",
-    "project:view",
-    "report:view",
-  ],
-
-  STATE_CSR_CELL: [
-    "dashboard:view",
-    "dashboard:widget-kpis", "dashboard:widget-charts", "dashboard:widget-activity",
-    "dashboard:analytics-global",
-    "organization:view",
-    "requirement:view",
-    "project:view",
-    "report:view",
-  ],
-
   CORPORATE_USER: [
     "dashboard:view",
     "dashboard:widget-kpis", "dashboard:widget-workqueue",
@@ -418,16 +398,9 @@ export const SEED_ROLE_PAGES: Record<string, readonly string[]> = {
     "dashboard", "profile", "reports",
     "org-users", "org-roles", "org-onboarding", "sub-logins", "enquiries", "convergence-projects",
   ],
-  BENEFICIARY_AGENCY: [
-    "dashboard", "profile", "reports",
-    "org-users", "org-roles", "org-onboarding", "convergence-projects",
-  ],
   GOVERNMENT_OFFICER: [
     "dashboard", "profile", "reports",
     "org-users", "org-roles", "org-onboarding", "pitches", "convergence-projects",
-  ],
-  STATE_CSR_CELL: [
-    "dashboard", "profile", "reports", "convergence-projects",
   ],
 };
 
@@ -444,7 +417,6 @@ export const SEED_ROLE_BULK_OPS: Record<string, readonly string[]> = {
   NGO_ADMIN: ["record:delete-single"],
   COMPANY_ADMIN: ["record:delete-single", "record:import-excel"],
   CORPORATE_USER: ["record:delete-single", "record:import-excel"],
-  BENEFICIARY_AGENCY: ["record:delete-single", "record:import-excel"],
   GOVERNMENT_OFFICER: ["record:delete-single", "record:import-excel"],
 };
 

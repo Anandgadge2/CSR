@@ -200,8 +200,9 @@ async function main() {
       });
     };
 
-    const portalRole = await createSystemRole("SUPER_ADMIN", ROLE_SLUG.PORTAL_ADMIN, "SUPER_ADMIN", RoleScope.ORGANIZATION, portalAdminOrg.id);
-
+    // Single canonical admin role. The former separate "portal-admin" role was
+    // collapsed into super-admin; the portal.admin/csr.admin demo accounts now
+    // map to this one role so there is exactly ONE elevated identity.
     const superAdminRole = await tx.organizationRole.create({
       data: {
         organizationId: null,
@@ -220,8 +221,9 @@ async function main() {
 
     await tx.userOrganizationRole.createMany({
       data: [
-        { userId: portalAdmin.id, roleId: portalRole.id, organizationId: portalAdminOrg.id },
-        { userId: superAdmin.id, roleId: superAdminRole.id }
+        { userId: superAdmin.id, roleId: superAdminRole.id },
+        { userId: portalAdmin.id, roleId: superAdminRole.id, organizationId: portalAdminOrg.id },
+        { userId: csrAdmin.id, roleId: superAdminRole.id, organizationId: portalAdminOrg.id }
       ],
       skipDuplicates: true
     });
@@ -255,16 +257,18 @@ async function main() {
     };
 
     // Create system/custom editable roles so they are available
+    // The 8 editable seeded roles (super-admin above makes 9 total). "Government
+    // Officer" is the government-department (demand-side) role; the former
+    // "Beneficiary Agency" role was folded into it. "State CSR Cell" was dropped.
     const ngoAdminRole = await createEditableRole("NGO Admin", ROLE_SLUG.NGO_ADMIN, "NGO_ADMIN", RoleScope.GLOBAL, null);
-    const companyAdminRole = await createEditableRole("Company Admin", ROLE_SLUG.COMPANY_ADMIN, "COMPANY_ADMIN", RoleScope.GLOBAL, null);
-    const beneficiaryAgencyRole = await createEditableRole("Beneficiary Agency", ROLE_SLUG.BENEFICIARY_AGENCY, "BENEFICIARY_AGENCY", RoleScope.GLOBAL, null);
+    const companyAdminRole = await createEditableRole("Corporate Admin", ROLE_SLUG.COMPANY_ADMIN, "COMPANY_ADMIN", RoleScope.GLOBAL, null);
+    const governmentOfficerRole = await createEditableRole("Government Officer", ROLE_SLUG.GOVERNMENT_OFFICER, "GOVERNMENT_OFFICER", RoleScope.GLOBAL, null);
     const rmRole = await createEditableRole("Relationship Manager", ROLE_SLUG.RELATIONSHIP_MANAGER, "RELATIONSHIP_MANAGER", RoleScope.GLOBAL, null);
     const jsRole = await createEditableRole("Joint Secretary", ROLE_SLUG.JOINT_SECRETARY, "JOINT_SECRETARY", RoleScope.GLOBAL, null);
     const secretaryRole = await createEditableRole("Planning Secretary", ROLE_SLUG.PLANNING_SECRETARY, "PLANNING_SECRETARY", RoleScope.GLOBAL, null);
-    const stateCellRole = await createEditableRole("State CSR Cell", ROLE_SLUG.STATE_CSR_CELL, "STATE_CSR_CELL", RoleScope.GLOBAL, null);
     const nodalRole = await createEditableRole("District Nodal Officer", ROLE_SLUG.DISTRICT_NODAL_OFFICER, "DISTRICT_NODAL_OFFICER", RoleScope.GLOBAL, null);
     const nodalConsultantRole = await createEditableRole("District Nodal Consultant", ROLE_SLUG.DISTRICT_NODAL_CONSULTANT, "DISTRICT_NODAL_CONSULTANT", RoleScope.GLOBAL, null);
-    console.log("✓ Dynamic roles initialized");
+    console.log("✓ Dynamic roles initialized (9 total)");
 
     const rmUser = await tx.user.create({
       data: {
@@ -302,18 +306,6 @@ async function main() {
     });
     console.log("✓ Planning Secretary created:", secretaryUser.email);
 
-    const stateCellUser = await tx.user.create({
-      data: {
-        email: "statecell@mahacsr.gov.in",
-        passwordHash: defaultPasswordHash,
-        role: Role.GOVERNMENT_OFFICER,
-        roleId: stateCellRole.id,
-        accountStatus: "ACTIVE",
-        isVerified: true,
-      }
-    });
-    console.log("✓ State Cell User created:", stateCellUser.email);
-
     const nodalUser = await tx.user.create({
       data: {
         email: "nodal@mahacsr.gov.in",
@@ -332,7 +324,6 @@ async function main() {
         { userId: rmUser.id, roleId: rmRole.id },
         { userId: jsUser.id, roleId: jsRole.id },
         { userId: secretaryUser.id, roleId: secretaryRole.id },
-        { userId: stateCellUser.id, roleId: stateCellRole.id },
         { userId: nodalUser.id, roleId: nodalRole.id }
       ]
     });
@@ -538,7 +529,7 @@ async function main() {
       await tx.userOrganizationRole.create({
         data: {
           userId: user.id,
-          roleId: beneficiaryAgencyRole.id,
+          roleId: governmentOfficerRole.id,
           organizationId: organization.id,
         }
       });

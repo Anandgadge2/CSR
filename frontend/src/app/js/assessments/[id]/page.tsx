@@ -16,7 +16,7 @@ import GovTimeline, { TimelineStep } from "@/components/gov/GovTimeline";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, clearApiCache, API_BASE_URL, getAccessToken } from "@/lib/api";
 import { UploadCloud, CheckCircle2 } from "lucide-react";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface ChecklistItem {
   id: string | null;
@@ -146,7 +146,7 @@ export default function JSAssessmentDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) {
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) {
       fetchDetails();
     }
   }, [mounted, fetchDetails]);
@@ -160,7 +160,7 @@ export default function JSAssessmentDetailPage() {
   };
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
+  if (!hasPageAccess(JS_ACCESS_PERMS)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
 
   if (loading) {
     return (

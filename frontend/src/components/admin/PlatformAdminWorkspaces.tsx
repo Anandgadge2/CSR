@@ -1045,30 +1045,21 @@ export function MasterOrganizationsWorkspace() {
   );
 }
 
-// System roles that can be assigned.
+// The 9 canonical, assignable system roles (see backend types/role.ts).
+// Custom roles beyond these are created at runtime via the dynamic roles
+// manager (/master/roles) — never hardcoded here. Dropped/legacy identities
+// (portal-admin, csr-admin, district-admin, state-csr-cell, beneficiary-agency,
+// *-member, reviewer/finance/approver/auditor) are intentionally absent.
 const ASSIGNABLE_SYSTEM_ROLES = [
   "SUPER_ADMIN",
-  "PORTAL_ADMIN",
-  "CSR_ADMIN",
-  "DISTRICT_ADMIN",
   "PLANNING_SECRETARY",
   "JOINT_SECRETARY",
-  "CSR_RELATIONSHIP_MANAGER",
+  "DISTRICT_NODAL_CONSULTANT",
   "DISTRICT_NODAL_OFFICER",
-  "STATE_CSR_CELL",
-  "CORPORATE_USER",
-  "IMPLEMENTING_AGENCY_USER",
-  "BENEFICIARY_AGENCY",
+  "CSR_RELATIONSHIP_MANAGER",
   "COMPANY_ADMIN",
-  "COMPANY_MEMBER",
-  "NGO_ADMIN",
-  "NGO_MEMBER",
   "GOVERNMENT_OFFICER",
-  "ANALYST_REVIEWER",
-  "COMPLIANCE_REVIEWER",
-  "FINANCE_USER",
-  "APPROVER",
-  "AUDITOR",
+  "NGO_ADMIN",
 ];
 
 export function MasterUsersWorkspace() {

@@ -11,7 +11,7 @@ import GovTimeline, { TimelineStep } from "@/components/gov/GovTimeline";
 import GovAlert from "@/components/gov/GovAlert";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { getCurrentUser, hasRoleAccess, CONVERGENCE_PROJECT_ROLES } from "@/lib/roleAccess";
+import { getCurrentUser, hasPageAccess, CONVERGENCE_PROJECT_PERMS } from "@/lib/roleAccess";
 
 interface Milestone {
   id: string;
@@ -79,11 +79,11 @@ export default function ProjectTrackingPage() {
   }, [id]);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(CONVERGENCE_PROJECT_ROLES)) fetchProject();
+    if (mounted && hasPageAccess(CONVERGENCE_PROJECT_PERMS)) fetchProject();
   }, [mounted, fetchProject]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(CONVERGENCE_PROJECT_ROLES)) return <AccessDenied />;
+  if (!hasPageAccess(CONVERGENCE_PROJECT_PERMS)) return <AccessDenied />;
 
   const fmtCurrency = (v: number | string) => `₹${Number(v).toLocaleString("en-IN")}`;
   const currentUser = getCurrentUser();

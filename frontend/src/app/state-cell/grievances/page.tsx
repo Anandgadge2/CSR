@@ -9,7 +9,7 @@ import GovDataTable from "@/components/gov/GovDataTable";
 import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, STATE_CELL_GRIEVANCE_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, STATE_CELL_GRIEVANCE_PERMS } from "@/lib/roleAccess";
 
 interface Grievance {
   id: string;
@@ -48,11 +48,11 @@ export default function StateCellGrievancesPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(STATE_CELL_GRIEVANCE_ROLES)) fetchGrievances();
+    if (mounted && hasPageAccess(STATE_CELL_GRIEVANCE_PERMS)) fetchGrievances();
   }, [mounted, fetchGrievances]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(STATE_CELL_GRIEVANCE_ROLES)) {
+  if (!hasPageAccess(STATE_CELL_GRIEVANCE_PERMS)) {
     return <AccessDenied requiredRoles={["State CSR Cell", "Joint Secretary", "Planning Secretary", "Admin"]} />;
   }
 

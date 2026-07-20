@@ -13,7 +13,7 @@ import GovTextarea from "@/components/gov/GovTextarea";
 import GovAlert from "@/components/gov/GovAlert";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, clearApiCache } from "@/lib/api";
-import { getCurrentUser, hasRoleAccess, GRIEVANCE_ACCESS_ROLES } from "@/lib/roleAccess";
+import { getCurrentUser, hasPageAccess, GRIEVANCE_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface Grievance {
   id: string;
@@ -63,13 +63,13 @@ export default function GrievancesPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(GRIEVANCE_ACCESS_ROLES)) {
+    if (mounted && hasPageAccess(GRIEVANCE_ACCESS_PERMS)) {
       fetchGrievances();
     }
   }, [mounted, fetchGrievances]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(GRIEVANCE_ACCESS_ROLES)) {
+  if (!hasPageAccess(GRIEVANCE_ACCESS_PERMS)) {
     return <AccessDenied requiredRoles={["Corporate", "Implementing Agency", "Admin"]} />;
   }
 

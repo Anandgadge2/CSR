@@ -9,7 +9,7 @@ import GovDataTable from "@/components/gov/GovDataTable";
 import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch } from "@/lib/api";
-import { hasRoleAccess, ADMIN_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, ADMIN_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface StatusCount {
   status: string;
@@ -35,7 +35,7 @@ interface Overview {
   }>;
 }
 
-const ACCESS_ROLES = [...ADMIN_ROLES, "DISTRICT_ADMIN"];
+const ACCESS_PERMS = ADMIN_ACCESS_PERMS;
 
 function StatusBars({ title, data }: { title: string; data: StatusCount[] }) {
   const max = Math.max(...data.map((d) => d.count), 1);
@@ -89,12 +89,12 @@ export default function ExecutiveDashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(ACCESS_ROLES)) fetchOverview();
+    if (mounted && hasPageAccess(ACCESS_PERMS)) fetchOverview();
   }, [mounted, fetchOverview]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(ACCESS_ROLES)) {
-    return <AccessDenied requiredRoles={[...ACCESS_ROLES]} />;
+  if (!hasPageAccess(ACCESS_PERMS)) {
+    return <AccessDenied requiredRoles={["Administrator"]} />;
   }
 
   const fmtCurrency = (v: number | string | null | undefined) => {

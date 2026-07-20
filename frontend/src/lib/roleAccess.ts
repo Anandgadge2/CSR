@@ -97,120 +97,79 @@ export function hasAllPermissions(permissions: string[]): boolean {
   return store.hasAllPermissions(permissions);
 }
 
-/** 
- * Roles that can access grievance list (raise/view own).
- * @deprecated Use permission checks instead: 'grievance:view', 'grievance:create'
+/**
+ * Page/section access check for the dynamic RBAC system. Pass a group of
+ * permission keys (see the GROUPS below); the user passes if they are a
+ * platform admin OR hold ANY of the keys.
+ *
+ * Resilience: right after login the permission list may not have resolved yet
+ * (store authenticated, `permissions` still empty). In that window we do NOT
+ * deny — returning `true` prevents a flash of "Access Denied" before the
+ * /auth/permissions call lands. Once permissions are loaded, the real check
+ * applies. This mirrors the tolerance the old `hasRoleAccess` had.
  */
-export const GRIEVANCE_ACCESS_ROLES = [
-  ...ADMIN_ROLES,
-  "CORPORATE_USER",
-  "COMPANY_ADMIN",
-  "COMPANY_MEMBER",
-  "IMPLEMENTING_AGENCY_USER",
-  "NGO_ADMIN",
-  "NGO_MEMBER",
-  "DISTRICT_NODAL_OFFICER",
-  "DISTRICT_ADMIN",
-  "STATE_CSR_CELL",
-  "JOINT_SECRETARY",
-  "PLANNING_SECRETARY",
-  "CSR_RELATIONSHIP_MANAGER",
-  "GOVERNMENT_OFFICER",
-  "BENEFICIARY_AGENCY",
-];
+export function hasPageAccess(anyOf: string[]): boolean {
+  const store = useAuthStore.getState();
+  if (!store.isAuthenticated) return false;
+  if (store.isAdmin) return true;
+  // Permissions not loaded yet — don't flash Access Denied.
+  if (store.isLoadingPermissions || store.permissions.length === 0) return true;
+  return anyOf.some((p) => store.permissions.includes(p));
+}
 
-/** 
- * Roles that see the Nodal Officer grievance queue.
- * @deprecated Use permission check instead: 'grievance:nodal-queue'
+// ============================================================================
+// Permission GROUPS for page/section gating (dynamic RBAC).
+//
+// Each group is a set of permission keys; a user passes if they hold ANY of
+// them (see `hasAnyPermission`), and platform admins bypass via `isAdmin`.
+// These replace the old hardcoded role-name arrays. Keys map to the closest
+// backend permission that a role must hold to use the feature, so the audience
+// is preserved without hardcoding role identities.
+//
+// NOTE: the backend has no dedicated `grievance:*` permission, so grievance
+// gating reuses the nearest workflow permission that matches the intended
+// audience (project:assign = nodal/JS actions, project:approve = JS/secretary
+// sign-off, dashboard:view = any authenticated portal user).
+// ============================================================================
+
+/** Broad access: any authenticated portal user (all seeded roles hold this). */
+export const GRIEVANCE_ACCESS_PERMS = ["dashboard:view"];
+
+/** Nodal-officer grievance queue: district officers + JS + admins. */
+export const NODAL_GRIEVANCE_PERMS = ["project:assign"];
+
+/** State-cell / secretariat grievance queue: JS + planning secretary + admins. */
+export const STATE_CELL_GRIEVANCE_PERMS = ["project:approve"];
+
+/** Convergence projects: anyone who can view projects. */
+export const CONVERGENCE_PROJECT_PERMS = ["project:view"];
+
+/** Respond to a grievance: nodal officers + JS + admins. */
+export const GRIEVANCE_RESPOND_PERMS = ["project:assign"];
+
+/** Escalate a grievance: nodal officers + JS + admins. */
+export const GRIEVANCE_ESCALATE_PERMS = ["project:assign"];
+
+/** Close a grievance: JS + planning secretary + admins. */
+export const GRIEVANCE_CLOSE_PERMS = ["project:approve"];
+
+/**
+ * Joint-Secretary workspace pages (assignments, pitches, feasibility, nodal
+ * appointments). JS holds `enquiry:assign`/`project:approve`; planning
+ * secretary holds `project:approve`; admins bypass.
  */
-export const NODAL_GRIEVANCE_ROLES = [
-  ...ADMIN_ROLES,
-  "DISTRICT_NODAL_OFFICER",
-  "DISTRICT_ADMIN",
-];
+export const JS_ACCESS_PERMS = ["enquiry:assign", "project:approve"];
 
-/** 
- * Roles that see the State CSR Cell grievance queue.
- * @deprecated Use permission check instead: 'grievance:state-queue'
- */
-export const STATE_CELL_GRIEVANCE_ROLES = [
-  ...ADMIN_ROLES,
-  "STATE_CSR_CELL",
-  "JOINT_SECRETARY",
-  "PLANNING_SECRETARY",
-];
+/** Platform-administration pages: admin-only (bypass via isAdmin). */
+export const ADMIN_ACCESS_PERMS = ["organization:approve"];
 
-/** 
- * Roles that can access convergence projects.
- * @deprecated Use permission check instead: 'convergence:view'
- */
-export const CONVERGENCE_PROJECT_ROLES = [
-  ...ADMIN_ROLES,
-  "CORPORATE_USER",
-  "COMPANY_ADMIN",
-  "COMPANY_MEMBER",
-  "IMPLEMENTING_AGENCY_USER",
-  "NGO_ADMIN",
-  "NGO_MEMBER",
-  "DISTRICT_NODAL_OFFICER",
-  "DISTRICT_ADMIN",
-  "CSR_RELATIONSHIP_MANAGER",
-  "JOINT_SECRETARY",
-  "PLANNING_SECRETARY",
-  "STATE_CSR_CELL",
-  "GOVERNMENT_OFFICER",
-  "BENEFICIARY_AGENCY",
-];
-
-/** 
- * Roles that can respond to grievances (nodal/state cell/JS).
- * @deprecated Use permission check instead: 'grievance:respond'
- */
-export const GRIEVANCE_RESPOND_ROLES = [
-  ...ADMIN_ROLES,
-  "DISTRICT_NODAL_OFFICER",
-  "DISTRICT_ADMIN",
-  "STATE_CSR_CELL",
-  "JOINT_SECRETARY",
-];
-
-/** 
- * Roles that can escalate grievances.
- * @deprecated Use permission check instead: 'grievance:escalate'
- */
-export const GRIEVANCE_ESCALATE_ROLES = [
-  ...ADMIN_ROLES,
-  "DISTRICT_NODAL_OFFICER",
-  "STATE_CSR_CELL",
-  "JOINT_SECRETARY",
-];
-
-/** 
- * Roles that can close grievances.
- * @deprecated Use permission check instead: 'grievance:close'
- */
-export const GRIEVANCE_CLOSE_ROLES = [
-  ...ADMIN_ROLES,
-  "STATE_CSR_CELL",
-  "JOINT_SECRETARY",
-];
-
-/** 
+/**
  * Check if user is logged in.
  */
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
   return !!localStorage.getItem("accessToken");
 }
-
-/** 
- * Joint Secretary role access list.
- * @deprecated Use permission checks instead
- */
-export const JS_ROLES = [
-  ...ADMIN_ROLES,
-  "JOINT_SECRETARY",
-];
 
 // ============================================================================
 // Permission Constants (for use with the new dynamic system)

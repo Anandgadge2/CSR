@@ -13,7 +13,7 @@ import GovTextarea from "@/components/gov/GovTextarea";
 import GovInput from "@/components/gov/GovInput";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, clearApiCache } from "@/lib/api";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface Photo {
   id: string;
@@ -131,7 +131,7 @@ export default function JSGovernmentPitchDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) {
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) {
       fetchDetails();
       fetchNodalOfficers();
     }
@@ -186,7 +186,7 @@ export default function JSGovernmentPitchDetailPage() {
   };
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
+  if (!hasPageAccess(JS_ACCESS_PERMS)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
 
   if (loading) {
     return (

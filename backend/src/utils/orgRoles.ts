@@ -28,8 +28,10 @@ export async function ensureOrganizationAdminRole(organizationId: string) {
       roleName = "COMPANY_ADMIN";
       roleSlug = ROLE_SLUG.COMPANY_ADMIN;
     } else if (organization.organizationType === OrganizationKind.GOVERNMENT_DEPARTMENT) {
-      roleName = "BENEFICIARY_AGENCY";
-      roleSlug = ROLE_SLUG.BENEFICIARY_AGENCY;
+      // Government departments (demand side) use the government-officer role.
+      // The former BENEFICIARY_AGENCY role was folded into it.
+      roleName = "GOVERNMENT_OFFICER";
+      roleSlug = ROLE_SLUG.GOVERNMENT_OFFICER;
     } else {
       console.log(`[ensureOrganizationAdminRole] Organization type ${organization.organizationType} does not require default roles`);
       return;

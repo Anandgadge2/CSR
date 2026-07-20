@@ -9,7 +9,7 @@ import GovButton from "@/components/gov/GovButton";
 import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, invalidateCache } from "@/lib/api";
-import { hasRoleAccess, ADMIN_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, ADMIN_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface Enquiry {
   id: string;
@@ -43,7 +43,7 @@ const PENDING_STATUSES = [
   "ASSESSMENT_SUBMITTED_TO_JS",
 ];
 
-const ACCESS_ROLES = [...ADMIN_ROLES, "STATE_CSR_CELL", "JOINT_SECRETARY", "DISTRICT_ADMIN"];
+const ACCESS_PERMS = ADMIN_ACCESS_PERMS;
 
 export default function RequirementsPendingPage() {
   const [mounted, setMounted] = useState(false);
@@ -72,7 +72,7 @@ export default function RequirementsPendingPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(ACCESS_ROLES)) fetchEnquiries();
+    if (mounted && hasPageAccess(ACCESS_PERMS)) fetchEnquiries();
   }, [mounted, fetchEnquiries]);
 
   const openAssign = async (enquiryId: string) => {
@@ -106,8 +106,8 @@ export default function RequirementsPendingPage() {
   };
 
   if (!mounted) return null;
-  if (!hasRoleAccess(ACCESS_ROLES)) {
-    return <AccessDenied requiredRoles={[...ACCESS_ROLES]} />;
+  if (!hasPageAccess(ACCESS_PERMS)) {
+    return <AccessDenied />;
   }
 
   const pending = enquiries.filter((e) => PENDING_STATUSES.includes(e.status));

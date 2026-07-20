@@ -11,7 +11,7 @@ import GovAlert from "@/components/gov/GovAlert";
 import GovInput from "@/components/gov/GovInput";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, clearApiCache } from "@/lib/api";
-import { hasRoleAccess, JS_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, JS_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface AppointmentDetail {
   id: string;
@@ -86,13 +86,13 @@ export default function JSNodalAppointmentDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(JS_ROLES)) {
+    if (mounted && hasPageAccess(JS_ACCESS_PERMS)) {
       fetchDetails();
     }
   }, [mounted, fetchDetails]);
 
   if (!mounted) return null;
-  if (!hasRoleAccess(JS_ROLES)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
+  if (!hasPageAccess(JS_ACCESS_PERMS)) return <AccessDenied requiredRoles={["Joint Secretary", "Admin"]} />;
 
   if (loading) {
     return (

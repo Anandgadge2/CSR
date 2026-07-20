@@ -8,6 +8,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { CSRRequirementStatus, NGOApplicationStatus, CompanyInterestStatus, NGOEmpanelmentStatus } from "@prisma/client";
 import { Role } from "../types/role";
+import { userHasRole, userHasAnyRole } from "../services/roleResolver";
 
 export const getCSRDashboardStats = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -179,7 +180,7 @@ export const getCSRDashboardStats = async (req: AuthenticatedRequest, res: Respo
     // ────────────────────────────────────────────────────────────────
     // 3. NGO DASHBOARD
     // ────────────────────────────────────────────────────────────────
-    if (role === Role.NGO_ADMIN || role === Role.NGO_MEMBER) {
+    if (userHasAnyRole(req.user, [Role.NGO_ADMIN, Role.NGO_MEMBER])) {
       if (!ngoId) {
         return res.status(400).json({ error: "NGO association not found" });
       }
@@ -239,7 +240,7 @@ export const getCSRDashboardStats = async (req: AuthenticatedRequest, res: Respo
     // ────────────────────────────────────────────────────────────────
     // 4. COMPANY DASHBOARD
     // ────────────────────────────────────────────────────────────────
-    if (role === Role.COMPANY_ADMIN || role === Role.COMPANY_MEMBER) {
+    if (userHasAnyRole(req.user, [Role.COMPANY_ADMIN, Role.COMPANY_MEMBER])) {
       if (!companyId) {
         return res.status(400).json({ error: "Company association not found" });
       }

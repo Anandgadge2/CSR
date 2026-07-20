@@ -70,3 +70,6 @@ temp.zip
 
 # Ignore markdown files
 *.md
+
+# Claude worktrees and metadata
+.claude/

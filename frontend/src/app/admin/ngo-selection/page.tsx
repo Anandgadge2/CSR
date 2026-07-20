@@ -9,7 +9,7 @@ import GovButton from "@/components/gov/GovButton";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
 import { apiFetch, invalidateCache } from "@/lib/api";
-import { hasRoleAccess, ADMIN_ROLES } from "@/lib/roleAccess";
+import { hasPageAccess, ADMIN_ACCESS_PERMS } from "@/lib/roleAccess";
 
 interface NodalAppointment {
   id: string;
@@ -33,7 +33,7 @@ interface PendingAgency {
   createdAt: string;
 }
 
-const ACCESS_ROLES = [...ADMIN_ROLES, "JOINT_SECRETARY", "STATE_CSR_CELL"];
+const ACCESS_PERMS = ADMIN_ACCESS_PERMS;
 
 export default function NgoSelectionPage() {
   const [mounted, setMounted] = useState(false);
@@ -74,7 +74,7 @@ export default function NgoSelectionPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasRoleAccess(ACCESS_ROLES)) {
+    if (mounted && hasPageAccess(ACCESS_PERMS)) {
       fetchAppointments();
       fetchAgencies();
     }
@@ -95,8 +95,8 @@ export default function NgoSelectionPage() {
   };
 
   if (!mounted) return null;
-  if (!hasRoleAccess(ACCESS_ROLES)) {
-    return <AccessDenied requiredRoles={[...ACCESS_ROLES]} />;
+  if (!hasPageAccess(ACCESS_PERMS)) {
+    return <AccessDenied />;
   }
 
   const kpis = [
