@@ -205,3 +205,41 @@ export const checkPermission = async (permission: string): Promise<CheckPermissi
   });
 };
 
+// ─── JS assignment cascade (District → District Nodal Consultant) ───────────
+
+export interface NodalConsultant {
+  id: string;
+  email: string;
+  assignedDistrict: string | null;
+  organizationId: string | null;
+  officerProfile: { fullName: string | null; designation: string | null; department: string | null } | null;
+}
+
+/** Canonical Maharashtra district list for the JS assignment cascade. */
+export const fetchAssignmentDistricts = async (): Promise<string[]> => {
+  const res = await apiFetch<{ success: boolean; data: { districts: string[] } }>("/assignments/districts");
+  return res.data?.districts || [];
+};
+
+/** District Nodal Consultants active in a district (step 2 of the cascade). */
+export const fetchNodalConsultants = async (district: string): Promise<NodalConsultant[]> => {
+  const res = await apiFetch<{ success: boolean; data: { consultants: NodalConsultant[] } }>(
+    `/assignments/nodal-consultants?district=${encodeURIComponent(district)}`
+  );
+  return res.data?.consultants || [];
+};
+
+/** JS appoints a DNC to an approved enquiry/pitch. */
+export const appointNodalConsultant = async (input: {
+  entityType: "CORPORATE_ENQUIRY" | "GOVERNMENT_PITCH";
+  entityId: string;
+  nodalOfficerId: string;
+  district: string;
+  remarks?: string;
+}): Promise<void> => {
+  await apiFetch("/assignments/appoint-nodal-consultant", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+};
+
