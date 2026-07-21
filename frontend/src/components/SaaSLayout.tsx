@@ -73,7 +73,7 @@ const publicNavGroups = [
 export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user: storeUser, roles: storeRoles, isAdmin: storeIsAdmin, hasPermission } = useAuthStore();
+  const { user: storeUser, roles: storeRoles = [], isAdmin: storeIsAdmin, hasPermission } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const isExpanded = !sidebarCollapsed || sidebarHovered;
@@ -352,7 +352,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   };
 
   const storedUser = typeof window !== "undefined" ? getStoredUser() : null;
-  const activeRoles = storeRoles.length > 0 ? storeRoles : (storedUser?.role ? [storedUser.role] : []);
+  const activeRoles = (storeRoles || []).length > 0 ? storeRoles : (storedUser?.role ? [storedUser.role] : []);
   const storedRole = activeRoles.find(r => r !== "GOVERNMENT_OFFICER" && r !== "CORPORATE_USER") || activeRoles[0];
   const storedOrganizationType = storedUser?.organization?.organizationType as string | undefined;
 

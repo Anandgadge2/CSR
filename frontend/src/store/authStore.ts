@@ -108,33 +108,33 @@ export const useAuthStore = create<AuthState>()(
         const state = get();
         // Admin has all permissions
         if (state.isAdmin) return true;
-        return state.permissions.includes(permission);
+        return (state.permissions || []).includes(permission);
       },
 
       // Check if user has any of the given permissions
       hasAnyPermission: (permissions) => {
         const state = get();
         if (state.isAdmin) return true;
-        return permissions.some((p) => state.permissions.includes(p));
+        return permissions.some((p) => (state.permissions || []).includes(p));
       },
 
       // Check if user has all of the given permissions
       hasAllPermissions: (permissions) => {
         const state = get();
         if (state.isAdmin) return true;
-        return permissions.every((p) => state.permissions.includes(p));
+        return permissions.every((p) => (state.permissions || []).includes(p));
       },
 
       // Check if user has a specific role
       hasRole: (role) => {
         const state = get();
-        return state.roles.includes(role);
+        return (state.roles || []).includes(role);
       },
 
       // Check if user has any of the given roles
       hasAnyRole: (roles) => {
         const state = get();
-        return roles.some((r) => state.roles.includes(r));
+        return roles.some((r) => (state.roles || []).includes(r));
       },
     }),
     {
