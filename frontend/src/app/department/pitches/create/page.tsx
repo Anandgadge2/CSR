@@ -11,8 +11,9 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovAlert from "@/components/gov/GovAlert";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
-import { Building2, CheckCircle, Loader2, Camera, ArrowLeft } from "lucide-react";
+import { Building2, CheckCircle, Loader2, Camera, ArrowLeft, ChevronDown, X, FileText, Trash2, Paperclip } from "lucide-react";
 import Link from "next/link";
+import { locationData } from "@/lib/locationData";
 
 const SERVICE_CLASSES = [
   { value: "", label: "Select Service Class" },
@@ -31,14 +32,142 @@ const getCertificationOptions = (serviceClass: string) => {
   return [{ value: "", label: "Select Service Class first" }];
 };
 
-const DISTRICTS = [
-  "Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara", "Buldhana",
-  "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna",
-  "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded",
-  "Nandurbar", "Nashik", "Osmanabad", "Palghar", "Parbhani", "Pune", "Raigad",
-  "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane", "Wardha",
-  "Washim", "Yavatmal"
-];
+const DIVISION_TO_DISTRICTS: Record<string, string[]> = {
+  Amravati: ["Akola", "Amravati", "Buldhana", "Washim", "Yavatmal"],
+  Aurangabad: ["Aurangabad", "Beed", "Hingoli", "Jalna", "Latur", "Nanded", "Osmanabad", "Parbhani"],
+  Konkan: ["Mumbai City", "Mumbai Suburban", "Palghar", "Raigad", "Ratnagiri", "Sindhudurg", "Thane"],
+  Nagpur: ["Bhandara", "Chandrapur", "Gadchiroli", "Gondia", "Nagpur", "Wardha"],
+  Nashik: ["Ahmednagar", "Dhule", "Jalgaon", "Nandurbar", "Nashik"],
+  Pune: ["Kolhapur", "Pune", "Sangli", "Satara", "Solapur"],
+};
+
+function MultiSelectField({
+  label,
+  values,
+  options,
+  onChange,
+  required = false,
+  placeholder = "Select options"
+}: {
+  label: string;
+  values: string[];
+  options: string[];
+  onChange: (values: string[]) => void;
+  required?: boolean;
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  
+  const selectedSet = new Set(values || []);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt =>
+    opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggleOption = (option: string) => {
+    const next = new Set(selectedSet);
+    if (next.has(option)) {
+      next.delete(option);
+    } else {
+      next.add(option);
+    }
+    onChange(Array.from(next));
+  };
+
+  const removeOption = (option: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = new Set(selectedSet);
+    next.delete(option);
+    onChange(Array.from(next));
+  };
+
+  return (
+    <div className={`flex flex-col gap-1.5 text-sm font-bold text-slate-700 relative ${isOpen ? "z-50" : "z-10"}`} ref={dropdownRef}>
+      <span>
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </span>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="min-h-[42px] border border-slate-200 bg-white px-3 py-1.5 flex items-center justify-between gap-2 cursor-pointer focus-within:border-[#14274e] outline-none rounded"
+      >
+        <div className="flex flex-wrap gap-1">
+          {values && values.length > 0 ? (
+            values.map(val => (
+              <span key={val} className="inline-flex items-center gap-1 bg-[#14274e]/10 text-[#14274e] text-xs font-semibold px-2 py-0.5 rounded">
+                {val}
+                <button 
+                  type="button" 
+                  onClick={(e) => removeOption(val, e)}
+                  className="hover:text-red-500 focus:outline-none ml-1 font-bold"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))
+          ) : (
+            <span className="text-slate-400 font-medium">{placeholder}</span>
+          )}
+        </div>
+        <ChevronDown size={16} className="text-slate-400 shrink-0" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-[100%] left-0 right-0 z-[100] mt-1 border border-slate-200 bg-white shadow-2xl max-h-60 flex flex-col rounded overflow-hidden">
+          <div className="p-2 border-b border-slate-100 bg-slate-50">
+            <input
+              type="text"
+              placeholder="Search options..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs font-medium outline-none focus:border-[#14274e] bg-white"
+            />
+          </div>
+          <div className="overflow-y-auto flex-grow divide-y divide-slate-100 max-h-48" data-lenis-prevent>
+            {filteredOptions.length === 0 ? (
+              <div className="p-3 text-xs text-slate-400 font-medium text-center">No options found</div>
+            ) : (
+              filteredOptions.map(option => {
+                const isChecked = selectedSet.has(option);
+                return (
+                  <div
+                    key={option}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleOption(option);
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-2 text-xs font-semibold cursor-pointer hover:bg-slate-50 transition-colors ${isChecked ? "bg-[#14274e]/5" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {}} // handled by container click
+                      className="shrink-0"
+                    />
+                    <span className="text-slate-800 font-medium">{option}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface PitchForm {
   officialName: string;
@@ -48,14 +177,17 @@ interface PitchForm {
   serviceClass: string;
   mobile: string;
   email: string;
-  district: string;
-  taluka: string;
+  divisions: string[];
+  districts: string[];
+  cities: string[];
+  talukas: string[];
   exactLocation: string;
   csrRequirement: string;
   estimatedCost: string;
   govtFundDeclaration: boolean;
   certificationType: string;
   hodDocument?: File | null;
+  supportingDocuments: File[];
   geoTaggedPhotos: File[];
 }
 
@@ -85,14 +217,17 @@ export default function CreatePitchDashboardPage() {
     serviceClass: "",
     mobile: "",
     email: "",
-    district: "",
-    taluka: "",
+    divisions: [],
+    districts: [],
+    cities: [],
+    talukas: [],
     exactLocation: "",
     csrRequirement: "",
     estimatedCost: "",
     govtFundDeclaration: false,
     certificationType: "",
     hodDocument: null,
+    supportingDocuments: [],
     geoTaggedPhotos: [],
   });
 
@@ -110,12 +245,59 @@ export default function CreatePitchDashboardPage() {
         officeName: u.organization?.name || prev.officeName,
         email: u.email || prev.email,
         mobile: u.mobile || prev.mobile,
-        district: u.organization?.district || u.assignedDistrict || prev.district,
       }));
     } catch {
       /* ignore malformed session */
     }
   }, []);
+
+  const maharashtraState = locationData.find(s => s.name === "Maharashtra");
+  const districtsList = maharashtraState ? maharashtraState.districts : [];
+
+  const handleDivisionsChange = (nextDivisions: string[]) => {
+    const validDistricts = nextDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || []);
+    const nextDistricts = form.districts.filter(d => validDistricts.includes(d));
+
+    const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
+    const nextCities = form.cities.filter(c => validCities.includes(c));
+
+    const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
+    const nextTalukas = form.talukas.filter(t => validTalukas.includes(t));
+
+    setForm(prev => ({
+      ...prev,
+      divisions: nextDivisions,
+      districts: nextDistricts,
+      cities: nextCities,
+      talukas: nextTalukas
+    }));
+
+    if (errors.divisions && nextDivisions.length > 0) {
+      setErrors(prev => ({ ...prev, divisions: "" }));
+    }
+    if (errors.districts && nextDistricts.length > 0) {
+      setErrors(prev => ({ ...prev, districts: "" }));
+    }
+  };
+
+  const handleDistrictsChange = (nextDistricts: string[]) => {
+    const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
+    const nextCities = form.cities.filter(c => validCities.includes(c));
+
+    const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
+    const nextTalukas = form.talukas.filter(t => validTalukas.includes(t));
+
+    setForm(prev => ({
+      ...prev,
+      districts: nextDistricts,
+      cities: nextCities,
+      talukas: nextTalukas
+    }));
+
+    if (errors.districts && nextDistricts.length > 0) {
+      setErrors(prev => ({ ...prev, districts: "" }));
+    }
+  };
 
   const set = (field: keyof PitchForm, value: string | boolean | File[] | File | null) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -131,8 +313,8 @@ export default function CreatePitchDashboardPage() {
     if (!form.serviceClass) e.serviceClass = "Service class is required";
     if (!form.mobile.trim() || !/^[6-9]\d{9}$/.test(form.mobile)) e.mobile = "Valid 10-digit mobile is required";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Valid email is required";
-    if (!form.district) e.district = "District is required";
-    if (!form.taluka.trim()) e.taluka = "Taluka is required";
+    if (form.divisions.length === 0) e.divisions = "At least one division must be selected";
+    if (form.districts.length === 0) e.districts = "At least one district must be selected";
     if (!form.exactLocation.trim()) e.exactLocation = "Exact location is required";
     if (!form.csrRequirement.trim()) e.csrRequirement = "CSR requirement is required";
     const words = form.csrRequirement.trim().split(/\s+/).filter(Boolean).length;
@@ -168,8 +350,24 @@ export default function CreatePitchDashboardPage() {
     if (ev.target.files && ev.target.files[0]) set("hodDocument", ev.target.files[0]);
   };
 
-  // Placeholder uploader (dev): mirrors the retired public form. Swap for the
-  // real Cloudinary/upload endpoint when wiring production storage.
+  const handleSupportingDocumentsUpload = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    if (ev.target.files) {
+      const files = Array.from(ev.target.files);
+      setForm((prev) => ({
+        ...prev,
+        supportingDocuments: [...prev.supportingDocuments, ...files],
+      }));
+    }
+  };
+
+  const removeSupportingDocument = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      supportingDocuments: prev.supportingDocuments.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Placeholder uploader (dev): mirrors the retired public form.
   const uploadFile = async (file: File): Promise<string> =>
     `https://dev.mahacsr.local/uploads/${encodeURIComponent(file.name)}`;
 
@@ -183,6 +381,11 @@ export default function CreatePitchDashboardPage() {
       let hodCertificationDocument = "";
       if (form.hodDocument) hodCertificationDocument = await uploadFile(form.hodDocument);
 
+      const supportingDocumentUrls: string[] = [];
+      for (const doc of form.supportingDocuments) {
+        supportingDocumentUrls.push(await uploadFile(doc));
+      }
+
       const response = await apiFetch<any>("/government-pitches", {
         method: "POST",
         body: JSON.stringify({
@@ -193,14 +396,19 @@ export default function CreatePitchDashboardPage() {
           serviceClass: form.serviceClass,
           mobile: form.mobile,
           email: form.email,
-          district: form.district,
-          taluka: form.taluka,
+          divisions: form.divisions,
+          districts: form.districts,
+          cities: form.cities,
+          talukas: form.talukas,
+          district: form.districts[0] || "",
+          taluka: form.talukas.join(", ") || "",
           exactLocation: form.exactLocation,
           csrRequirement: form.csrRequirement,
           estimatedCost: parseFloat(form.estimatedCost),
           govtFundDeclaration: form.govtFundDeclaration,
           certificationType: form.certificationType,
           hodCertificationDocument,
+          supportingDocuments: supportingDocumentUrls,
           photos: photoUrls.map((fileUrl, index) => ({
             fileUrl,
             latitude: 18.5204 + index / 1000,
@@ -291,17 +499,81 @@ export default function CreatePitchDashboardPage() {
             </GovCardBody>
           </GovCard>
 
-          <GovCard>
-            <GovCardHeader><GovCardTitle>Location</GovCardTitle></GovCardHeader>
-            <GovCardBody>
-              <div className="gov-grid-2">
-                <GovSelect label="District" required value={form.district} error={errors.district}
-                  onChange={(e) => set("district", e.target.value)}
-                  options={[{ value: "", label: "Select District" }, ...DISTRICTS.map((d) => ({ value: d, label: d }))]} />
-                <GovInput label="Taluka" required value={form.taluka} error={errors.taluka} onChange={(e) => set("taluka", e.target.value)} />
-                <div className="md:col-span-2">
-                  <GovTextarea label="Exact Location" required value={form.exactLocation} error={errors.exactLocation} onChange={(e) => set("exactLocation", e.target.value)} rows={2} />
-                </div>
+          {/* Location Selection */}
+          <GovCard className="relative z-30 overflow-visible">
+            <GovCardHeader>
+              <GovCardTitle>Location</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody className="overflow-visible">
+              {errors.divisions && (
+                <GovAlert variant="danger" className="mb-3">
+                  {errors.divisions}
+                </GovAlert>
+              )}
+              {errors.districts && (
+                <GovAlert variant="danger" className="mb-3">
+                  {errors.districts}
+                </GovAlert>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                {/* Division Filter */}
+                <MultiSelectField
+                  label="Preferred Division(s)"
+                  required
+                  values={form.divisions}
+                  options={Object.keys(DIVISION_TO_DISTRICTS)}
+                  onChange={handleDivisionsChange}
+                  placeholder="Select division(s)..."
+                />
+
+                {/* District Filter */}
+                <MultiSelectField
+                  label="Preferred District(s)"
+                  required
+                  values={form.districts}
+                  options={form.divisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || [])}
+                  onChange={handleDistrictsChange}
+                  placeholder={form.divisions.length === 0 ? "Select division first..." : "Select district(s)..."}
+                />
+
+                {/* City Filter */}
+                <MultiSelectField
+                  label="Preferred City/Cities (Optional)"
+                  values={form.cities}
+                  options={
+                    districtsList
+                      .filter(d => form.districts.includes(d.name))
+                      .flatMap(d => d.cities || [])
+                  }
+                  onChange={(values) => setForm(prev => ({ ...prev, cities: values }))}
+                  placeholder={form.districts.length === 0 ? "Select district first..." : "Select city/cities..."}
+                />
+
+                {/* Taluka Filter */}
+                <MultiSelectField
+                  label="Preferred Taluka(s) (Optional)"
+                  values={form.talukas}
+                  options={
+                    districtsList
+                      .filter(d => form.districts.includes(d.name))
+                      .flatMap(d => d.talukas || [])
+                  }
+                  onChange={(values) => setForm(prev => ({ ...prev, talukas: values }))}
+                  placeholder={form.districts.length === 0 ? "Select district first..." : "Select taluka(s)..."}
+                />
+              </div>
+
+              <div className="mt-4">
+                <GovTextarea
+                  label="Exact Location Details"
+                  required
+                  value={form.exactLocation}
+                  error={errors.exactLocation}
+                  onChange={(e) => set("exactLocation", e.target.value)}
+                  placeholder="Village, landmark, survey number, building details..."
+                  rows={2}
+                />
               </div>
             </GovCardBody>
           </GovCard>
@@ -321,6 +593,50 @@ export default function CreatePitchDashboardPage() {
                   <span>I declare that no government fund is currently available/sanctioned for this specific requirement.</span>
                 </label>
                 {errors.govtFundDeclaration && <p className="text-xs text-rose-600">{errors.govtFundDeclaration}</p>}
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* Supporting Documents Section */}
+          <GovCard>
+            <GovCardHeader>
+              <GovCardTitle>Specifications & Supporting Documents (Optional)</GovCardTitle>
+            </GovCardHeader>
+            <GovCardBody>
+              <div className="flex flex-col gap-3">
+                <label className="gov-label flex items-center gap-2">
+                  <Paperclip size={16} /> Attach Supporting Documents / Technical Specifications
+                </label>
+                <p className="text-xs text-slate-500">
+                  Upload project proposals, cost estimates, site layout blueprints, DPR, or approval letters (PDF, DOCX, XLSX, images).
+                </p>
+                <input
+                  type="file"
+                  accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*"
+                  multiple
+                  onChange={handleSupportingDocumentsUpload}
+                  className="block mt-1 text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#14274e] file:text-white hover:file:bg-[#14274e]/90 cursor-pointer"
+                />
+                {form.supportingDocuments.length > 0 && (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {form.supportingDocuments.map((doc, i) => (
+                      <li key={i} className="flex items-center justify-between text-sm bg-slate-50 border border-slate-200 rounded px-3 py-2">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileText size={16} className="text-[#14274e] shrink-0" />
+                          <span className="truncate font-medium text-slate-800">{doc.name}</span>
+                          <span className="text-xs text-slate-400">({(doc.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeSupportingDocument(i)}
+                          className="text-rose-600 hover:text-rose-800 text-xs font-semibold flex items-center gap-1 shrink-0 ml-2"
+                        >
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </GovCardBody>
           </GovCard>

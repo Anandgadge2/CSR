@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import { SEED_ROLE_PERMISSIONS } from "../config/platformAccess";
+import { resolveSeedRolePermissionKeys } from "../config/platformAccess";
 import { ROLE_SLUG } from "../types/role";
 import { RoleScope, OrganizationKind } from "@prisma/client";
 
@@ -50,7 +50,11 @@ export async function ensureOrganizationAdminRole(organizationId: string) {
     if (!orgRole) {
       const permissions = await prisma.permission.findMany();
       const permissionIdByKey = new Map(permissions.map(p => [p.key, p.id]));
-      const rolePermissions = SEED_ROLE_PERMISSIONS[roleName] || [];
+      // Use the SAME resolver the seed uses so the org role gets ACTION + bulk +
+      // PAGE-visibility grants (page:<slug>:view). Granting only the action set
+      // (the old SEED_ROLE_PERMISSIONS) left the role without page permissions,
+      // so PageGuard blocked the onboarding pages for fresh org users.
+      const rolePermissions = resolveSeedRolePermissionKeys(roleName);
 
       orgRole = await prisma.organizationRole.create({
         data: {
@@ -70,18 +74,31 @@ export async function ensureOrganizationAdminRole(organizationId: string) {
       console.log(`[ensureOrganizationAdminRole] Created system role: ${orgRole.id} (${orgRole.name})`);
     }
 
-    // 4. Find all users in this organization mapped to this dynamic role
-    //    (via User.roleId). The legacy `User.role` enum no longer carries
-    //    org-specific identities, so we match on the dynamic role relation.
+    // 4. Assign this system role to the organization's users who do not yet
+    //    carry a dynamic role. At registration the User row is created BEFORE
+    //    this role exists (see authController.register), so the registrant's
+    //    `roleId` is null. Matching on `roleId: orgRole.id` here would find
+    //    nobody — leaving the fresh corporate/government user with NO dynamic
+    //    role and therefore NO permissions, which blocks the onboarding pages
+    //    behind PageGuard ("Access restricted"). Match the roleless org users
+    //    (plus any already pointed at this role) and wire them up.
     const users = await prisma.user.findMany({
       where: {
         organizationId,
-        roleId: orgRole.id
+        OR: [{ roleId: null }, { roleId: orgRole.id }]
       }
     });
 
-    // 5. Create UserOrganizationRole assignments for these users if they don't already exist
+    // 5. Point each user's primary dynamic role at this system role AND create
+    //    the UserOrganizationRole mapping (both axes) if missing.
     for (const user of users) {
+      if (user.roleId !== orgRole.id) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { roleId: orgRole.id }
+        });
+      }
+
       const existingAssignment = await prisma.userOrganizationRole.findFirst({
         where: {
           userId: user.id,

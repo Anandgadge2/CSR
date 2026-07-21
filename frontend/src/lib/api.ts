@@ -61,6 +61,7 @@ const networkFetch = async <T>(path: string, init: RequestInit, isCacheable: boo
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: "no-store",
     ...init,
     headers,
     credentials: "include"

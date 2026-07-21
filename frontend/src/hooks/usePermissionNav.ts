@@ -234,6 +234,7 @@ export const getDashboardNavItems = (userRole?: string): NavItem[] => {
 
   // Add role-specific items
   switch (userRole) {
+    case "GOVERNMENT_OFFICER":
     case "BENEFICIARY_AGENCY":
       return [...baseItems, ...departmentItems];
     case "COMPANY_ADMIN":

@@ -76,8 +76,24 @@ function LoginForm() {
         throw new Error("Invalid response format: user data missing");
       }
 
-      // Save credentials in Zustand auth store
-      useAuthStore.getState().login(user);
+      // The login response now folds in the user's permission set, so hydrate
+      // the auth store directly from it — no follow-up GET /auth/permissions
+      // round-trip, no PageGuard spinner wait before the dashboard paints.
+      const permissionData = data.data ?? data;
+      const hasFoldedPermissions = Array.isArray(permissionData?.permissions);
+
+      // Save credentials in Zustand auth store (with permissions if present)
+      useAuthStore.getState().login(
+        user,
+        hasFoldedPermissions
+          ? {
+              permissions: permissionData.permissions ?? [],
+              roles: permissionData.roles ?? [],
+              roleDetails: permissionData.roleDetails ?? [],
+              isAdmin: permissionData.isAdmin ?? false,
+            }
+          : undefined
+      );
 
       // Save credentials in localStorage for session preservation
       clearApiCache();

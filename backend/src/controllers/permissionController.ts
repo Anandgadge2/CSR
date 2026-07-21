@@ -2,11 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { isSuperAdmin } from "../services/roleResolver";
+import { computeUserPermissions } from "../services/permissionService";
 import { successResponse } from "../utils/apiResponse";
 
 /**
  * Get current user's permissions dynamically from database.
- * 100 % DB-driven — no hardcoded fallback map.
+ * 100 % DB-driven — delegates to the shared computeUserPermissions service
+ * (the same logic the login handler folds into its response to save a
+ * round-trip).
  */
 export const getCurrentUserPermissions = async (
   req: AuthenticatedRequest,
@@ -18,102 +21,14 @@ export const getCurrentUserPermissions = async (
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const organizationId = req.user.organizationId;
-
-    const permissionSet = new Set<string>();
-
-    // 1. Permissions from User.roleId → OrganizationRole
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        roleRelation: {
-          include: {
-            rolePermissions: { include: { permission: true } },
-          },
-        },
-      },
+    const payload = await computeUserPermissions({
+      userId: req.user.id,
+      role: req.user.role,
+      roleSlug: req.user.roleSlug,
+      organizationId: req.user.organizationId,
     });
 
-    if (user?.roleRelation) {
-      user.roleRelation.rolePermissions.forEach((rp) => {
-        permissionSet.add(rp.permission.key);
-      });
-    }
-
-    // 2. Permissions from UserOrganizationRole assignments
-    const userOrgRoles = await prisma.userOrganizationRole.findMany({
-      where: {
-        userId,
-        organizationId: organizationId || undefined,
-      },
-      include: {
-        role: {
-          include: {
-            rolePermissions: {
-              include: {
-                permission: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    userOrgRoles.forEach((assignment: any) => {
-      assignment.role.rolePermissions.forEach((rolePermission: any) => {
-        permissionSet.add(rolePermission.permission.key);
-      });
-    });
-
-    // Build role list. `numericId` (canonical routing key) and `slug` (stable
-    // machine key) are what clients route/gate on — role NAMES are editable
-    // labels and must never drive behavior.
-    const roles: { id: string; numericId: number; slug: string | null; name: string; scope: string; isSystemRole: boolean }[] = [];
-
-    if (user?.roleRelation) {
-      roles.push({
-        id: user.roleRelation.id,
-        numericId: (user.roleRelation as any).numericId,
-        slug: (user.roleRelation as any).slug ?? null,
-        name: user.roleRelation.name,
-        scope: user.roleRelation.scope,
-        isSystemRole: user.roleRelation.isSystemRole,
-      });
-    }
-
-    userOrgRoles.forEach((assignment) => {
-      if (!roles.some((r) => r.id === assignment.role.id)) {
-        roles.push({
-          id: assignment.role.id,
-          numericId: (assignment.role as any).numericId,
-          slug: (assignment.role as any).slug ?? null,
-          name: assignment.role.name,
-          scope: assignment.role.scope,
-          isSystemRole: assignment.role.isSystemRole,
-        });
-      }
-    });
-
-    // Super Admin is recognised on EITHER axis: the base enum bucket
-    // (role === "SUPER_ADMIN") OR the dynamic role slug ("super-admin").
-    // Checking only the enum missed slug-carrying admins and starved the
-    // sidebar / blocked the admin dashboard.
-    const isAdmin = isSuperAdmin({ role: userRole, roleSlug: req.user.roleSlug });
-
-    // SUPER_ADMIN gets all permissions
-    if (isAdmin) {
-      const allPerms = await prisma.permission.findMany({ select: { key: true } });
-      allPerms.forEach((p) => permissionSet.add(p.key));
-    }
-
-    return successResponse(res, {
-      permissions: Array.from(permissionSet),
-      roles: roles.map((r) => r.name),
-      roleDetails: roles,
-      isAdmin,
-    });
+    return successResponse(res, payload);
   } catch (error) {
     next(error);
   }

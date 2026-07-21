@@ -70,7 +70,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
             </div>
 
             {/* Content */}
-            <div className="text-slate-700 text-sm overflow-y-auto max-h-[70vh] pr-1">
+            <div className="text-slate-700 text-sm overflow-y-auto max-h-[70vh] pr-1" data-lenis-prevent>
               {children}
             </div>
           </motion.div>

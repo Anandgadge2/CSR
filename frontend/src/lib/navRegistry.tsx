@@ -260,12 +260,33 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
   COMPANY_ADMIN: partnerItems,
   COMPANY_MEMBER: partnerItems,
   IMPLEMENTING_AGENCY_USER: agencyItems,
+  GOVERNMENT_OFFICER: departmentItems,
+  BENEFICIARY_AGENCY: departmentItems,
 };
 
 const GENERIC_DASHBOARD_PREFIXES = [
   "/dashboard", "/onboarding", "/queries", "/csr-projects", "/payments",
   "/fund-releases", "/reports", "/audit-logs", "/profile", "/settings",
 ];
+
+export function normalizeRole(role: string): string {
+  if (!role) return "";
+  const upper = role.toUpperCase().trim();
+  
+  if (upper === "SUPER ADMIN" || upper === "SUPER-ADMIN" || upper === "SUPER_ADMIN") return "SUPER_ADMIN";
+  if (upper === "CORPORATE ADMIN" || upper === "COMPANY ADMIN" || upper === "COMPANY-ADMIN" || upper === "COMPANY_ADMIN") return "COMPANY_ADMIN";
+  if (upper === "NGO ADMIN" || upper === "NGO-ADMIN" || upper === "NGO_ADMIN") return "NGO_ADMIN";
+  if (upper === "PLANNING SECRETARY" || upper === "PLANNING-SECRETARY" || upper === "PLANNING_SECRETARY") return "PLANNING_SECRETARY";
+  if (upper === "JOINT SECRETARY" || upper === "JOINT-SECRETARY" || upper === "JOINT_SECRETARY") return "JOINT_SECRETARY";
+  if (upper === "DISTRICT NODAL OFFICER" || upper === "DISTRICT-NODAL-OFFICER" || upper === "DISTRICT_NODAL_OFFICER") return "DISTRICT_NODAL_OFFICER";
+  if (upper === "DISTRICT NODAL CONSULTANT" || upper === "DISTRICT-NODAL-CONSULTANT" || upper === "DISTRICT_NODAL_CONSULTANT") return "DISTRICT_NODAL_CONSULTANT";
+  if (upper === "RELATIONSHIP MANAGER" || upper === "RELATIONSHIP-MANAGER" || upper === "RELATIONSHIP_MANAGER") return "RELATIONSHIP_MANAGER";
+  if (upper === "GOVERNMENT OFFICER" || upper === "GOVERNMENT-OFFICER" || upper === "GOVERNMENT_OFFICER" || upper === "BENEFICIARY AGENCY" || upper === "BENEFICIARY-AGENCY" || upper === "BENEFICIARY_AGENCY") return "GOVERNMENT_OFFICER";
+  if (upper === "CORPORATE USER" || upper === "CORPORATE-USER" || upper === "CORPORATE_USER") return "CORPORATE_USER";
+  if (upper === "IMPLEMENTING AGENCY USER" || upper === "IMPLEMENTING-AGENCY-USER" || upper === "IMPLEMENTING_AGENCY_USER") return "IMPLEMENTING_AGENCY_USER";
+
+  return upper.replace(/[-\s]/g, "_");
+}
 
 /**
  * Resolve the sidebar nav for the current role + pathname + org type. This is a
@@ -284,7 +305,11 @@ export function resolveNavItems(params: {
   organizationType?: string | null;
 }): NavItem[] {
   const { role, pathname, organizationType } = params;
-  const roleIs = (...roles: string[]) => Boolean(role && roles.includes(role));
+  const normalizedRole = role ? normalizeRole(role) : null;
+  const roleIs = (...roles: string[]) => {
+    const normalizedTargetRoles = roles.map(r => normalizeRole(r));
+    return normalizedRole && normalizedTargetRoles.includes(normalizedRole);
+  };
 
   if (roleIs("SUPER_ADMIN", "super-admin")) {
     const allMenus = [
@@ -316,11 +341,13 @@ export function resolveNavItems(params: {
   }
 
   // 1. Fixed-role menus (original `if (storedRole)` early returns).
-  if (role && ROLE_NAV[role]) {
-    return ROLE_NAV[role];
+  if (normalizedRole && ROLE_NAV[normalizedRole]) {
+    return ROLE_NAV[normalizedRole];
   }
 
   // 2. Workflow-area pathname fallbacks (deep links / roles without a fixed menu).
+  if (pathname.startsWith("/ngo-dashboard")) return ngoDashboardItems;
+  if (pathname.startsWith("/company-dashboard")) return companyDashboardItems;
   if (pathname.startsWith("/rm")) return rmItems;
   if (pathname.startsWith("/js")) return jsItems;
   if (pathname.startsWith("/secretary")) return secretaryItems;
@@ -331,7 +358,7 @@ export function resolveNavItems(params: {
   if (pathname.startsWith("/master")) return masterItems;
 
   // 3. Org/admin areas — role OR pathname (original order preserved).
-  if (roleIs("BENEFICIARY_AGENCY") || pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) {
+  if (roleIs("BENEFICIARY_AGENCY", "GOVERNMENT_OFFICER") || pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) {
     return departmentItems;
   }
   if (roleIs("COMPANY_ADMIN", "COMPANY_MEMBER") || pathname === "/company" || pathname.startsWith("/company/")) {
@@ -354,7 +381,7 @@ export function resolveNavItems(params: {
   if (pathname.startsWith("/organization")) {
     if (
       pathname.startsWith("/organization/onboarding/department") ||
-      roleIs("BENEFICIARY_AGENCY") ||
+      roleIs("BENEFICIARY_AGENCY", "GOVERNMENT_OFFICER") ||
       organizationType === "GOVERNMENT_DEPARTMENT"
     ) {
       return departmentItems;

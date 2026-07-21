@@ -28,6 +28,10 @@ interface SubmitPitchBody {
   serviceClass: "CLASS_1" | "CLASS_2" | "BELOW_CLASS_2";
   mobile: string;
   email: string;
+  divisions?: string[];
+  districts?: string[];
+  cities?: string[];
+  talukas?: string[];
   district: string;
   taluka: string;
   exactLocation: string;
@@ -36,6 +40,7 @@ interface SubmitPitchBody {
   govtFundDeclaration: boolean;
   certificationType: "SELF" | "HOD";
   hodCertificationDocument?: string;
+  supportingDocuments?: string[];
   photos: PhotoInput[];
   mobileVerificationToken?: string;
   emailVerificationToken?: string;
@@ -245,14 +250,19 @@ export const submitPitch = async (
         mobileVerified: false,
         email: body.email,
         emailVerified: false,
-        district: body.district.trim(),
-        taluka: body.taluka.trim(),
+        divisions: body.divisions || [],
+        districts: body.districts || (body.district ? [body.district] : []),
+        cities: body.cities || [],
+        talukas: body.talukas || (body.taluka ? [body.taluka] : []),
+        district: body.district?.trim() || (body.districts?.[0] ?? ""),
+        taluka: body.taluka?.trim() || (body.talukas?.join(", ") ?? ""),
         exactLocation: body.exactLocation.trim(),
         csrRequirement: body.csrRequirement.trim(),
         estimatedCost: new Decimal(body.estimatedCost),
         govtFundDeclaration: body.govtFundDeclaration,
         certificationType: body.certificationType,
         hodCertificationDocument: body.hodCertificationDocument,
+        supportingDocuments: body.supportingDocuments || [],
         status: GovernmentPitchStatus.SUBMITTED,
         submittedAt: new Date(),
         verificationDueAt,

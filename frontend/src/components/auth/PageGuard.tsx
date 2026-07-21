@@ -7,6 +7,8 @@ import { ShieldAlert } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { pageSlugForPath, pageViewKey, findPageByPath } from "@/lib/pageRegistry";
 
+import { Loader } from "@/components/ui/Loader";
+
 /**
  * Blocks rendering of a page when the current user lacks the PAGE-visibility
  * permission that governs it (`page:<slug>:view`).
@@ -45,7 +47,7 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
   if (isAuthenticated && !isAdmin && permissions.length === 0 && isLoadingPermissions) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-t-2 border-blue-900" />
+        <Loader label="Verifying permissions..." />
       </div>
     );
   }

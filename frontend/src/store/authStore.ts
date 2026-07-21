@@ -46,7 +46,7 @@ interface AuthState {
   isLoadingPermissions: boolean;
   
   // Actions
-  login: (user: UserProfile) => void;
+  login: (user: UserProfile, permissionData?: PermissionData) => void;
   logout: () => void;
   setPermissions: (data: PermissionData) => void;
   clearPermissions: () => void;
@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
         roles: [],
         roleDetails: [],
         isAdmin: false,
-        isLoadingPermissions: false,
+        isLoadingPermissions: true,
       }),
       
       logout: () => set({

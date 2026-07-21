@@ -699,7 +699,7 @@ export default function AdminRolesPermissionsPage() {
               <div style={{ fontWeight: 600, fontSize: "14px", color: "#1e3a8a", borderBottom: "1px solid #e2e8f0", paddingBottom: 6, marginBottom: 12 }}>
                 Assign Initial Permissions ({newRolePerms.length} Selected)
               </div>
-              <div style={{ maxHeight: "380px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingRight: 8 }}>
+              <div style={{ maxHeight: "380px", overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingRight: 8 }} data-lenis-prevent>
                 {permissionGroups.map((group) => (
                   <div key={group.id} style={{ border: "1px solid #e2e8f0", borderRadius: 6, padding: 12, backgroundColor: "#f8fafc" }}>
                     <div style={{ fontWeight: 700, fontSize: "12px", color: "#1e3a8a", borderBottom: "1px solid #e2e8f0", paddingBottom: 4, marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

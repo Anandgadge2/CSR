@@ -11,8 +11,9 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovAlert from "@/components/gov/GovAlert";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
-import { Building2, Handshake, CheckCircle, Loader2, Copy, ArrowLeft } from "lucide-react";
+import { Building2, Handshake, CheckCircle, Loader2, Copy, ArrowLeft, ChevronDown, X } from "lucide-react";
 import Link from "next/link";
+import { locationData } from "@/lib/locationData";
 
 const SECTORS = [
   { value: "", label: "Select Sector" },
@@ -28,19 +29,150 @@ const SECTORS = [
   { value: "OTHER", label: "Other" },
 ];
 
-const DISTRICTS = [
-  "Ahmednagar", "Akola", "Amravati", "Aurangabad", "Beed", "Bhandara", "Buldhana",
-  "Chandrapur", "Dhule", "Gadchiroli", "Gondia", "Hingoli", "Jalgaon", "Jalna",
-  "Kolhapur", "Latur", "Mumbai City", "Mumbai Suburban", "Nagpur", "Nanded",
-  "Nandurbar", "Nashik", "Osmanabad", "Palghar", "Parbhani", "Pune", "Raigad",
-  "Ratnagiri", "Sangli", "Satara", "Sindhudurg", "Solapur", "Thane", "Wardha",
-  "Washim", "Yavatmal"
-];
+const DIVISION_TO_DISTRICTS: Record<string, string[]> = {
+  Amravati: ["Akola", "Amravati", "Buldhana", "Washim", "Yavatmal"],
+  Aurangabad: ["Aurangabad", "Beed", "Hingoli", "Jalna", "Latur", "Nanded", "Osmanabad", "Parbhani"],
+  Konkan: ["Mumbai City", "Mumbai Suburban", "Palghar", "Raigad", "Ratnagiri", "Sindhudurg", "Thane"],
+  Nagpur: ["Bhandara", "Chandrapur", "Gadchiroli", "Gondia", "Nagpur", "Wardha"],
+  Nashik: ["Ahmednagar", "Dhule", "Jalgaon", "Nandurbar", "Nashik"],
+  Pune: ["Kolhapur", "Pune", "Sangli", "Satara", "Solapur"],
+};
+
+function MultiSelectField({
+  label,
+  values,
+  options,
+  onChange,
+  required = false,
+  placeholder = "Select options"
+}: {
+  label: string;
+  values: string[];
+  options: string[];
+  onChange: (values: string[]) => void;
+  required?: boolean;
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  
+  const selectedSet = new Set(values || []);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt =>
+    opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggleOption = (option: string) => {
+    const next = new Set(selectedSet);
+    if (next.has(option)) {
+      next.delete(option);
+    } else {
+      next.add(option);
+    }
+    onChange(Array.from(next));
+  };
+
+  const removeOption = (option: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = new Set(selectedSet);
+    next.delete(option);
+    onChange(Array.from(next));
+  };
+
+  return (
+    <div className={`flex flex-col gap-1.5 text-sm font-bold text-slate-700 relative ${isOpen ? "z-50" : "z-10"}`} ref={dropdownRef}>
+      <span>
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </span>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="min-h-[42px] border border-slate-200 bg-white px-3 py-1.5 flex items-center justify-between gap-2 cursor-pointer focus-within:border-[#14274e] outline-none rounded"
+      >
+        <div className="flex flex-wrap gap-1">
+          {values && values.length > 0 ? (
+            values.map(val => (
+              <span key={val} className="inline-flex items-center gap-1 bg-[#14274e]/10 text-[#14274e] text-xs font-semibold px-2 py-0.5 rounded">
+                {val}
+                <button 
+                  type="button" 
+                  onClick={(e) => removeOption(val, e)}
+                  className="hover:text-red-500 focus:outline-none ml-1 font-bold"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))
+          ) : (
+            <span className="text-slate-400 font-medium">{placeholder}</span>
+          )}
+        </div>
+        <ChevronDown size={16} className="text-slate-400 shrink-0" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-[100%] left-0 right-0 z-[100] mt-1 border border-slate-200 bg-white shadow-2xl max-h-60 flex flex-col rounded overflow-hidden">
+          <div className="p-2 border-b border-slate-100 bg-slate-50">
+            <input
+              type="text"
+              placeholder="Search options..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full border border-slate-200 rounded px-2.5 py-1.5 text-xs font-medium outline-none focus:border-[#14274e] bg-white"
+            />
+          </div>
+          <div className="overflow-y-auto flex-grow divide-y divide-slate-100 max-h-48" data-lenis-prevent>
+            {filteredOptions.length === 0 ? (
+              <div className="p-3 text-xs text-slate-400 font-medium text-center">No options found</div>
+            ) : (
+              filteredOptions.map(option => {
+                const isChecked = selectedSet.has(option);
+                return (
+                  <div
+                    key={option}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleOption(option);
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-2 text-xs font-semibold cursor-pointer hover:bg-slate-50 transition-colors ${isChecked ? "bg-[#14274e]/5" : ""}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {}} // handled by container click
+                      className="shrink-0"
+                    />
+                    <span className="text-slate-800 font-medium">{option}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface CSRPartnerForm {
   companyName: string;
   sector: string;
+  preferredDivisions: string[];
   preferredDistricts: string[];
+  preferredCities: string[];
+  preferredTalukas: string[];
   indicativeBudget: string;
   contactPersonName: string;
   mobile: string;
@@ -64,7 +196,10 @@ export default function NewPartnerEnquiryPage() {
   const [form, setForm] = useState<CSRPartnerForm>({
     companyName: "",
     sector: "",
+    preferredDivisions: [],
     preferredDistricts: [],
+    preferredCities: [],
+    preferredTalukas: [],
     indicativeBudget: "",
     contactPersonName: "",
     mobile: "",
@@ -110,6 +245,10 @@ export default function NewPartnerEnquiryPage() {
       newErrors.sector = "Sector is required";
     }
 
+    if (form.preferredDivisions.length === 0) {
+      newErrors.preferredDivisions = "At least one division must be selected";
+    }
+
     if (form.preferredDistricts.length === 0) {
       newErrors.preferredDistricts = "At least one district must be selected";
     }
@@ -149,15 +288,53 @@ export default function NewPartnerEnquiryPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleDistrictToggle = (district: string) => {
-    setForm((prev) => ({
+  const maharashtraState = locationData.find(s => s.name === "Maharashtra");
+  const districtsList = maharashtraState ? maharashtraState.districts : [];
+
+  const handleDivisionsChange = (nextDivisions: string[]) => {
+    // Determine which districts are still valid
+    const validDistricts = nextDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || []);
+    const nextDistricts = form.preferredDistricts.filter(d => validDistricts.includes(d));
+    
+    // Filter cities and talukas based on the next districts
+    const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
+    const nextCities = form.preferredCities.filter(c => validCities.includes(c));
+
+    const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
+    const nextTalukas = form.preferredTalukas.filter(t => validTalukas.includes(t));
+
+    setForm(prev => ({
       ...prev,
-      preferredDistricts: prev.preferredDistricts.includes(district)
-        ? prev.preferredDistricts.filter((d) => d !== district)
-        : [...prev.preferredDistricts, district],
+      preferredDivisions: nextDivisions,
+      preferredDistricts: nextDistricts,
+      preferredCities: nextCities,
+      preferredTalukas: nextTalukas
     }));
-    if (errors.preferredDistricts) {
-      setErrors((prev) => ({ ...prev, preferredDistricts: "" }));
+
+    if (errors.preferredDivisions && nextDivisions.length > 0) {
+      setErrors(prev => ({ ...prev, preferredDivisions: "" }));
+    }
+    if (errors.preferredDistricts && nextDistricts.length > 0) {
+      setErrors(prev => ({ ...prev, preferredDistricts: "" }));
+    }
+  };
+
+  const handleDistrictsChange = (nextDistricts: string[]) => {
+    const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
+    const nextCities = form.preferredCities.filter(c => validCities.includes(c));
+
+    const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
+    const nextTalukas = form.preferredTalukas.filter(t => validTalukas.includes(t));
+
+    setForm(prev => ({
+      ...prev,
+      preferredDistricts: nextDistricts,
+      preferredCities: nextCities,
+      preferredTalukas: nextTalukas
+    }));
+
+    if (errors.preferredDistricts && nextDistricts.length > 0) {
+      setErrors(prev => ({ ...prev, preferredDistricts: "" }));
     }
   };
 
@@ -346,38 +523,72 @@ export default function NewPartnerEnquiryPage() {
             </GovCard>
 
             {/* Geography Selection */}
-            <GovCard>
+            <GovCard className="relative z-30 overflow-visible">
               <GovCardHeader>
                 <GovCardTitle>Geography Preferred</GovCardTitle>
               </GovCardHeader>
-              <GovCardBody>
+              <GovCardBody className="overflow-visible">
+                {errors.preferredDivisions && (
+                  <GovAlert variant="danger" className="mb-3">
+                    {errors.preferredDivisions}
+                  </GovAlert>
+                )}
                 {errors.preferredDistricts && (
                   <GovAlert variant="danger" className="mb-3">
                     {errors.preferredDistricts}
                   </GovAlert>
                 )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                  {DISTRICTS.map((district) => (
-                    <label
-                      key={district}
-                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                        form.preferredDistricts.includes(district)
-                          ? "bg-[#14274e] text-white"
-                          : "bg-slate-50 hover:bg-slate-100"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={form.preferredDistricts.includes(district)}
-                        onChange={() => handleDistrictToggle(district)}
-                      />
-                      <span className="text-xs font-medium">{district}</span>
-                    </label>
-                  ))}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Division Filter */}
+                  <MultiSelectField
+                    label="Preferred Division(s)"
+                    required
+                    values={form.preferredDivisions}
+                    options={Object.keys(DIVISION_TO_DISTRICTS)}
+                    onChange={handleDivisionsChange}
+                    placeholder="Select division(s)..."
+                  />
+
+                  {/* District Filter */}
+                  <MultiSelectField
+                    label="Preferred District(s)"
+                    required
+                    values={form.preferredDistricts}
+                    options={form.preferredDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || [])}
+                    onChange={handleDistrictsChange}
+                    placeholder={form.preferredDivisions.length === 0 ? "Select division first..." : "Select district(s)..."}
+                  />
+
+                  {/* City Filter */}
+                  <MultiSelectField
+                    label="Preferred City/Cities (Optional)"
+                    values={form.preferredCities}
+                    options={
+                      districtsList
+                        .filter(d => form.preferredDistricts.includes(d.name))
+                        .flatMap(d => d.cities || [])
+                    }
+                    onChange={(values) => setForm(prev => ({ ...prev, preferredCities: values }))}
+                    placeholder={form.preferredDistricts.length === 0 ? "Select district first..." : "Select city/cities..."}
+                  />
+
+                  {/* Taluka Filter */}
+                  <MultiSelectField
+                    label="Preferred Taluka(s) (Optional)"
+                    values={form.preferredTalukas}
+                    options={
+                      districtsList
+                        .filter(d => form.preferredDistricts.includes(d.name))
+                        .flatMap(d => d.talukas || [])
+                    }
+                    onChange={(values) => setForm(prev => ({ ...prev, preferredTalukas: values }))}
+                    placeholder={form.preferredDistricts.length === 0 ? "Select district first..." : "Select taluka(s)..."}
+                  />
                 </div>
-                <p className="text-xs text-slate-500 mt-3">
-                  Select preferred district(s)/region. Selected: {form.preferredDistricts.length} district(s)
+                
+                <p className="text-xs text-slate-500 mt-4">
+                  Only Division and District are compulsory. Select multiple options as needed to narrow down your geography focus.
                 </p>
               </GovCardBody>
             </GovCard>

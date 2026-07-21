@@ -111,11 +111,91 @@ async function main() {
       groups.push(g);
     }
 
+    const getGroupNameForPermission = (key: string, moduleName: string): string => {
+      const k = key.toLowerCase();
+      const m = moduleName.toLowerCase().trim();
+      
+      // Match by key prefix or content first
+      if (k.includes("enquiry") || k.includes("enquiries")) return "Enquiry";
+      if (k.includes("pitch") || k.includes("pitches")) return "Pitch";
+      
+      if (k.includes("company") || k.includes("companies") || k.includes("marketplace") || k.includes("interest")) {
+        return "CSR Companies";
+      }
+      
+      if (k.includes("ngo") || k.includes("organization") || k.includes("sub-logins")) {
+        return "NGOs";
+      }
+      
+      if (k.includes("project") || k.includes("fund")) return "Projects";
+      if (k.includes("user")) return "Users";
+      if (k.includes("role")) return "Roles";
+      if (k.includes("permission")) return "Permissions";
+      
+      if (
+        k.includes("workflow") || 
+        k.includes("feasibility") || 
+        k.includes("assignment") || 
+        k.includes("milestone") || 
+        k.includes("requirement") ||
+        k.includes("onboarding")
+      ) {
+        return "Workflow";
+      }
+      
+      if (k.includes("report")) return "Reports";
+      if (k.includes("settings") || k.includes("sla") || k.includes("feature") || k.includes("bulk")) return "Settings";
+      if (k.includes("audit")) return "Audit";
+      if (k.includes("notification")) return "Notifications";
+      
+      // Match by module name
+      if (m === "enquiries" || m === "enquiry") return "Enquiry";
+      if (m === "pitches" || m === "pitch") return "Pitch";
+      if (m === "projects" || m === "project" || m === "funds" || m === "fund") return "Projects";
+      
+      if (m === "companies" || m === "company" || m === "marketplace" || m === "interests" || m === "interest") {
+        return "CSR Companies";
+      }
+      
+      if (m === "ngos" || m === "ngo" || m === "ngo-registry" || m === "organization" || m === "organizations") {
+        return "NGOs";
+      }
+      
+      if (m === "users" || m === "user") return "Users";
+      if (m === "roles" || m === "role") return "Roles";
+      if (m === "permissions" || m === "permission") return "Permissions";
+      
+      if (
+        m === "workflow" || 
+        m === "feasibility" || 
+        m === "assignments" || 
+        m === "milestones" || 
+        m === "milestone" ||
+        m === "requirements" ||
+        m === "requirement"
+      ) {
+        return "Workflow";
+      }
+      
+      if (m === "reports" || m === "report") return "Reports";
+      if (m === "settings" || m === "sla-config" || m === "features" || m === "feature-toggle" || m === "bulk-ops") {
+        return "Settings";
+      }
+      
+      if (m === "audit" || m === "audit-trail") return "Audit";
+      if (m === "notifications" || m === "notification") return "Notifications";
+      
+      // Fallbacks
+      if (m === "general" || m === "dashboard") return "Dashboard";
+      if (m === "administration") return "Settings";
+      
+      return "Dashboard";
+    };
+
     // Link permissions to groups
     for (const p of permissions) {
-      let matchedGroup = groups.find(g => g.name.toLowerCase() === p.module.toLowerCase()) || 
-                         groups.find(g => p.module.toLowerCase().includes(g.name.toLowerCase())) || 
-                         groups[0];
+      const targetGroupName = getGroupNameForPermission(p.key, p.module);
+      let matchedGroup = groups.find(g => g.name === targetGroupName) || groups[0];
       await tx.permission.update({
         where: { id: p.id },
         data: { groupId: matchedGroup.id }
@@ -355,15 +435,76 @@ async function main() {
     });
     console.log("✓ District Nodal Consultant created:", consultantUser.email);
 
-    // Canonical, org-agnostic logins for the three remaining roles so every one
-    // of the 9 roles has a clean demo account (in addition to the per-org
-    // company/NGO/department users seeded in the loops below).
+    // Seed real demo organizations and link them to the canonical demo users
+    // so they do not get "Organization is not assigned to this account" errors.
+
+    // 1. Demo Company for company.admin
+    const demoCompany = await tx.company.create({
+      data: {
+        name: "MahaCSR Demo Corporate Ltd",
+        cin: "U01234MH2026PTC400000",
+        gst: "27AAAAA1111A1Z0",
+        pan: "PANCO10000",
+        csrBudget: 5000000,
+        status: "VERIFIED",
+        contactInfo: {
+          phone: "9876543210",
+          email: "company.admin@mahacsr.gov.in"
+        }
+      }
+    });
+
+    const demoCompanyOrg = await tx.organization.create({
+      data: {
+        organizationType: OrganizationKind.CSR_COMPANY,
+        name: "MahaCSR Demo Corporate Ltd",
+        legalName: "MahaCSR Demo Corporate Ltd",
+        cin: "U01234MH2026PTC400000",
+        pan: "PANCO10000",
+        gst: "27AAAAA1111A1Z0",
+        email: "company.admin@mahacsr.gov.in",
+        officialEmail: "company.admin@mahacsr.gov.in",
+        phone: "9876543210",
+        officialPhone: "9876543210",
+        onboardingStatus: OrganizationOnboardingStatus.REGISTERED, // Allowed to test onboarding
+        status: OrganizationStatus.ACTIVE,
+        sourceCompanyId: demoCompany.id
+      }
+    });
+
+    await tx.company.update({
+      where: { id: demoCompany.id },
+      data: { organizationId: demoCompanyOrg.id }
+    });
+
+    await tx.cSRCompanyProfile.create({
+      data: {
+        organizationId: demoCompanyOrg.id,
+        companyType: "Private Limited",
+        yearOfIncorporation: 2026,
+        mcaVerificationStatus: "VERIFIED",
+        companyStatus: "Active",
+        registeredOfficeAddress: "Mumbai Head Office, Sector 1",
+        corporateOfficeAddress: "Mumbai Head Office, Sector 1",
+        officialEmailDomain: "mahacsr.gov.in",
+        preferredDistricts: ["Mumbai City"],
+        preferredTalukas: [],
+        preferredSectors: ["EDUCATION"],
+        preferredBeneficiaryGroups: [],
+        scheduleVIIFocusAreas: ["EDUCATION"],
+        sdgFocusAreas: [],
+        esgFocusAreas: []
+      }
+    });
+
     const companyAdminUser = await tx.user.create({
       data: {
         email: "company.admin@mahacsr.gov.in",
         passwordHash: defaultPasswordHash,
         role: Role.CORPORATE_USER,
         roleId: companyAdminRole.id,
+        companyId: demoCompany.id,
+        organizationId: demoCompanyOrg.id,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -371,7 +512,29 @@ async function main() {
     await tx.userOrganizationRole.create({
       data: { userId: companyAdminUser.id, roleId: companyAdminRole.id }
     });
-    console.log("✓ Corporate Admin created:", companyAdminUser.email);
+    console.log("✓ Corporate Admin created with Demo Company:", companyAdminUser.email);
+
+    // 2. Demo Government Department for govt.officer
+    const demoGovtOrg = await tx.organization.create({
+      data: {
+        organizationType: OrganizationKind.GOVERNMENT_DEPARTMENT,
+        name: "MahaCSR Demo Department of Rural Development",
+        legalName: "Govt Dept Demo",
+        email: "govt.officer@mahacsr.gov.in",
+        onboardingStatus: OrganizationOnboardingStatus.APPROVED,
+        status: OrganizationStatus.ACTIVE,
+      }
+    });
+
+    await tx.governmentDepartmentProfile.create({
+      data: {
+        organizationId: demoGovtOrg.id,
+        departmentType: "State Department",
+        reportingOfficerName: "Demo Officer",
+        reportingOfficerDesignation: "Director",
+        reportingOfficerEmail: "govt.officer@mahacsr.gov.in",
+      }
+    });
 
     const govtOfficerUser = await tx.user.create({
       data: {
@@ -379,6 +542,7 @@ async function main() {
         passwordHash: defaultPasswordHash,
         role: Role.GOVERNMENT_OFFICER,
         roleId: governmentOfficerRole.id,
+        organizationId: demoGovtOrg.id,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -386,7 +550,42 @@ async function main() {
     await tx.userOrganizationRole.create({
       data: { userId: govtOfficerUser.id, roleId: governmentOfficerRole.id }
     });
-    console.log("✓ Government Officer created:", govtOfficerUser.email);
+    console.log("✓ Government Officer created with Demo Gov Dept:", govtOfficerUser.email);
+
+    // 3. Demo NGO for ngo.admin
+    const demoNgo = await tx.nGO.create({
+      data: {
+        name: "MahaCSR Demo NGO Foundation",
+        registrationNumber: "NGO-REG-100000",
+        pan: "PAN NGO1000K",
+        address: "101, CSR Hub, Nariman Point",
+        district: "Mumbai",
+        taluka: "Mumbai City",
+        status: "VERIFIED",
+        empanelmentStatus: "PROFILE_INCOMPLETE", // Allowed to test onboarding
+      }
+    });
+
+    const demoNgoOrg = await tx.organization.create({
+      data: {
+        organizationType: OrganizationKind.NGO,
+        name: "MahaCSR Demo NGO Foundation",
+        legalName: "MahaCSR Demo NGO Foundation",
+        registrationNumber: "NGO-REG-100000",
+        pan: "PAN NGO1000K",
+        address: "101, CSR Hub, Nariman Point",
+        district: "Mumbai",
+        taluka: "Mumbai City",
+        onboardingStatus: OrganizationOnboardingStatus.REGISTERED, // Allowed to test onboarding
+        status: OrganizationStatus.ACTIVE,
+        sourceNgoId: demoNgo.id
+      }
+    });
+
+    await tx.nGO.update({
+      where: { id: demoNgo.id },
+      data: { organizationId: demoNgoOrg.id }
+    });
 
     const ngoAdminUser = await tx.user.create({
       data: {
@@ -394,6 +593,8 @@ async function main() {
         passwordHash: defaultPasswordHash,
         role: null,
         roleId: ngoAdminRole.id,
+        ngoId: demoNgo.id,
+        organizationId: demoNgoOrg.id,
         accountStatus: "ACTIVE",
         isVerified: true,
       }
@@ -401,7 +602,7 @@ async function main() {
     await tx.userOrganizationRole.create({
       data: { userId: ngoAdminUser.id, roleId: ngoAdminRole.id }
     });
-    console.log("✓ NGO Admin created:", ngoAdminUser.email);
+    console.log("✓ NGO Admin created with Demo NGO:", ngoAdminUser.email);
 
     // Real Maharashtra district nodal officers, one active mapping each. These
     // give the assignment workflow genuine districts to route to (Pune above is
@@ -462,9 +663,31 @@ async function main() {
       });
       ngos.push(ngo);
 
+      const organization = await tx.organization.create({
+        data: {
+          organizationType: OrganizationKind.NGO,
+          name: `NGO Foundation ${i}`,
+          legalName: `NGO Foundation ${i}`,
+          registrationNumber: `NGO-REG-10000${i}`,
+          pan: `PAN NGO100${i}K`,
+          address: `${i}01, CSR Hub, Nariman Point`,
+          district: "Mumbai",
+          taluka: "Mumbai City",
+          onboardingStatus: OrganizationOnboardingStatus.APPROVED,
+          status: OrganizationStatus.ACTIVE,
+          sourceNgoId: ngo.id
+        }
+      });
+
+      await tx.nGO.update({
+        where: { id: ngo.id },
+        data: { organizationId: organization.id }
+      });
+
       const user = await tx.user.create({
         data: {
           ngoId: ngo.id,
+          organizationId: organization.id,
           email: `ngo${i}@example.com`,
           passwordHash: defaultPasswordHash,
           role: null,

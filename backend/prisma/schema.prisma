@@ -1921,7 +1921,10 @@ model CorporateEnquiry {
   // Company Details
   companyName        String
   sector             String
+  preferredDivisions String[]
   preferredDistricts String[]
+  preferredCities    String[]
+  preferredTalukas   String[]
   indicativeBudget   Decimal? @db.Decimal(15, 2)
 
   // Contact Details
@@ -2081,18 +2084,23 @@ model GovernmentPitch {
   emailVerified  Boolean @default(false)
 
   // Location
-  district      String
-  taluka        String
-  exactLocation String @db.Text
+  divisions           String[] @default([])
+  districts           String[] @default([])
+  cities              String[] @default([])
+  talukas             String[] @default([])
+  district            String
+  taluka              String
+  exactLocation       String   @db.Text
 
   // CSR Requirement
-  csrRequirement      String  @db.VarChar(2000) // max 200 words
-  estimatedCost       Decimal @db.Decimal(15, 2)
+  csrRequirement      String   @db.VarChar(2000) // max 200 words
+  estimatedCost       Decimal  @db.Decimal(15, 2)
   govtFundDeclaration Boolean
 
-  // Certification
-  certificationType        String // SELF / HOD
+  // Certification & Supporting Documents
+  certificationType        String   // SELF / HOD
   hodCertificationDocument String?
+  supportingDocuments      String[] @default([])
 
   // Submitter — the authenticated government officer who filed this pitch from
   // their dashboard. Nullable for legacy/pre-auth rows; set on all new submissions.

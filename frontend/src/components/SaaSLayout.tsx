@@ -16,7 +16,7 @@ import { apiFetch, getStoredUser } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import PageGuard from "@/components/auth/PageGuard";
 import { isNavItemVisible } from "@/lib/pageRegistry";
-import { resolveNavItems, type NavItem } from "@/lib/navRegistry";
+import { resolveNavItems, normalizeRole, type NavItem } from "@/lib/navRegistry";
 import { resolveDashboardPath } from "@/lib/roleRouting";
 
 interface SaaSLayoutProps {
@@ -75,7 +75,7 @@ const publicNavGroups = [
 export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user: storeUser, roles: storeRoles = [], isAdmin: storeIsAdmin, hasPermission } = useAuthStore();
+  const { user: storeUser, roles: storeRoles = [], isAdmin: storeIsAdmin, hasPermission, isLoadingPermissions } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const isExpanded = !sidebarCollapsed || sidebarHovered;
@@ -84,6 +84,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const notificationsDropdownRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
   const [openNavGroup, setOpenNavGroup] = useState<string | null>(null);
   const [mobileOpenNavGroup, setMobileOpenNavGroup] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; isRead: boolean }>>([]);
@@ -104,6 +106,24 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    const scrollContainer = sidebarScrollRef.current;
+    if (!sidebar || !scrollContainer) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!scrollContainer.contains(e.target as Node)) {
+        scrollContainer.scrollTop += e.deltaY;
+        e.preventDefault();
+      }
+    };
+
+    sidebar.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      sidebar.removeEventListener("wheel", handleWheel);
+    };
+  }, [mounted]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -252,7 +272,11 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       setUserEmail(user.email || "user@mahacsr.gov.in");
 
       const activeRoles = storeRoles.length > 0 ? storeRoles : (user.role ? [user.role] : []);
-      const hasAnyAllowedRole = (allowedRoles: string[]) => activeRoles.some(r => allowedRoles.includes(r)) || storeIsAdmin;
+      const hasAnyAllowedRole = (allowedRoles: string[]) => {
+        const normalizedActive = activeRoles.map(r => normalizeRole(r));
+        const normalizedAllowed = allowedRoles.map(r => normalizeRole(r));
+        return normalizedActive.some(r => normalizedAllowed.includes(r)) || storeIsAdmin;
+      };
 
       const allowed =
         (pathname.startsWith("/ngo-dashboard") && hasAnyAllowedRole(["NGO_ADMIN", "NGO_MEMBER"])) ||
@@ -261,9 +285,9 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         ((pathname === "/company" || pathname.startsWith("/company/")) && hasAnyAllowedRole(["COMPANY_ADMIN", "COMPANY_MEMBER", "SUPER_ADMIN", "CORPORATE_USER"])) ||
         ((pathname === "/ngo" || pathname.startsWith("/ngo/")) && hasAnyAllowedRole(["NGO_ADMIN", "NGO_MEMBER", "SUPER_ADMIN"])) ||
         (pathname.startsWith("/district") && hasAnyAllowedRole(["DISTRICT_ADMIN", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"])) ||
-        (pathname.startsWith("/organization") && hasAnyAllowedRole(["BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "CORPORATE_USER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"])) ||
+        (pathname.startsWith("/organization") && hasAnyAllowedRole(["GOVERNMENT_OFFICER", "BENEFICIARY_AGENCY", "COMPANY_ADMIN", "COMPANY_MEMBER", "CORPORATE_USER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "SUPER_ADMIN"])) ||
         (pathname.startsWith("/admin") && hasAnyAllowedRole(["SUPER_ADMIN", "DISTRICT_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"])) ||
-        ((pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) && hasAnyAllowedRole(["BENEFICIARY_AGENCY", "SUPER_ADMIN"])) ||
+        ((pathname.startsWith("/beneficiary") || pathname.startsWith("/department")) && hasAnyAllowedRole(["GOVERNMENT_OFFICER", "BENEFICIARY_AGENCY", "SUPER_ADMIN"])) ||
         (pathname.startsWith("/rm") && hasAnyAllowedRole(["CSR_RELATIONSHIP_MANAGER", "JOINT_SECRETARY", "PLANNING_SECRETARY", "SUPER_ADMIN"])) ||
         (pathname.startsWith("/js") && hasAnyAllowedRole(["JOINT_SECRETARY", "PLANNING_SECRETARY", "SUPER_ADMIN"])) ||
         (pathname.startsWith("/secretary") && hasAnyAllowedRole(["PLANNING_SECRETARY", "SUPER_ADMIN"])) ||
@@ -690,6 +714,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         {/* Desktop Sidebar */}
         {isDashboard && (
           <aside
+            ref={sidebarRef}
             onMouseEnter={() => setSidebarHovered(true)}
             onMouseLeave={() => setSidebarHovered(false)}
             className={`hidden lg:flex flex-col border-r border-slate-200/50 bg-slate-50/75 backdrop-blur-xl shrink-0 transition-all duration-300 fixed left-0 top-[60px] h-[calc(100vh-60px)] z-40 justify-between py-4 shadow-sm overflow-x-hidden ${
@@ -697,47 +722,59 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             }`}
           >
             {/* Navigation Links */}
-            <div className="flex-grow min-h-0 overflow-y-auto flex flex-col gap-0.5 px-2 pr-1">
-              {dashboardNavigationItems.map((item) => {
-                const isExact = pathname === item.href ||
-                                (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
-                                (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
-                                (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
-                const hasExactMatch = dashboardNavigationItems.some((it) => 
-                  pathname === it.href ||
-                  (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
-                  (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
-                  (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
-                );
-                const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`flex items-center rounded-lg text-[12px] font-medium transition-all group relative ${
-                      isExpanded ? "gap-3 px-3 py-2 justify-start" : "justify-center py-2 px-2"
-                    } ${
-                      isActive
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
-                    }`}
+            <div ref={sidebarScrollRef} className="flex-grow min-h-0 overflow-y-auto flex flex-col gap-0.5 px-2 pr-1 overscroll-y-contain" data-lenis-prevent>
+              {isLoadingPermissions ? (
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center rounded-lg py-2.5 px-3 justify-start gap-3 animate-pulse"
                   >
-                    <item.icon size={15} className={isActive ? "text-white" : "text-[#97a0ac] group-hover:text-[#14274e]"} />
-                    
-                    {isExpanded && (
-                      <span className="whitespace-nowrap transition-opacity duration-300">
-                        {item.label}
-                      </span>
-                    )}
+                    <div className="h-4 w-4 bg-slate-200 rounded-full" />
+                    {isExpanded && <div className="h-3 bg-slate-200 rounded w-24" />}
+                  </div>
+                ))
+              ) : (
+                dashboardNavigationItems.map((item) => {
+                  const isExact = pathname === item.href ||
+                                  (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
+                                  (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
+                                  (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
+                  const hasExactMatch = dashboardNavigationItems.some((it) => 
+                    pathname === it.href ||
+                    (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
+                    (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
+                    (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
+                  );
+                  const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`flex items-center rounded-lg text-[12px] font-medium transition-all group relative ${
+                        isExpanded ? "gap-3 px-3 py-2 justify-start" : "justify-center py-2 px-2"
+                      } ${
+                        isActive
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                      }`}
+                    >
+                      <item.icon size={15} className={isActive ? "text-white" : "text-[#97a0ac] group-hover:text-[#14274e]"} />
+                      
+                      {isExpanded && (
+                        <span className="whitespace-nowrap transition-opacity duration-300">
+                          {item.label}
+                        </span>
+                      )}
 
-                    {!isExpanded && (
-                      <div className="absolute left-[76px] bg-[#14274e] text-white py-1 px-2.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap text-[10px] z-50">
-                        {item.label}
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
+                      {!isExpanded && (
+                        <div className="absolute left-[76px] bg-[#14274e] text-white py-1 px-2.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap text-[10px] z-50">
+                          {item.label}
+                        </div>
+                      )}
+                    </Link>
+                  );
+                })
+              )}
             </div>
 
             {/* Sidebar Toggle */}
@@ -773,36 +810,48 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                     <span className="font-heading font-bold text-[#14274e] text-sm">Navigation</span>
                     <button onClick={() => setMobileMenuOpen(false)} className="text-[#6b7280] hover:text-[#14274e]"><X size={18} /></button>
                   </div>
-                  <div className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-180px)]">
+                  <div className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-180px)]" data-lenis-prevent>
                     {isDashboard ? (
-                      dashboardNavigationItems.map((item) => {
-                        const isExact = pathname === item.href ||
-                                        (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
-                                        (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
-                                        (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
-                        const hasExactMatch = dashboardNavigationItems.some((it) => 
-                          pathname === it.href ||
-                          (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
-                          (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
-                          (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
-                        );
-                        const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
-                        return (
-                          <Link
-                            key={item.label}
-                            href={item.href}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                              isActive
-                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
-                                : "text-[#4b5563] hover:text-[#14274e] hover:bg-[#f4f5f7]"
-                            }`}
+                      isLoadingPermissions ? (
+                        Array.from({ length: 6 }).map((_, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center rounded-lg py-2.5 px-3 justify-start gap-3 animate-pulse"
                           >
-                            <item.icon size={16} className={isActive ? "text-white" : "text-[#97a0ac]"} />
-                            <span>{item.label}</span>
-                          </Link>
-                        );
-                      })
+                            <div className="h-4 w-4 bg-slate-200 rounded-full" />
+                            <div className="h-3 bg-slate-200 rounded w-24" />
+                          </div>
+                        ))
+                      ) : (
+                        dashboardNavigationItems.map((item) => {
+                          const isExact = pathname === item.href ||
+                                          (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
+                                          (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
+                                          (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
+                          const hasExactMatch = dashboardNavigationItems.some((it) => 
+                            pathname === it.href ||
+                            (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
+                            (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
+                            (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
+                          );
+                          const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
+                          return (
+                            <Link
+                              key={item.label}
+                              href={item.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                                isActive
+                                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
+                                  : "text-[#4b5563] hover:text-[#14274e] hover:bg-[#f4f5f7]"
+                              }`}
+                            >
+                              <item.icon size={16} className={isActive ? "text-white" : "text-[#97a0ac]"} />
+                              <span>{item.label}</span>
+                            </Link>
+                          );
+                        })
+                      )
                     ) : (
                       <>
                         {/* Home Link */}

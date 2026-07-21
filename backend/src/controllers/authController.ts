@@ -5,6 +5,7 @@ import prisma from "../config/db";
 import { OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, VerificationStatus } from "@prisma/client";
 import { Role } from "../types/role";
 import { userHasAnyRole } from "../services/roleResolver";
+import { computeUserPermissions } from "../services/permissionService";
 import { sendOtpEmail } from "../utils/mailer";
 import { getJwtRefreshSecret, getJwtSecret } from "../config/env";
 import { ensureOrganizationAdminRole } from "../utils/orgRoles";
@@ -417,13 +418,23 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     beneficiaryProfileId: user.beneficiaryProfile?.id
   });
 
-  const [organization] = await Promise.all([
+  const [organization, permissionPayload] = await Promise.all([
     user.organizationId
       ? prisma.organization.findUnique({
           where: { id: user.organizationId },
           select: { id: true,  name: true, organizationType: true, onboardingStatus: true, status: true }
         })
       : Promise.resolve(null),
+    // Compute the user's full permission set NOW, concurrently with the other
+    // login writes, and fold it into the login response. This eliminates the
+    // separate GET /auth/permissions round-trip the client used to make after
+    // the dashboard mounted (which blocked first paint behind a spinner).
+    computeUserPermissions({
+      userId: user.id,
+      role: user.role,
+      roleSlug: user.roleRelation?.slug ?? null,
+      organizationId: user.organizationId,
+    }),
     prisma.user.update({
       where: { id: user.id },
       // Store only the hash of the refresh token so a DB leak cannot be replayed.
@@ -473,7 +484,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       beneficiaryProfileId: user.beneficiaryProfile?.id,
       ngo: user.ngo,
       company: user.company
-    }
+    },
+    // Folded-in permission set so the client can hydrate its auth store from
+    // the login response alone — no follow-up GET /auth/permissions needed.
+    permissions: permissionPayload.permissions,
+    roles: permissionPayload.roles,
+    roleDetails: permissionPayload.roleDetails,
+    isAdmin: permissionPayload.isAdmin
   });
 };
 

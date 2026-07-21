@@ -23,7 +23,10 @@ import { calculateDueDateDynamic } from "../services/slaConfigService";
 interface SubmitEnquiryBody {
   companyName: string;
   sector: string;
+  preferredDivisions: string[];
   preferredDistricts: string[];
+  preferredCities?: string[];
+  preferredTalukas?: string[];
   indicativeBudget?: number;
   contactPersonName: string;
   contactPersonDesignation?: string;
@@ -108,6 +111,10 @@ export const submitEnquiry = async (
 
     if (!body.sector || body.sector.trim().length === 0) {
       return validationErrorResponse(res, "Sector is required");
+    }
+
+    if (!body.preferredDivisions || body.preferredDivisions.length === 0) {
+      return validationErrorResponse(res, "At least one preferred division is required");
     }
 
     if (!body.preferredDistricts || body.preferredDistricts.length === 0) {
@@ -198,7 +205,10 @@ export const submitEnquiry = async (
         trackingId,
         companyName: body.companyName.trim(),
         sector: body.sector.trim(),
-        preferredDistricts: body.preferredDistricts,
+        preferredDivisions: body.preferredDivisions || [],
+        preferredDistricts: body.preferredDistricts || [],
+        preferredCities: body.preferredCities || [],
+        preferredTalukas: body.preferredTalukas || [],
         indicativeBudget: body.indicativeBudget ? new Prisma.Decimal(body.indicativeBudget) : null,
         contactPersonName: body.contactPersonName.trim(),
         contactPersonDesignation: body.contactPersonDesignation?.trim() || null,

@@ -242,39 +242,58 @@ export const updateRole = async (
     if (displayOrder !== undefined) data.displayOrder = Number(displayOrder);
 
     // Dynamic Permission assignment updates
+    let updatedRole;
     if (permissions) {
       // Permanent roles cannot lose permissions
       if (role.isPermanent && role.name === "SUPER_ADMIN") {
         // Prevent deleting any permissions
+        updatedRole = await prisma.organizationRole.update({
+          where: { id },
+          data,
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true } } } });
       } else {
         const dbPermissions = await prisma.permission.findMany({
           where: { key: { in: permissions } },
           select: { id: true } });
 
-        // Delete existing relations
-        await prisma.organizationRolePermission.deleteMany({
-          where: { roleId: id } });
+        updatedRole = await prisma.$transaction(async (tx) => {
+          // Delete existing relations
+          await tx.organizationRolePermission.deleteMany({
+            where: { roleId: id } });
 
-        // Insert new ones
-        data.rolePermissions = {
-          create: dbPermissions.map((p) => ({
-            permissionId: p.id })) };
+          // Insert new ones
+          data.rolePermissions = {
+            create: dbPermissions.map((p) => ({
+              permissionId: p.id })) };
+
+          // Update role
+          return tx.organizationRole.update({
+            where: { id },
+            data,
+            include: {
+              rolePermissions: {
+                include: {
+                  permission: true } } } });
+        });
       }
+    } else {
+      updatedRole = await prisma.organizationRole.update({
+        where: { id },
+        data,
+        include: {
+          rolePermissions: {
+            include: {
+              permission: true } } } });
     }
 
-    const updatedRole = await prisma.organizationRole.update({
-      where: { id },
-      data,
-      include: {
-        rolePermissions: {
-          include: {
-            permission: true } } } });
-
-    // Invalidate permission cache for all users holding this role
+    // Invalidate permission cache for all users holding this role in parallel
     const userIds = role.userRoles.map((ur) => ur.userId);
-    for (const userId of userIds) {
-      await CacheService.invalidatePermissions(userId);
-    }
+    await Promise.all(
+      userIds.map((userId) => CacheService.invalidatePermissions(userId).catch(console.error))
+    );
 
     // Log audit trail
     await prisma.auditLog.create({
@@ -393,11 +412,11 @@ export const deleteRole = async (
       return forbiddenResponse(res, "System or permanent roles cannot be deleted");
     }
 
-    // Invalidate cache for users before delete
+    // Invalidate cache for users before delete in parallel
     const userIds = role.userRoles.map((ur) => ur.userId);
-    for (const userId of userIds) {
-      await CacheService.invalidatePermissions(userId);
-    }
+    await Promise.all(
+      userIds.map((userId) => CacheService.invalidatePermissions(userId).catch(console.error))
+    );
 
     await prisma.organizationRole.delete({
       where: { id } });
