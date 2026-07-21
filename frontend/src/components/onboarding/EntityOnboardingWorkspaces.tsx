@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/Button";
 import { locationData } from "@/lib/locationData";
 import { FieldFormat, sanitizeField, validateField, inputModeFor, FIELD_MAX_LENGTH } from "@/lib/validation";
 import GstVerificationField from "@/components/verification/GstVerificationField";
-import "@/styles/gov-theme.css";
+const DIVISION_TO_DISTRICTS: Record<string, string[]> = {
+  Amravati: ["Akola", "Amravati", "Buldhana", "Washim", "Yavatmal"],
+  Aurangabad: ["Aurangabad", "Beed", "Hingoli", "Jalna", "Latur", "Nanded", "Osmanabad", "Parbhani"],
+  Konkan: ["Mumbai City", "Mumbai Suburban", "Palghar", "Raigad", "Ratnagiri", "Sindhudurg", "Thane"],
+  Nagpur: ["Bhandara", "Chandrapur", "Gadchiroli", "Gondia", "Nagpur", "Wardha"],
+  Nashik: ["Ahmednagar", "Dhule", "Jalgaon", "Nandurbar", "Nashik"],
+  Pune: ["Kolhapur", "Pune", "Sangli", "Satara", "Solapur"],
+};
 
 type OrganizationDocument = {
   id: string;
@@ -382,7 +389,7 @@ function MultiSelectField({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 text-sm font-bold text-gov-ink md:col-span-2 relative" ref={dropdownRef}>
+    <div className={`flex flex-col gap-1.5 text-sm font-bold text-gov-ink md:col-span-2 relative ${isOpen ? "z-50" : "z-10"}`} ref={dropdownRef}>
       <span>{label}</span>
       <div 
         onClick={() => setIsOpen(!isOpen)}
@@ -410,7 +417,7 @@ function MultiSelectField({
       </div>
 
       {isOpen && (
-        <div className="absolute top-[100%] left-0 right-0 z-50 mt-1 border border-gov-line bg-white shadow-lg max-h-60 flex flex-col">
+        <div className="absolute top-[100%] left-0 right-0 z-[100] mt-1 border border-gov-line bg-white shadow-2xl max-h-60 flex flex-col">
           <div className="p-2 border-b border-gov-line bg-slate-50">
             <input
               type="text"
@@ -526,21 +533,25 @@ export function CompanyOnboardingStep() {
     return [];
   };
 
+  const selectedDivisions = parseToArray(data.preferredDivisions);
   const selectedDistricts = parseToArray(data.preferredDistricts);
+  const selectedCities = parseToArray(data.preferredCities);
   const selectedTalukas = parseToArray(data.preferredTalukas);
 
-  const maharashtraDistrictsList = locationData.find(s => s.name === "Maharashtra")?.districts.map(d => d.name) || [];
   const maharashtraState = locationData.find(s => s.name === "Maharashtra");
-  const availableTalukas = maharashtraState
-    ? maharashtraState.districts
-        .filter(d => selectedDistricts.includes(d.name))
-        .flatMap(d => d.talukas)
+  const maharashtraDistrictsList = maharashtraState?.districts.map(d => d.name) || [];
+
+  const availableDistrictsOptions = selectedDivisions.length > 0 
+    ? selectedDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || []) 
+    : maharashtraDistrictsList;
+
+  const availableCitiesOptions = selectedDistricts.length > 0 
+    ? maharashtraState?.districts.filter(d => selectedDistricts.includes(d.name)).flatMap(d => d.cities) || [] 
     : [];
-  const allTalukas = maharashtraState
-    ? maharashtraState.districts.flatMap(d => d.talukas)
+
+  const availableTalukasOptions = selectedDistricts.length > 0 
+    ? maharashtraState?.districts.filter(d => selectedDistricts.includes(d.name)).flatMap(d => d.talukas) || [] 
     : [];
-  const talukaOptions = availableTalukas.length > 0 ? availableTalukas : allTalukas;
-  const dedupedTalukaOptions = Array.from(new Set(talukaOptions)).sort();
 
 
   const setData = (key: string, value: any) => {
@@ -645,7 +656,7 @@ export function CompanyOnboardingStep() {
             </div>
             <TextAreaField label="Registered office address" value={data.registeredOfficeAddress || data.address} onChange={(value) => setData("registeredOfficeAddress", value)} />
             <TextAreaField label="Corporate office address" value={data.corporateOfficeAddress} onChange={(value) => setData("corporateOfficeAddress", value)} />
-            <Field label="District" value={data.district} onChange={(value) => setData("district", value)} />
+            <SelectField label="District" value={data.district} onChange={(value) => setData("district", value)} options={["Select District", ...(maharashtraState?.districts.map(d => d.name) || [])]} />
             <Field label="Official website" value={data.website} onChange={(value) => setData("website", value)} />
             <Field label="Official email" required format="email" value={data.officialEmail || data.email} onChange={(value) => setData("officialEmail", value)} />
             <Field label="Official email domain" value={data.officialEmailDomain} onChange={(value) => setData("officialEmailDomain", value)} />
@@ -681,16 +692,51 @@ export function CompanyOnboardingStep() {
         {step === "preferences" && (
           <>
             <MultiSelectField
+              label="Preferred divisions"
+              values={selectedDivisions}
+              options={Object.keys(DIVISION_TO_DISTRICTS)}
+              onChange={(values) => {
+                const validDistricts = values.flatMap(div => DIVISION_TO_DISTRICTS[div] || []);
+                const nextDistricts = selectedDistricts.filter(d => validDistricts.includes(d));
+                const validCities = maharashtraState?.districts.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities) || [];
+                const nextCities = selectedCities.filter(c => validCities.includes(c));
+                const validTalukas = maharashtraState?.districts.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas) || [];
+                const nextTalukas = selectedTalukas.filter(t => validTalukas.includes(t));
+
+                setData("preferredDivisions", values);
+                setData("preferredDistricts", nextDistricts);
+                setData("preferredCities", nextCities);
+                setData("preferredTalukas", nextTalukas);
+              }}
+              placeholder="Select preferred divisions"
+            />
+            <MultiSelectField
               label="Preferred districts"
               values={selectedDistricts}
-              options={maharashtraDistrictsList}
-              onChange={(values) => setData("preferredDistricts", values)}
+              options={availableDistrictsOptions}
+              onChange={(values) => {
+                const validCities = maharashtraState?.districts.filter(d => values.includes(d.name)).flatMap(d => d.cities) || [];
+                const nextCities = selectedCities.filter(c => validCities.includes(c));
+                const validTalukas = maharashtraState?.districts.filter(d => values.includes(d.name)).flatMap(d => d.talukas) || [];
+                const nextTalukas = selectedTalukas.filter(t => validTalukas.includes(t));
+
+                setData("preferredDistricts", values);
+                setData("preferredCities", nextCities);
+                setData("preferredTalukas", nextTalukas);
+              }}
               placeholder="Select preferred districts"
             />
             <MultiSelectField
-              label="Preferred talukas"
+              label="Preferred cities (Optional)"
+              values={selectedCities}
+              options={availableCitiesOptions}
+              onChange={(values) => setData("preferredCities", values)}
+              placeholder={selectedDistricts.length > 0 ? "Select preferred cities" : "Select districts first"}
+            />
+            <MultiSelectField
+              label="Preferred talukas (Optional)"
               values={selectedTalukas}
-              options={dedupedTalukaOptions}
+              options={availableTalukasOptions}
               onChange={(values) => setData("preferredTalukas", values)}
               placeholder={selectedDistricts.length > 0 ? "Select preferred talukas" : "Select districts first"}
             />
@@ -1042,9 +1088,28 @@ export function DepartmentOnboardingStep() {
             <SelectField label="Department type" required value={data.departmentType} onChange={(value) => setData("departmentType", value)} options={["State Government Department", "District Administration", "Zilla Parishad", "Municipal Corporation", "Municipal Council", "Panchayat Samiti", "Gram Panchayat", "Government School", "Government Hospital", "Public Institution", "Other Government Body"]} />
             <Field label="Parent department / controlling authority" required value={data.parentDepartment} onChange={(value) => setData("parentDepartment", value)} />
             <Field label="Department code" value={data.departmentCode} onChange={(value) => setData("departmentCode", value)} />
-            <Field label="District" value={data.district} onChange={(value) => setData("district", value)} />
-            <Field label="Taluka" value={data.taluka} onChange={(value) => setData("taluka", value)} />
-            <Field label="Village / city" value={data.villageOrCity} onChange={(value) => setData("villageOrCity", value)} />
+            <SelectField
+              label="District"
+              value={data.district}
+              onChange={(value) => {
+                setData("district", value);
+                setData("taluka", "");
+                setData("villageOrCity", "");
+              }}
+              options={["Select District", ...(maharashtraState?.districts.map(d => d.name) || [])]}
+            />
+            <SelectField
+              label="Taluka"
+              value={data.taluka}
+              onChange={(value) => setData("taluka", value)}
+              options={["Select Taluka", ...(maharashtraState?.districts.find(d => d.name === data.district)?.talukas || [])]}
+            />
+            <SelectField
+              label="Village / city"
+              value={data.villageOrCity}
+              onChange={(value) => setData("villageOrCity", value)}
+              options={["Select City", ...(maharashtraState?.districts.find(d => d.name === data.district)?.cities || [])]}
+            />
             <Field label="Official email" required format="email" value={data.officialEmail || data.email} onChange={(value) => setData("officialEmail", value)} />
             <Field label="Official email domain" value={data.officialEmailDomain} onChange={(value) => setData("officialEmailDomain", value)} />
             <Field label="Office phone" format="phone" value={data.officePhone || data.officialPhone} onChange={(value) => setData("officePhone", value)} />

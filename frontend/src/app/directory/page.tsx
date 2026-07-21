@@ -180,11 +180,14 @@ export default function DirectoryPage() {
               <GovSelect label="Role" value={role} onChange={(event) => setRole(event.target.value)}>
                 {unique("role").map((value) => <option key={value}>{value}</option>)}
               </GovSelect>
-              <GovSelect label="Division" value={division} onChange={(event) => setDivision(event.target.value)}>
+              <GovSelect label="Division" value={division} onChange={(event) => { setDivision(event.target.value); setDistrict("All"); }}>
                 {unique("division").map((value) => <option key={value}>{value}</option>)}
               </GovSelect>
               <GovSelect label="District" value={district} onChange={(event) => setDistrict(event.target.value)}>
-                {unique("district").map((value) => <option key={value}>{value}</option>)}
+                {(division === "All" 
+                  ? unique("district") 
+                  : ["All", ...districts.filter(([_, div]) => div === division).map(([dist]) => dist)]
+                ).map((value) => <option key={value}>{value}</option>)}
               </GovSelect>
             </div>
             <div className="gov-help">Showing {filtered.length} of {allEntries.length} directory entries. Officials appointed on the portal appear at the top with live details.</div>
