@@ -11,9 +11,8 @@
  *
  * Registries + types live in @/lib/dashboardEngine.
  */
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { apiFetch } from "@/lib/api";
+import { useApiQuery } from "@/lib/apiHooks";
 import {
   DashboardSummary,
   KPI_CARDS,
@@ -28,29 +27,17 @@ interface SummaryEnvelope {
 }
 
 export default function DashboardEngine() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: summaryEnvelope, error, isLoading } = useApiQuery<SummaryEnvelope>(
+    ["dashboard", "summary"],
+    "/dashboard/summary",
+    {
+      staleTime: 30 * 1000,
+    }
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    apiFetch<SummaryEnvelope>("/dashboard/summary")
-      .then((res) => {
-        if (cancelled) return;
-        setSummary(res.data);
-        setLoading(false);
-      })
-      .catch((e: unknown) => {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load dashboard");
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const summary = summaryEnvelope?.data || null;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ padding: 24, color: "var(--gov-text-muted, #64748b)" }}>
         Loading dashboard…
@@ -61,7 +48,7 @@ export default function DashboardEngine() {
   if (error || !summary) {
     return (
       <div style={{ padding: 24, color: "#b91c1c" }}>
-        {error || "No dashboard data available."}
+        {error instanceof Error ? error.message : "No dashboard data available."}
       </div>
     );
   }

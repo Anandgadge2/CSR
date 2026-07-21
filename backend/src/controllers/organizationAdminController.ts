@@ -182,16 +182,82 @@ export const listPendingOrganizations = async (req: AuthenticatedRequest, res: R
 
 export const listOrganizations = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const search = (req.query.search as string) || "";
+    const type = (req.query.type as string) || "";
+    const status = (req.query.status as string) || "";
+    const district = (req.query.district as string) || "";
+    const sector = (req.query.sector as string) || "";
+
     const where: any = {
       status: { not: OrganizationStatus.DELETED }
     };
-    // Organization model has no tenantId — tenant scoping not applicable
-    const organizations = await prisma.organization.findMany({
-      where,
-      orderBy: [{ onboardingStatus: "asc" }, { updatedAt: "desc" }],
-      take: 500
+
+    if (search) {
+      where.name = { contains: search, mode: "insensitive" };
+    }
+    if (type) {
+      where.organizationType = type;
+    }
+    if (status) {
+      where.status = status;
+    }
+    if (district) {
+      where.district = { contains: district, mode: "insensitive" };
+    }
+    if (sector) {
+      where.csrCompanyProfile = { sector: { contains: sector, mode: "insensitive" } };
+    }
+
+    // Check if pagination parameters are provided
+    if (!req.query.page && !req.query.limit) {
+      const organizations = await prisma.organization.findMany({
+        where,
+        orderBy: [{ onboardingStatus: "asc" }, { updatedAt: "desc" }],
+        take: 500,
+        include: {
+          csrCompanyProfile: true,
+          governmentDepartmentProfile: true
+        }
+      });
+      return res.json(organizations);
+    }
+
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [organizations, total, activeTotal, pendingTotal, suspendedTotal] = await Promise.all([
+      prisma.organization.findMany({
+        where,
+        orderBy: [{ onboardingStatus: "asc" }, { updatedAt: "desc" }],
+        skip,
+        take: limit,
+        include: {
+          csrCompanyProfile: true,
+          governmentDepartmentProfile: true
+        }
+      }),
+      prisma.organization.count({ where }),
+      prisma.organization.count({ where: { ...where, status: "ACTIVE" } }),
+      prisma.organization.count({ where: { ...where, status: "PENDING" } }),
+      prisma.organization.count({ where: { ...where, status: "SUSPENDED" } })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      success: true,
+      data: organizations,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages,
+        active: activeTotal,
+        pending: pendingTotal,
+        suspended: suspendedTotal
+      }
     });
-    return res.json(organizations);
   } catch (error) {
     return next(error);
   }

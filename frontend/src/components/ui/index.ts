@@ -12,3 +12,5 @@ export { Skeleton, CardSkeleton, StatsCardSkeleton, TableSkeleton, PageSkeleton,
 export { ToastProvider, useToast, useToastActions } from "./Toast";
 export { Alert, AlertTitle, AlertDescription } from "./Alert";
 export { Timeline, TimelineItem } from "./Timeline";
+export { AnimatedCounter } from "./AnimatedCounter";
+

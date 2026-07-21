@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useApiQuery } from "@/lib/apiHooks";
 import { apiFetch } from "@/lib/api";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
@@ -62,15 +64,53 @@ const EMPTY_USER_FORM = {
 const effectiveRole = (u: UserRow) => u.role || u.roleRelation?.name || "";
 
 export default function AdminUserManagementPage() {
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<UserRow[]>([]);
-  const [dynamicRoles, setDynamicRoles] = useState<DynamicRole[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [togglingId, setTogglingId] = useState("");
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch dynamic roles (cache for 5 minutes)
+  const { data: rolesResponse } = useApiQuery<any>(
+    ["admin", "dynamic-roles"],
+    "/roles?limit=200",
+    { staleTime: 5 * 60 * 1000 }
+  );
+  const dynamicRoles: DynamicRole[] = rolesResponse?.roles || rolesResponse?.data?.roles || [];
+
+  // Fetch users list (paginated, filtered, cached)
+  const { data: usersResponse, isLoading: loading } = useApiQuery<any>(
+    ["admin", "users", String(page), debouncedSearch, statusFilter],
+    `/admin/users?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}&status=${statusFilter}`,
+    { staleTime: 30 * 1000 }
+  );
+
+  const rawUsers = usersResponse?.data || [];
+  const pagination = usersResponse?.pagination || { total: 0, totalPages: 1 };
+
+  const parsedUsers: UserRow[] = (Array.isArray(rawUsers) ? rawUsers : []).map((u: any) => ({
+    ...u,
+    dynamicRoles: (Array.isArray(u.organizationRoles) ? u.organizationRoles : [])
+      .map((or: any) => (or?.role ? { roleId: or.role.id, roleName: or.role.name } : null))
+      .filter(Boolean),
+  }));
+
+  const users = parsedUsers;
 
   // Create user modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -89,36 +129,6 @@ export default function AdminUserManagementPage() {
 
   // Delete confirmation modal
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const usersData = await apiFetch<any>("/admin/users");
-      const rawUsers = usersData?.data || usersData || [];
-      const parsedUsers = (Array.isArray(rawUsers) ? rawUsers : []).map((u: any) => ({
-        ...u,
-        dynamicRoles: (Array.isArray(u.organizationRoles) ? u.organizationRoles : [])
-          .map((or: any) => (or?.role ? { roleId: or.role.id, roleName: or.role.name } : null))
-          .filter(Boolean),
-      }));
-      setUsers(parsedUsers);
-
-      // Fetch ALL dynamic roles (system + custom) — high limit so pagination
-      // never hides roles from the dropdowns.
-      const rolesResponse = await apiFetch<any>("/roles?limit=200");
-      const rolesData = rolesResponse?.data || rolesResponse || {};
-      setDynamicRoles(rolesData?.roles || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const activeDynamicRoles = dynamicRoles.filter((r) => r.status === "ACTIVE");
   const systemRoles = activeDynamicRoles.filter((r) => r.isSystemRole);
@@ -170,7 +180,7 @@ export default function AdminUserManagementPage() {
       );
       setCreateModalOpen(false);
       setUserForm(EMPTY_USER_FORM);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create user");
     } finally {
@@ -211,7 +221,7 @@ export default function AdminUserManagementPage() {
       }).catch(() => undefined);
       setSuccess(`User ${editForm.email} updated successfully.`);
       setEditModalOpen(false);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update user");
     } finally {
@@ -229,11 +239,10 @@ export default function AdminUserManagementPage() {
         method: "PATCH",
         body: JSON.stringify({ accountStatus: nextStatus }),
       });
-      setUsers((curr) => curr.map((c) => (c.id === user.id ? { ...c, accountStatus: nextStatus } : c)));
       setSuccess(`${user.email} is now ${nextStatus}.`);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update status");
-      fetchData();
     } finally {
       setTogglingId("");
     }
@@ -253,7 +262,7 @@ export default function AdminUserManagementPage() {
           : `${deleteTarget.email} deleted permanently.`
       );
       setDeleteTarget(null);
-      fetchData();
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
@@ -261,11 +270,7 @@ export default function AdminUserManagementPage() {
     }
   };
 
-  const filteredUsers = users.filter((u) => {
-    const matchesSearch = u.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || (u.accountStatus || "ACTIVE") === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredUsers = users;
 
   return (
     <GovPortalLayout>
@@ -287,12 +292,15 @@ export default function AdminUserManagementPage() {
         <GovCard>
           <GovCardHeader>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: 12 }}>
-              <GovCardTitle>User Directory ({filteredUsers.length})</GovCardTitle>
+              <GovCardTitle>User Directory ({pagination.total})</GovCardTitle>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <select
                   className="gov-select"
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setPage(1);
+                  }}
                   style={{ minWidth: 140 }}
                 >
                   <option value="">All statuses</option>
@@ -451,6 +459,29 @@ export default function AdminUserManagementPage() {
                     })}
                   </tbody>
                 </table>
+                {pagination.totalPages > 1 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                    <span className="gov-text-xs gov-text-muted">
+                      Showing page {page} of {pagination.totalPages} ({pagination.total} users total)
+                    </span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <GovButton
+                        variant="secondary"
+                        disabled={page <= 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </GovButton>
+                      <GovButton
+                        variant="secondary"
+                        disabled={page >= pagination.totalPages}
+                        onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                      >
+                        Next
+                      </GovButton>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="gov-empty">No users matching search query found.</div>

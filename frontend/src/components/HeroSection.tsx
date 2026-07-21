@@ -400,46 +400,76 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* Stats Strip — Below the Carousel */}
-      <div className="relative z-30 mx-auto max-w-[1380px] w-full px-4 sm:px-6 md:px-8 -mt-5 sm:-mt-7 mb-6 sm:mb-10 ">
-        <motion.div
+      {/* Liquid Glass Stats Strip — Below the Carousel */}
+      <div className="relative z-30 mx-auto max-w-[1380px] w-full px-4 sm:px-6 md:px-8 -mt-5 sm:-mt-7 mb-6 sm:mb-10">
+        {/* <motion.div
           initial="hidden"
           animate="visible"
           variants={statsContainer}
-          className=" rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-200/40 overflow-hidden"
-        >
-          <div className="grid grid-cols-3 divide-x divide-slate-100">
-            <motion.div variants={statItem} className="flex items-center justify-center gap-2.5 sm:gap-4 py-4 sm:py-5 px-3 sm:px-6">
-              <div className="hidden sm:grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
-                <Building2 size={18} />
+          className="liquid-glass-container p-2.5 sm:p-3.5"
+        > */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
+            <motion.div 
+              variants={statItem} 
+              className="liquid-glass-card flex items-center justify-between sm:justify-start gap-3.5 sm:gap-4 py-3.5 sm:py-4 px-4 sm:px-6"
+            >
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <div className="liquid-glass-icon h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl grid place-items-center text-blue-300 shrink-0">
+                  <Building2 size={20} className="drop-shadow-[0_2px_4px_rgba(59,130,246,0.5)]" />
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-none tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] flex items-center gap-0.5">
+                    2,145<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 font-extrabold">+</span>
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">
+                    Corporates
+                  </div>
+                </div>
               </div>
-              <div className="text-center sm:text-left ">
-                <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight">2,145<span className="text-blue-500">+</span></div>
-                <div className="text-[7px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 sm:mt-1">Corporates</div>
-              </div>
+              <div className="h-2 w-2 rounded-full bg-blue-400/60 shadow-[0_0_8px_#60a5fa] animate-pulse sm:hidden" />
             </motion.div>
 
-            <motion.div variants={statItem} className="flex items-center justify-center gap-2.5 sm:gap-4 py-4 sm:py-5 px-3 sm:px-6">
-              <div className="hidden sm:grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 shrink-0">
-                <Landmark size={18} />
+            <motion.div 
+              variants={statItem} 
+              className="liquid-glass-card flex items-center justify-between sm:justify-start gap-3.5 sm:gap-4 py-3.5 sm:py-4 px-4 sm:px-6"
+            >
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <div className="liquid-glass-icon h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl grid place-items-center text-amber-300 shrink-0">
+                  <Landmark size={20} className="drop-shadow-[0_2px_4px_rgba(245,158,11,0.5)]" />
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-none tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] flex items-center gap-0.5">
+                    1,734<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 font-extrabold">+</span>
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">
+                    Agencies
+                  </div>
+                </div>
               </div>
-              <div className="text-center sm:text-left">
-                <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight">1,734<span className="text-amber-500">+</span></div>
-                <div className="text-[7px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 sm:mt-1">Agencies</div>
-              </div>
+              <div className="h-2 w-2 rounded-full bg-amber-400/60 shadow-[0_0_8px_#fbbf24] animate-pulse sm:hidden" />
             </motion.div>
 
-            <motion.div variants={statItem} className="flex items-center justify-center gap-2.5 sm:gap-4 py-4 sm:py-5 px-3 sm:px-6">
-              <div className="hidden sm:grid h-10 w-10 place-items-center rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
-                <CheckCircle2 size={18} />
+            <motion.div 
+              variants={statItem} 
+              className="liquid-glass-card flex items-center justify-between sm:justify-start gap-3.5 sm:gap-4 py-3.5 sm:py-4 px-4 sm:px-6"
+            >
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <div className="liquid-glass-icon h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl grid place-items-center text-emerald-300 shrink-0">
+                  <CheckCircle2 size={20} className="drop-shadow-[0_2px_4px_rgba(16,185,129,0.5)]" />
+                </div>
+                <div>
+                  <div className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-none tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] flex items-center gap-0.5">
+                    4,812<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300 font-extrabold">+</span>
+                  </div>
+                  <div className="text-[9px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-widest mt-1">
+                    Projects
+                  </div>
+                </div>
               </div>
-              <div className="text-center sm:text-left">
-                <div className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white leading-none tracking-tight">4,812<span className="text-emerald-500">+</span></div>
-                <div className="text-[7px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5 sm:mt-1">Projects</div>
-              </div>
+              <div className="h-2 w-2 rounded-full bg-emerald-400/60 shadow-[0_0_8px_#34d399] animate-pulse sm:hidden" />
             </motion.div>
           </div>
-        </motion.div>
+        {/* </motion.div> */}
       </div>
 
       {/* Left/Right arrows */}

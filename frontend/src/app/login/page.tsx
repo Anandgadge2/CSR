@@ -9,6 +9,7 @@ import { resolveDashboardPath } from "@/lib/roleRouting";
 import { API_BASE_URL, clearApiCache } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Loader } from "@/components/ui/Loader";
 
 function LoginForm() {
   const router = useRouter();
@@ -19,10 +20,24 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
 
-  // Warm up the serverless database connection in the background on mount
+  // Warm up the serverless DB connection AND prefetch the dashboard routes on
+  // mount. Prefetching compiles/loads each destination bundle ahead of time so
+  // the post-login navigation is instant instead of paying a first-visit
+  // compile (dev) or bundle-fetch (prod) cost after the user clicks Sign In.
   useEffect(() => {
     fetch(`${API_BASE_URL}/public/requirements?limit=1`).catch(() => {});
-  }, []);
+    [
+      "/admin/dashboard",
+      "/secretary/dashboard",
+      "/js/dashboard",
+      "/nodal/dashboard",
+      "/rm/dashboard",
+      "/company/dashboard",
+      "/ngo/dashboard",
+      "/department/dashboard",
+      "/partner/dashboard",
+    ].forEach((path) => router.prefetch(path));
+  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,11 +125,7 @@ function LoginForm() {
   return (
     <div className="flex-grow flex items-center justify-center px-6 py-20 bg-slate-50 text-slate-800 min-h-screen relative overflow-hidden">
       {loading && loginSuccess && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center gap-4 text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-          <div className="text-sm font-semibold tracking-wide">Initializing your workspace...</div>
-          <div className="text-xs text-slate-300">Loading dashboard resources, please wait</div>
-        </div>
+        <Loader label="Initializing your workspace..." fullscreen />
       )}
       {/* Decorative gradient blobs */}
       <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" />

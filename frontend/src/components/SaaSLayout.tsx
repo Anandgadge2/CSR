@@ -11,6 +11,7 @@ import {
   Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone, CheckCircle2, Handshake
 } from "lucide-react";
 import { Button } from "./ui/Button";
+import { Loader } from "./ui/Loader";
 import { apiFetch, getStoredUser } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import PageGuard from "@/components/auth/PageGuard";
@@ -389,8 +390,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
   if (isDashboard && !mounted) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#f6f8fb]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-900"></div>
+      <div className="flex items-center justify-center min-h-screen bg-[#f6f8fb] w-full">
+        <Loader label="Loading Portal..." />
       </div>
     );
   }
@@ -545,46 +546,46 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
           </div>
         </header>
       ) : (
-        <header className={`sticky top-0 z-50 w-full transition-all duration-300 backdrop-blur-md border-b shadow-glass ${
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           scrolled 
-            ? "bg-white/70 border-slate-200/40" 
-            : "bg-white/80 border-slate-100/30"
+            ? "liquid-glass-nav-scrolled" 
+            : "liquid-glass-nav"
         }`}>
-          <div className="max-w-[1380px] w-full mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-[72px] flex items-center justify-between">
+          <div className="max-w-[1380px] w-full mx-auto px-4 sm:px-6 md:px-8 h-14 sm:h-[60px] flex items-center justify-between">
             {/* Left Block: Brand & Seal combined */}
-            <div className="flex items-center gap-4 min-w-0">
-              <Link href="/" className="flex items-center gap-2.5 hover:no-underline shrink-0">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <Link href="/" className="flex items-center gap-2 hover:no-underline shrink-0">
                 <img
                   src="/maharashtra_seal.png"
                   alt="Government of Maharashtra Seal"
-                  className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
+                  className="h-8 w-8 sm:h-9 sm:w-9 object-contain drop-shadow-sm"
                 />
-                <div className="hidden md:flex flex-col text-[10px] sm:text-xs font-semibold leading-tight text-slate-800">
+                <div className="hidden md:flex flex-col text-[9px] sm:text-[11px] font-semibold leading-tight text-slate-800">
                   <span>Government of Maharashtra</span>
                   <span className="text-slate-400 font-normal">महाराष्ट्र शासन</span>
                 </div>
               </Link>
 
-              <div className="h-8 w-[1px] bg-slate-200 shrink-0 hidden md:block" />
+              <div className="h-6 w-[1px] bg-slate-200/80 shrink-0 hidden md:block" />
 
               <Link href="/" className="flex flex-col leading-none hover:no-underline shrink-0">
-                <span className="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">
+                <span className="font-heading font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
                   Maha<span className="text-blue-600">CSR</span> Setu
                 </span>
-                <span className="text-[9px] font-bold text-blue-600 mt-0.5 uppercase tracking-wider">
+                <span className="text-[8px] font-bold text-blue-600 mt-0.5 uppercase tracking-wider">
                   महाराष्ट्र CSR सेतु
                 </span>
               </Link>
             </div>
 
             {/* Middle Block: Menu Links (Desktop) */}
-            <nav className="hidden lg:flex items-center gap-1 h-full text-sm font-medium text-slate-600">
+            <nav className="hidden lg:flex items-center gap-1 h-full text-xs font-bold uppercase tracking-wider text-slate-600">
               <Link
                 href="/"
-                className={`px-3.5 py-1.5 rounded-lg transition-colors hover:no-underline ${
+                className={`px-3 py-1 rounded-full transition-all hover:no-underline ${
                   pathname === "/"
-                    ? "bg-blue-50 text-blue-600 font-semibold"
-                    : "hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-blue-600/10 text-blue-600 font-bold border border-blue-500/20 shadow-sm"
+                    : "hover:bg-slate-900/5 hover:text-slate-900"
                 }`}
               >
                 Home
@@ -609,15 +610,15 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                     <Link
                       href={group.href}
                       onClick={() => setOpenNavGroup(null)}
-                      className={`px-3.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors hover:no-underline ${
+                      className={`px-3 py-1 rounded-full flex items-center gap-1 transition-all hover:no-underline ${
                         isActive
-                          ? "bg-blue-50 text-blue-600 font-semibold"
-                          : "hover:bg-slate-50 hover:text-slate-900"
+                          ? "bg-blue-600/10 text-blue-600 font-bold border border-blue-500/20 shadow-sm"
+                          : "hover:bg-slate-900/5 hover:text-slate-900"
                       }`}
                     >
                       {group.label}
                       <ChevronDown 
-                        size={12} 
+                        size={11} 
                         aria-hidden="true" 
                         className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
                       />
@@ -625,21 +626,21 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                     <AnimatePresence>
                       {isOpen && (
                         <motion.div 
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                          className="absolute left-0 top-full mt-1.5 z-[70] w-[260px] border border-slate-200/50 bg-white/95 backdrop-blur-xl p-1.5 rounded-2xl shadow-xl"
+                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                           animate={{ opacity: 1, y: 0, scale: 1 }}
+                           exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                           transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                           className="absolute left-0 top-full mt-1 z-[70] w-[250px] border border-white/40 bg-white/90 backdrop-blur-2xl p-2 rounded-2xl shadow-[0_12px_40px_-8px_rgba(15,23,42,0.15)]"
                         >
                           {group.links.map((link) => (
                             <Link
                               key={link.href}
                               href={link.href}
                               onClick={() => setOpenNavGroup(null)}
-                              className={`block px-3 py-2 rounded-xl text-xs font-medium leading-5 hover:no-underline transition-all ${
+                              className={`block px-3 py-1.5 rounded-xl text-xs font-medium leading-5 hover:no-underline transition-all ${
                                 pathname === link.href || pathname.startsWith(link.href + "/")
                                   ? "bg-blue-50 text-blue-600 font-semibold"
-                                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                  : "text-slate-600 hover:bg-slate-100/60 hover:text-slate-900"
                               }`}
                             >
                               {link.label}
@@ -653,24 +654,30 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
               })}
             </nav>
 
-            {/* Right Block: Buttons and Mobile Toggle */}
+            {/* Right Block: Liquid Glass Buttons and Mobile Toggle */}
             <div className="flex items-center gap-3 shrink-0">
               <div className="hidden sm:flex items-center gap-2">
-                <Link href="/login" className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:no-underline transition-colors">
+                <Link 
+                  href="/login" 
+                  className="liquid-glass-pill-btn inline-flex h-8 items-center justify-center px-4 text-xs font-bold text-slate-700 hover:text-slate-900 hover:no-underline"
+                >
                   Login
                 </Link>
-                <Link href="/register" className="inline-flex min-h-9 items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 px-4.5 text-xs font-bold text-white hover:no-underline shadow-md shadow-blue-500/10 transition-colors">
+                <Link 
+                  href="/register" 
+                  className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 px-4.5 text-xs font-bold text-white hover:no-underline shadow-md shadow-blue-500/25 border border-white/20 transition-all hover:scale-105"
+                >
                   Register
                 </Link>
               </div>
 
               {/* Mobile Hamburger menu */}
               <button
-                className="lg:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 focus:outline-none"
+                className="lg:hidden p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 focus:outline-none"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Toggle Navigation Menu"
               >
-                <Menu size={18} />
+                <Menu size={16} />
               </button>
             </div>
           </div>
@@ -678,7 +685,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       )}
 
       {/* Main Workspace */}
-      <div className={isDashboard ? "flex flex-1 pt-[60px]" : "flex flex-1"}>
+      <div className={isDashboard ? "flex flex-1 pt-[60px]" : "flex flex-1 pt-20 sm:pt-24"}>
         
         {/* Desktop Sidebar */}
         {isDashboard && (

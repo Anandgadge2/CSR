@@ -97,3 +97,101 @@ export function resolveDashboardPath(
   }
   return fallback;
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Area authorization (which route-prefix "areas" an identity may enter).
+//
+// This replaces the old role-NAME string gate in SaaSLayout. Access is keyed on
+// CANONICAL identity tokens — stable role slugs plus the three base-enum buckets
+// — never on editable display names. Super Admin bypasses everything.
+//
+// An "identity token" is any of: a role slug ("joint-secretary"), or a base enum
+// bucket ("SUPER_ADMIN" | "CORPORATE_USER" | "GOVERNMENT_OFFICER"). A user's
+// token set is the union of every dynamic role slug they hold plus their base
+// enum. A user may enter an area if their token set intersects the area's
+// allow-list.
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Ordered area rules. First rule whose `prefixes` matches the pathname wins.
+ * `allow` lists the canonical identity tokens permitted in that area.
+ * A rule with `allow: null` is open to any authenticated user.
+ */
+interface AreaRule {
+  prefixes: string[];
+  /** Canonical tokens (slugs + base-enum) allowed, or null for any authed user. */
+  allow: string[] | null;
+}
+
+const AREA_RULES: AreaRule[] = [
+  // Persona home areas — gated to the matching canonical identities.
+  { prefixes: ["/ngo-dashboard", "/ngo"], allow: ["ngo-admin", "SUPER_ADMIN"] },
+  { prefixes: ["/company-dashboard", "/company"], allow: ["company-admin", "corporate-user", "CORPORATE_USER", "SUPER_ADMIN"] },
+  { prefixes: ["/partner"], allow: ["corporate-user", "company-admin", "CORPORATE_USER", "SUPER_ADMIN"] },
+  { prefixes: ["/beneficiary", "/department"], allow: ["government-officer", "GOVERNMENT_OFFICER", "SUPER_ADMIN"] },
+  { prefixes: ["/rm"], allow: ["relationship-manager", "joint-secretary", "planning-secretary", "SUPER_ADMIN"] },
+  { prefixes: ["/js"], allow: ["joint-secretary", "planning-secretary", "SUPER_ADMIN"] },
+  { prefixes: ["/secretary"], allow: ["planning-secretary", "SUPER_ADMIN"] },
+  { prefixes: ["/nodal"], allow: ["district-nodal-officer", "district-nodal-consultant", "joint-secretary", "planning-secretary", "SUPER_ADMIN"] },
+  { prefixes: ["/agency"], allow: ["implementing-agency-user", "corporate-user", "CORPORATE_USER", "SUPER_ADMIN"] },
+  { prefixes: ["/government-portal", "/district", "/admin"], allow: ["SUPER_ADMIN"] },
+  // Organization self-service — any org persona plus admin.
+  { prefixes: ["/organization"], allow: ["ngo-admin", "company-admin", "corporate-user", "government-officer", "CORPORATE_USER", "GOVERNMENT_OFFICER", "SUPER_ADMIN"] },
+
+  // Shared authenticated areas — open to any logged-in user (no persona gate).
+  {
+    prefixes: [
+      "/dashboard", "/onboarding", "/queries", "/csr-projects", "/payments",
+      "/fund-releases", "/reports", "/audit-logs", "/profile", "/settings",
+      "/chat", "/analytics", "/grievances", "/convergence-projects", "/projects",
+      "/public-development-needs", "/pitch-development-need",
+      "/partner-with-maharashtra", "/track",
+    ],
+    allow: null,
+  },
+];
+
+/**
+ * Build the canonical identity-token set for a user from every stable signal we
+ * hold: their dynamic role slugs (from roleDetails + the stored roleSlug) and
+ * their base enum bucket. Display names are deliberately excluded.
+ */
+export function buildIdentityTokens(input: {
+  roleSlug?: string | null;
+  role?: string | null;
+  roleDetailSlugs?: Array<string | null | undefined>;
+}): string[] {
+  const tokens = new Set<string>();
+  if (input.roleSlug) tokens.add(input.roleSlug);
+  if (input.role) tokens.add(input.role);
+  (input.roleDetailSlugs ?? []).forEach((s) => {
+    if (s) tokens.add(s);
+  });
+  return Array.from(tokens);
+}
+
+/**
+ * True if a user holding `identityTokens` may enter the area that owns
+ * `pathname`. Super Admin (enum bucket OR slug) always passes. Unmatched paths
+ * default to allowed (they are not persona-gated areas). `isAdmin` short-circuits.
+ */
+export function canAccessArea(
+  pathname: string,
+  identityTokens: string[],
+  isAdmin = false
+): boolean {
+  if (isAdmin) return true;
+  if (identityTokens.includes("SUPER_ADMIN") || identityTokens.includes("super-admin")) {
+    return true;
+  }
+
+  const rule = AREA_RULES.find((r) =>
+    r.prefixes.some((p) => pathname === p || pathname.startsWith(p + "/"))
+  );
+
+  // No rule governs this path → not a persona-gated area → allow.
+  if (!rule) return true;
+  // Open authenticated area.
+  if (rule.allow === null) return true;
+  return rule.allow.some((token) => identityTokens.includes(token));
+}

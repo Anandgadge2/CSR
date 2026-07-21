@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useApiQuery } from "@/lib/apiHooks";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
@@ -15,52 +16,55 @@ import "../../../styles/gov-theme.css";
 export default function ImplementingAgencyRegistryPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [districtFilter, setDistrictFilter] = useState("all");
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
 
+  // Debounce search
   useEffect(() => {
-    const load = async () => {
-      try {
-        const orgs = await apiFetch<any[]>("/admin/organizations");
-        // Implementing agencies are NGO-kind organizations in the convergence framework
-        const agencyOrgs = orgs.filter(org => org.organizationType === "NGO");
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-        const mapped = agencyOrgs.map((org, index) => ({
-          id: org.id,
-          displayId: `IA-${new Date(org.createdAt || Date.now()).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
-          name: org.name,
-          registrationNo: org.registrationNumber || "—",
-          district: org.district || "—",
-          focusArea: org.organizationType?.replace(/_/g, " ") || "Other",
-          status: org.status === "ACTIVE" ? "Active" : org.status === "PENDING" ? "Under Review" : org.status.replace(/_/g, " "),
-          statusVariant: org.status === "ACTIVE" ? "success" as const : "warning" as const,
-          projectsCompleted: org._count?.projects || 0,
-          totalFunding: org.csrCompanyProfile?.spentAmount ? `₹${Number(org.csrCompanyProfile.spentAmount).toLocaleString("en-IN")}` : "—",
-          lastAudit: org.updatedAt ? new Date(org.updatedAt).toLocaleDateString("en-IN") : "—",
-          isDb: true
-        }));
+  const dbStatus =
+    statusFilter === "Active" ? "ACTIVE" :
+    statusFilter === "Under Review" ? "PENDING" :
+    statusFilter === "Suspended" ? "SUSPENDED" :
+    statusFilter === "all" ? "" : statusFilter;
 
-        setItems(mapped);
-      } catch (err) {
-        console.error("Failed to load implementing agencies", err);
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const dbDistrict = districtFilter === "all" ? "" : districtFilter;
 
-  const filteredNGOs = items.filter((ngo) => {
-    const matchesSearch =
-      ngo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ngo.registrationNo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || ngo.status === statusFilter;
-    const matchesDistrict = districtFilter === "all" || ngo.district === districtFilter;
-    return matchesSearch && matchesStatus && matchesDistrict;
-  });
+  // Fetch paginated and filtered NGOs
+  const { data: orgsResponse, isLoading: loading } = useApiQuery<any>(
+    ["admin", "ngos", String(page), debouncedSearch, dbStatus, dbDistrict],
+    `/admin/organizations?type=NGO&page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}&status=${dbStatus}&district=${encodeURIComponent(dbDistrict)}`,
+    { staleTime: 30 * 1000 }
+  );
+
+  const rawOrgs = orgsResponse?.data || [];
+  const pagination = orgsResponse?.pagination || { total: 0, totalPages: 1 };
+
+  const items = (Array.isArray(rawOrgs) ? rawOrgs : []).map((org, index) => ({
+    id: org.id,
+    displayId: `IA-${new Date(org.createdAt || Date.now()).getFullYear()}-${String((page - 1) * limit + index + 1).padStart(3, '0')}`,
+    name: org.name,
+    registrationNo: org.registrationNumber || "—",
+    district: org.district || "—",
+    focusArea: org.organizationType?.replace(/_/g, " ") || "Other",
+    status: org.status === "ACTIVE" ? "Active" : org.status === "PENDING" ? "Under Review" : org.status.replace(/_/g, " "),
+    statusVariant: org.status === "ACTIVE" ? "success" as const : "warning" as const,
+    projectsCompleted: org._count?.projects || 0,
+    totalFunding: org.csrCompanyProfile?.spentAmount ? `₹${Number(org.csrCompanyProfile.spentAmount).toLocaleString("en-IN")}` : "—",
+    lastAudit: org.updatedAt ? new Date(org.updatedAt).toLocaleDateString("en-IN") : "—",
+    isDb: true
+  }));
+
+  const filteredNGOs = items;
 
   return (
     <GovPortalLayout>
@@ -75,7 +79,7 @@ export default function ImplementingAgencyRegistryPage() {
           <GovCard>
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Total Agencies</div>
-              <div className="gov-text-3xl gov-font-bold gov-text-primary">{loading ? "…" : items.length}</div>
+              <div className="gov-text-3xl gov-font-bold gov-text-primary">{loading ? "…" : pagination.total}</div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Registered implementing agencies</div>
             </GovCardBody>
           </GovCard>
@@ -83,7 +87,7 @@ export default function ImplementingAgencyRegistryPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Active Agencies</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#166534" }}>
-                {loading ? "…" : items.filter((i) => i.status === "Active").length}
+                {loading ? "…" : (pagination.active || 0)}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Currently operational</div>
             </GovCardBody>
@@ -92,7 +96,7 @@ export default function ImplementingAgencyRegistryPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Under Review</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#d97706" }}>
-                {loading ? "…" : items.filter((i) => i.status === "Under Review").length}
+                {loading ? "…" : (pagination.pending || 0)}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Pending verification</div>
             </GovCardBody>
@@ -101,7 +105,7 @@ export default function ImplementingAgencyRegistryPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Suspended</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#b91c1c" }}>
-                {loading ? "…" : items.filter((i) => i.status === "SUSPENDED" || i.status === "Suspended").length}
+                {loading ? "…" : (pagination.suspended || 0)}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Compliance issues</div>
             </GovCardBody>
@@ -121,7 +125,10 @@ export default function ImplementingAgencyRegistryPage() {
               <GovSelect
                 label="Status"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
               >
                 <option value="all">All Status</option>
                 <option value="Active">Active</option>
@@ -131,7 +138,10 @@ export default function ImplementingAgencyRegistryPage() {
               <GovSelect
                 label="District"
                 value={districtFilter}
-                onChange={(e) => setDistrictFilter(e.target.value)}
+                onChange={(e) => {
+                  setDistrictFilter(e.target.value);
+                  setPage(1);
+                }}
               >
                 <option value="all">All Districts</option>
                 <option value="Mumbai">Mumbai</option>
@@ -147,7 +157,7 @@ export default function ImplementingAgencyRegistryPage() {
         {/* Agency List */}
         <GovCard>
           <GovCardHeader>
-            <GovCardTitle>Registered Implementing Agencies ({filteredNGOs.length})</GovCardTitle>
+            <GovCardTitle>Registered Implementing Agencies ({pagination.total})</GovCardTitle>
           </GovCardHeader>
           <GovCardBody>
             <div className="gov-table-container">
@@ -204,6 +214,29 @@ export default function ImplementingAgencyRegistryPage() {
                   ))}
                 </tbody>
               </table>
+              {pagination.totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                  <span className="gov-text-xs gov-text-muted">
+                    Showing page {page} of {pagination.totalPages} ({pagination.total} agencies total)
+                  </span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <GovButton
+                      variant="secondary"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </GovButton>
+                    <GovButton
+                      variant="secondary"
+                      disabled={page >= pagination.totalPages}
+                      onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    >
+                      Next
+                    </GovButton>
+                  </div>
+                </div>
+              )}
             </div>
           </GovCardBody>
         </GovCard>

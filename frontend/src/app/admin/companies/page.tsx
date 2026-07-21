@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useApiQuery } from "@/lib/apiHooks";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
@@ -15,52 +16,55 @@ import "../../../styles/gov-theme.css";
 export default function CompaniesPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sectorFilter, setSectorFilter] = useState("all");
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
 
+  // Debounce search
   useEffect(() => {
-    const load = async () => {
-      try {
-        const orgs = await apiFetch<any[]>("/admin/organizations");
-        // Only corporate CSR company partners belong on this page
-        const companyOrgs = orgs.filter(org => org.organizationType === "CSR_COMPANY");
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-        const mapped = companyOrgs.map((org, index) => ({
-          id: org.id,
-          displayId: `COMP-${new Date(org.createdAt || Date.now()).getFullYear()}-${String(index + 1).padStart(3, '0')}`,
-          name: org.name,
-          cin: org.cin || org.registrationNumber || "—",
-          sector: org.csrCompanyProfile?.sector || "—",
-          status: org.status === "ACTIVE" ? "Active" : org.status === "PENDING" ? "Under Review" : org.status.replace(/_/g, " "),
-          statusVariant: org.status === "ACTIVE" ? "success" as const : "warning" as const,
-          csrObligation: org.csrCompanyProfile?.csrBudget ? `₹${Number(org.csrCompanyProfile.csrBudget).toLocaleString("en-IN")}` : "—",
-          spent: org.csrCompanyProfile?.spentAmount ? `₹${Number(org.csrCompanyProfile.spentAmount).toLocaleString("en-IN")}` : "—",
-          projects: org._count?.projects || 0,
-          lastReport: org.updatedAt ? new Date(org.updatedAt).toLocaleDateString("en-IN") : "—",
-          isDb: true
-        }));
+  const dbStatus =
+    statusFilter === "Active" ? "ACTIVE" :
+    statusFilter === "Under Review" ? "PENDING" :
+    statusFilter === "Suspended" ? "SUSPENDED" :
+    statusFilter === "all" ? "" : statusFilter;
 
-        setItems(mapped);
-      } catch (err) {
-        console.error("Failed to load companies", err);
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  const dbSector = sectorFilter === "all" ? "" : sectorFilter;
 
-  const filteredCompanies = items.filter((company) => {
-    const matchesSearch =
-      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.cin.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || company.status === statusFilter;
-    const matchesSector = sectorFilter === "all" || company.sector === sectorFilter;
-    return matchesSearch && matchesStatus && matchesSector;
-  });
+  // Fetch paginated and filtered Companies
+  const { data: orgsResponse, isLoading: loading } = useApiQuery<any>(
+    ["admin", "companies", String(page), debouncedSearch, dbStatus, dbSector],
+    `/admin/organizations?type=CSR_COMPANY&page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}&status=${dbStatus}&sector=${encodeURIComponent(dbSector)}`,
+    { staleTime: 30 * 1000 }
+  );
+
+  const rawOrgs = orgsResponse?.data || [];
+  const pagination = orgsResponse?.pagination || { total: 0, totalPages: 1 };
+
+  const items = (Array.isArray(rawOrgs) ? rawOrgs : []).map((org, index) => ({
+    id: org.id,
+    displayId: `COMP-${new Date(org.createdAt || Date.now()).getFullYear()}-${String((page - 1) * limit + index + 1).padStart(3, '0')}`,
+    name: org.name,
+    cin: org.cin || org.registrationNumber || "—",
+    sector: org.csrCompanyProfile?.sector || "—",
+    status: org.status === "ACTIVE" ? "Active" : org.status === "PENDING" ? "Under Review" : org.status.replace(/_/g, " "),
+    statusVariant: org.status === "ACTIVE" ? "success" as const : "warning" as const,
+    csrObligation: org.csrCompanyProfile?.csrBudget ? `₹${Number(org.csrCompanyProfile.csrBudget).toLocaleString("en-IN")}` : "—",
+    spent: org.csrCompanyProfile?.spentAmount ? `₹${Number(org.csrCompanyProfile.spentAmount).toLocaleString("en-IN")}` : "—",
+    projects: org._count?.projects || 0,
+    lastReport: org.updatedAt ? new Date(org.updatedAt).toLocaleDateString("en-IN") : "—",
+    isDb: true
+  }));
+
+  const filteredCompanies = items;
 
   return (
     <GovPortalLayout>
@@ -75,7 +79,7 @@ export default function CompaniesPage() {
           <GovCard>
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Total Companies</div>
-              <div className="gov-text-3xl gov-font-bold gov-text-primary">{loading ? "…" : items.length}</div>
+              <div className="gov-text-3xl gov-font-bold gov-text-primary">{loading ? "…" : pagination.total}</div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Registered corporate partners</div>
             </GovCardBody>
           </GovCard>
@@ -83,7 +87,7 @@ export default function CompaniesPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Active</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#166534" }}>
-                {loading ? "…" : items.filter((i) => i.status === "Active").length}
+                {loading ? "…" : (pagination.active || 0)}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Currently operational</div>
             </GovCardBody>
@@ -92,18 +96,18 @@ export default function CompaniesPage() {
             <GovCardBody>
               <div className="gov-text-sm gov-text-muted gov-mb-1">Under Review</div>
               <div className="gov-text-3xl gov-font-bold" style={{ color: "#005ea8" }}>
-                {loading ? "…" : items.filter((i) => i.status === "Under Review").length}
+                {loading ? "…" : (pagination.pending || 0)}
               </div>
               <div className="gov-text-xs gov-text-muted gov-mt-1">Pending verification</div>
             </GovCardBody>
           </GovCard>
           <GovCard>
             <GovCardBody>
-              <div className="gov-text-sm gov-text-muted gov-mb-1">Active Projects</div>
-              <div className="gov-text-3xl gov-font-bold" style={{ color: "#d97706" }}>
-                {loading ? "…" : items.reduce((sum, i) => sum + (Number(i.projects) || 0), 0)}
+              <div className="gov-text-sm gov-text-muted gov-mb-1">Suspended</div>
+              <div className="gov-text-3xl gov-font-bold" style={{ color: "#b91c1c" }}>
+                {loading ? "…" : (pagination.suspended || 0)}
               </div>
-              <div className="gov-text-xs gov-text-muted gov-mt-1">Ongoing initiatives</div>
+              <div className="gov-text-xs gov-text-muted gov-mt-1">Compliance issues</div>
             </GovCardBody>
           </GovCard>
         </div>
@@ -121,7 +125,10 @@ export default function CompaniesPage() {
               <GovSelect
                 label="Status"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
               >
                 <option value="all">All Status</option>
                 <option value="Active">Active</option>
@@ -131,7 +138,10 @@ export default function CompaniesPage() {
               <GovSelect
                 label="Sector"
                 value={sectorFilter}
-                onChange={(e) => setSectorFilter(e.target.value)}
+                onChange={(e) => {
+                  setSectorFilter(e.target.value);
+                  setPage(1);
+                }}
               >
                 <option value="all">All Sectors</option>
                 <option value="Automotive">Automotive</option>
@@ -147,7 +157,7 @@ export default function CompaniesPage() {
         {/* Companies List */}
         <GovCard>
           <GovCardHeader>
-            <GovCardTitle>Registered Companies ({filteredCompanies.length})</GovCardTitle>
+            <GovCardTitle>Registered Companies ({pagination.total})</GovCardTitle>
           </GovCardHeader>
           <GovCardBody>
             <div className="gov-table-container">
@@ -200,6 +210,29 @@ export default function CompaniesPage() {
                   ))}
                 </tbody>
               </table>
+              {pagination.totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                  <span className="gov-text-xs gov-text-muted">
+                    Showing page {page} of {pagination.totalPages} ({pagination.total} companies total)
+                  </span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <GovButton
+                      variant="secondary"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </GovButton>
+                    <GovButton
+                      variant="secondary"
+                      disabled={page >= pagination.totalPages}
+                      onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    >
+                      Next
+                    </GovButton>
+                  </div>
+                </div>
+              )}
             </div>
           </GovCardBody>
         </GovCard>

@@ -13,59 +13,38 @@ import {
   Headphones,
   Landmark,
   Users,
+  Sparkles,
+  ExternalLink,
+  ShieldCheck,
 } from "lucide-react";
 import HeroSection from "@/components/HeroSection";
 import { GisMap } from "@/components/LazyComponents";
 import HomeStatsStrip from "@/components/HomeStatsStrip";
-import { Card } from "@/components/ui/Card";
 
 const workflow = [
   {
     title: "State-Level Entry & Dialogue",
     detail: "Corporates approach the State CSR Coordinating Unit. An initial dialogue captures sector preference, budget, and geography.",
     icon: Headphones,
+    glow: "bg-blue-500/10 text-blue-600 border-blue-200/60",
   },
   {
     title: "Domain-Specific Delegation",
     detail: "The State Unit nominates the relevant district Head of Department as the single point of contact, retaining oversight.",
     icon: Users,
+    glow: "bg-purple-500/10 text-purple-600 border-purple-200/60",
   },
   {
     title: "Ground Finalisation & MoU",
     detail: "The District Nodal Officer and corporate align needs to a project blueprint and execute the standard MoU.",
     icon: FileCheck2,
+    glow: "bg-amber-500/10 text-amber-600 border-amber-200/60",
   },
   {
     title: "Onboarding & Tracking",
     detail: "The project is onboarded to the portal, tracking physical/financial progress, UCs, and administrative bottlenecks.",
     icon: CheckCircle2,
-  },
-];
-
-const roleCards = [
-  {
-    title: "Corporate Partners",
-    detail: "Submit a CSR partnership enquiry, browse live government development needs, and track your enquiry through a single point of coordination.",
-    action: "Partner with Maharashtra",
-    href: "/partner-with-maharashtra",
-    icon: Building2,
-    gradient: "from-blue-600 to-indigo-700",
-  },
-  {
-    title: "Government Departments & Districts",
-    detail: "Pitch a specific development need with district, budget, and location evidence to seek CSR support under the convergence framework.",
-    action: "Pitch a Development Need",
-    href: "/pitch-development-need",
-    icon: Landmark,
-    gradient: "from-amber-500 to-orange-600",
-  },
-  {
-    title: "Track a Partnership",
-    detail: "Corporates and departments can track the real-time status of any enquiry, pitch, or onboarded project using the tracking ID.",
-    action: "Track Status",
-    href: "/track",
-    icon: ClipboardCheck,
-    gradient: "from-emerald-500 to-teal-600",
+    glow: "bg-emerald-500/10 text-emerald-600 border-emerald-200/60",
   },
 ];
 
@@ -100,30 +79,52 @@ const pillars = [
   },
 ];
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
+const resources = [
+  { title: "Framework & Policy Information", description: "The State's CSR convergence framework explained simply; benefits to corporates. Marathi & English.", href: "/framework-policy" },
+  { title: "Document Library", description: "CSR Rules 2014 & MCA amendments; Schedule VII; State GRs; progress formats; checklists.", href: "/document-library" },
+  { title: "Workflow Explainer", description: "Simple visual guide showing exactly how the partnership works, step by step, with timelines.", href: "/workflow" },
+  { title: "Success Stories & Case Studies", description: "Completed projects with photos, investment, beneficiaries, corporate name. Builds confidence through proof.", href: "/success-stories" },
+  { title: "CSR Summits & Events", description: "Past summit reports and videos; upcoming events; registration links.", href: "/csr-events" },
+  { title: "Directory", description: "Contact details of the State CSR Cell, the CSR Relationship Managers, and all District Nodal Officers.", href: "/directory" },
+  { title: "Completed Projects Gallery", description: "Permanent, searchable public record of all portal projects — by district, sector, corporate, year.", href: "/completed-projects" },
+  { title: "Public Development Needs (Live)", description: "Government pitches approved and made public — open for any corporate to fund.", href: "/public-development-needs" },
+  { title: "FAQs, News & Recognition", description: "Common questions; portal updates; CSR awards and recognition of corporate partners.", href: "/faq-news-recognition" },
+];
 
-const cardFadeUp = {
-  hidden: { opacity: 0, y: 40, rotateX: 8 },
+/* ── Motion Variants for Section Slide-in from Right & Text Sequence Reveal ── */
+const sectionSlideFromRight = {
+  hidden: { opacity: 0, x: 80 },
   visible: {
     opacity: 1,
-    y: 0,
-    rotateX: 0,
+    x: 0,
     transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
   },
 };
 
-const sectionFade = {
-  hidden: { opacity: 0, y: 60 },
+const textRevealSequence = {
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.5, delay: 0.2 },
+  },
+};
+
+const staggerSlideCards = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.12, delayChildren: 0.25 },
+  },
+};
+
+const cardSlideFromRight = {
+  hidden: { opacity: 0, x: 60, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 120, damping: 16 },
   },
 };
 
@@ -133,8 +134,7 @@ function Parallax3DSection({ children, className }: { children: React.ReactNode;
     target: ref,
     offset: ["start end", "end start"],
   });
-  const y = useTransform(scrollYProgress, [0, 1], [60, -60]);
-  const rotateX = useTransform(scrollYProgress, [0, 0.5, 1], [4, 0, -4]);
+  const y = useTransform(scrollYProgress, [0, 1], [40, -40]);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -149,25 +149,13 @@ function Parallax3DSection({ children, className }: { children: React.ReactNode;
   return (
     <motion.div
       ref={ref}
-      style={isMobile ? {} : { y, rotateX, transformPerspective: 1200 }}
+      style={isMobile ? {} : { y }}
       className={className}
     >
       {children}
     </motion.div>
   );
 }
-
-const resources = [
-  { title: "Framework & Policy Information", description: "The State's CSR convergence framework explained simply; benefits to corporates. Marathi & English.", href: "/framework-policy" },
-  { title: "Document Library", description: "CSR Rules 2014 & MCA amendments; Schedule VII; State GRs; progress formats; checklists.", href: "/document-library" },
-  { title: "Workflow Explainer", description: "Simple visual guide showing exactly how the partnership works, step by step, with timelines.", href: "/workflow" },
-  { title: "Success Stories & Case Studies", description: "Completed projects with photos, investment, beneficiaries, corporate name. Builds confidence through proof.", href: "/success-stories" },
-  { title: "CSR Summits & Events", description: "Past summit reports and videos; upcoming events; registration links.", href: "/csr-events" },
-  { title: "Directory", description: "Contact details of the State CSR Cell, the CSR Relationship Managers, and all District Nodal Officers.", href: "/directory" },
-  { title: "Completed Projects Gallery", description: "Permanent, searchable public record of all portal projects — by district, sector, corporate, year.", href: "/completed-projects" },
-  { title: "Public Development Needs (Live)", description: "Government pitches approved and made public — open for any corporate to fund.", href: "/public-development-needs" },
-  { title: "FAQs, News & Recognition", description: "Common questions; portal updates; CSR awards and recognition of corporate partners.", href: "/faq-news-recognition" },
-];
 
 export default function LandingPage() {
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -192,97 +180,99 @@ export default function LandingPage() {
 
   return (
     <div className="bg-slate-50 text-slate-700 min-h-screen font-sans relative overflow-hidden">
-      {/* Ambient blobs */}
-      <div className="absolute top-20 -left-12 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" />
-      <div className="absolute bottom-20 -right-12 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-float" style={{ animationDelay: "2.5s" }} />
+      {/* Ambient glass background glows */}
+      <div className="absolute top-20 -left-12 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-float" />
+      <div className="absolute top-1/2 -right-12 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-float" style={{ animationDelay: "2.5s" }} />
 
       <HeroSection />
 
-      <main className="mx-auto flex w-full max-w-[1380px] flex-col gap-10 px-4 pb-16 pt-8 sm:px-6 md:px-8 lg:pt-14">
+      <main className="mx-auto flex w-full max-w-[1380px] flex-col gap-14 px-4 pb-16 pt-8 sm:px-6 md:px-8 lg:pt-14">
 
-        {/* ── Workflow Section ── */}
+        {/* ── Workflow Section with Slide-from-Right Motion ── */}
         <Parallax3DSection>
           <motion.div
-            variants={sectionFade}
+            variants={sectionSlideFromRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-60px" }}
             className="flex flex-col gap-6"
           >
-            <div className="flex flex-col gap-4 border-b border-slate-200 pb-6 md:flex-row md:items-end md:justify-between">
+            <motion.div variants={textRevealSequence} className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
               <div>
-                <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+                <h2 className="break-words text-2xl font-black leading-tight text-slate-900 sm:text-3xl tracking-tight">
                   How the partnership works
                 </h2>
-                <div className="mt-2.5">
-                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                    State-Led, District-Executed Convergence
-                  </span>
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full mb-2.5">
+                  <Sparkles size={12} className="text-blue-500" /> State-Led, District-Executed Convergence
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-xs font-medium leading-relaxed text-slate-500 md:max-w-[400px] shadow-sm">
-                A single State CSR Coordinating Unit routes every corporate to one accountable District Nodal Officer.
-              </div>
-            </div>
+            </motion.div>
 
             <motion.div
-              variants={staggerContainer}
+              variants={staggerSlideCards}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
-              style={{ perspective: "800px" }}
             >
               {workflow.map((step, index) => (
-                <motion.div key={step.title} variants={cardFadeUp} style={{ transformStyle: "preserve-3d" }}>
-                  <Card
-                    index={index}
-                    variant="default"
-                    className="relative p-6 pt-8 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all"
-                  >
-                    <div className="absolute -top-4 left-6 grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-lg shadow-blue-500/30">
-                      {index + 1}
+                <motion.div key={step.title} variants={cardSlideFromRight}>
+                  <div className="liquid-glass-card-light p-6 relative h-full flex flex-col justify-between group">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`p-3 rounded-2xl inline-flex items-center justify-center border shadow-sm ${step.glow} backdrop-blur-md transition-transform duration-300 group-hover:scale-110`}>
+                          <step.icon size={22} />
+                        </div>
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-[11px] font-black text-white shadow-md shadow-blue-500/25 border border-white/40">
+                          Step 0{index + 1}
+                        </span>
+                      </div>
+                      <h3 className="text-base font-extrabold text-slate-900 tracking-tight">{step.title}</h3>
+                      <p className="mt-2 text-xs leading-relaxed text-slate-600 font-medium">{step.detail}</p>
                     </div>
-                    <div className="text-blue-600 p-2.5 bg-blue-50/60 rounded-xl inline-block shadow-sm">
-                      <step.icon size={22} />
-                    </div>
-                    <h3 className="mt-4 text-sm font-bold text-slate-900 tracking-tight">{step.title}</h3>
-                    <p className="mt-2 text-xs leading-relaxed text-slate-500">{step.detail}</p>
-                  </Card>
+                
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
           </motion.div>
         </Parallax3DSection>
 
-        {/* ── Enhanced Two-Tile Action Hub ── */}
+        {/* ── Enhanced Two-Tile Action Hub with Photo Accents ── */}
         <Parallax3DSection>
           <motion.div
-            variants={sectionFade}
+            variants={sectionSlideFromRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-60px" }}
           >
-            <div className="grid gap-8 md:grid-cols-2" style={{ perspective: "1000px" }}>
+            <div className="grid gap-8 md:grid-cols-2">
               {/* Tile 1: Partner with Maharashtra */}
               <motion.div
-                whileHover={{ y: -8, rotateY: -3, scale: 1.01 }}
+                variants={cardSlideFromRight}
+                whileHover={{ y: -6, scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 200, damping: 18 }}
-                className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-gradient-to-br from-white/90 via-slate-50/50 to-blue-50/40 p-8 shadow-glass group"
-                style={{ transformStyle: "preserve-3d" }}
+                className="liquid-glass-card-light p-5 relative overflow-hidden group border-blue-200/50 bg-gradient-to-br from-white/95 via-slate-50/95 to-blue-50/30"
               >
-                {/* Decorative absolute background glow */}
-                <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl group-hover:bg-blue-500/20 transition-all duration-500" />
-                
+                {/* Photo graphic overlay with smooth gradient fade */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-right opacity-10 group-hover:opacity-[0.14] transition-opacity duration-500 pointer-events-none rounded-2xl"
+                  style={{ backgroundImage: `url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80')` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10 pointer-events-none" />
+                <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-blue-500/15 blur-3xl group-hover:bg-blue-500/25 transition-all duration-500" />
+
                 <div className="relative z-10 flex flex-col justify-between h-full min-h-[280px]">
                   <div className="flex flex-col gap-5">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-transform duration-300 group-hover:scale-110">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 transition-transform duration-300 group-hover:scale-110 border border-white/40">
                       <Building2 size={26} />
                     </div>
                     <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600">For Corporate Partners</span>
-                      <h3 className="mt-2 text-2xl font-extrabold text-slate-900 tracking-tight">Partner with Maharashtra</h3>
-                      <p className="mt-4 text-sm leading-relaxed text-slate-500 max-w-lg">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/60">
+                        For Corporate Partners
+                      </span>
+                      <h3 className="mt-3 text-2xl font-black text-slate-900 tracking-tight">Partner with Maharashtra</h3>
+                      <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-600 max-w-lg font-medium">
                         Submit a CSR partnership enquiry, browse live government development needs, and track your enquiry through a single point of coordination.
                       </p>
                     </div>
@@ -290,7 +280,7 @@ export default function LandingPage() {
                   <div className="mt-8">
                     <Link
                       href="/partner-with-maharashtra"
-                      className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-blue-600 hover:bg-blue-700 px-6 text-sm font-bold text-white shadow-lg shadow-blue-500/10 hover:no-underline transition-all hover:scale-105"
+                      className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 px-7 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-blue-500/20 hover:no-underline transition-all hover:scale-105 border border-white/30"
                     >
                       Submit Partnership Enquiry <ArrowRight size={16} className="ml-2" />
                     </Link>
@@ -300,23 +290,30 @@ export default function LandingPage() {
 
               {/* Tile 2: Pitch a Development Need */}
               <motion.div
-                whileHover={{ y: -8, rotateY: 3, scale: 1.01 }}
+                variants={cardSlideFromRight}
+                whileHover={{ y: -6, scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 200, damping: 18 }}
-                className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-gradient-to-br from-white/90 via-slate-50/50 to-amber-50/40 p-8 shadow-glass group"
-                style={{ transformStyle: "preserve-3d" }}
+                className="liquid-glass-card-light p-8 relative overflow-hidden group border-amber-200/50 bg-gradient-to-br from-white/95 via-slate-50/95 to-amber-50/30"
               >
-                {/* Decorative absolute background glow */}
-                <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl group-hover:bg-amber-500/20 transition-all duration-500" />
-                
+                {/* Photo graphic overlay with smooth gradient fade */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-right opacity-10 group-hover:opacity-[0.14] transition-opacity duration-500 pointer-events-none rounded-2xl"
+                  style={{ backgroundImage: `url('https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=800&q=80')` }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10 pointer-events-none" />
+                <div className="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-amber-500/15 blur-3xl group-hover:bg-amber-500/25 transition-all duration-500" />
+
                 <div className="relative z-10 flex flex-col justify-between h-full min-h-[280px]">
                   <div className="flex flex-col gap-5">
-                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg shadow-amber-500/20 transition-transform duration-300 group-hover:scale-110">
+                    <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 transition-transform duration-300 group-hover:scale-110 border border-white/40">
                       <Landmark size={26} />
                     </div>
                     <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-600">For Government Departments</span>
-                      <h3 className="mt-2 text-2xl font-extrabold text-slate-900 tracking-tight">Pitch a Development Need</h3>
-                      <p className="mt-4 text-sm leading-relaxed text-slate-500 max-w-lg">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
+                        For Government Departments
+                      </span>
+                      <h3 className="mt-3 text-2xl font-black text-slate-900 tracking-tight">Pitch a Development Need</h3>
+                      <p className="mt-3 text-xs sm:text-sm leading-relaxed text-slate-600 max-w-lg font-medium">
                         Pitch a specific development need with district, budget, and location evidence to seek CSR support under the convergence framework.
                       </p>
                     </div>
@@ -324,7 +321,7 @@ export default function LandingPage() {
                   <div className="mt-8">
                     <Link
                       href="/pitch-development-need"
-                      className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-amber-500 hover:bg-amber-600 px-6 text-sm font-bold text-white shadow-lg shadow-amber-500/10 hover:no-underline transition-all hover:scale-105"
+                      className="inline-flex min-h-12 items-center justify-center rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 px-7 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-blue-500/20 hover:no-underline transition-all hover:scale-105 border border-white/30"
                     >
                       Pitch Development Need <ArrowRight size={16} className="ml-2" />
                     </Link>
@@ -334,67 +331,64 @@ export default function LandingPage() {
             </div>
 
             {/* Quick Track Bar Below */}
-            <div className="mt-8 p-6 rounded-2xl border border-slate-200/50 bg-white/70 backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-glass">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <ClipboardCheck size={20} />
+            <motion.div variants={cardSlideFromRight} className="mt-6 p-6 rounded-3xl liquid-glass-card-light flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-200/60 shadow-sm">
+                  <ClipboardCheck size={22} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">Track an existing enquiry or pitch?</h4>
-                  <p className="text-xs text-slate-500">Enter your tracking ID to view real-time convergence status.</p>
+                  <h4 className="text-sm font-extrabold text-slate-900 tracking-tight">Track an existing enquiry or pitch?</h4>
+                  <p className="text-xs text-slate-500 font-medium">Enter your tracking ID to view real-time convergence status.</p>
                 </div>
               </div>
               <Link
                 href="/track"
-                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 px-5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:no-underline transition-colors w-full sm:w-auto"
+                className="liquid-glass-pill-btn inline-flex min-h-10 items-center justify-center px-6 text-xs font-bold text-slate-800 hover:text-blue-600 hover:no-underline w-full sm:w-auto"
               >
                 Track Status <ArrowRight size={14} className="ml-1.5" />
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
         </Parallax3DSection>
 
-        {/* ── Resources Directory ── */}
+        {/* ── Resources Directory with Liquid Glass Cards ── */}
         <Parallax3DSection>
           <motion.div
-            variants={sectionFade}
+            variants={sectionSlideFromRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-60px" }}
             className="flex flex-col gap-6"
           >
-            <div>
-              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+            <motion.div variants={textRevealSequence}>
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full mb-2.5">
+                Public Information Directory
+              </div>
+              <h2 className="break-words text-2xl font-black leading-tight text-slate-900 sm:text-3xl tracking-tight">
                 MahaCSR Setu Resources
               </h2>
-              <div className="mt-2.5">
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                  Public Information Directory
-                </span>
-              </div>
-            </div>
+            </motion.div>
 
             <motion.div
-              variants={staggerContainer}
+              variants={staggerSlideCards}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
             >
-              {resources.map((item, index) => (
-                <motion.div key={item.title} variants={cardFadeUp}>
-                  <Link href={item.href} className="hover:no-underline flex">
-                    <Card
-                      index={index}
-                      variant="default"
-                      className="flex items-start gap-4 p-5 bg-white border border-slate-200/60 hover:border-blue-300 hover:shadow-md w-full group transition-all"
-                    >
-                      <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 shrink-0 mt-1.5 shadow-sm shadow-blue-500/30" />
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors tracking-tight">{item.title}</h3>
-                        <p className="mt-2 text-xs leading-relaxed text-slate-500">{item.description}</p>
+              {resources.map((item) => (
+                <motion.div key={item.title} variants={cardSlideFromRight}>
+                  <Link href={item.href} className="hover:no-underline flex h-full">
+                    <div className="liquid-glass-card-light p-5 rounded-2xl flex items-start gap-4 w-full group transition-all">
+                      <span className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 shrink-0 mt-1 shadow-sm shadow-blue-500/40 border border-white/60" />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-extrabold text-slate-900 leading-snug group-hover:text-blue-600 transition-colors tracking-tight flex items-center justify-between">
+                          {item.title}
+                          <ExternalLink size={13} className="text-slate-400 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </h3>
+                        <p className="mt-2 text-xs leading-relaxed text-slate-600 font-medium">{item.description}</p>
                       </div>
-                    </Card>
+                    </div>
                   </Link>
                 </motion.div>
               ))}
@@ -402,28 +396,26 @@ export default function LandingPage() {
           </motion.div>
         </Parallax3DSection>
 
-        {/* ── Live Stats ── */}
+        {/* ── Live Stats Section with Animated Count-Up Numbers ── */}
         <Parallax3DSection>
           <motion.div
-            variants={sectionFade}
+            variants={sectionSlideFromRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-60px" }}
             className="flex flex-col gap-6"
           >
-            <div>
-              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+            <motion.div variants={textRevealSequence}>
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full mb-2.5">
+                Live Portal Statistics
+              </div>
+              <h2 className="break-words text-2xl font-black leading-tight text-slate-900 sm:text-3xl tracking-tight">
                 MahaCSR at a Glance
               </h2>
-              <div className="mt-2.5">
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                  Live Portal Statistics
-                </span>
-              </div>
-              <p className="mt-3 text-xs font-normal text-slate-400">
+              <p className="mt-2 text-xs font-medium text-slate-500">
                 Live figures drawn only from projects onboarded and certified on the portal.
               </p>
-            </div>
+            </motion.div>
             <div>
               <HomeStatsStrip />
             </div>
@@ -434,22 +426,20 @@ export default function LandingPage() {
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr] w-full min-w-0">
           <Parallax3DSection className="w-full min-w-0">
             <motion.div
-              variants={sectionFade}
+              variants={sectionSlideFromRight}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-60px" }}
               className="h-full w-full min-w-0"
             >
-              <Card hover={false} tilt={false} variant="default" className="p-6 sm:p-8 h-full bg-white border border-slate-200/60 shadow-sm rounded-3xl w-full min-w-0 overflow-hidden">
+              <div className="liquid-glass-card-light p-6 sm:p-8 h-full rounded-3xl w-full min-w-0 overflow-hidden">
                 <div className="flex flex-col gap-1.5">
-                  <h3 className="break-words text-xl font-bold text-slate-900 tracking-tight">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full w-fit">
+                    Guidelines & Implementation
+                  </div>
+                  <h3 className="break-words text-xl font-black text-slate-900 tracking-tight mt-1">
                     Framework Principles
                   </h3>
-                  <div>
-                    <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                      Guidelines & Implementation
-                    </span>
-                  </div>
                 </div>
                 <div className="mt-6 flex flex-col gap-3">
                   {recommendations.map((item) => (
@@ -457,95 +447,87 @@ export default function LandingPage() {
                       key={item}
                       whileHover={{ x: 6, scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      className="flex items-start gap-4 rounded-xl border border-slate-150 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50/80 hover:border-blue-200 cursor-default"
+                      className="flex items-start gap-3.5 rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md p-4 transition-all hover:bg-white hover:border-blue-300 cursor-default shadow-sm"
                     >
                       <CheckCircle2 className="shrink-0 text-emerald-500 mt-0.5" size={18} />
-                      <p className="flex-1 text-xs font-medium leading-relaxed text-slate-600">{item}</p>
-                      <ArrowRight className="shrink-0 text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" size={15} />
+                      <p className="flex-1 text-xs font-semibold leading-relaxed text-slate-700">{item}</p>
                     </motion.div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </motion.div>
           </Parallax3DSection>
 
           <Parallax3DSection className="w-full min-w-0">
             <motion.div
-              variants={sectionFade}
+              variants={sectionSlideFromRight}
               initial="hidden"
               whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
+              viewport={{ once: true, margin: "-60px" }}
               className="h-full w-full min-w-0"
             >
-              <Card hover={false} tilt={false} variant="default" className="p-6 sm:p-8 h-full bg-white border border-slate-200/60 shadow-sm rounded-3xl w-full min-w-0 overflow-hidden">
+              <div className="liquid-glass-card-light p-6 sm:p-8 h-full rounded-3xl w-full min-w-0 overflow-hidden">
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="break-words text-xl font-bold text-slate-900 tracking-tight">
-                      Circulars & Notices
-                    </h3>
-                    <Link href="/circulars" className="text-xs font-bold text-blue-600 hover:underline">
+                    <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full">
+                      Official Updates
+                    </div>
+                    <Link href="/circulars" className="text-xs font-extrabold text-blue-600 hover:underline">
                       View All
                     </Link>
                   </div>
-                  <div>
-                    <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                      Official Updates
-                    </span>
-                  </div>
+                  <h3 className="break-words text-xl font-black text-slate-900 tracking-tight mt-1">
+                    Circulars & Notices
+                  </h3>
                 </div>
-                <div className="mt-5 flex flex-wrap gap-2 border-b border-slate-100 pb-3 text-xs font-bold">
-                  <span className="rounded-lg bg-blue-600 px-3.5 py-1.5 text-white shadow-sm shadow-blue-500/20">All</span>
-                  <span className="px-3 py-1.5 text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">Policy Notices</span>
-                  <span className="px-3 py-1.5 text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">Government Resolutions</span>
-                  <span className="px-3 py-1.5 text-slate-500 hover:text-slate-800 cursor-pointer transition-colors">Circulars</span>
+                <div className="mt-5 flex flex-wrap gap-2 border-b border-slate-200/60 pb-3 text-xs font-bold">
+                  <span className="rounded-full bg-blue-600 px-4 py-1.5 text-white shadow-sm shadow-blue-500/20">All</span>
+                  <span className="px-3.5 py-1.5 rounded-full text-slate-600 hover:bg-white hover:text-slate-900 cursor-pointer transition-colors">Policy Notices</span>
+                  <span className="px-3.5 py-1.5 rounded-full text-slate-600 hover:bg-white hover:text-slate-900 cursor-pointer transition-colors">Government Resolutions</span>
                 </div>
-                <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200/60">
+                <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200/80 bg-white/70 backdrop-blur-md">
                   <table className="w-full min-w-[500px] border-collapse text-left text-xs">
                     <thead>
-                      <tr className="bg-slate-50/50 text-slate-900 border-b border-slate-100">
-                        <th className="px-3 py-3 font-bold">Title</th>
-                        <th className="px-3 py-3 font-bold">Category</th>
-                        <th className="px-3 py-3 font-bold">Type</th>
-                        <th className="px-3 py-3 font-bold">Date</th>
+                      <tr className="bg-slate-100/60 text-slate-900 border-b border-slate-200/80">
+                        <th className="px-3.5 py-3 font-extrabold">Title</th>
+                        <th className="px-3.5 py-3 font-extrabold">Category</th>
+                        <th className="px-3.5 py-3 font-extrabold">Date</th>
                       </tr>
                     </thead>
-                    <tbody className="text-slate-500">
+                    <tbody className="text-slate-600">
                       {notices.map(([title, category, type, date]) => (
-                        <tr key={title} className="hover:bg-blue-50/30 transition-colors border-b border-slate-100/80">
-                          <td className="px-3 py-3.5 font-medium text-slate-700">{title}</td>
-                          <td className="px-3 py-3.5">{category}</td>
-                          <td className="px-3 py-3.5">{type}</td>
-                          <td className="px-3 py-3.5 whitespace-nowrap">{date}</td>
+                        <tr key={title} className="hover:bg-blue-50/40 transition-colors border-b border-slate-100/80">
+                          <td className="px-3.5 py-3.5 font-bold text-slate-800">{title}</td>
+                          <td className="px-3.5 py-3.5 font-semibold text-blue-600">{category}</td>
+                          <td className="px-3.5 py-3.5 whitespace-nowrap font-medium">{date}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </div>
             </motion.div>
           </Parallax3DSection>
         </div>
 
-        {/* ── GIS Map ── */}
+        {/* ── GIS Map with Glass Shell ── */}
         <Parallax3DSection>
           <motion.div
-            variants={sectionFade}
+            variants={sectionSlideFromRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-60px" }}
             className="flex flex-col gap-6"
           >
-            <div>
-              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+            <motion.div variants={textRevealSequence}>
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full mb-2.5">
+                District CSR Register
+              </div>
+              <h2 className="break-words text-2xl font-black leading-tight text-slate-900 sm:text-3xl tracking-tight">
                 Visualize CSR activity across Maharashtra
               </h2>
-              <div className="mt-2.5">
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                  District CSR Register
-                </span>
-              </div>
-            </div>
-            <div className="mt-6">
+            </motion.div>
+            <div className="mt-2 rounded-3xl overflow-hidden liquid-glass-card-light p-2 sm:p-3">
               <GisMap />
             </div>
           </motion.div>
@@ -554,53 +536,46 @@ export default function LandingPage() {
         {/* ── Model Pillars ── */}
         <Parallax3DSection>
           <motion.div
-            variants={sectionFade}
+            variants={sectionSlideFromRight}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-60px" }}
             className="flex flex-col gap-6"
           >
-            <div>
-              <h2 className="break-words text-2xl font-bold leading-tight text-slate-900 sm:text-3xl tracking-tight">
+            <motion.div variants={textRevealSequence}>
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full mb-2.5">
+                The Convergence Model
+              </div>
+              <h2 className="break-words text-2xl font-black leading-tight text-slate-900 sm:text-3xl tracking-tight">
                 State-Led, District-Executed
               </h2>
-              <div className="mt-2.5">
-                <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                  The Convergence Model
-                </span>
-              </div>
-            </div>
+            </motion.div>
             <motion.div
-              variants={staggerContainer}
+              variants={staggerSlideCards}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
               className="grid gap-5 lg:grid-cols-3"
-              style={{ perspective: "800px" }}
             >
               {pillars.map((pillar, index) => (
-                <motion.div key={pillar.title} variants={cardFadeUp} style={{ transformStyle: "preserve-3d" }}>
-                  <Card
-                    index={index}
-                    variant="default"
-                    className="p-6 bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all h-full"
-                  >
-                    <div className="flex items-start gap-5">
-                      <div className="relative grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
-                        <span className="absolute -left-2.5 -top-2.5 grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-[10px] font-bold text-white shadow-lg shadow-blue-500/30">
-                          0{index + 1}
+                <motion.div key={pillar.title} variants={cardSlideFromRight}>
+                  <div className="liquid-glass-card-light p-6 h-full flex flex-col justify-between group">
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-blue-200/80 bg-blue-50 text-blue-600 shadow-sm backdrop-blur-md transition-transform duration-300 group-hover:scale-110">
+                          <pillar.icon size={22} />
+                        </div>
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200/60 text-[11px] font-black tracking-wider">
+                          Pillar 0{index + 1}
                         </span>
-                        <pillar.icon size={24} />
                       </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900 tracking-tight">{pillar.title}</h3>
-                        <p className="mt-2 text-xs font-normal leading-relaxed text-slate-500">{pillar.detail}</p>
-                        <Link href="/knowledge" className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline">
-                          Learn more <ArrowRight size={13} />
-                        </Link>
-                      </div>
+                      <h3 className="text-base font-extrabold text-slate-900 tracking-tight">{pillar.title}</h3>
+                      <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">{pillar.detail}</p>
                     </div>
-                  </Card>
+                    <Link href="/knowledge" className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:underline">
+                      Learn more <ArrowRight size={13} />
+                    </Link>
+                  </div>
                 </motion.div>
               ))}
             </motion.div>
@@ -609,40 +584,41 @@ export default function LandingPage() {
 
         {/* ── Bottom CTA ── */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          variants={sectionSlideFromRight}
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          <Card hover={false} tilt={false} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-6 sm:p-10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 h-48 w-48 bg-blue-500/10 rounded-full filter blur-3xl -mr-12 -mt-12" />
-            <div className="absolute bottom-0 left-0 h-48 w-48 bg-amber-500/8 rounded-full filter blur-3xl -ml-12 -mb-12" />
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 p-8 sm:p-12 rounded-3xl relative overflow-hidden border border-white/10 shadow-2xl">
+            <div className="absolute top-0 right-0 h-48 w-48 bg-blue-500/15 rounded-full filter blur-3xl -mr-12 -mt-12" />
+            <div className="absolute bottom-0 left-0 h-48 w-48 bg-amber-500/10 rounded-full filter blur-3xl -ml-12 -mb-12" />
 
-            <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-xl flex items-center justify-center shrink-0 border border-white/10">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 backdrop-blur-xl flex items-center justify-center shrink-0 border border-white/20 shadow-lg">
                   <Headphones className="text-blue-300" size={28} />
                 </div>
                 <div>
-                  <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">Need help partnering with Maharashtra or pitching a development need?</h2>
-                  <p className="mt-2 max-w-2xl text-xs sm:text-sm font-normal leading-relaxed text-slate-300">
+                  <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">Need help partnering with Maharashtra or pitching a development need?</h2>
+                  <p className="mt-2 max-w-2xl text-xs sm:text-sm font-medium leading-relaxed text-slate-300">
                     Use the knowledge center for the framework guide, the standard MoU template, document checklists, and the official helpdesk.
                   </p>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3 shrink-0">
-                <Link href="/knowledge" className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 px-5 text-xs font-bold text-white hover:bg-white/5 hover:no-underline transition-all">
+                <Link href="/knowledge" className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/20 px-6 text-xs font-bold text-white hover:bg-white/10 hover:no-underline transition-all backdrop-blur-md">
                   Knowledge Center
                 </Link>
-                <Link href="/contact" className="inline-flex min-h-10 items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 text-xs font-bold text-white hover:from-amber-600 hover:to-orange-600 hover:no-underline shadow-lg shadow-orange-500/20 transition-all">
+                <Link href="/contact" className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-6 text-xs font-black uppercase tracking-wider text-white hover:from-amber-600 hover:to-orange-600 hover:no-underline shadow-lg shadow-orange-500/25 transition-all hover:scale-105 border border-white/20">
                   Contact Helpdesk
                 </Link>
               </div>
             </div>
-          </Card>
+          </div>
         </motion.div>
       </main>
-      {/* Custom fast cursor follower — uses direct DOM, zero re-renders */}
+
+      {/* Custom fast cursor follower */}
       <div
         ref={cursorRef}
         className="pointer-events-none fixed left-0 top-0 z-50 w-2 h-2 rounded-full bg-amber-400/70 mix-blend-difference opacity-0"

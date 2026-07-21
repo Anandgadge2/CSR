@@ -43,35 +43,63 @@ export const getAdminOverview = async (req: AuthenticatedRequest, res: Response,
 
 export const listUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const where = {};
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        organizationId: true,
-        email: true,
-        role: true,
-        accountStatus: true,
-        isVerified: true,
-        ngoId: true,
-        companyId: true,
-        assignedDistrict: true,
-        createdAt: true,
-        roleId: true,
-        roleRelation: { select: { id: true, name: true } },
-        ngo: { select: { name: true, status: true } },
-        company: { select: { name: true, status: true } },
-        organizationRoles: {
-          include: {
-            role: true
-          }
-        }
-      },
-      orderBy: { createdAt: "desc" },
-      take: 250
-    });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+    const search = (req.query.search as string) || "";
+    const status = (req.query.status as string) || "";
 
-    return res.json(users);
+    const where: any = {};
+    if (search) {
+      where.email = { contains: search, mode: "insensitive" };
+    }
+    if (status) {
+      where.accountStatus = status;
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          organizationId: true,
+          email: true,
+          role: true,
+          accountStatus: true,
+          isVerified: true,
+          ngoId: true,
+          companyId: true,
+          assignedDistrict: true,
+          createdAt: true,
+          roleId: true,
+          roleRelation: { select: { id: true, name: true } },
+          ngo: { select: { name: true, status: true } },
+          company: { select: { name: true, status: true } },
+          organizationRoles: {
+            include: {
+              role: true
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit
+      }),
+      prisma.user.count({ where })
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return res.json({
+      success: true,
+      data: users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages
+      }
+    });
   } catch (error) {
     next(error);
   }
