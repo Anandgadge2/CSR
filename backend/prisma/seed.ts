@@ -2,7 +2,7 @@ import "dotenv/config";
 import { PrismaClient, Role, OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus, RoleScope, CSRCategory, CompanyInterestStatus, CSRRequirementStatus, CorporateEnquiryStatus, FeasibilityResult, ChecklistAnswer, SLAStage, GrievanceStatus, SimpleMilestoneStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { PERMISSIONS, PAGE_PERMISSIONS, SEED_ROLE_PERMISSIONS, resolveRolePermissionKeys } from "../src/config/platformAccess";
+import { PERMISSIONS, PAGE_PERMISSIONS, SEED_ROLE_PERMISSIONS, resolveSeedRolePermissionKeys } from "../src/config/platformAccess";
 import { ROLE_SLUG } from "../src/types/role";
 
 const prisma = new PrismaClient();
@@ -135,25 +135,9 @@ async function main() {
     });
     console.log("✓ Super Admin created:", superAdmin.email);
 
-    const portalAdmin = await tx.user.create({
-      data: {
-        email: "portal.admin@mahacsr.gov.in",
-        passwordHash: defaultPasswordHash,
-        role: null,
-        isVerified: true,
-      },
-    });
-    console.log("✓ Portal Admin created:", portalAdmin.email);
-
-    const csrAdmin = await tx.user.create({
-      data: {
-        email: "csr.admin@mahacsr.gov.in",
-        passwordHash: defaultPasswordHash,
-        role: null,
-        isVerified: true,
-      },
-    });
-    console.log("✓ CSR Admin created:", csrAdmin.email);
+    // NOTE: the legacy portal.admin@ / csr.admin@ demo accounts were removed —
+    // both collapsed into the single super-admin identity. There is now exactly
+    // one elevated login (admin@mahacsr.gov.in).
 
     // Create system organization for administrative staff
     const portalAdminOrg = await tx.organization.create({
@@ -170,7 +154,7 @@ async function main() {
     });
 
     await tx.user.updateMany({
-      where: { id: { in: [portalAdmin.id, csrAdmin.id, superAdmin.id] } },
+      where: { id: { in: [superAdmin.id] } },
       data: { organizationId: portalAdminOrg.id }
     });
 
@@ -192,7 +176,7 @@ async function main() {
           scope,
           isSystemRole: true,
           rolePermissions: {
-            create: resolveRolePermissionKeys(permKey)
+            create: resolveSeedRolePermissionKeys(permKey)
               .map((key) => ({ permissionId: permissionIdByKey.get(key)! }))
               .filter((item) => item.permissionId)
           }
@@ -200,9 +184,9 @@ async function main() {
       });
     };
 
-    // Single canonical admin role. The former separate "portal-admin" role was
-    // collapsed into super-admin; the portal.admin/csr.admin demo accounts now
-    // map to this one role so there is exactly ONE elevated identity.
+    // Single canonical admin role. The former separate "portal-admin" and
+    // "csr-admin" roles were collapsed into super-admin, leaving exactly ONE
+    // elevated identity (admin@mahacsr.gov.in).
     const superAdminRole = await tx.organizationRole.create({
       data: {
         organizationId: null,
@@ -221,9 +205,7 @@ async function main() {
 
     await tx.userOrganizationRole.createMany({
       data: [
-        { userId: superAdmin.id, roleId: superAdminRole.id },
-        { userId: portalAdmin.id, roleId: superAdminRole.id, organizationId: portalAdminOrg.id },
-        { userId: csrAdmin.id, roleId: superAdminRole.id, organizationId: portalAdminOrg.id }
+        { userId: superAdmin.id, roleId: superAdminRole.id }
       ],
       skipDuplicates: true
     });
@@ -248,7 +230,7 @@ async function main() {
           isSystemRole: false,
           isPermanent: false,
           rolePermissions: {
-            create: resolveRolePermissionKeys(permKey)
+            create: resolveSeedRolePermissionKeys(permKey)
               .map((key) => ({ permissionId: permissionIdByKey.get(key)! }))
               .filter((item) => item.permissionId)
           }
@@ -350,6 +332,113 @@ async function main() {
       }
     });
     console.log("✓ District nodal mapping created: Pune -> nodal@mahacsr.gov.in");
+
+    // District Nodal Consultant — the 9th canonical role finally gets a login.
+    const consultantUser = await tx.user.create({
+      data: {
+        email: "consultant@mahacsr.gov.in",
+        passwordHash: defaultPasswordHash,
+        role: Role.GOVERNMENT_OFFICER,
+        roleId: nodalConsultantRole.id,
+        accountStatus: "ACTIVE",
+        isVerified: true,
+        assignedDistrict: "Pune"
+      }
+    });
+    await tx.userOrganizationRole.create({
+      data: { userId: consultantUser.id, roleId: nodalConsultantRole.id }
+    });
+    console.log("✓ District Nodal Consultant created:", consultantUser.email);
+
+    // Canonical, org-agnostic logins for the three remaining roles so every one
+    // of the 9 roles has a clean demo account (in addition to the per-org
+    // company/NGO/department users seeded in the loops below).
+    const companyAdminUser = await tx.user.create({
+      data: {
+        email: "company.admin@mahacsr.gov.in",
+        passwordHash: defaultPasswordHash,
+        role: Role.CORPORATE_USER,
+        roleId: companyAdminRole.id,
+        accountStatus: "ACTIVE",
+        isVerified: true,
+      }
+    });
+    await tx.userOrganizationRole.create({
+      data: { userId: companyAdminUser.id, roleId: companyAdminRole.id }
+    });
+    console.log("✓ Corporate Admin created:", companyAdminUser.email);
+
+    const govtOfficerUser = await tx.user.create({
+      data: {
+        email: "govt.officer@mahacsr.gov.in",
+        passwordHash: defaultPasswordHash,
+        role: Role.GOVERNMENT_OFFICER,
+        roleId: governmentOfficerRole.id,
+        accountStatus: "ACTIVE",
+        isVerified: true,
+      }
+    });
+    await tx.userOrganizationRole.create({
+      data: { userId: govtOfficerUser.id, roleId: governmentOfficerRole.id }
+    });
+    console.log("✓ Government Officer created:", govtOfficerUser.email);
+
+    const ngoAdminUser = await tx.user.create({
+      data: {
+        email: "ngo.admin@mahacsr.gov.in",
+        passwordHash: defaultPasswordHash,
+        role: null,
+        roleId: ngoAdminRole.id,
+        accountStatus: "ACTIVE",
+        isVerified: true,
+      }
+    });
+    await tx.userOrganizationRole.create({
+      data: { userId: ngoAdminUser.id, roleId: ngoAdminRole.id }
+    });
+    console.log("✓ NGO Admin created:", ngoAdminUser.email);
+
+    // Real Maharashtra district nodal officers, one active mapping each. These
+    // give the assignment workflow genuine districts to route to (Pune above is
+    // handled by nodal@). Password is the shared default for all demo accounts.
+    const MAHARASHTRA_NODAL_DISTRICTS = [
+      "Mumbai City",
+      "Mumbai Suburban",
+      "Nagpur",
+      "Nashik",
+      "Aurangabad",
+      "Thane",
+      "Kolhapur",
+      "Amravati",
+      "Solapur",
+      "Ahmednagar",
+    ];
+    for (const district of MAHARASHTRA_NODAL_DISTRICTS) {
+      const slug = district.toLowerCase().replace(/\s+/g, ".");
+      const districtNodal = await tx.user.create({
+        data: {
+          email: `nodal.${slug}@mahacsr.gov.in`,
+          passwordHash: defaultPasswordHash,
+          role: Role.GOVERNMENT_OFFICER,
+          roleId: nodalRole.id,
+          accountStatus: "ACTIVE",
+          isVerified: true,
+          assignedDistrict: district,
+        }
+      });
+      await tx.userOrganizationRole.create({
+        data: { userId: districtNodal.id, roleId: nodalRole.id }
+      });
+      await tx.districtNodalMapping.create({
+        data: {
+          district,
+          userId: districtNodal.id,
+          isActive: true,
+          assignedById: jsUser.id
+        }
+      });
+    }
+    console.log(`✓ ${MAHARASHTRA_NODAL_DISTRICTS.length} Maharashtra district nodal officers + mappings created.`);
 
     console.log("Seeding 10 NGOs & NGO Users...");
     const ngos = [];
@@ -1089,7 +1178,18 @@ async function main() {
 
   console.log("\n========================================");
   console.log("✅ Database initialized successfully (clean setup)!");
-  console.log("========================================\n");
+  console.log("========================================");
+  console.log(`\nCanonical role logins (password for all: ${DEFAULT_PASSWORD}):`);
+  console.log("  super-admin                admin@mahacsr.gov.in");
+  console.log("  planning-secretary         secretary@mahacsr.gov.in");
+  console.log("  joint-secretary            js@mahacsr.gov.in");
+  console.log("  relationship-manager       rm@mahacsr.gov.in");
+  console.log("  district-nodal-officer     nodal@mahacsr.gov.in (Pune)");
+  console.log("  district-nodal-consultant  consultant@mahacsr.gov.in");
+  console.log("  company-admin              company.admin@mahacsr.gov.in");
+  console.log("  government-officer         govt.officer@mahacsr.gov.in");
+  console.log("  ngo-admin                  ngo.admin@mahacsr.gov.in");
+  console.log("  + 10 district nodal officers: nodal.<district>@mahacsr.gov.in\n");
 }
 
 main()

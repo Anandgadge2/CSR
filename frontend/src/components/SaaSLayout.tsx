@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -74,10 +74,14 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user: storeUser, roles: storeRoles, isAdmin: storeIsAdmin, hasPermission } = useAuthStore();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  const isExpanded = !sidebarCollapsed || sidebarHovered;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
   const [openNavGroup, setOpenNavGroup] = useState<string | null>(null);
   const [mobileOpenNavGroup, setMobileOpenNavGroup] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; isRead: boolean }>>([]);
@@ -97,6 +101,22 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+      if (notificationsDropdownRef.current && !notificationsDropdownRef.current.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const isLoggedIn = mounted && typeof window !== "undefined" && !!localStorage.getItem("accessToken");
@@ -442,7 +462,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
               </Link>
 
               {/* Notifications */}
-              <div className="relative">
+              <div className="relative" ref={notificationsDropdownRef}>
                 <button
                   className="text-slate-400 hover:text-slate-900 transition-colors p-2 rounded-xl hover:bg-slate-50/80"
                   onClick={() => setNotificationsOpen(!notificationsOpen)}
@@ -490,7 +510,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
               </div>
 
               {/* User Dropdown */}
-              <div className="relative">
+              <div className="relative" ref={userDropdownRef}>
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-50/80 transition-colors"
@@ -669,8 +689,10 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         {/* Desktop Sidebar */}
         {isDashboard && (
           <aside
-            className={`hidden lg:flex flex-col border-r border-slate-200/50 bg-slate-50/75 backdrop-blur-xl shrink-0 transition-all duration-300 relative justify-between py-4 shadow-sm ${
-              sidebarCollapsed ? "w-[68px]" : "w-60"
+            onMouseEnter={() => setSidebarHovered(true)}
+            onMouseLeave={() => setSidebarHovered(false)}
+            className={`hidden lg:flex flex-col border-r border-slate-200/50 bg-slate-50/75 backdrop-blur-xl shrink-0 transition-all duration-300 fixed left-0 top-[60px] h-[calc(100vh-60px)] z-40 justify-between py-4 shadow-sm overflow-x-hidden ${
+              isExpanded ? "w-60" : "w-[68px]"
             }`}
           >
             {/* Navigation Links */}
@@ -691,16 +713,23 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-medium transition-all group relative ${
+                    className={`flex items-center rounded-lg text-[12px] font-medium transition-all group relative ${
+                      isExpanded ? "gap-3 px-3 py-2 justify-start" : "justify-center py-2 px-2"
+                    } ${
                       isActive
                         ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
                     }`}
                   >
                     <item.icon size={15} className={isActive ? "text-white" : "text-[#97a0ac] group-hover:text-[#14274e]"} />
-                    {!sidebarCollapsed && <span>{item.label}</span>}
+                    
+                    {isExpanded && (
+                      <span className="whitespace-nowrap transition-opacity duration-300">
+                        {item.label}
+                      </span>
+                    )}
 
-                    {sidebarCollapsed && (
+                    {!isExpanded && (
                       <div className="absolute left-[76px] bg-[#14274e] text-white py-1 px-2.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap text-[10px] z-50">
                         {item.label}
                       </div>
@@ -921,7 +950,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         </AnimatePresence>
 
         {/* Main Content */}
-        <div className="flex-grow flex flex-col min-w-0">
+        <div className={`flex-grow flex flex-col min-w-0 transition-all duration-300 ${isDashboard ? (isExpanded ? "lg:ml-60" : "lg:ml-[68px]") : ""}`}>
           <main id="main-content" className={`flex-grow ${isDashboard ? "px-4 py-4 md:px-6 md:py-5" : ""}`}>
             {dashboardContent}
           </main>

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { Role } from "../types/role";
+import { isSuperAdmin } from "../services/roleResolver";
 import { successResponse } from "../utils/apiResponse";
 
 /**
@@ -92,7 +92,11 @@ export const getCurrentUserPermissions = async (
       }
     });
 
-    const isAdmin = userRole === Role.SUPER_ADMIN;
+    // Super Admin is recognised on EITHER axis: the base enum bucket
+    // (role === "SUPER_ADMIN") OR the dynamic role slug ("super-admin").
+    // Checking only the enum missed slug-carrying admins and starved the
+    // sidebar / blocked the admin dashboard.
+    const isAdmin = isSuperAdmin({ role: userRole, roleSlug: req.user.roleSlug });
 
     // SUPER_ADMIN gets all permissions
     if (isAdmin) {
@@ -130,8 +134,8 @@ export const getModulePermissions = async (
 
     const permissionSet = new Set<string>();
 
-    // SUPER_ADMIN gets all module permissions
-    if (req.user.role === Role.SUPER_ADMIN) {
+    // SUPER_ADMIN gets all module permissions (recognised on either axis).
+    if (isSuperAdmin({ role: req.user.role, roleSlug: req.user.roleSlug })) {
       const allPerms = await prisma.permission.findMany({
         where: { module },
         select: { key: true },
@@ -218,10 +222,9 @@ export const checkUserPermission = async (
     }
 
     const userId = req.user.id;
-    const userRole = req.user.role;
 
-    // Admin bypass
-    if (userRole === Role.SUPER_ADMIN) {
+    // Admin bypass (recognised on either axis: enum bucket OR slug).
+    if (isSuperAdmin({ role: req.user.role, roleSlug: req.user.roleSlug })) {
       return successResponse(res, { hasPermission: true, permission });
     }
 
