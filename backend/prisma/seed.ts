@@ -210,6 +210,11 @@ async function main() {
       skipDuplicates: true
     });
 
+    await tx.user.update({
+      where: { id: superAdmin.id },
+      data: { roleId: superAdminRole.id }
+    });
+
     // Editable dynamic roles. `name` is the human-facing (renameable) label;
     // `slug` is the stable identity used by business logic; `permKey` selects
     // the default permission set from SEED_ROLE_PERMISSIONS (underscore form).

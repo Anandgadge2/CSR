@@ -977,10 +977,12 @@ export const createOrgRole = async (req: AuthenticatedRequest, res: Response, ne
   try {
     const permissionKeys: string[] = req.body.permissionKeys || [];
     const permissions = await prisma.permission.findMany({ where: { key: { in: permissionKeys } } });
+    const slug = req.body.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const role = await prisma.organizationRole.create({
       data: {
         organizationId: req.user?.organizationId || null,
         name: req.body.name,
+        slug,
         description: req.body.description,
         scope: RoleScope.ORGANIZATION,
         createdBy: req.user?.id,

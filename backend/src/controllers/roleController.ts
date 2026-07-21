@@ -156,9 +156,12 @@ export const createRole = async (
       where: { key: { in: permissions } },
       select: { id: true } });
 
+    const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
     const newRole = await prisma.organizationRole.create({
       data: {
         name: name.trim(),
+        slug,
         description,
         scope: scope as RoleScope,
         isSystemRole: false,
@@ -329,9 +332,12 @@ export const cloneRole = async (
       return validationErrorResponse(res, `Role '${newName}' already exists in this context`);
     }
 
+    const slug = newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
     const cloned = await prisma.organizationRole.create({
       data: {
         name: newName.trim(),
+        slug,
         description: newDescription || `Clone of ${sourceRole.name}. ${sourceRole.description || ""}`,
         scope: sourceRole.scope,
         isSystemRole: false,

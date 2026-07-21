@@ -5,6 +5,7 @@ import { QueryProvider } from "@/lib/queryProvider";
 import { SmoothScrollProvider } from "@/hooks/useSmoothScroll";
 import SaaSLayout from "@/components/SaaSLayout";
 import SessionExpiredModal from "@/components/auth/SessionExpiredModal";
+import { PermissionInitializer } from "@/components/auth/PermissionInitializer";
 
 export const metadata: Metadata = {
   title: "MahaCSR | CSR Facilitation & Monitoring Portal",
@@ -30,7 +31,14 @@ export default function RootLayout({
       <body className="antialiased min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
         <QueryProvider>
           <SmoothScrollProvider>
-            <SaaSLayout>{children}</SaaSLayout>
+            {/* Fetches /auth/permissions once authenticated and hydrates the
+                auth store (isAdmin, permissions). Without this mounted, the
+                store's isAdmin stays false and permissions stays empty for the
+                whole session, which starves the sidebar and triggers the
+                "Access restricted" screen even for SUPER_ADMIN. */}
+            <PermissionInitializer>
+              <SaaSLayout>{children}</SaaSLayout>
+            </PermissionInitializer>
             <SessionExpiredModal />
           </SmoothScrollProvider>
         </QueryProvider>

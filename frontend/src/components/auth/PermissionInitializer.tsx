@@ -21,11 +21,12 @@ import { fetchUserPermissions } from "@/lib/api";
  * ```
  */
 export function PermissionInitializer({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, setPermissions, setLoadingPermissions, permissions } = useAuthStore();
+  const { isAuthenticated, setPermissions, setLoadingPermissions, permissions = [] } = useAuthStore();
+  const permissionsCount = permissions?.length || 0;
 
   useEffect(() => {
     // Load permissions if authenticated and not already loaded
-    if (isAuthenticated && permissions.length === 0) {
+    if (isAuthenticated && permissionsCount === 0) {
       const loadPermissions = async () => {
         setLoadingPermissions(true);
         try {
@@ -40,7 +41,7 @@ export function PermissionInitializer({ children }: { children: React.ReactNode 
 
       loadPermissions();
     }
-  }, [isAuthenticated, permissions.length, setPermissions, setLoadingPermissions]);
+  }, [isAuthenticated, permissionsCount, setPermissions, setLoadingPermissions]);
 
   return <>{children}</>;
 }
@@ -49,10 +50,11 @@ export function PermissionInitializer({ children }: { children: React.ReactNode 
  * Hook to initialize permissions (alternative to component)
  */
 export function useInitializePermissions() {
-  const { isAuthenticated, setPermissions, setLoadingPermissions, permissions } = useAuthStore();
+  const { isAuthenticated, setPermissions, setLoadingPermissions, permissions = [] } = useAuthStore();
+  const permissionsCount = permissions?.length || 0;
 
   useEffect(() => {
-    if (isAuthenticated && permissions.length === 0) {
+    if (isAuthenticated && permissionsCount === 0) {
       const loadPermissions = async () => {
         setLoadingPermissions(true);
         try {
@@ -67,7 +69,7 @@ export function useInitializePermissions() {
 
       loadPermissions();
     }
-  }, [isAuthenticated, permissions.length, setPermissions, setLoadingPermissions]);
+  }, [isAuthenticated, permissionsCount, setPermissions, setLoadingPermissions]);
 }
 
 /**

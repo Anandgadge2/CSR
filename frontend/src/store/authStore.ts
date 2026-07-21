@@ -61,7 +61,20 @@ export const useAuthStore = create<AuthState>()(
       isAdmin: false,
       isLoadingPermissions: false,
 
-      login: (user) => set({ user, isAuthenticated: true }),
+      // Reset any persisted permission state on login so the
+      // PermissionInitializer (guarded on permissions.length === 0) always
+      // re-fetches fresh grants for the newly authenticated user. Without this,
+      // a stale cached isAdmin/permissions set from a previous session (or a
+      // pre-fix backend) sticks and blocks pages the user should now see.
+      login: (user) => set({
+        user,
+        isAuthenticated: true,
+        permissions: [],
+        roles: [],
+        roleDetails: [],
+        isAdmin: false,
+        isLoadingPermissions: false,
+      }),
       
       logout: () => set({
         user: null,

@@ -286,6 +286,35 @@ export function resolveNavItems(params: {
   const { role, pathname, organizationType } = params;
   const roleIs = (...roles: string[]) => Boolean(role && roles.includes(role));
 
+  if (roleIs("SUPER_ADMIN", "super-admin")) {
+    const allMenus = [
+      ...adminItems,
+      ...departmentItems,
+      ...companyItems,
+      ...ngoOrganizationItems,
+      ...rmItems,
+      ...jsItems,
+      ...secretaryItems,
+      ...stateCellItems,
+      ...nodalItems,
+      ...partnerItems,
+      ...agencyItems,
+      ...districtItems,
+      ...portalAdminItems,
+      ...masterItems,
+      ...genericDashboardItems
+    ];
+    const seen = new Set<string>();
+    const uniqueItems: NavItem[] = [];
+    for (const item of allMenus) {
+      if (!seen.has(item.href)) {
+        seen.add(item.href);
+        uniqueItems.push(item);
+      }
+    }
+    return uniqueItems;
+  }
+
   // 1. Fixed-role menus (original `if (storedRole)` early returns).
   if (role && ROLE_NAV[role]) {
     return ROLE_NAV[role];
