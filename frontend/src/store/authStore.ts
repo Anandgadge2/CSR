@@ -7,7 +7,11 @@ export interface PermissionData {
   roles: string[];
   roleDetails: {
     id: string;
+    /** Canonical stable numeric id — the routing/identity key (never renamed). */
+    numericId?: number | null;
     name: string;
+    /** Stable machine slug for logic checks (never renamed). */
+    slug?: string | null;
     scope: string;
     isSystemRole: boolean;
   }[];
@@ -18,6 +22,12 @@ interface UserProfile {
   id: string;
   email: string;
   role: string;
+  /** Canonical stable numeric id of the dynamic role — the routing key. */
+  roleNumericId?: number | null;
+  /** Stable machine slug of the dynamic role — routing fallback / logic checks. */
+  roleSlug?: string | null;
+  /** Dynamic role display name — label only, NEVER route on this. */
+  dynamicRole?: string | null;
   ngoId?: string | null;
   companyId?: string | null;
   assignedDistrict?: string | null;

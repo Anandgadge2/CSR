@@ -16,6 +16,7 @@ import { useAuthStore } from "@/store/authStore";
 import PageGuard from "@/components/auth/PageGuard";
 import { isNavItemVisible } from "@/lib/pageRegistry";
 import { resolveNavItems, type NavItem } from "@/lib/navRegistry";
+import { resolveDashboardPath } from "@/lib/roleRouting";
 
 interface SaaSLayoutProps {
   children: React.ReactNode;
@@ -290,21 +291,18 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         pathname.startsWith("/track");
 
       if (!allowed) {
-        const primaryRole = activeRoles.find(r => r !== "GOVERNMENT_OFFICER" && r !== "CORPORATE_USER") || activeRoles[0];
-        if (["NGO_ADMIN", "NGO_MEMBER"].includes(primaryRole)) router.push("/ngo/dashboard");
-        else if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(primaryRole)) router.push("/company/dashboard");
-        else if (primaryRole === "CORPORATE_USER") router.push("/partner/dashboard");
-        else if (primaryRole === "SUPER_ADMIN") router.push("/admin");
-        else if (primaryRole === "DISTRICT_ADMIN") router.push("/district/dashboard");
-        else if (primaryRole === "PORTAL_ADMIN") router.push("/government-portal");
-        else if (primaryRole === "BENEFICIARY_AGENCY") router.push("/department/dashboard");
-        else if (primaryRole === "CSR_RELATIONSHIP_MANAGER") router.push("/rm/dashboard");
-        else if (primaryRole === "JOINT_SECRETARY") router.push("/js/dashboard");
-        else if (primaryRole === "PLANNING_SECRETARY") router.push("/secretary/dashboard");
-        else if (["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"].includes(primaryRole)) router.push("/nodal/dashboard");
-        else if (primaryRole === "STATE_CSR_CELL") router.push("/state-cell/dashboard");
-        else if (primaryRole === "IMPLEMENTING_AGENCY_USER") router.push("/agency/dashboard");
-        else router.push("/");
+        // Route to the user's home dashboard by CANONICAL identity
+        // (numericId → slug → base enum), never by role name. See roleRouting.ts.
+        router.push(
+          resolveDashboardPath(
+            {
+              roleNumericId: user.roleNumericId,
+              roleSlug: user.roleSlug,
+              role: user.role,
+            },
+            "/"
+          )
+        );
       }
     }
   }, [mounted, isDashboard, pathname, router]);
@@ -335,21 +333,17 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     router.push("/login");
   };
 
-  const getDashboardHref = (role: string): string => {
-    if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) return "/ngo/dashboard";
-    if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) return "/company/dashboard";
-    if (["CORPORATE_USER", "CORPORATE_PARTNER"].includes(role)) return "/partner/dashboard";
-    if (["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) return "/admin/dashboard";
-    if (role === "DISTRICT_ADMIN") return "/district/dashboard";
-    if (role === "BENEFICIARY_AGENCY") return "/department/dashboard";
-    if (role === "PLANNING_SECRETARY") return "/secretary/dashboard";
-    if (role === "JOINT_SECRETARY") return "/js/dashboard";
-    if (role === "CSR_RELATIONSHIP_MANAGER") return "/rm/dashboard";
-    if (["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"].includes(role)) return "/nodal/dashboard";
-    if (role === "STATE_CSR_CELL") return "/state-cell/dashboard";
-    if (role === "IMPLEMENTING_AGENCY_USER") return "/agency/dashboard";
-    return "/";
-  };
+  // Resolve the brand-link destination off the CANONICAL role identity
+  // (numericId → slug → base enum), never the role name. See roleRouting.ts.
+  const getDashboardHref = (): string =>
+    resolveDashboardPath(
+      {
+        roleNumericId: storedUser?.roleNumericId,
+        roleSlug: storedUser?.roleSlug,
+        role: storedUser?.role,
+      },
+      "/"
+    );
 
   const storedUser = typeof window !== "undefined" ? getStoredUser() : null;
   const activeRoles = (storeRoles || []).length > 0 ? storeRoles : (storedUser?.role ? [storedUser.role] : []);
@@ -422,7 +416,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 <Menu size={20} />
               </button>
 
-              <Link href={getDashboardHref(storedRole || "")} className="flex min-w-0 items-center gap-3 hover:no-underline">
+              <Link href={getDashboardHref()} className="flex min-w-0 items-center gap-3 hover:no-underline">
                 <svg viewBox="0 0 100 100" className="w-9 h-9" fill="none" stroke="currentColor">
                   <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="var(--primary)" strokeWidth="4.5" fill="var(--primary-light)" />
                   <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="var(--saffron)" strokeWidth="3" strokeLinecap="round" />

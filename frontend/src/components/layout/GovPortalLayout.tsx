@@ -207,22 +207,6 @@ export default function GovPortalLayout({ children, userRole, showSidebar }: Gov
     return "PUBLIC";
   };
 
-  const getDashboardHref = (role: string): string => {
-    if (["NGO_ADMIN", "NGO_MEMBER"].includes(role)) return "/ngo/dashboard";
-    if (["COMPANY_ADMIN", "COMPANY_MEMBER"].includes(role)) return "/company/dashboard";
-    if (["CORPORATE_USER", "CORPORATE_PARTNER"].includes(role)) return "/partner/dashboard";
-    if (["SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(role)) return "/admin/dashboard";
-    if (role === "DISTRICT_ADMIN") return "/district/dashboard";
-    if (role === "BENEFICIARY_AGENCY") return "/department/dashboard";
-    if (role === "PLANNING_SECRETARY") return "/secretary/dashboard";
-    if (role === "JOINT_SECRETARY") return "/js/dashboard";
-    if (role === "CSR_RELATIONSHIP_MANAGER") return "/rm/dashboard";
-    if (["DISTRICT_NODAL_OFFICER", "NODAL_OFFICER"].includes(role)) return "/nodal/dashboard";
-    if (role === "STATE_CSR_CELL") return "/state-cell/dashboard";
-    if (role === "IMPLEMENTING_AGENCY_USER") return "/agency/dashboard";
-    return "/";
-  };
-
   const [role, setRole] = useState<string>(
     userRole || getDefaultRoleFromPath(pathname || "")
   );

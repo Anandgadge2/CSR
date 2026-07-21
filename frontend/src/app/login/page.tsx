@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, LogIn, AlertCircle } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
+import { resolveDashboardPath } from "@/lib/roleRouting";
 import { API_BASE_URL, clearApiCache } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -76,47 +77,28 @@ function LoginForm() {
         return;
       }
 
-      // The base `role` enum only distinguishes SUPER_ADMIN / GOVERNMENT_OFFICER /
-      // CORPORATE_USER. Workflow personas (Joint Secretary, Nodal Officer, etc.)
-      // are dynamic RBAC roles carried in `user.dynamicRole`. Route on either, and
-      // normalise so both the enum form ("JOINT_SECRETARY") and the human name
-      // ("Joint Secretary") resolve to the same destination.
+      // Route on the CANONICAL role identity (numericId → slug → base enum),
+      // never on the role name — names are editable labels (see roleRouting.ts).
+      // The login response carries `roleNumericId` / `roleSlug` for exactly this.
       const onboardingStatus = user.organization?.onboardingStatus;
-      const normalise = (v?: string | null) =>
-        (v || "").toUpperCase().replace(/[\s-]+/g, "_");
-      const roleKey = normalise(user.role);
-      const dynamicKey = normalise(user.dynamicRole);
-      const matches = (...keys: string[]) =>
-        keys.includes(roleKey) || keys.includes(dynamicKey);
+      const dest = resolveDashboardPath(
+        {
+          roleNumericId: user.roleNumericId,
+          roleSlug: user.roleSlug,
+          role: user.role,
+        },
+        "/"
+      );
 
-      const isAdmin = matches("SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN", "DISTRICT_ADMIN");
-
-      if (matches("CSR_RELATIONSHIP_MANAGER", "RELATIONSHIP_MANAGER")) {
-        router.push("/rm/dashboard");
-      } else if (matches("JOINT_SECRETARY")) {
-        router.push("/js/dashboard");
-      } else if (matches("PLANNING_SECRETARY")) {
-        router.push("/secretary/escalations");
-      } else if (matches("STATE_CSR_CELL")) {
-        router.push("/state-cell/dashboard");
-      } else if (matches("DISTRICT_NODAL_OFFICER", "DISTRICT_NODAL_CONSULTANT")) {
-        router.push("/nodal/dashboard");
-      } else if (matches("IMPLEMENTING_AGENCY_USER")) {
-        router.push("/convergence-projects");
-      } else if (isAdmin) {
-        router.push("/admin/dashboard");
-      } else if (matches("CORPORATE_USER")) {
-        router.push("/partner/dashboard");
-      } else if (onboardingStatus && onboardingStatus !== "APPROVED") {
+      // Org users (company/department/ngo) that haven't been approved yet are
+      // sent to their onboarding-status screen instead of the dashboard. This
+      // gate applies only to the org-scoped personas, never to internal staff
+      // (secretary/JS/nodal/RM) or the super admin.
+      const orgPersonaDests = ["/company/dashboard", "/department/dashboard", "/ngo/dashboard"];
+      if (onboardingStatus && onboardingStatus !== "APPROVED" && orgPersonaDests.includes(dest)) {
         router.push("/organization/onboarding/status");
-      } else if (matches("NGO_ADMIN", "NGO_MEMBER")) {
-        router.push("/ngo/dashboard");
-      } else if (matches("COMPANY_ADMIN", "COMPANY_MEMBER")) {
-        router.push("/company/dashboard");
-      } else if (matches("BENEFICIARY_AGENCY")) {
-        router.push("/department/dashboard");
       } else {
-        router.push("/");
+        router.push(dest);
       }
       setLoginSuccess(true);
     } catch (err: any) {

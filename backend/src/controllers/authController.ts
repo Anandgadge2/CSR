@@ -456,8 +456,14 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       roleId: user.roleId,
       // Dynamic (RBAC) role name — the base `role` enum is only SUPER_ADMIN /
       // GOVERNMENT_OFFICER / CORPORATE_USER, so workflow personas (Joint
-      // Secretary, District Nodal Officer, etc.) live here. Clients route on this.
+      // Secretary, District Nodal Officer, etc.) live here. Kept for display
+      // only — NEVER route on the name (it is an editable label).
       dynamicRole: user.roleRelation?.name || null,
+      // Canonical routing/identity keys. `roleNumericId` is the stable numeric
+      // id (never changes on rename) and is what clients route on; `roleSlug`
+      // is the stable machine key used as a fallback for not-yet-seeded roles.
+      roleNumericId: user.roleRelation?.numericId ?? null,
+      roleSlug: user.roleRelation?.slug ?? null,
       organizationId: user.organizationId,
       accountStatus: user.accountStatus,
       organization,

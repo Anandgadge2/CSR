@@ -67,13 +67,16 @@ export const getCurrentUserPermissions = async (
       });
     });
 
-    // Build role list
-    const roles: { id: string; numericId: number; name: string; scope: string; isSystemRole: boolean }[] = [];
+    // Build role list. `numericId` (canonical routing key) and `slug` (stable
+    // machine key) are what clients route/gate on — role NAMES are editable
+    // labels and must never drive behavior.
+    const roles: { id: string; numericId: number; slug: string | null; name: string; scope: string; isSystemRole: boolean }[] = [];
 
     if (user?.roleRelation) {
       roles.push({
         id: user.roleRelation.id,
         numericId: (user.roleRelation as any).numericId,
+        slug: (user.roleRelation as any).slug ?? null,
         name: user.roleRelation.name,
         scope: user.roleRelation.scope,
         isSystemRole: user.roleRelation.isSystemRole,
@@ -85,6 +88,7 @@ export const getCurrentUserPermissions = async (
         roles.push({
           id: assignment.role.id,
           numericId: (assignment.role as any).numericId,
+          slug: (assignment.role as any).slug ?? null,
           name: assignment.role.name,
           scope: assignment.role.scope,
           isSystemRole: assignment.role.isSystemRole,
