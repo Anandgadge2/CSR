@@ -33,7 +33,7 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     // Route not governed by the registry → always allow.
     if (!slug) return { allowed: true as const, slug: null };
     if (isAdmin) return { allowed: true as const, slug };
-    const allowed = permissions.includes(pageViewKey(slug));
+    const allowed = Array.isArray(permissions) && permissions.includes(pageViewKey(slug));
     return { allowed, slug };
   }, [pathname, isAdmin, permissions]);
 

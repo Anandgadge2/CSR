@@ -16,6 +16,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   // Warm up the serverless database connection in the background on mount
   useEffect(() => {
@@ -71,6 +72,7 @@ function LoginForm() {
       const nextPath = searchParams.get("next") || searchParams.get("redirect");
       if (nextPath?.startsWith("/")) {
         router.push(nextPath);
+        setLoginSuccess(true);
         return;
       }
 
@@ -116,15 +118,22 @@ function LoginForm() {
       } else {
         router.push("/");
       }
+      setLoginSuccess(true);
     } catch (err: any) {
       setError(err.message || "An error occurred during authentication");
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="flex-grow flex items-center justify-center px-6 py-20 bg-slate-50 text-slate-800 min-h-screen relative overflow-hidden">
+      {loading && loginSuccess && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center gap-4 text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+          <div className="text-sm font-semibold tracking-wide">Initializing your workspace...</div>
+          <div className="text-xs text-slate-300">Loading dashboard resources, please wait</div>
+        </div>
+      )}
       {/* Decorative gradient blobs */}
       <div className="absolute top-0 -left-4 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" />
       <div className="absolute bottom-0 -right-4 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style={{ animationDelay: "2s" }} />

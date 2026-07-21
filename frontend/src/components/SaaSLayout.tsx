@@ -696,7 +696,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             }`}
           >
             {/* Navigation Links */}
-            <div className="flex flex-col gap-0.5 px-2 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
+            <div className="flex-grow min-h-0 overflow-y-auto flex flex-col gap-0.5 px-2 pr-1">
               {dashboardNavigationItems.map((item) => {
                 const isExact = pathname === item.href ||
                                 (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||

@@ -182,27 +182,57 @@ export interface CheckPermissionResponse {
 }
 
 /**
- * Fetch current user's permissions from the server
+ * Fetch current user's permissions from the server.
+ *
+ * The backend wraps every payload in a `{ success, data, message }` envelope
+ * (see successResponse). apiFetch returns that raw envelope, so we must read
+ * `.data` here — otherwise callers get { permissions: undefined, ... } and
+ * downstream `permissions.includes(...)` throws. The `?? []` / `?? false`
+ * fallbacks guarantee the shape even if the response is malformed.
  */
 export const fetchUserPermissions = async (): Promise<PermissionResponse> => {
-  return apiFetch<PermissionResponse>("/auth/permissions");
+  const res = await apiFetch<{ success: boolean; data?: Partial<PermissionResponse> }>(
+    "/auth/permissions"
+  );
+  const data = res?.data ?? {};
+  return {
+    permissions: data.permissions ?? [],
+    roles: data.roles ?? [],
+    roleDetails: data.roleDetails ?? [],
+    isAdmin: data.isAdmin ?? false,
+  };
 };
 
 /**
  * Fetch permissions for a specific module
  */
 export const fetchModulePermissions = async (module: string): Promise<ModulePermissionResponse> => {
-  return apiFetch<ModulePermissionResponse>(`/auth/permissions/${module}`);
+  const res = await apiFetch<{ success: boolean; data?: Partial<ModulePermissionResponse> }>(
+    `/auth/permissions/${module}`
+  );
+  const data = res?.data ?? {};
+  return {
+    module: data.module ?? module,
+    permissions: data.permissions ?? [],
+  };
 };
 
 /**
  * Check if user has a specific permission
  */
 export const checkPermission = async (permission: string): Promise<CheckPermissionResponse> => {
-  return apiFetch<CheckPermissionResponse>("/auth/check-permission", {
-    method: "POST",
-    body: JSON.stringify({ permission }),
-  });
+  const res = await apiFetch<{ success: boolean; data?: Partial<CheckPermissionResponse> }>(
+    "/auth/check-permission",
+    {
+      method: "POST",
+      body: JSON.stringify({ permission }),
+    }
+  );
+  const data = res?.data ?? {};
+  return {
+    hasPermission: data.hasPermission ?? false,
+    permission: data.permission ?? permission,
+  };
 };
 
 // ─── JS assignment cascade (District → District Nodal Consultant) ───────────
