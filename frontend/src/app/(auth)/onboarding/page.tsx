@@ -17,7 +17,7 @@ import {
   csrSectors,
   maharashtraDistricts,
 } from "@/modules/onboarding/onboardingConfig";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface FormState {
   // Account & Contact

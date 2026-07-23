@@ -34,8 +34,15 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     const slug = pageSlugForPath(pathname || "");
     // Route not governed by the registry → always allow.
     if (!slug) return { allowed: true as const, slug: null };
-    if (isAdmin) return { allowed: true as const, slug };
-    const allowed = Array.isArray(permissions) && permissions.includes(pageViewKey(slug));
+    // Dashboard, Profile, Settings are universal for all authenticated users
+    if (isAdmin || slug === "dashboard" || slug === "profile" || slug === "settings") {
+      return { allowed: true as const, slug };
+    }
+    const allowed =
+      Array.isArray(permissions) &&
+      (permissions.includes(pageViewKey(slug)) ||
+        permissions.includes(`${slug}:view`) ||
+        permissions.includes("*"));
     return { allowed, slug };
   }, [pathname, isAdmin, permissions]);
 

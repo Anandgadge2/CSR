@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { Skeleton } from "../ui/Skeleton";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface Column {
   key: string;

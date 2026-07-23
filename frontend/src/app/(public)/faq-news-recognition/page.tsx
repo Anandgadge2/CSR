@@ -6,7 +6,7 @@ import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardBody } from "@/components/gov/GovCard";
 import GovInput from "@/components/gov/GovInput";
 import faqsData from "./faqs_data.json";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 type FAQCategory = "General FAQs" | "Corporate" | "Implementing Agency" | "FAQs on CSR Provisions";
 

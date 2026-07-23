@@ -9,7 +9,7 @@ import GovInput from "@/components/gov/GovInput";
 import GovSelect from "@/components/gov/GovSelect";
 import GovTextarea from "@/components/gov/GovTextarea";
 import GovAlert from "@/components/gov/GovAlert";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 export default function KnowledgeCenter() {
   const [ticketForm, setTicketForm] = useState({ name: "", email: "", type: "NGO", query: "" });

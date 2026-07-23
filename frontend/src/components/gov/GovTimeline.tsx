@@ -1,6 +1,6 @@
 "use client";
 
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 export interface TimelineStep {
   label: string;

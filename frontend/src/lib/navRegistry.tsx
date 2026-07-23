@@ -46,9 +46,6 @@ const departmentItems: NavItem[] = [
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
   { label: "Handover", href: "/handover", icon: Layers },
   { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
-  { label: "Users", href: "/organization/users", icon: Users, requiredPermission: "user:update" },
-  { label: "Roles", href: "/organization/roles", icon: ShieldAlert, requiredPermission: "role:view" },
-  { label: "Settings", href: "/organization/settings", icon: ShieldCheck },
 ];
 
 const companyItems: NavItem[] = [
@@ -63,9 +60,6 @@ const companyItems: NavItem[] = [
   { label: "Funded Projects", href: "/convergence-projects", icon: ShieldCheck },
   { label: "Fund Releases", href: "/fund-releases", icon: Coins, featureKey: "enableFundDisbursement" },
   { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
-  { label: "Users", href: "/organization/users", icon: Users, requiredPermission: "user:update" },
-  { label: "Roles", href: "/organization/roles", icon: ShieldAlert, requiredPermission: "role:view" },
-  { label: "Settings", href: "/organization/settings", icon: ShieldCheck },
 ];
 
 const ngoOrganizationItems: NavItem[] = [
@@ -77,9 +71,6 @@ const ngoOrganizationItems: NavItem[] = [
   { label: "Milestones", href: "/ngo/milestones", icon: Award, featureKey: "enableMilestoneMonitoring" },
   { label: "Fund Releases", href: "/fund-releases", icon: Coins, featureKey: "enableFundDisbursement" },
   { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
-  { label: "Users", href: "/organization/users", icon: Users, requiredPermission: "user:update" },
-  { label: "Roles", href: "/organization/roles", icon: ShieldAlert, requiredPermission: "role:view" },
-  { label: "Settings", href: "/organization/settings", icon: ShieldCheck },
 ];
 
 const rmItems: NavItem[] = [

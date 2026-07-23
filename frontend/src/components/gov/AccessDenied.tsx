@@ -1,7 +1,7 @@
 "use client";
 
 import GovPortalLayout from "../layout/GovPortalLayout";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface AccessDeniedProps {
   requiredRoles?: string[];

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 import { QueryProvider } from "@/lib/queryProvider";
 import { SmoothScrollProvider } from "@/hooks/useSmoothScroll";
 import SaaSLayout from "@/components/SaaSLayout";

@@ -6,6 +6,7 @@ const router = Router();
 router.use(authenticateToken);
 
 router.get("/", getDashboardSummary);
+router.get("/summary", getDashboardSummary);
 router.get("/widgets", getDashboardWidgets);
 
 export default router;

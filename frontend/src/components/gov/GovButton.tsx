@@ -1,5 +1,5 @@
 import { ReactNode, ButtonHTMLAttributes } from "react";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface GovButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;

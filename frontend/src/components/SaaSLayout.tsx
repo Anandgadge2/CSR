@@ -194,6 +194,19 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       pathname.startsWith("/nodal") ||
                       pathname.startsWith("/state-cell") ||
                       pathname.startsWith("/agency") ||
+                      pathname.startsWith("/enquiries") ||
+                      pathname.startsWith("/pitches") ||
+                      pathname.startsWith("/interests") ||
+                      pathname.startsWith("/assessments") ||
+                      pathname.startsWith("/companies") ||
+                      pathname.startsWith("/agencies") ||
+                      pathname.startsWith("/requirements") ||
+                      pathname.startsWith("/handover") ||
+                      pathname.startsWith("/inspections") ||
+                      pathname.startsWith("/escalations") ||
+                      pathname.startsWith("/decisions") ||
+                      pathname.startsWith("/nodal-appointments") ||
+                      pathname.startsWith("/helpdesk") ||
                       (pathname === "/partner" || pathname.startsWith("/partner/")) ||
                       pathname.startsWith("/grievances") ||
                       pathname.startsWith("/convergence-projects") ||

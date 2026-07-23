@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { motion } from "framer-motion";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface GovPageShellProps {
   breadcrumb: string;

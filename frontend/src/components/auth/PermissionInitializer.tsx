@@ -27,19 +27,37 @@ export function PermissionInitializer({ children }: { children: React.ReactNode 
   useEffect(() => {
     // Load permissions if authenticated and not already loaded
     if (isAuthenticated && permissionsCount === 0) {
+      let isMounted = true;
+      const timeoutId = setTimeout(() => {
+        if (isMounted) {
+          console.warn("[PermissionInitializer] Permission loading timed out. Unblocking UI.");
+          setLoadingPermissions(false);
+        }
+      }, 5000);
+
       const loadPermissions = async () => {
         setLoadingPermissions(true);
         try {
           const data = await fetchUserPermissions();
-          setPermissions(data);
+          if (isMounted) {
+            setPermissions(data);
+          }
         } catch (error) {
           console.error("Failed to load permissions:", error);
         } finally {
-          setLoadingPermissions(false);
+          if (isMounted) {
+            clearTimeout(timeoutId);
+            setLoadingPermissions(false);
+          }
         }
       };
 
       loadPermissions();
+
+      return () => {
+        isMounted = false;
+        clearTimeout(timeoutId);
+      };
     }
   }, [isAuthenticated, permissionsCount, setPermissions, setLoadingPermissions]);
 

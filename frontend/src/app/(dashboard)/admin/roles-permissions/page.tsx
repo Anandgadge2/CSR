@@ -8,7 +8,7 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovButton from "@/components/gov/GovButton";
 import GovInput from "@/components/gov/GovInput";
 import GovModal from "@/components/gov/GovModal";
-import "../../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 type Permission = {
   id: string;

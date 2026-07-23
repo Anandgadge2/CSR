@@ -23,7 +23,15 @@ export default function DashboardEngine() {
     }
   );
 
-  const summary = summaryEnvelope?.data || null;
+  const rawData: any = (summaryEnvelope as any)?.data || summaryEnvelope;
+  const summary: DashboardSummary = {
+    generatedAt: rawData?.generatedAt || new Date().toISOString(),
+    permissions: rawData?.permissions || {},
+    kpis: Array.isArray(rawData?.kpis) ? rawData.kpis : [],
+    pendingApprovals: rawData?.pendingApprovals || 0,
+    openEscalations: rawData?.openEscalations || 0,
+    recentActivity: Array.isArray(rawData?.recentActivity) ? rawData.recentActivity : [],
+  };
 
   if (isLoading) {
     return (
@@ -33,7 +41,7 @@ export default function DashboardEngine() {
     );
   }
 
-  if (error || !summary) {
+  if (error || !rawData) {
     return (
       <div style={{ padding: 24, color: "#b91c1c" }}>
         {error instanceof Error ? error.message : "No dashboard data available."}
@@ -48,7 +56,7 @@ export default function DashboardEngine() {
   const quickActions = visibleByPermission(QUICK_ACTIONS, summary);
 
   // Map KPI values by key from the (already scoped + permission-filtered) summary.
-  const kpiValues = new Map(summary.kpis.map((k) => [k.key, k]));
+  const kpiValues = new Map((summary.kpis || []).map((k) => [k.key, k]));
 
   return (
     <div className="space-y-6">

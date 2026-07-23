@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect } from "react";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface GovModalProps {
   open: boolean;

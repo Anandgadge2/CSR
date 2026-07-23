@@ -1,5 +1,5 @@
 import { ReactNode, CSSProperties } from "react";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 export interface GovCardProps {
   children: ReactNode;

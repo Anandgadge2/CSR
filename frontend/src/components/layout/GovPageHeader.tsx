@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 interface GovPageHeaderProps {
   title: string;

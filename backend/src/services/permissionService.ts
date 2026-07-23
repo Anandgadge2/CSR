@@ -66,6 +66,12 @@ export async function computeUserPermissions(principal: {
   const { userId, role, roleId, organizationId } = principal;
   const permissionSet = new Set<string>();
 
+  // Baseline permissions for all authenticated users
+  permissionSet.add("page:dashboard:view");
+  permissionSet.add("dashboard:view");
+  permissionSet.add("page:profile:view");
+  permissionSet.add("page:settings:view");
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {

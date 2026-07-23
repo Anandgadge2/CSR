@@ -46,8 +46,6 @@ export const PAGE_REGISTRY: PageDef[] = [
   { slug: "funds", label: "Fund Monitoring", route: "/admin/fund-monitoring", group: "Workflow" },
 
   // Organization self-service
-  { slug: "org-users", label: "Organization Users", route: "/organization/users", group: "Organization" },
-  { slug: "org-roles", label: "Organization Roles", route: "/organization/roles", group: "Organization" },
   { slug: "org-onboarding", label: "Organization Onboarding", route: "/organization/onboarding", group: "Organization" },
   { slug: "sub-logins", label: "Implementing Agency Logins", route: "/organization/sub-logins", group: "Organization" },
 ];

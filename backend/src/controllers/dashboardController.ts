@@ -4,14 +4,94 @@ import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 
 export const getDashboardSummary = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const totalProjects = await prisma.project.count();
-    const totalOrgs = await prisma.organization.count();
-    const totalUsers = await prisma.user.count();
+    let totalProjects = 0;
+    try {
+      totalProjects = await (prisma as any).convergenceProject?.count() ?? await (prisma as any).project?.count() ?? 0;
+    } catch {
+      totalProjects = 0;
+    }
 
-    return res.json({
+    let totalOrgs = 0;
+    try {
+      totalOrgs = await prisma.organization.count();
+    } catch {
+      totalOrgs = 0;
+    }
+
+    let totalUsers = 0;
+    try {
+      totalUsers = await prisma.user.count();
+    } catch {
+      totalUsers = 0;
+    }
+
+    let pendingApprovals = 0;
+    try {
+      pendingApprovals = await prisma.organization.count({
+        where: { status: "REGISTERED" }
+      });
+    } catch {
+      pendingApprovals = 0;
+    }
+
+    let openEscalations = 0;
+    try {
+      openEscalations = await (prisma as any).grievance?.count({ where: { status: "OPEN" } }) ?? 0;
+    } catch {
+      openEscalations = 0;
+    }
+
+    let recentActivity: any[] = [];
+    try {
+      const logs = await (prisma as any).auditLog?.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" }
+      });
+      if (Array.isArray(logs)) {
+        recentActivity = logs.map((l: any) => ({
+          id: l.id,
+          action: l.action || l.event || "Audit Log",
+          entityType: l.entityType || l.resource || "System",
+          createdAt: l.createdAt ? new Date(l.createdAt).toISOString() : new Date().toISOString(),
+          actorRole: l.actorRole || l.userRole || null
+        }));
+      }
+    } catch {
+      recentActivity = [];
+    }
+
+    const permissions: Record<string, boolean> = {
+      "dashboard:view": true,
+      "dashboard:kpis": true,
+      "dashboard:projects": true,
+      "dashboard:approvals": true,
+      "dashboard:escalations": true,
+      "dashboard:activity": true,
+    };
+
+    const kpis = [
+      { key: "totalProjects", label: "Convergence Projects", value: totalProjects },
+      { key: "totalOrgs", label: "Government & Partner Orgs", value: totalOrgs },
+      { key: "totalUsers", label: "Registered Users", value: totalUsers },
+      { key: "pendingApprovals", label: "Pending Approvals", value: pendingApprovals },
+      { key: "openEscalations", label: "Active Escalations", value: openEscalations },
+    ];
+
+    const data = {
+      generatedAt: new Date().toISOString(),
+      permissions,
+      kpis,
+      pendingApprovals,
+      openEscalations,
+      recentActivity,
       totalProjects,
       totalOrgs,
-      totalUsers
+      totalUsers,
+    };
+
+    return res.json({
+      success: true,
+      data,
     });
   } catch (error) {
     next(error);

@@ -6,7 +6,7 @@ import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
 import GovButton from "@/components/gov/GovButton";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 type TabType = "mandate" | "history" | "rules" | "schedule" | "circulars";
 

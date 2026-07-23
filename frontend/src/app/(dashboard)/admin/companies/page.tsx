@@ -11,7 +11,7 @@ import GovInput from "@/components/gov/GovInput";
 import GovSelect from "@/components/gov/GovSelect";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { apiFetch } from "@/lib/api";
-import "../../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 export default function CompaniesPage() {
   const router = useRouter();

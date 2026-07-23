@@ -11,7 +11,7 @@ import GovButton from "@/components/gov/GovButton";
 import GovInput from "@/components/gov/GovInput";
 import GovModal from "@/components/gov/GovModal";
 import GovSelect from "@/components/gov/GovSelect";
-import "../../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 // Base platform roles come from the Prisma enum; everything else is a dynamic
 // OrganizationRole fetched from the RBAC engine — never hardcoded here.

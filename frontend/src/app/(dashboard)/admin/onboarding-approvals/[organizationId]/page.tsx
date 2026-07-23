@@ -2,7 +2,7 @@
 
 import { AdminOrganizationDetailsWorkspace } from "@/components/admin/PlatformAdminWorkspaces";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
-import "../../../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 export default function AdminOnboardingApprovalDetailsPage({ params }: { params: { organizationId: string } }) {
   return (

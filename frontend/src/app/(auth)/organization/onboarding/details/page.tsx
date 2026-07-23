@@ -9,7 +9,7 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovButton from "@/components/gov/GovButton";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { apiFetch } from "@/lib/api";
-import "../../../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 type OrganizationDocument = {
   id: string;

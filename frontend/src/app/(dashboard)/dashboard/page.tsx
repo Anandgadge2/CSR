@@ -15,7 +15,7 @@ import GovPageHeader from "@/components/layout/GovPageHeader";
 import MyAssignmentsWidget from "@/components/assignments/MyAssignmentsWidget";
 import DashboardEngine from "@/components/dashboard/DashboardEngine";
 import { getStoredUser } from "@/lib/api";
-import "../../styles/gov-theme.css";
+import "@/styles/gov-theme.css";
 
 export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string>("");
