@@ -1,28 +1,10 @@
 import { Router } from "express";
-import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkOrganizationApproved, checkPermission } from "../middlewares/accessControlMiddleware";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import { getCSRRequirementById, getMarketplaceRequirements } from "../controllers/csrRequirementController";
-import { expressInterest } from "../controllers/companyInterestController";
 
 const router = Router();
 
-router.get("/requirements", getMarketplaceRequirements);
-router.get("/requirements/:id", authenticateToken, getCSRRequirementById);
-router.post(
-  "/requirements/:id/show-interest",
-  authenticateToken,
-  authorizeRoles([Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.SUPER_ADMIN]),
-  checkOrganizationApproved,
-  checkPermission("interest:create"),
-  (req, _res, next) => {
-    req.body = {
-      ...req.body,
-      csrRequirementId: req.params.id
-    };
-    next();
-  },
-  expressInterest
-);
+router.get("/", getMarketplaceRequirements);
+router.get("/:id", authenticateToken, getCSRRequirementById);
 
 export default router;

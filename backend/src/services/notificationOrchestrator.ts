@@ -1,5 +1,5 @@
 import prisma from "../config/db";
-import { notificationQueue, NotificationJobPayload } from "../workers/notificationWorker";
+import { queueNotification, NotificationJobPayload } from "../workers/notificationWorker";
 
 export interface DispatchInput {
   recipientId: string;
@@ -58,7 +58,7 @@ export async function dispatchToContact(input: ContactDispatchInput): Promise<vo
     notificationType: input.notificationType || "CONTACT_NOTIFICATION"
   };
 
-  await notificationQueue.add("notify", payload);
+  await queueNotification(payload);
 }
 
 function interpolate(text: string, variables: Record<string, any>): string {
@@ -82,7 +82,7 @@ export async function dispatchNotification(input: DispatchInput): Promise<void> 
   });
 
   const subject = template?.subject ? interpolate(template.subject, variables) : input.templateName;
-  const emailBody = template?.emailBody ? interpolate(template.emailBody, variables) : subject;
+  const emailBody = (template?.emailBody || template?.body) ? interpolate(template?.emailBody || template?.body || "", variables) : subject;
   const channels =
     input.channels ||
     ((template?.channels?.length ? template.channels : ["IN_APP", "SOCKET", "EMAIL"]) as NotificationJobPayload["channels"]);
@@ -93,8 +93,10 @@ export async function dispatchNotification(input: DispatchInput): Promise<void> 
     select: {
       id: true,
       email: true,
-      officerProfile: { select: { fullName: true, mobile: true } },
-      beneficiaryProfile: { select: { contactPhone: true } }
+      mobile: true,
+      firstName: true,
+      lastName: true,
+      officerProfile: { select: { fullName: true, mobile: true } }
     }
   });
   const userById = new Map(users.map((u) => [u.id, u]));
@@ -108,13 +110,13 @@ export async function dispatchNotification(input: DispatchInput): Promise<void> 
       recipientEmail: user.email,
       recipientPhone:
         (recipientId === input.recipientId ? (variables.mobile as string) : null) ||
+        user.mobile ||
         user.officerProfile?.mobile ||
-        user.beneficiaryProfile?.contactPhone ||
         null,
       title: subject,
       message: emailBody,
       channels,
-      applicantName: user.officerProfile?.fullName || (variables.recipientName as string) || undefined,
+      applicantName: user.officerProfile?.fullName || (user.firstName ? `${user.firstName} ${user.lastName || ""}` : (variables.recipientName as string)) || undefined,
       currentStatus: (variables.currentStatus as string) || undefined,
       workflowStatus: (variables.workflowStatus as string) || undefined,
       actionButtonUrl: input.actionButtonUrl,
@@ -122,6 +124,6 @@ export async function dispatchNotification(input: DispatchInput): Promise<void> 
       notificationType: input.notificationType || input.templateName
     };
 
-    await notificationQueue.add("notify", payload);
+    await queueNotification(payload);
   }
 }

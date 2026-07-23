@@ -1,34 +1,21 @@
 import prisma from "../config/db";
-import { Role } from "../types/role";
+import { ROLE_ID, getRoleId } from "../types/role";
 import { isSuperAdmin } from "./roleResolver";
 
-/**
- * Single source of truth for permission resolution, shared by the
- * checkPermission middleware and the workflow engine.
- *
- * Resolution is 100 % database-driven:
- * 1. SUPER_ADMIN enum bypass
- * 2. User.roleId → OrganizationRole → OrganizationRolePermission
- * 3. UserOrganizationRole → OrganizationRole → OrganizationRolePermission
- */
 export async function resolveUserPermission(
   userId: string,
   permissionKey: string,
-  options?: { role?: string | null; organizationId?: string | null }
+  options?: { role?: string | number | null; organizationId?: string | null }
 ): Promise<boolean> {
-  const role = options?.role;
+  const roleId = getRoleId(options?.role);
+  if (roleId === ROLE_ID.SUPER_ADMIN) return true;
 
-  // 1. SUPER_ADMIN always passes
-  if (role === Role.SUPER_ADMIN) return true;
-
-  // 2. Check via User.roleId → OrganizationRole → permissions
   const userDirect = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      role: true,
-      roleRelation: {
+      roleId: true,
+      role: {
         select: {
-          status: true,
           rolePermissions: {
             where: { permission: { key: permissionKey } },
             select: { permissionId: true },
@@ -39,25 +26,17 @@ export async function resolveUserPermission(
   });
 
   if (!userDirect) return false;
-  if (userDirect.role === Role.SUPER_ADMIN) return true;
+  if (getRoleId(userDirect.roleId) === ROLE_ID.SUPER_ADMIN) return true;
 
-  if (
-    userDirect.roleRelation &&
-    userDirect.roleRelation.status === "ACTIVE" &&
-    userDirect.roleRelation.rolePermissions.length > 0
-  ) {
+  if (userDirect.role && userDirect.role.rolePermissions.length > 0) {
     return true;
   }
 
-  // 3. Check via UserOrganizationRole → OrganizationRole → permissions
   const count = await prisma.userOrganizationRole.count({
     where: {
       userId,
-      ...(options?.organizationId
-        ? { organizationId: options.organizationId }
-        : {}),
+      ...(options?.organizationId ? { organizationId: options.organizationId } : {}),
       role: {
-        status: "ACTIVE",
         rolePermissions: { some: { permission: { key: permissionKey } } },
       },
     },
@@ -66,49 +45,32 @@ export async function resolveUserPermission(
   return count > 0;
 }
 
-/**
- * Shape returned to clients describing everything they need to gate UI:
- * the flat permission-key set, the role names/details, and the admin flag.
- */
 export interface UserPermissionPayload {
   permissions: string[];
   roles: string[];
   roleDetails: {
-    id: string;
+    id: number;
     numericId: number;
-    slug: string | null;
     name: string;
-    scope: string;
     isSystemRole: boolean;
   }[];
   isAdmin: boolean;
 }
 
-/**
- * Compute a user's FULL effective permission set from both role axes:
- *   1. User.roleId → OrganizationRole.rolePermissions
- *   2. UserOrganizationRole assignments → role.rolePermissions
- *
- * Super Admin (enum bucket OR "super-admin" slug) short-circuits to every
- * permission. This is the single source of truth shared by the login handler
- * (which folds the result into the login response to eliminate the extra
- * /auth/permissions round-trip) and GET /auth/permissions (re-fetch after a
- * role/permission change).
- */
 export async function computeUserPermissions(principal: {
   userId: string;
-  role?: string | null;
-  roleSlug?: string | null;
+  role?: string | number | null;
+  roleId?: number | string | null;
   organizationId?: string | null;
 }): Promise<UserPermissionPayload> {
-  const { userId, role, roleSlug, organizationId } = principal;
+  const { userId, role, roleId, organizationId } = principal;
   const permissionSet = new Set<string>();
 
-  // 1. Permissions from User.roleId → OrganizationRole
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      roleRelation: {
+      roleId: true,
+      role: {
         include: {
           rolePermissions: { include: { permission: true } },
         },
@@ -116,13 +78,12 @@ export async function computeUserPermissions(principal: {
     },
   });
 
-  if (user?.roleRelation) {
-    user.roleRelation.rolePermissions.forEach((rp) => {
+  if (user?.role) {
+    user.role.rolePermissions.forEach((rp) => {
       permissionSet.add(rp.permission.key);
     });
   }
 
-  // 2. Permissions from UserOrganizationRole assignments
   const userOrgRoles = await prisma.userOrganizationRole.findMany({
     where: {
       userId,
@@ -143,35 +104,29 @@ export async function computeUserPermissions(principal: {
     });
   });
 
-  // Build role list (dedup across both axes)
   const roles: UserPermissionPayload["roleDetails"] = [];
 
-  if (user?.roleRelation) {
+  if (user?.role) {
     roles.push({
-      id: user.roleRelation.id,
-      numericId: (user.roleRelation as any).numericId,
-      slug: (user.roleRelation as any).slug ?? null,
-      name: user.roleRelation.name,
-      scope: user.roleRelation.scope,
-      isSystemRole: user.roleRelation.isSystemRole,
+      id: user.role.id,
+      numericId: user.role.id,
+      name: user.role.name,
+      isSystemRole: user.role.isSystemRole,
     });
   }
 
-  userOrgRoles.forEach((assignment) => {
+  userOrgRoles.forEach((assignment: any) => {
     if (!roles.some((r) => r.id === assignment.role.id)) {
       roles.push({
         id: assignment.role.id,
-        numericId: (assignment.role as any).numericId,
-        slug: (assignment.role as any).slug ?? null,
+        numericId: assignment.role.id,
         name: assignment.role.name,
-        scope: assignment.role.scope,
         isSystemRole: assignment.role.isSystemRole,
       });
     }
   });
 
-  // Super Admin recognised on EITHER axis → gets every permission.
-  const isAdmin = isSuperAdmin({ role, roleSlug });
+  const isAdmin = isSuperAdmin({ role: roleId ?? role ?? user?.roleId });
   if (isAdmin) {
     const allPerms = await prisma.permission.findMany({ select: { key: true } });
     allPerms.forEach((p) => permissionSet.add(p.key));

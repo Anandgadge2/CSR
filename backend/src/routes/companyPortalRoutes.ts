@@ -1,42 +1,18 @@
 import { Router } from "express";
-import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import prisma from "../config/db";
-import { listCsrProjects } from "../controllers/csrLifecycleController";
-import {
-  inviteNgo,
-  bulkInviteNgos,
-  listInvitations,
-  revokeNgoAccess,
-  submitPreliminaryReview
-} from "../controllers/ngoInvitationController";
 
 const router = Router();
 
-router.use(authenticateToken, authorizeRoles([Role.CORPORATE_USER, Role.SUPER_ADMIN]));
+router.use(authenticateToken);
 
-router.get("/enquiries", async (req, res, next) => {
+router.get("/enquiries", async (req: any, res, next) => {
   try {
-    const user = (req as any).user;
-    const company = user?.companyId
-      ? await prisma.company.findUnique({
-          where: { id: user.companyId },
-          select: { cin: true }
-        })
-      : null;
-
-    const orFilters = [
-      user?.email ? { email: user.email } : null,
-      company?.cin ? { mca21Cin: company.cin } : null
-    ].filter(Boolean) as Array<{ email: string } | { mca21Cin: string }>;
-
-    if (orFilters.length === 0) return res.json([]);
-
     const enquiries = await prisma.corporateEnquiry.findMany({
       where: {
-        AND: [{ OR: orFilters }]
+        ...(req.user?.organizationId ? { organizationId: req.user.organizationId } : {})
       },
-      orderBy: { submittedAt: "desc" }
+      orderBy: { createdAt: "desc" }
     });
 
     return res.json(enquiries);
@@ -45,43 +21,11 @@ router.get("/enquiries", async (req, res, next) => {
   }
 });
 
-router.get("/interests", async (req, res, next) => {
+router.get("/interests", async (req: any, res, next) => {
   try {
-    const user = (req as any).user;
-    const company = user?.companyId
-      ? await prisma.company.findUnique({
-          where: { id: user.companyId },
-          select: { cin: true, name: true }
-        })
-      : null;
-
-    const orFilters = [
-      user?.email ? { email: user.email } : null,
-      company?.cin ? { mca21Cin: company.cin } : null
-    ].filter(Boolean) as Array<{ email: string } | { mca21Cin: string }>;
-
-    if (orFilters.length === 0) return res.json([]);
-
     const interests = await prisma.corporatePitchInterest.findMany({
       where: {
-        AND: [{ OR: orFilters }]
-      },
-      include: {
-        governmentPitch: {
-          select: {
-            id: true,
-            pitchReferenceId: true,
-            district: true,
-            taluka: true,
-            exactLocation: true,
-            csrRequirement: true,
-            estimatedCost: true,
-            department: true,
-            officeName: true,
-            status: true,
-            createdAt: true
-          }
-        }
+        ...(req.user?.organizationId ? { corporateId: req.user.organizationId } : {})
       },
       orderBy: { createdAt: "desc" }
     });
@@ -91,13 +35,5 @@ router.get("/interests", async (req, res, next) => {
     return next(error);
   }
 });
-
-router.get("/projects", listCsrProjects);
-
-router.post("/ngos/invite", inviteNgo);
-router.post("/ngos/invite/bulk", bulkInviteNgos);
-router.get("/ngos/invitations", listInvitations);
-router.post("/ngos/invitations/:id/revoke", revokeNgoAccess);
-router.post("/ngos/:ngoId/preliminary-review", submitPreliminaryReview);
 
 export default router;

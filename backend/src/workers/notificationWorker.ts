@@ -6,7 +6,6 @@ import { emitNotificationToUser } from "../websocket/notificationSocket";
 import os from "os";
 import IORedis from "ioredis";
 
-// Prefer REDIS_URL (used by the rest of the app), fall back to host/port pieces
 const REDIS_URL = process.env.REDIS_URL?.trim();
 const REDIS_HOST = process.env.REDIS_HOST || "localhost";
 const REDIS_PORT = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -33,46 +32,35 @@ export interface NotificationJobPayload {
   notificationType?: string;
 }
 
-// Lazy-initialized queue and worker — only created if Redis is reachable
 let notificationQueueInstance: Queue | null = null;
 let notificationWorkerInstance: Worker | null = null;
 let bullmqReady = false;
 
-/**
- * Process a notification job directly (fallback when Redis/BullMQ is unavailable).
- */
 async function processNotificationDirect(payload: NotificationJobPayload): Promise<void> {
-  const workerNodeId = `${os.hostname()}-pid-${process.pid}`;
-  const correlationId = payload.correlationId || `corr-direct-${Date.now()}`;
-
-  // 1. Process In-App notification
   let inAppRecord: any = null;
   if (payload.channels.includes("IN_APP")) {
     inAppRecord = await prisma.notification.create({
       data: {
-        userId: payload.recipientId,
+        recipientId: payload.recipientId,
         title: payload.title,
-        message: payload.message } });
+        message: payload.message
+      }
+    });
   }
 
-  // 2. Process Socket Notification
   if (payload.channels.includes("SOCKET") && inAppRecord) {
     emitNotificationToUser(payload.recipientId, inAppRecord);
   }
 
-  // 3. Process Email
   if (payload.channels.includes("EMAIL") && payload.recipientEmail) {
     const emailLog = await prisma.notificationLog.create({
       data: {
         recipientId: payload.recipientId,
-        recipientEmail: payload.recipientEmail,
-        title: payload.title,
-        message: payload.message,
+        recipient: payload.recipientEmail,
         channel: "EMAIL",
-        status: "PENDING",
-        correlationId,
-        notificationType: payload.notificationType || null,
-        workerNodeId } });
+        status: "PENDING"
+      }
+    });
 
     try {
       const mailResult = await sendTemplateEmail({
@@ -83,38 +71,38 @@ async function processNotificationDirect(payload: NotificationJobPayload): Promi
         currentStatus: payload.currentStatus || payload.title,
         workflowStatus: payload.workflowStatus || payload.message,
         actionButtonUrl: payload.actionButtonUrl,
-        subject: payload.title });
+        subject: payload.title
+      });
 
       await prisma.notificationLog.update({
         where: { id: emailLog.id },
         data: {
           status: "SENT",
           providerMessageId: mailResult.messageId,
-          smtpResponseCode: mailResult.response,
-          sentAt: new Date() } });
+          sentAt: new Date()
+        }
+      });
     } catch (err: any) {
       await prisma.notificationLog.update({
         where: { id: emailLog.id },
         data: {
           status: "FAILED",
           retryCount: 0,
-          lastError: err.message || String(err) } });
+          error: err.message || String(err)
+        }
+      });
     }
   }
 
-  // 4. Process SMS
   if (payload.channels.includes("SMS") && payload.recipientPhone) {
     const smsLog = await prisma.notificationLog.create({
       data: {
         recipientId: payload.recipientId,
-        recipientPhone: payload.recipientPhone,
-        title: payload.title,
-        message: payload.message,
+        recipient: payload.recipientPhone,
         channel: "SMS",
-        status: "PENDING",
-        correlationId,
-        notificationType: payload.notificationType || null,
-        workerNodeId } });
+        status: "PENDING"
+      }
+    });
 
     try {
       const smsResult = await sendSMS({
@@ -122,101 +110,73 @@ async function processNotificationDirect(payload: NotificationJobPayload): Promi
         trackingId: payload.trackingId,
         status: payload.currentStatus || payload.title,
         portalUrl: payload.actionButtonUrl,
-        message: payload.message });
+        message: payload.message
+      });
 
       await prisma.notificationLog.update({
         where: { id: smsLog.id },
         data: {
           status: "SENT",
           providerMessageId: smsResult.providerMessageId,
-          smtpResponseCode: smsResult.responseCode,
-          sentAt: new Date() } });
+          sentAt: new Date()
+        }
+      });
     } catch (err: any) {
       await prisma.notificationLog.update({
         where: { id: smsLog.id },
         data: {
           status: "FAILED",
           retryCount: 0,
-          lastError: err.message || String(err) } });
+          error: err.message || String(err)
+        }
+      });
     }
   }
 }
 
-/**
- * Initialize BullMQ Queue + Worker only if Redis is reachable.
- */
 async function initBullMQ(): Promise<void> {
   try {
-    // Test Redis connectivity first with a short timeout
-    const testConn = createRedisConnection({
-      maxRetriesPerRequest: 1,
-      retryStrategy: () => null, // No retries
-      connectTimeout: 3000,
-      lazyConnect: true });
-    testConn.on("error", () => {}); // Suppress error events
-    await testConn.connect();
-    await testConn.ping();
-    await testConn.quit();
-
-    // Redis is available — create BullMQ queue and worker
     const connection = createRedisConnection({
-      maxRetriesPerRequest: null, // BullMQ requires this to be null
+      maxRetriesPerRequest: null,
+      connectTimeout: 2000,
+      enableOfflineQueue: false
     });
 
-    notificationQueueInstance = new Queue("notification-queue", {
-      connection,
-      defaultJobOptions: {
-        attempts: 5,
-        backoff: {
-          type: "exponential",
-          delay: 5000 },
-        removeOnComplete: true } });
+    connection.on("error", () => {});
+    await connection.ping();
+
+    notificationQueueInstance = new Queue("notifications", {
+      connection: createRedisConnection({ maxRetriesPerRequest: null })
+    });
 
     notificationWorkerInstance = new Worker(
-      "notification-queue",
+      "notifications",
       async (job: Job<NotificationJobPayload>) => {
-        const payload = job.data;
-        console.log(`[Notification Worker] Processing job ${job.id} for user ${payload.recipientId}`);
-        await processNotificationDirect(payload);
+        await processNotificationDirect(job.data);
       },
-      { connection }
+      { connection: createRedisConnection({ maxRetriesPerRequest: null }) }
     );
 
-    notificationWorkerInstance.on("failed", (job, err) => {
-      console.error(`[Notification Worker] Job ${job?.id} failed:`, err.message);
-    });
-
-    notificationWorkerInstance.on("completed", (job) => {
-      console.log(`[Notification Worker] Job ${job.id} completed successfully`);
-    });
-
     bullmqReady = true;
-    console.log("[Notification Worker] BullMQ Queue + Worker initialized with Redis.");
   } catch (err) {
-    console.warn("[Notification Worker] Redis not available. Notifications will be processed directly (no queue).");
     bullmqReady = false;
   }
 }
 
-// Initialize on module load
-initBullMQ();
+initBullMQ().catch(() => {});
 
-/**
- * Exported notificationQueue proxy object.
- * If BullMQ/Redis is available, delegates to the real Queue.
- * Otherwise, processes the notification directly (synchronous fallback).
- */
-export const notificationQueue = {
-  async add(name: string, data: NotificationJobPayload): Promise<any> {
-    if (bullmqReady && notificationQueueInstance) {
-      return notificationQueueInstance.add(name, data);
-    }
-    // Direct fallback — process without queue
+export async function queueNotification(payload: NotificationJobPayload): Promise<void> {
+  if (bullmqReady && notificationQueueInstance) {
     try {
-      await processNotificationDirect(data);
+      await notificationQueueInstance.add("send-notification", payload, {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 2000 }
+      });
+      return;
     } catch (err) {
-      console.error("[Notification Direct] Failed to process notification:", err);
+      console.warn("Failed to push job to BullMQ, executing synchronously:", err);
     }
-  } };
+  }
 
-export { notificationWorkerInstance as notificationWorker };
+  await processNotificationDirect(payload);
+}

@@ -68,8 +68,8 @@ export const getPlatformFeatures = async (req: AuthenticatedRequest, res: Respon
 export const getHeroSlides = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const setting = await prisma.platformSetting.findUnique({ where: { key: HERO_SLIDES_KEY } });
-    const slides = setting ? JSON.parse(setting.value) : DEFAULT_SLIDES;
-    return res.json(slides.filter((s: any) => s.active !== false));
+    const slides = setting ? (typeof setting.value === "string" ? JSON.parse(setting.value) : setting.value) : DEFAULT_SLIDES;
+    return res.json(Array.isArray(slides) ? slides.filter((s: any) => s.active !== false) : DEFAULT_SLIDES);
   } catch (error) {
     return next(error);
   }
@@ -87,7 +87,8 @@ export const updateHeroSlides = async (req: AuthenticatedRequest, res: Response,
       update: { value: JSON.stringify(slides) },
     });
 
-    return res.json({ success: true, slides: JSON.parse(setting.value) });
+    const parsed = typeof setting.value === "string" ? JSON.parse(setting.value) : setting.value;
+    return res.json({ success: true, slides: parsed });
   } catch (error) {
     return next(error);
   }

@@ -1,88 +1,13 @@
 import { Router } from "express";
-import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { checkOrganizationApproved, checkPermission } from "../middlewares/accessControlMiddleware";
-import {
-  confirmAssetHandover,
-  convertRequirementToProject,
-  createFundRelease,
-  createProjectInspection,
-  listCsrProjects,
-  submitUtilizationCertificate,
-  upsertImpactMetric,
-  verifyUtilizationCertificate
-} from "../controllers/csrLifecycleController";
+import { authenticateToken } from "../middlewares/authMiddleware";
+import { getLifecycleStages, advanceLifecycleStage, createProjectInspection, listCsrProjects } from "../controllers/csrLifecycleController";
 
 const router = Router();
-const projectReadAccess = [
-  authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.NGO_ADMIN, Role.NGO_MEMBER]),
-  checkPermission("project:view")
-];
+router.use(authenticateToken);
 
-router.get("/projects", ...projectReadAccess, listCsrProjects);
-router.get("/department/projects", ...projectReadAccess, listCsrProjects);
-router.get("/company/projects", ...projectReadAccess, listCsrProjects);
-router.get("/ngo/assigned-projects", ...projectReadAccess, listCsrProjects);
-router.get("/district/projects", ...projectReadAccess, listCsrProjects);
-
-router.post(
-  "/admin/projects/convert-from-requirement",
-  authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN]),
-  checkPermission("project:create"),
-  convertRequirementToProject
-);
-
-router.post(
-  "/projects/:projectId/fund-releases",
-  authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.FINANCE_USER]),
-  checkPermission("fund:release"),
-  createFundRelease
-);
-
-router.post(
-  "/ngo/fund-releases/:id/utilization-certificate",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.NGO_MEMBER]),
-  checkOrganizationApproved,
-  checkPermission("fund:verify-utilization"),
-  submitUtilizationCertificate
-);
-
-router.post(
-  "/admin/utilization-certificates/:id/verify",
-  authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.DISTRICT_ADMIN, Role.FINANCE_USER]),
-  checkPermission("fund:verify-utilization"),
-  verifyUtilizationCertificate
-);
-
-router.post(
-  "/projects/:projectId/confirm-handover",
-  authenticateToken,
-  authorizeRoles([Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  checkOrganizationApproved,
-  checkPermission("project:update"),
-  confirmAssetHandover
-);
-
-router.post(
-  "/district/projects/:id/inspection",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_ADMIN, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  checkPermission("milestone:verify"),
-  createProjectInspection
-);
-
-router.post(
-  "/projects/:projectId/impact-metrics",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.NGO_MEMBER, Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  checkOrganizationApproved,
-  checkPermission("project:update"),
-  upsertImpactMetric
-);
+router.get("/stages", getLifecycleStages);
+router.post("/advance", advanceLifecycleStage);
+router.post("/inspect", createProjectInspection);
+router.get("/projects", listCsrProjects);
 
 export default router;

@@ -1,210 +1,47 @@
-import { CorporateEnquiryStatus, GovernmentPitchStatus, Prisma } from "@prisma/client";
 import prisma from "../config/db";
 import { generateProjectTrackingId } from "./trackingIdService";
 
 type OnboardInput = {
-  assessmentId: string;
+  organizationId: string;
+  title: string;
+  description: string;
+  sector: string;
+  district: string;
+  taluka: string;
+  approvedBudget: number;
   actorUserId?: string;
 };
 
-type OnboardResult = {
-  status: "CREATED" | "EXISTING" | "WAITING_FOR_CORPORATE_INTEREST";
-  project?: unknown;
-  mou?: unknown;
-};
+export async function onboardApprovedAssessmentToProject(input: OnboardInput) {
+  const projectCode = await generateProjectTrackingId();
 
-const firstWords = (value: string | null | undefined, fallback: string, maxLength = 120) => {
-  const text = (value || "").trim().replace(/\s+/g, " ");
-  if (!text) return fallback;
-  return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
-};
-
-const generateMouReferenceId = async () => {
-  const year = new Date().getFullYear();
-  const prefix = `MOU-MH-${year}-`;
-  const lastMou = await prisma.standardMou.findFirst({
-    where: { mouReferenceId: { startsWith: prefix } },
-    orderBy: { mouReferenceId: "desc" },
-    select: { mouReferenceId: true },
-  });
-
-  const lastSequence = lastMou?.mouReferenceId.split("-").at(-1);
-  const nextSequence = lastSequence && !Number.isNaN(Number(lastSequence))
-    ? Number(lastSequence) + 1
-    : 1;
-
-  return `${prefix}${String(nextSequence).padStart(6, "0")}`;
-};
-
-const buildDefaultMilestones = (sourceTitle: string) => [
-  {
-    name: "Mobilization and Planning",
-    description: `Finalize scope, site readiness, implementation plan, and kickoff for ${sourceTitle}.`,
-    workType: "SOFT_COMPONENT",
-    geoTaggedPhotoUrls: [],
-  },
-  {
-    name: "Implementation Progress",
-    description: "Record physical execution progress, fund utilization, and field evidence.",
-    workType: "CONSTRUCTION",
-    geoTaggedPhotoUrls: [],
-  },
-  {
-    name: "Completion and Handover",
-    description: "Complete deliverables, upload UC evidence, and support nodal verification and handover.",
-    workType: "SOFT_COMPONENT",
-    geoTaggedPhotoUrls: [],
-  },
-];
-
-export async function onboardApprovedAssessmentToProject(input: OnboardInput): Promise<OnboardResult> {
-  const assessment = await prisma.feasibilityAssessment.findUnique({
-    where: { id: input.assessmentId },
-    include: {
-      corporateEnquiry: true,
-      governmentPitch: {
-        include: {
-          interests: { orderBy: { createdAt: "desc" }, take: 1 },
-        },
-      },
-      nodalOfficerAppointment: {
-        include: {
-          nodalOfficerUser: { select: { id: true, email: true } },
-        },
-      },
-    },
-  });
-
-  if (!assessment || !assessment.nodalOfficerAppointment || !assessment.jsDecisionAt) {
-    return { status: "WAITING_FOR_CORPORATE_INTEREST" };
-  }
-
-  const existingProject = await prisma.convergenceProject.findFirst({
-    where: {
-      OR: [
-        assessment.corporateEnquiryId ? { corporateEnquiryId: assessment.corporateEnquiryId } : undefined,
-        assessment.governmentPitchId ? { governmentPitchId: assessment.governmentPitchId } : undefined,
-      ].filter(Boolean) as Prisma.ConvergenceProjectWhereInput[],
-    },
-    include: { mou: true, milestones: true },
-  });
-
-  if (existingProject) {
-    return { status: "EXISTING", project: existingProject, mou: existingProject.mou };
-  }
-
-  const corporateInterest = assessment.governmentPitch?.interests[0];
-  if (assessment.governmentPitch && !corporateInterest) {
-    return { status: "WAITING_FOR_CORPORATE_INTEREST" };
-  }
-
-  const appointment = assessment.nodalOfficerAppointment;
-  const sourceTitle = assessment.corporateEnquiry
-    ? firstWords(assessment.corporateEnquiry.proposedCsrWork, `${assessment.corporateEnquiry.companyName} CSR Project`)
-    : firstWords(assessment.governmentPitch?.csrRequirement, "Government Development Need");
-
-  const district = assessment.governmentPitch?.district || appointment.district || assessment.proposedLocationDistrict;
-  const taluka = assessment.governmentPitch?.taluka || "To be finalized";
-  const location = assessment.governmentPitch?.exactLocation || district;
-  const corporateName = assessment.corporateEnquiry?.companyName || corporateInterest?.companyName || assessment.companyName;
-  const cin = assessment.corporateEnquiry?.mca21Cin || corporateInterest?.mca21Cin || assessment.cin || "N/A";
-  const approvedBudget = assessment.governmentPitch?.estimatedCost || corporateInterest?.indicativeBudget || assessment.indicativeBudget;
-  const implementationMode = corporateInterest?.implementationMode || "NGO_PARTNER";
-  const projectId = await generateProjectTrackingId();
-  const mouReferenceId = await generateMouReferenceId();
-  const milestones = buildDefaultMilestones(sourceTitle);
-
-  const result = await prisma.$transaction(async (tx) => {
-    const mou = await tx.standardMou.create({
-      data: {
-        mouReferenceId,
-        corporateEnquiryId: assessment.corporateEnquiryId,
-        governmentPitchId: assessment.governmentPitchId,
-        districtDepartmentName: appointment.department,
-        nodalOfficerName: appointment.nodalOfficerName,
-        corporateName,
-        cin,
-        projectTitle: sourceTitle,
-        projectDescription: assessment.developmentNeedAddressed,
-        scheduleVIIClause: "To be confirmed during MoU review",
-        projectLocation: location,
-        deliverables: milestones.map((milestone) => ({
-          name: milestone.name,
-          description: milestone.description,
-          workType: milestone.workType,
-        })),
-        timelineMonths: 12,
-        financialContribution: approvedBudget,
-        governmentContribution: null,
-        implementationMode,
-        implementingAgencyName: implementationMode === "SELF" ? corporateName : "To be finalized",
-        ownershipAfterCompletion: "Government / local body after handover",
-        maintenanceResponsibility: "Concerned department / local body",
-        status: "DRAFT",
-      },
-    });
-
-    const project = await tx.convergenceProject.create({
-      data: {
-        projectId,
-        corporateEnquiryId: assessment.corporateEnquiryId,
-        governmentPitchId: assessment.governmentPitchId,
-        mouId: mou.id,
-        title: sourceTitle,
-        district,
-        taluka,
-        location,
-        sector: assessment.sector,
-        corporateName,
-        nodalOfficerUserId: appointment.nodalOfficerUserId,
-        approvedBudget,
-        // Per workflow: project is created after nodal appointment but tracking
-        // begins only once the tripartite MoU is signed (Step 7 → Step 8).
-        status: "MOU_PENDING",
-        milestones: {
-          create: milestones.map((milestone) => ({
-            ...milestone,
-          })),
-        },
-      },
-      include: {
-        mou: true,
-        milestones: true,
-      },
-    });
-
-    if (assessment.corporateEnquiryId) {
-      await tx.corporateEnquiry.update({
-        where: { id: assessment.corporateEnquiryId },
-        data: { status: CorporateEnquiryStatus.MOU_PENDING },
-      });
+  const project = await prisma.project.create({
+    data: {
+      projectCode,
+      title: input.title,
+      description: input.description,
+      sector: input.sector,
+      district: input.district,
+      taluka: input.taluka,
+      approvedBudget: input.approvedBudget,
+      type: "CONVERGENCE_FRAMEWORK",
+      organizationId: input.organizationId,
+      status: "APPROVED"
     }
-
-    if (assessment.governmentPitchId) {
-      await tx.governmentPitch.update({
-        where: { id: assessment.governmentPitchId },
-        data: { status: GovernmentPitchStatus.MOU_PENDING },
-      });
-    }
-
-    await tx.auditLog.create({
-      data: {
-        userId: input.actorUserId,
-        action: "CONVERGENCE_PROJECT_ONBOARDED",
-        entityType: "ConvergenceProject",
-        entityId: project.id,
-        details: {
-          assessmentId: assessment.id,
-          projectId: project.projectId,
-          mouReferenceId: mou.mouReferenceId,
-          corporateEnquiryId: assessment.corporateEnquiryId,
-          governmentPitchId: assessment.governmentPitchId,
-        },
-      },
-    });
-
-    return { project, mou };
   });
 
-  return { status: "CREATED", ...result };
+  const mouReferenceId = `MOU-MH-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  const mou = await prisma.standardMou.create({
+    data: {
+      mouReferenceId,
+      projectId: project.id,
+      financialContribution: input.approvedBudget,
+      projectTitle: input.title,
+      projectDescription: input.description,
+      status: "DRAFT"
+    }
+  });
+
+  return { status: "CREATED", project, mou };
 }

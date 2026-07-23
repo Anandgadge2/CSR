@@ -1,15 +1,13 @@
-/**
- * @deprecated LEGACY - NOT MOUNTED in app.ts (ENABLE_LEGACY_NGO_MARKETPLACE guard).
- * This router is not registered; changes here have no runtime effect.
- */
 import { Router } from "express";
-import { getOrCreateChat, listChats, getChatMessages } from "../controllers/chatController";
 import { authenticateToken } from "../middlewares/authMiddleware";
+import { getOrCreateChat, sendMessage, getMessages, getUserChats } from "../controllers/chatController";
 
 const router = Router();
+router.use(authenticateToken);
 
-router.get("/", authenticateToken, listChats);
-router.post("/", authenticateToken, getOrCreateChat);
-router.get("/:id/messages", authenticateToken, getChatMessages);
+router.post("/", getOrCreateChat);
+router.post("/:chatId/messages", sendMessage);
+router.get("/:chatId/messages", getMessages);
+router.get("/", getUserChats);
 
 export default router;

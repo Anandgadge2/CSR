@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { VerificationEntityType, VerificationModuleType } from "@prisma/client";
+import { VerificationModuleType } from "@prisma/client";
 import { Role } from "../../../types/role";
 import { userHasAnyRole } from "../../../services/roleResolver";
 import { successResponse } from "../../../utils/apiResponse";
@@ -9,6 +9,7 @@ import * as gstService from "../services/gstVerificationService";
 import * as recordService from "../services/verificationRecordService";
 import { logVerificationEvent } from "../services/verificationAuditService";
 import { GstReverifyBody, GstVerifyBody } from "../dto/gstSchemas";
+import { VerificationEntityType } from "../../../types/verification";
 
 export type VerificationRequest = CorrelatedRequest;
 
@@ -93,10 +94,9 @@ export const reverifyGst = (req: VerificationRequest, res: Response, next: NextF
 export const getGstHistory = async (req: VerificationRequest, res: Response, next: NextFunction) => {
   try {
     const entityId = req.params.id;
-    const entityType = req.query.entityType as VerificationEntityType;
+    const entityType = req.query.entityType as string;
 
-    // Ownership guard: non-admin roles may only view history of their own org entities.
-    const isAdmin = isAdminRequest(req);
+    const isAdmin = isAdminRequest(req as any);
     if (!isAdmin) {
       const owned = [req.user?.companyId, req.user?.ngoId, req.user?.organizationId, req.user?.id].filter(Boolean);
       if (!owned.includes(entityId)) {

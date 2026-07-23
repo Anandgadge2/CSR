@@ -722,15 +722,15 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             }`}
           >
             {/* Navigation Links */}
-            <div ref={sidebarScrollRef} className="flex-grow min-h-0 overflow-y-auto flex flex-col gap-0.5 px-2 pr-1 overscroll-y-contain" data-lenis-prevent>
+            <div ref={sidebarScrollRef} className="flex-grow min-h-0 overflow-y-auto flex flex-col gap-1 px-3 pr-2 overscroll-y-contain" data-lenis-prevent>
               {isLoadingPermissions ? (
                 Array.from({ length: 6 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center rounded-lg py-2.5 px-3 justify-start gap-3 animate-pulse"
+                    className="flex items-center rounded-xl py-2.5 px-3 justify-start gap-3 animate-pulse bg-slate-50"
                   >
                     <div className="h-4 w-4 bg-slate-200 rounded-full" />
-                    {isExpanded && <div className="h-3 bg-slate-200 rounded w-24" />}
+                    {isExpanded && <div className="h-3 bg-slate-200 rounded w-28" />}
                   </div>
                 ))
               ) : (
@@ -750,24 +750,24 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                     <Link
                       key={item.label}
                       href={item.href}
-                      className={`flex items-center rounded-lg text-[12px] font-medium transition-all group relative ${
-                        isExpanded ? "gap-3 px-3 py-2 justify-start" : "justify-center py-2 px-2"
+                      className={`flex items-center rounded-xl text-xs font-semibold transition-all group relative ${
+                        isExpanded ? "gap-3 px-3.5 py-2.5 justify-start" : "justify-center py-2.5 px-2"
                       } ${
                         isActive
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 font-bold"
+                          : "text-slate-700 hover:text-blue-600 hover:bg-slate-100/90"
                       }`}
                     >
-                      <item.icon size={15} className={isActive ? "text-white" : "text-[#97a0ac] group-hover:text-[#14274e]"} />
+                      <item.icon size={18} className={isActive ? "text-white shrink-0" : "text-slate-500 group-hover:text-blue-600 shrink-0"} />
                       
                       {isExpanded && (
-                        <span className="whitespace-nowrap transition-opacity duration-300">
+                        <span className="whitespace-nowrap transition-opacity duration-200 truncate">
                           {item.label}
                         </span>
                       )}
 
                       {!isExpanded && (
-                        <div className="absolute left-[76px] bg-[#14274e] text-white py-1 px-2.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap text-[10px] z-50">
+                        <div className="absolute left-[80px] bg-slate-900 text-white py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap text-xs z-50 font-medium shadow-lg">
                           {item.label}
                         </div>
                       )}
@@ -778,12 +778,19 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             </div>
 
             {/* Sidebar Toggle */}
-            <div className="px-2 pt-2">
+            <div className="px-3 pt-2 border-t border-slate-100">
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="w-full flex items-center justify-center p-2 border border-slate-200/60 hover:bg-slate-100/80 rounded-xl text-slate-400 hover:text-slate-900 transition-colors"
+                className="w-full flex items-center justify-center gap-2 p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-xs font-semibold"
               >
-                {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                {sidebarCollapsed ? (
+                  <ChevronRight size={18} />
+                ) : (
+                  <>
+                    <ChevronLeft size={18} />
+                    <span>Collapse Menu</span>
+                  </>
+                )}
               </button>
             </div>
           </aside>
@@ -1000,7 +1007,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         </AnimatePresence>
 
         {/* Main Content */}
-        <div className={`flex-grow flex flex-col min-w-0 transition-all duration-300 ${isDashboard ? (isExpanded ? "lg:ml-60" : "lg:ml-[68px]") : ""}`}>
+        <div className={`flex-grow flex flex-col min-w-0 transition-all duration-300 ${isDashboard ? (isExpanded ? "lg:ml-64" : "lg:ml-[72px]") : ""}`}>
           <main id="main-content" className={`flex-grow ${isDashboard ? "px-4 py-4 md:px-6 md:py-5" : ""}`}>
             {dashboardContent}
           </main>

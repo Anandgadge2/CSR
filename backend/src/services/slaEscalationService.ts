@@ -18,8 +18,8 @@
  */
 
 import prisma from "../config/db";
-import { SLAStage } from "@prisma/client";
-import { sendSlaEscalationNotification } from "./notificationService";
+export type SLAStage = string;
+import { notify } from "./notificationService";
 
 /**
  * SLA Timeline Constants (in days)
@@ -186,6 +186,7 @@ export async function createSLAEscalation(
         entityId: input.entityId,
         stage: input.stage,
         responsibleUserId: input.responsibleUserId,
+        dueDate: input.dueAt,
         dueAt: input.dueAt,
         isResolved: false,
       },
@@ -199,16 +200,6 @@ export async function createSLAEscalation(
   }
 }
 
-/**
- * Check for overdue escalations
- * 
- * Business Logic:
- * - Finds all unresolved escalations past their due date
- * - Calculates days overdue for prioritization
- * - Returns ordered list by severity (most overdue first)
- * 
- * @returns Array of overdue escalations with metadata
- */
 export async function checkOverdueEscalations(): Promise<OverdueEscalation[]> {
   try {
     const now = new Date();
@@ -216,18 +207,19 @@ export async function checkOverdueEscalations(): Promise<OverdueEscalation[]> {
     const overdueRecords = await prisma.sLAEscalation.findMany({
       where: {
         isResolved: false,
-        dueAt: {
+        dueDate: {
           lt: now,
         },
       },
       orderBy: {
-        dueAt: "asc",
+        dueDate: "asc",
       },
     });
 
     return overdueRecords.map((record) => {
+      const targetDate = record.dueAt || record.dueDate;
       const daysOverdue = Math.floor(
-        (now.getTime() - record.dueAt.getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - targetDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
       return {
@@ -235,7 +227,7 @@ export async function checkOverdueEscalations(): Promise<OverdueEscalation[]> {
         entityType: record.entityType,
         entityId: record.entityId,
         stage: record.stage,
-        dueAt: record.dueAt,
+        dueAt: targetDate,
         daysOverdue,
         responsibleUserId: record.responsibleUserId || undefined,
         escalatedToUserId: record.escalatedToUserId || undefined,
@@ -423,32 +415,24 @@ export async function escalateToNextLevel(
         entityId: currentEscalation.entityId,
         stage: nextStage,
         responsibleUserId: escalatedToUserId,
+        dueDate: newDueAt,
         dueAt: newDueAt,
         isResolved: false,
       },
     });
 
-    // Mark old escalation as escalated
     await prisma.sLAEscalation.update({
       where: { id: escalationId },
       data: {
         escalatedToUserId,
-        escalatedAt: new Date(),
       },
     });
 
-    // Send notification to escalated user across all channels (in-app + email + SMS).
-    const escalatedToUser = await prisma.user.findUnique({
-      where: { id: escalatedToUserId },
-      select: { email: true },
-    });
-    await sendSlaEscalationNotification({
-      userId: escalatedToUserId,
-      targetEmail: escalatedToUser?.email,
-      title: "SLA escalation alert",
-      message: `A ${currentEscalation.entityType} has been escalated to you. Stage: ${nextStage}. Due: ${newDueAt.toLocaleDateString()}.`,
-      currentStatus: nextStage,
-    });
+    await notify(
+      escalatedToUserId,
+      "SLA escalation alert",
+      `A ${currentEscalation.entityType} has been escalated to you. Stage: ${nextStage}. Due: ${newDueAt.toLocaleDateString()}.`
+    );
 
     return {
       success: true,

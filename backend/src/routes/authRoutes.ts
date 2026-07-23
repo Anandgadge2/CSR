@@ -1,9 +1,6 @@
 import { Router } from "express";
-import { register, login, verifyOtp, refresh, logout, getInvitationDetails, registerInvitedNgo } from "../controllers/authController";
-import {
-  getInvitationDetails as getUserInvitationDetails,
-  activateInvitation
-} from "../controllers/invitationController";
+import { register, login, verifyOtp, refreshToken, logout } from "../controllers/authController";
+import { getInvitation, acceptInvitation } from "../controllers/invitationController";
 import { getCurrentUserPermissions, getModulePermissions, checkUserPermission } from "../controllers/permissionController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
@@ -17,31 +14,14 @@ const registerSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.enum(["NGO_ADMIN", "COMPANY_ADMIN", "PORTAL_ADMIN", "BENEFICIARY_AGENCY", "CORPORATE_USER"]),
+    role: z.union([z.number(), z.string()]),
     profile: z.object({
       name: z.string().min(2, "Name is required"),
-      // NGO Fields (conditional in logic)
-      registrationNumber: z.string().optional(),
-      darpanNumber: z.string().optional(),
-      csr1Number: z.string().optional(),
-      certificate12AUrl: z.string().optional(),
-      certificate80GUrl: z.string().optional(),
-      // Company Fields (conditional in logic)
       cin: z.string().optional(),
-      gst: z.string().optional(),
-      csrBudget: z.number().optional(),
-      focusAreas: z.array(z.string()).optional(),
-      contactInfo: z.record(z.any()).optional(),
-      // Commmon fields
       pan: z.string().min(10).max(10),
       address: z.string().min(5),
-      state: z.string().min(2).optional(),
-      district: z.string().min(2),
-      city: z.string().min(2).optional(),
-      taluka: z.string().min(2),
-      village: z.string().optional(),
-      website: z.string().url().optional().or(z.literal(""))
-    })
+      district: z.string().min(2)
+    }).passthrough()
   })
 });
 
@@ -55,7 +35,7 @@ const loginSchema = z.object({
 const verifyOtpSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email format"),
-    otpCode: z.string().length(6, "OTP must be exactly 6 digits")
+    otp: z.string().length(6, "OTP must be exactly 6 digits")
   })
 });
 
@@ -65,14 +45,12 @@ const otpRateLimit = strictRateLimiter;
 router.post("/register", authRateLimit, validateRequest(registerSchema), asyncHandler(register));
 router.post("/verify-otp", otpRateLimit, validateRequest(verifyOtpSchema), asyncHandler(verifyOtp));
 router.post("/login", authRateLimit, validateRequest(loginSchema), asyncHandler(login));
-router.post("/refresh", asyncHandler(refresh));
+router.post("/refresh", asyncHandler(refreshToken));
 router.post("/logout", asyncHandler(logout));
-router.get("/ngo/invitation-details", asyncHandler(getInvitationDetails));
-router.post("/ngo/register-invited", asyncHandler(registerInvitedNgo));
 
-// Officer activation via secure single-use invitation token (public, rate limited)
-router.get("/invitations/:token", strictRateLimiter, asyncHandler(getUserInvitationDetails));
-router.post("/invitations/:token/activate", strictRateLimiter, asyncHandler(activateInvitation));
+// Officer activation via secure single-use invitation token
+router.get("/invitations/:token", strictRateLimiter, asyncHandler(getInvitation));
+router.post("/invitations/:token/activate", strictRateLimiter, asyncHandler(acceptInvitation));
 
 // Dynamic permission routes
 router.get("/permissions", authenticateToken, asyncHandler(getCurrentUserPermissions));

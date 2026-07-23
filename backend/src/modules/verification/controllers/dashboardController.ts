@@ -147,7 +147,6 @@ export const getDashboardLogs = async (req: VerificationRequest, res: Response, 
           errorCode: true,
           responseTimeMs: true,
           source: true,
-          ipAddress: true,
           verifiedAt: true,
           createdAt: true,
           initiatedBy: { select: { id: true, email: true, role: true } }

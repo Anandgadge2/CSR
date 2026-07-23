@@ -1,12 +1,10 @@
 import { Router } from "express";
-import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { asyncHandler } from "../middlewares/asyncHandler";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import {
   getJSDashboard,
   getJSEscalations,
   handleEscalationAction,
-  getJSGovernmentPitches,
+  getJSGovernmentPitches
 } from "../controllers/jsDashboardController";
 import {
   getPendingAssessments,
@@ -16,105 +14,27 @@ import {
   getNodalAppointments,
   getNodalAppointmentById,
   getNodalOfficers,
-  getApprovedProjectsForAppointment,
+  getApprovedProjectsForAppointment
 } from "../controllers/feasibilityAssessmentController";
 
 const router = Router();
+router.use(authenticateToken);
 
-// JS Dashboard
-router.get(
-  "/dashboard",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getJSDashboard)
-);
+router.get("/dashboard", getJSDashboard);
+router.get("/escalations", getJSEscalations);
+router.post("/escalations/:id/action", handleEscalationAction);
+router.get("/pitches", getJSGovernmentPitches);
 
-// JS Assessments List
-router.get(
-  "/assessments",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getPendingAssessments)
-);
+// Feasibility assessments for JS
+router.get("/assessments/pending", getPendingAssessments);
+router.get("/assessments/:id", getAssessmentById);
+router.post("/assessments/:id/decision", submitJSDecision);
+router.post("/assessments/:id/appoint-nodal", appointNodalOfficer);
 
-// JS Assessment Detail
-router.get(
-  "/assessments/:id",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.CSR_RELATIONSHIP_MANAGER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getAssessmentById)
-);
-
-// Submit JS Decision
-router.post(
-  "/assessments/:id/decision",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(submitJSDecision)
-);
-
-// Appoint Nodal Officer
-router.post(
-  "/assessments/:id/nodal-officer",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(appointNodalOfficer)
-);
-
-// Nodal Officer Appointments List
-router.get(
-  "/nodal-appointments",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getNodalAppointments)
-);
-
-// Nodal Officer Appointment Detail
-router.get(
-  "/nodal-appointments/:id",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getNodalAppointmentById)
-);
-
-// JS Escalations
-router.get(
-  "/escalations",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getJSEscalations)
-);
-
-// Handle Escalation Action
-router.post(
-  "/escalations/:id/action",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(handleEscalationAction)
-);
-
-// Approved projects awaiting a District Nodal Consultant (JS appointment cascade)
-router.get(
-  "/approved-projects",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getApprovedProjectsForAppointment)
-);
-
-// Nodal Officers List for Dropdown
-router.get(
-  "/nodal-officers",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getNodalOfficers)
-);
-
-// Government Pitches pending JS approval List
-router.get(
-  "/government-pitches",
-  authenticateToken,
-  authorizeRoles([Role.JOINT_SECRETARY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  asyncHandler(getJSGovernmentPitches)
-);
+// Nodal appointments
+router.get("/nodal-appointments", getNodalAppointments);
+router.get("/nodal-appointments/:id", getNodalAppointmentById);
+router.get("/nodal-officers", getNodalOfficers);
+router.get("/approved-projects", getApprovedProjectsForAppointment);
 
 export default router;

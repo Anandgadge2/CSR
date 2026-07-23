@@ -1,4 +1,4 @@
-// Dashboard Layout Component - Unified with SaaSLayout shell to prevent layout duplication
+// Dashboard Layout Component - Integrates seamlessly with root SaaSLayout shell
 "use client";
 
 import { ReactNode } from "react";
@@ -20,7 +20,7 @@ export function DashboardLayout({
   className
 }: DashboardLayoutProps) {
   return (
-    <div className={cn("w-full transition-all duration-150", className)}>
+    <div className={cn("w-full transition-all duration-150 space-y-6", className)}>
       {children}
     </div>
   );

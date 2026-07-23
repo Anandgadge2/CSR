@@ -1,11 +1,11 @@
 import { Router } from "express";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import {
-  createCSRRequirement,
-  updateCSRRequirement,
-  getMyRequirements,
-  getCSRRequirementById,
-  getMarketplaceRequirements,
-  getVerificationQueue,
+  createRequirement,
+  getRequirements,
+  getRequirementById,
+  updateRequirement,
+  deleteRequirement,
   verifyRequirement,
   submitRequirement,
   approveRequirement,
@@ -18,49 +18,25 @@ import {
   confirmProjectHandover,
   getDepartmentCompanyInterests
 } from "../controllers/csrRequirementController";
-import { authenticateToken, authorizeRoles, optionalAuthenticateToken } from "../middlewares/authMiddleware";
-import { checkOrganizationApproved, checkPermission } from "../middlewares/accessControlMiddleware";
-import { Role } from "../types/role";
 
 const router = Router();
-const departmentTransaction = [
-  authenticateToken,
-  authorizeRoles([Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN]),
-  checkOrganizationApproved
-];
-const departmentRead = [
-  authenticateToken,
-  authorizeRoles([Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN]),
-  checkOrganizationApproved,
-  checkPermission("requirement:view")
-];
-const requirementApproval = [
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_ADMIN, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN]),
-  checkPermission("requirement:approve")
-];
+router.use(authenticateToken);
 
-// Beneficiary Profile
-router.post("/profile", authenticateToken, authorizeRoles([Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN]), upsertBeneficiaryProfile);
-router.get("/profile/me", authenticateToken, authorizeRoles([Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN]), getMyBeneficiaryProfile);
-
-// Requirements
-router.post("/", ...departmentTransaction, checkPermission("requirement:create"), createCSRRequirement);
-router.put("/:id", ...departmentTransaction, checkPermission("requirement:update"), updateCSRRequirement);
-router.get("/my", ...departmentRead, getMyRequirements);
-router.get("/marketplace", getMarketplaceRequirements); // Public or authenticated
-router.get("/verification-queue", ...requirementApproval, getVerificationQueue);
-router.post("/:id/verify", ...requirementApproval, verifyRequirement);
-router.post("/:id/submit", ...departmentTransaction, checkPermission("requirement:submit"), submitRequirement);
-router.post("/:id/approve", ...requirementApproval, approveRequirement);
-router.post("/:id/reject", ...requirementApproval, rejectRequirement);
-router.post("/:id/request-clarification", ...requirementApproval, requestRequirementClarification);
-router.post("/:id/publish", ...requirementApproval, checkPermission("requirement:publish"), publishRequirement);
-router.get("/:id/company-interests", ...departmentRead, getDepartmentCompanyInterests);
-router.post("/:id/confirm-handover", ...departmentTransaction, checkPermission("project:update"), confirmProjectHandover);
-router.post("/:requirementId/documents", ...departmentTransaction, checkPermission("requirement:update"), addRequirementDocument);
-
-// Get detail by ID must be after special routes to avoid path collision
-router.get("/:id", optionalAuthenticateToken, getCSRRequirementById);
+router.post("/", createRequirement);
+router.get("/", getRequirements);
+router.get("/:id", getRequirementById);
+router.put("/:id", updateRequirement);
+router.delete("/:id", deleteRequirement);
+router.post("/:id/verify", verifyRequirement);
+router.post("/:id/submit", submitRequirement);
+router.post("/:id/approve", approveRequirement);
+router.post("/:id/reject", rejectRequirement);
+router.post("/:id/clarification", requestRequirementClarification);
+router.post("/:id/publish", publishRequirement);
+router.put("/beneficiary-profile", upsertBeneficiaryProfile);
+router.get("/beneficiary-profile/me", getMyBeneficiaryProfile);
+router.post("/:id/documents", addRequirementDocument);
+router.post("/:id/handover", confirmProjectHandover);
+router.get("/:id/company-interests", getDepartmentCompanyInterests);
 
 export default router;

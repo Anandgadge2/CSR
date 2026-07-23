@@ -1,14 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
-import { successResponse, errorResponse, unauthorizedResponse } from "../utils/apiResponse";
-import { SLAStage } from "@prisma/client";
-import { Role } from "../types/role";
+import { successResponse, errorResponse } from "../utils/apiResponse";
 
 interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     email: string;
-    role: Role;
+    roleId?: number;
     organizationId?: string | null;
   };
 }
@@ -21,21 +19,11 @@ export const getSecretaryEscalations = async (
   try {
     const now = new Date();
 
-    // Fetch all unresolved SLAEscalation records
     const escalations = await prisma.sLAEscalation.findMany({
       where: {
         isResolved: false,
       },
-      include: {
-        responsibleUser: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-      orderBy: { dueAt: "asc" },
+      orderBy: { dueDate: "asc" },
     });
 
     const mappedEscalations = await Promise.all(
@@ -45,45 +33,27 @@ export const getSecretaryEscalations = async (
         let raisedByName = "System SLA Monitor";
         let raisedByRole = "SLA_SYSTEM";
 
-        // Fetch details of referenced entity
         if (esc.entityType === "CORPORATE_ENQUIRY") {
           const ce = await prisma.corporateEnquiry.findUnique({
-            where: { id: esc.entityId },
-            include: {
-              assignedRelationshipManager: {
-                select: { id: true, email: true },
-              },
-            },
+            where: { id: esc.entityId }
           });
           if (ce) {
-            title = `Corporate Enquiry - ${ce.companyName}`;
-            description = `SLA breach: RM failed to respond within SLA guidelines. Company: ${ce.companyName}. Sector: ${ce.sector || "N/A"}.`;
-            if (ce.assignedRelationshipManager) {
-              raisedByName = ce.assignedRelationshipManager.email.split("@")[0];
-              raisedByRole = "Relationship Manager";
-            }
+            title = `Corporate Enquiry - ${ce.corporateName}`;
+            description = `SLA breach: RM failed to respond within SLA guidelines. Company: ${ce.corporateName}.`;
           }
         } else if (esc.entityType === "GOVERNMENT_PITCH") {
           const gp = await prisma.governmentPitch.findUnique({
-            where: { id: esc.entityId },
-            include: {
-              assignedRelationshipManager: {
-                select: { id: true, email: true },
-              },
-            },
+            where: { id: esc.entityId }
           });
           if (gp) {
-            title = `Government Pitch - ${gp.department}`;
-            description = `SLA breach: RM failed to verify pitch. Department: ${gp.department}. District: ${gp.district || "N/A"}.`;
-            if (gp.assignedRelationshipManager) {
-              raisedByName = gp.assignedRelationshipManager.email.split("@")[0];
-              raisedByRole = "Relationship Manager";
-            }
+            title = `Government Pitch - ${gp.title}`;
+            description = `SLA breach: RM failed to verify pitch. Title: ${gp.title}.`;
           }
         }
 
+        const targetDue = esc.dueAt || esc.dueDate || new Date();
         const daysOverdue = Math.floor(
-          (now.getTime() - new Date(esc.dueAt).getTime()) / (1000 * 60 * 60 * 24)
+          (now.getTime() - new Date(targetDue).getTime()) / (1000 * 60 * 60 * 24)
         );
 
         let type: "RM_MISSED_DEADLINE" | "JS_MISSED_DECISION" | "FINAL_ESCALATION" = "RM_MISSED_DEADLINE";
@@ -119,7 +89,7 @@ export const getSecretaryEscalations = async (
             role: raisedByRole,
           },
           raisedDate: esc.createdAt.toISOString(),
-          deadlineDate: esc.dueAt.toISOString(),
+          deadlineDate: (esc.dueAt || esc.dueDate || new Date()).toISOString(),
           daysOverdue: daysOverdue > 0 ? daysOverdue : 0,
           status: "PENDING",
           priority,
@@ -158,7 +128,7 @@ export const resolveSecretaryEscalation = async (
     const { decision, notes } = req.body;
 
     if (!userId) {
-      return unauthorizedResponse(res, "User not authenticated");
+      return res.status(401).json({ error: "User not authenticated" });
     }
 
     const escalation = await prisma.sLAEscalation.findFirst({

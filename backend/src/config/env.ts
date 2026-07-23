@@ -125,7 +125,9 @@ export const getVerificationEncryptionKey = () => {
   if (isProduction && (!key || key === DEV_VERIFICATION_ENCRYPTION_KEY)) {
     throw new Error("VERIFICATION_ENCRYPTION_KEY is not securely configured in production");
   }
-  return key || DEV_VERIFICATION_ENCRYPTION_KEY;
+  // Never silently encrypt sensitive records with a committed development key.
+  // The crypto module will fail closed with a clear configuration error.
+  return key || "";
 };
 
 /**

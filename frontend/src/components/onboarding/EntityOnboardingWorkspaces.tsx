@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/Button";
 import { locationData } from "@/lib/locationData";
 import { FieldFormat, sanitizeField, validateField, inputModeFor, FIELD_MAX_LENGTH } from "@/lib/validation";
 import GstVerificationField from "@/components/verification/GstVerificationField";
+
+const maharashtraState = locationData.find((state) => state.name === "Maharashtra");
+
 const DIVISION_TO_DISTRICTS: Record<string, string[]> = {
   Amravati: ["Akola", "Amravati", "Buldhana", "Washim", "Yavatmal"],
   Aurangabad: ["Aurangabad", "Beed", "Hingoli", "Jalna", "Latur", "Nanded", "Osmanabad", "Parbhani"],

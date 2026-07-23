@@ -1,5 +1,4 @@
 import { Response, NextFunction } from "express";
-import { VerificationEntityType } from "@prisma/client";
 import { successResponse } from "../../../utils/apiResponse";
 import { isVerificationError } from "../utils/errors";
 import * as aadhaarService from "../services/aadhaarVerificationService";
@@ -13,7 +12,7 @@ export const generateAadhaarOtp = async (req: VerificationRequest, res: Response
   try {
     const result = await aadhaarService.generateOtp({
       aadhaarNumber: body.aadhaarNumber,
-      entityType: body.entityType as VerificationEntityType,
+      entityType: body.entityType as any,
       entityId: body.entityId,
       source: body.source,
       initiatedById: req.user!.id,
@@ -52,7 +51,7 @@ export const generateAadhaarOtp = async (req: VerificationRequest, res: Response
 
 export const verifyAadhaarOtp = async (req: VerificationRequest, res: Response, next: NextFunction) => {
   const body = req.body as AadhaarVerifyOtpBody;
-  const isAdmin = isAdminRequest(req);
+  const isAdmin = isAdminRequest(req as any);
 
   try {
     const result = await aadhaarService.verifyOtp({
@@ -91,7 +90,7 @@ export const verifyAadhaarOtp = async (req: VerificationRequest, res: Response, 
 
 export const getAadhaarStatus = async (req: VerificationRequest, res: Response, next: NextFunction) => {
   try {
-    const canViewAll = isAdminRequest(req);
+    const canViewAll = isAdminRequest(req as any);
     const result = await aadhaarService.getStatus(req.params.id, req.user!.id, canViewAll);
     return successResponse(res, result);
   } catch (err) {

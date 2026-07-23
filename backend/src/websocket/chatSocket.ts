@@ -6,11 +6,10 @@ import { getJwtSecret } from "../config/env";
 interface SocketUser {
   id: string;
   email: string;
-  role: string;
+  roleId?: number;
 }
 
 export const registerChatSocket = (io: Server) => {
-  // Authentication middleware for Socket.io
   io.use((socket: any, next) => {
     const token = socket.handshake.auth.token || socket.handshake.headers["authorization"]?.split(" ")[1];
 
@@ -30,47 +29,41 @@ export const registerChatSocket = (io: Server) => {
   io.on("connection", (socket: Socket & { user?: SocketUser }) => {
     console.log(`User connected to Chat Socket: ${socket.user?.email} (${socket.id})`);
 
-    // Join room
     socket.on("join_room", ({ chatId }) => {
       socket.join(chatId);
       console.log(`Socket ${socket.id} joined room ${chatId}`);
     });
 
-    // Send Message
-    socket.on("send_message", async ({ chatId, text, fileUrl, fileType }) => {
+    socket.on("send_message", async ({ chatId, text }) => {
       try {
         if (!socket.user) return;
 
         const message = await prisma.message.create({
           data: {
             chatId,
+            senderUserId: socket.user.id,
             senderId: socket.user.id,
-            text,
-            fileUrl,
-            fileType,
+            content: text || "",
             readBy: [socket.user.id]
           },
           include: {
             sender: {
-              select: { id: true, email: true, role: true }
+              select: { id: true, email: true, roleId: true }
             }
           }
         });
 
-        // Update Chat updatedTime
         await prisma.chat.update({
           where: { id: chatId },
           data: { updatedAt: new Date() }
         });
 
-        // Broadcast to other sockets in room
         io.to(chatId).emit("receive_message", message);
       } catch (err) {
         console.error("Socket send_message error:", err);
       }
     });
 
-    // Typing Indicators
     socket.on("typing", ({ chatId }) => {
       socket.to(chatId).emit("user_typing", { email: socket.user?.email });
     });
@@ -79,7 +72,6 @@ export const registerChatSocket = (io: Server) => {
       socket.to(chatId).emit("user_stop_typing", { email: socket.user?.email });
     });
 
-    // Read Receipt
     socket.on("message_read", async ({ chatId, messageId }) => {
       try {
         if (!socket.user) return;
@@ -100,7 +92,7 @@ export const registerChatSocket = (io: Server) => {
     });
 
     socket.on("disconnect", () => {
-      console.log(`User disconnected from Chat Socket: ${socket.user?.email}`);
+      console.log(`User disconnected from Chat Socket: ${socket.id}`);
     });
   });
 };

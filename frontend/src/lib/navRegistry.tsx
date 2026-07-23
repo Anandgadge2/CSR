@@ -34,168 +34,163 @@ export interface NavItem {
 
 // ── Shared organization-scoped menus (reused across several roles) ──
 const departmentItems: NavItem[] = [
-  { label: "Dashboard", href: "/department/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
   { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
-  { label: "Create Pitch", href: "/department/pitches/create", icon: Sparkles },
-  { label: "My Pitches", href: "/department/pitches", icon: Compass },
+  { label: "Create Pitch", href: "/pitches/create", icon: Sparkles },
+  { label: "My Pitches", href: "/pitches", icon: Compass },
   { label: "Track Status", href: "/track", icon: Clock },
-  { label: "Create Requirement", href: "/department/requirements/create", icon: Sparkles, featureKey: "enableRequirementCreation" },
-  { label: "My Requirements", href: "/department/requirements", icon: Compass, featureKey: "enableRequirementCreation" },
-  { label: "Company Interest", href: "/department/interests", icon: Compass, featureKey: "enableCompanyInterest" },
+  { label: "Create Requirement", href: "/requirements/create", icon: Sparkles, featureKey: "enableRequirementCreation" },
+  { label: "My Requirements", href: "/requirements", icon: Compass, featureKey: "enableRequirementCreation" },
+  { label: "Company Interest", href: "/interests", icon: Compass, featureKey: "enableCompanyInterest" },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
-  { label: "Handover", href: "/department/handover", icon: Layers },
-  { label: "Reports", href: "/department/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+  { label: "Handover", href: "/handover", icon: Layers },
+  { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
   { label: "Users", href: "/organization/users", icon: Users, requiredPermission: "user:update" },
   { label: "Roles", href: "/organization/roles", icon: ShieldAlert, requiredPermission: "role:view" },
   { label: "Settings", href: "/organization/settings", icon: ShieldCheck },
 ];
 
 const companyItems: NavItem[] = [
-  { label: "Dashboard", href: "/company/dashboard", icon: Layers },
-  { label: "My Enquiries", href: "/partner/enquiries", icon: Mail },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
+  { label: "My Enquiries", href: "/enquiries", icon: Mail },
   { label: "Track Status", href: "/track", icon: Clock },
   { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
   { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
-  { label: "Project Marketplace", href: "/company/marketplace", icon: Compass, featureKey: "enableCSRMarketplace" },
-  { label: "My Interests", href: "/company/interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
-  { label: "Implementing Agencies", href: "/partner/agencies", icon: Building2 },
+  { label: "Project Marketplace", href: "/marketplace", icon: Compass, featureKey: "enableCSRMarketplace" },
+  { label: "My Interests", href: "/interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
+  { label: "Implementing Agencies", href: "/agencies", icon: Building2 },
   { label: "Funded Projects", href: "/convergence-projects", icon: ShieldCheck },
-  { label: "Fund Releases", href: "/company/funds", icon: Coins, featureKey: "enableFundDisbursement" },
-  { label: "Reports", href: "/company/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+  { label: "Fund Releases", href: "/fund-releases", icon: Coins, featureKey: "enableFundDisbursement" },
+  { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
   { label: "Users", href: "/organization/users", icon: Users, requiredPermission: "user:update" },
   { label: "Roles", href: "/organization/roles", icon: ShieldAlert, requiredPermission: "role:view" },
   { label: "Settings", href: "/organization/settings", icon: ShieldCheck },
 ];
 
 const ngoOrganizationItems: NavItem[] = [
-  { label: "Dashboard", href: "/ngo/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
   { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
   { label: "Proposal Requests", href: "/ngo/proposal-requests", icon: Compass, featureKey: "enableCSRMarketplace" },
-  { label: "Assigned Projects", href: "/ngo/assigned-projects", icon: ShieldCheck },
+  { label: "Assigned Projects", href: "/convergence-projects", icon: ShieldCheck },
   { label: "Milestones", href: "/ngo/milestones", icon: Award, featureKey: "enableMilestoneMonitoring" },
-  { label: "Fund Releases", href: "/ngo/funds", icon: Coins, featureKey: "enableFundDisbursement" },
-  { label: "Reports", href: "/ngo/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+  { label: "Fund Releases", href: "/fund-releases", icon: Coins, featureKey: "enableFundDisbursement" },
+  { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
   { label: "Users", href: "/organization/users", icon: Users, requiredPermission: "user:update" },
   { label: "Roles", href: "/organization/roles", icon: ShieldAlert, requiredPermission: "role:view" },
   { label: "Settings", href: "/organization/settings", icon: ShieldCheck },
 ];
 
 const rmItems: NavItem[] = [
-  { label: "Dashboard", href: "/rm/dashboard", icon: Layers },
-  { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
-  { label: "Government Pitches", href: "/rm/government-pitches", icon: Compass },
-  { label: "Corporate Interests", href: "/rm/interests", icon: Sparkles },
-  { label: "Feasibility Reports", href: "/rm/assessments", icon: FileText },
-  { label: "Company Directory", href: "/rm/companies", icon: Building2 },
-  { label: "Communication Log", href: "/rm/communications", icon: Mail },
-  { label: "Reports", href: "/rm/reports", icon: BarChart2 },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
+  { label: "Corporate Enquiries", href: "/enquiries", icon: Mail },
+  { label: "Government Pitches", href: "/pitches", icon: Compass },
+  { label: "Corporate Interests", href: "/interests", icon: Sparkles },
+  { label: "Feasibility Reports", href: "/assessments", icon: FileText },
+  { label: "Company Directory", href: "/companies", icon: Building2 },
+  { label: "Communication Log", href: "/communications", icon: Mail },
+  { label: "Reports", href: "/reports", icon: BarChart2 },
 ];
 
 const jsItems: NavItem[] = [
-  { label: "JS Dashboard", href: "/js/dashboard", icon: Layers },
-  { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
-  { label: "Assessment Reports", href: "/js/assessments", icon: FileText },
-  { label: "Government Pitch Approvals", href: "/js/government-pitches", icon: Compass },
-  { label: "Nodal Appointments", href: "/js/nodal-appointments", icon: Users },
-  { label: "RM Escalations", href: "/js/escalations", icon: ShieldAlert },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
+  { label: "Corporate Enquiries", href: "/enquiries", icon: Mail },
+  { label: "Assessment Reports", href: "/assessments", icon: FileText },
+  { label: "Government Pitch Approvals", href: "/pitches", icon: Compass },
+  { label: "Nodal Appointments", href: "/nodal-appointments", icon: Users },
+  { label: "RM Escalations", href: "/escalations", icon: ShieldAlert },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
 ];
 
 const secretaryItems: NavItem[] = [
-  { label: "Escalations", href: "/secretary/escalations", icon: ShieldAlert },
-  { label: "Dashboard", href: "/secretary/dashboard", icon: Layers },
-  { label: "Final Decisions", href: "/secretary/decisions", icon: ShieldCheck },
-  { label: "JS Dashboard", href: "/js/dashboard", icon: Layers },
-  { label: "Feasibility Assessments", href: "/js/assessments", icon: FileText },
-  { label: "Final Grievance Review", href: "/state-cell/grievances", icon: ShieldAlert },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
+  { label: "Escalations", href: "/escalations", icon: ShieldAlert },
+  { label: "Final Decisions", href: "/decisions", icon: ShieldCheck },
+  { label: "Feasibility Assessments", href: "/assessments", icon: FileText },
+  { label: "Final Grievance Review", href: "/grievances", icon: ShieldAlert },
 ];
 
 const stateCellItems: NavItem[] = [
-  { label: "Dashboard", href: "/state-cell/dashboard", icon: Layers },
-  { label: "Corporate Enquiries", href: "/rm/enquiries", icon: Mail },
-  { label: "Government Pitches", href: "/rm/government-pitches", icon: Compass },
-  { label: "Grievance Queue", href: "/state-cell/grievances", icon: ShieldAlert },
-  { label: "Helpdesk Queue", href: "/state-cell/helpdesk", icon: HelpCircle },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
+  { label: "Corporate Enquiries", href: "/enquiries", icon: Mail },
+  { label: "Government Pitches", href: "/pitches", icon: Compass },
+  { label: "Grievance Queue", href: "/grievances", icon: ShieldAlert },
+  { label: "Helpdesk Queue", href: "/helpdesk", icon: HelpCircle },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
 ];
 
 const nodalItems: NavItem[] = [
-  { label: "Dashboard", href: "/nodal/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
-  { label: "Field Inspections", href: "/nodal/inspections", icon: Landmark },
-  { label: "Agency Approvals", href: "/nodal/agency-approvals", icon: ShieldCheck },
-  { label: "Project Handover", href: "/nodal/handover", icon: Layers },
-  { label: "Grievance Queue", href: "/nodal/grievances", icon: ShieldAlert },
+  { label: "Field Inspections", href: "/inspections", icon: Landmark },
+  { label: "Agency Approvals", href: "/agencies", icon: ShieldCheck },
+  { label: "Project Handover", href: "/handover", icon: Layers },
+  { label: "Grievance Queue", href: "/grievances", icon: ShieldAlert },
 ];
 
 const partnerItems: NavItem[] = [
-  { label: "Dashboard", href: "/partner/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
   { label: "Public Development Needs (Live)", href: "/public-development-needs", icon: Compass },
-  { label: "My Enquiries", href: "/partner/enquiries", icon: Mail },
-  { label: "My Interests", href: "/company/interests", icon: Sparkles },
+  { label: "My Enquiries", href: "/enquiries", icon: Mail },
+  { label: "My Interests", href: "/interests", icon: Sparkles },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
-  { label: "Implementing Agencies", href: "/partner/agencies", icon: Building2 },
+  { label: "Implementing Agencies", href: "/agencies", icon: Building2 },
   { label: "Grievances", href: "/grievances", icon: ShieldAlert },
   { label: "Track Status", href: "/track", icon: Clock },
 ];
 
 const agencyItems: NavItem[] = [
-  { label: "Dashboard", href: "/agency/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
   { label: "Grievances", href: "/grievances", icon: ShieldAlert },
   { label: "Track Status", href: "/track", icon: Clock },
 ];
 
 const districtItems: NavItem[] = [
-  { label: "Dashboard", href: "/district/dashboard", icon: Layers },
-  { label: "Requirements", href: "/district/requirements", icon: Compass },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
+  { label: "Requirements", href: "/requirements", icon: Compass },
   { label: "Projects", href: "/convergence-projects", icon: ShieldCheck },
-  { label: "Inspections", href: "/district/inspections", icon: Landmark, featureKey: "enableMilestoneMonitoring" },
-  { label: "Reports", href: "/district/reports", icon: BarChart2, featureKey: "enableReportsExport" },
+  { label: "Inspections", href: "/inspections", icon: Landmark, featureKey: "enableMilestoneMonitoring" },
+  { label: "Reports", href: "/reports", icon: BarChart2, featureKey: "enableReportsExport" },
 ];
 
 const portalAdminItems: NavItem[] = [
-  { label: "Statewide Monitor", href: "/government-portal/statewide", icon: Layers },
-  { label: "District Register", href: "/government-portal/district", icon: Compass },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "User Management", href: "/admin/user-management", icon: Users },
   { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldAlert },
-  { label: "Verification Queues", href: "/government-portal/ngo-verify", icon: Landmark },
-  { label: "Project Approvals", href: "/government-portal/project-verify", icon: ShieldCheck },
-  { label: "Compliance Audit", href: "/government-portal/compliance", icon: ShieldAlert },
-  { label: "GIS Heatmap", href: "/government-portal/heatmaps", icon: Compass },
-  { label: "Circulars", href: "/government-portal/circulars", icon: FileText },
-  { label: "Reports", href: "/government-portal/reports", icon: BarChart2 },
+  { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", icon: Landmark },
+  { label: "Project Approvals", href: "/convergence-projects", icon: ShieldCheck },
+  { label: "Compliance Audit", href: "/audit-logs", icon: ShieldAlert },
+  { label: "Reports", href: "/reports", icon: BarChart2 },
 ];
 
 const adminItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "User Management", href: "/admin/user-management", icon: Users },
   { label: "Roles & Permissions", href: "/admin/roles-permissions", icon: ShieldAlert },
   { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", icon: ShieldCheck },
   { label: "Government Departments", href: "/admin/organizations", icon: Landmark },
-  { label: "Implementing Agencies", href: "/admin/ngo-registry", icon: Landmark },
-  { label: "Companies", href: "/admin/companies", icon: Building2 },
-  { label: "Requirements Pending", href: "/admin/requirements/pending", icon: Clock, featureKey: "enableRequirementCreation" },
-  { label: "Company Interests", href: "/admin/company-interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
+  { label: "Implementing Agencies", href: "/agencies", icon: Landmark },
+  { label: "Companies", href: "/companies", icon: Building2 },
+  { label: "Requirements Pending", href: "/requirements", icon: Clock, featureKey: "enableRequirementCreation" },
+  { label: "Company Interests", href: "/interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
   { label: "Agency Selection", href: "/admin/ngo-selection", icon: Award, featureKey: "enableNGOSelection" },
-  { label: "Fund Monitoring", href: "/admin/fund-monitoring", icon: Coins, featureKey: "enableFundDisbursement" },
+  { label: "Fund Monitoring", href: "/fund-releases", icon: Coins, featureKey: "enableFundDisbursement" },
   { label: "Projects", href: "/convergence-projects", icon: Compass },
-  { label: "Verification Queue", href: "/admin/applications", icon: Clock },
-  { label: "Reports", href: "/admin/reports", icon: BarChart2 },
-  { label: "Audit Trail", href: "/admin/audit-trail", icon: FileText },
+  { label: "Reports", href: "/reports", icon: BarChart2 },
+  { label: "Audit Trail", href: "/audit-logs", icon: FileText },
 ];
 
 const masterItems: NavItem[] = [
-  { label: "Dashboard", href: "/master/dashboard", icon: Layers },
+  { label: "Dashboard", href: "/dashboard", icon: Layers },
   { label: "Tenants", href: "/master/tenants", icon: Globe2 },
   { label: "Create Tenant", href: "/master/tenants/create", icon: Sparkles },
   { label: "Organizations", href: "/master/organizations", icon: Landmark },
   { label: "Users", href: "/master/users", icon: Users },
-  { label: "Audit Logs", href: "/master/audit-logs", icon: FileText },
-  { label: "Settings", href: "/master/settings", icon: ShieldCheck },
+  { label: "Audit Logs", href: "/audit-logs", icon: FileText },
+  { label: "Settings", href: "/settings", icon: ShieldCheck },
 ];
 
 const genericDashboardItems: NavItem[] = [
@@ -249,18 +244,21 @@ const publicFallbackItems: NavItem[] = [
  * pathname fallback ran. Multiple role keys can share the same array.
  */
 export const ROLE_NAV: Record<string, NavItem[]> = {
-  CSR_RELATIONSHIP_MANAGER: rmItems,
-  JOINT_SECRETARY: jsItems,
+  SUPER_ADMIN: adminItems,
   PLANNING_SECRETARY: secretaryItems,
-  STATE_CSR_CELL: stateCellItems,
+  JOINT_SECRETARY: jsItems,
   DISTRICT_NODAL_OFFICER: nodalItems,
-  NODAL_OFFICER: nodalItems,
-  CORPORATE_USER: partnerItems,
-  CORPORATE_PARTNER: partnerItems,
-  COMPANY_ADMIN: partnerItems,
-  COMPANY_MEMBER: partnerItems,
-  IMPLEMENTING_AGENCY_USER: agencyItems,
+  DISTRICT_NODAL_CONSULTANT: nodalItems,
+  RELATIONSHIP_MANAGER: rmItems,
   GOVERNMENT_OFFICER: departmentItems,
+  COMPANY_ADMIN: companyItems,
+  NGO_ADMIN: ngoOrganizationItems,
+  // Alias mappings for backward compatibility
+  CSR_RELATIONSHIP_MANAGER: rmItems,
+  CORPORATE_USER: companyItems,
+  CORPORATE_PARTNER: companyItems,
+  COMPANY_MEMBER: companyItems,
+  IMPLEMENTING_AGENCY_USER: ngoOrganizationItems,
   BENEFICIARY_AGENCY: departmentItems,
 };
 
@@ -273,17 +271,15 @@ export function normalizeRole(role: string): string {
   if (!role) return "";
   const upper = role.toUpperCase().trim();
   
-  if (upper === "SUPER ADMIN" || upper === "SUPER-ADMIN" || upper === "SUPER_ADMIN") return "SUPER_ADMIN";
-  if (upper === "CORPORATE ADMIN" || upper === "COMPANY ADMIN" || upper === "COMPANY-ADMIN" || upper === "COMPANY_ADMIN") return "COMPANY_ADMIN";
-  if (upper === "NGO ADMIN" || upper === "NGO-ADMIN" || upper === "NGO_ADMIN") return "NGO_ADMIN";
+  if (upper === "SUPER ADMIN" || upper === "SUPER-ADMIN" || upper === "SUPER_ADMIN" || upper === "PORTAL ADMIN" || upper === "PORTAL_ADMIN") return "SUPER_ADMIN";
   if (upper === "PLANNING SECRETARY" || upper === "PLANNING-SECRETARY" || upper === "PLANNING_SECRETARY") return "PLANNING_SECRETARY";
   if (upper === "JOINT SECRETARY" || upper === "JOINT-SECRETARY" || upper === "JOINT_SECRETARY") return "JOINT_SECRETARY";
-  if (upper === "DISTRICT NODAL OFFICER" || upper === "DISTRICT-NODAL-OFFICER" || upper === "DISTRICT_NODAL_OFFICER") return "DISTRICT_NODAL_OFFICER";
+  if (upper === "DISTRICT NODAL OFFICER" || upper === "DISTRICT-NODAL-OFFICER" || upper === "DISTRICT_NODAL_OFFICER" || upper === "NODAL_OFFICER") return "DISTRICT_NODAL_OFFICER";
   if (upper === "DISTRICT NODAL CONSULTANT" || upper === "DISTRICT-NODAL-CONSULTANT" || upper === "DISTRICT_NODAL_CONSULTANT") return "DISTRICT_NODAL_CONSULTANT";
-  if (upper === "RELATIONSHIP MANAGER" || upper === "RELATIONSHIP-MANAGER" || upper === "RELATIONSHIP_MANAGER") return "RELATIONSHIP_MANAGER";
+  if (upper === "CSR RELATIONSHIP MANAGER" || upper === "RELATIONSHIP MANAGER" || upper === "RELATIONSHIP-MANAGER" || upper === "RELATIONSHIP_MANAGER" || upper === "CSR_RELATIONSHIP_MANAGER") return "RELATIONSHIP_MANAGER";
   if (upper === "GOVERNMENT OFFICER" || upper === "GOVERNMENT-OFFICER" || upper === "GOVERNMENT_OFFICER" || upper === "BENEFICIARY AGENCY" || upper === "BENEFICIARY-AGENCY" || upper === "BENEFICIARY_AGENCY") return "GOVERNMENT_OFFICER";
-  if (upper === "CORPORATE USER" || upper === "CORPORATE-USER" || upper === "CORPORATE_USER") return "CORPORATE_USER";
-  if (upper === "IMPLEMENTING AGENCY USER" || upper === "IMPLEMENTING-AGENCY-USER" || upper === "IMPLEMENTING_AGENCY_USER") return "IMPLEMENTING_AGENCY_USER";
+  if (upper === "CORPORATE ADMIN" || upper === "COMPANY ADMIN" || upper === "COMPANY-ADMIN" || upper === "COMPANY_ADMIN" || upper === "CORPORATE USER" || upper === "CORPORATE_USER" || upper === "CORPORATE_PARTNER") return "COMPANY_ADMIN";
+  if (upper === "NGO ADMIN" || upper === "NGO-ADMIN" || upper === "NGO_ADMIN" || upper === "IMPLEMENTING AGENCY USER" || upper === "IMPLEMENTING_AGENCY_USER") return "NGO_ADMIN";
 
   return upper.replace(/[-\s]/g, "_");
 }

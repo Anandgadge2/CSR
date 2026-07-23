@@ -24,7 +24,7 @@ export const getCurrentUserPermissions = async (
     const payload = await computeUserPermissions({
       userId: req.user.id,
       role: req.user.role,
-      roleSlug: req.user.roleSlug,
+      roleId: req.user.roleId,
       organizationId: req.user.organizationId,
     });
 
@@ -53,8 +53,8 @@ export const getModulePermissions = async (
 
     const permissionSet = new Set<string>();
 
-    // SUPER_ADMIN gets all module permissions (recognised on either axis).
-    if (isSuperAdmin({ role: req.user.role, roleSlug: req.user.roleSlug })) {
+    // SUPER_ADMIN gets all module permissions
+    if (isSuperAdmin({ role: req.user.role, roleId: req.user.roleId })) {
       const allPerms = await prisma.permission.findMany({
         where: { module },
         select: { key: true },
@@ -63,26 +63,18 @@ export const getModulePermissions = async (
       return successResponse(res, { module, permissions: Array.from(permissionSet) });
     }
 
-    // User.roleRelation permissions
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        roleRelation: {
-          include: {
-            rolePermissions: {
-              include: { permission: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (user?.roleRelation) {
-      user.roleRelation.rolePermissions.forEach((rp) => {
-        if (rp.permission.module === module) {
-          permissionSet.add(rp.permission.key);
-        }
+    if (req.user.roleId) {
+      const userRole = await prisma.role.findUnique({
+        where: { id: Number(req.user.roleId) },
+        include: { rolePermissions: { include: { permission: true } } }
       });
+      if (userRole) {
+        userRole.rolePermissions.forEach((rp: any) => {
+          if (rp.permission.module === module) {
+            permissionSet.add(rp.permission.key);
+          }
+        });
+      }
     }
 
     // UserOrganizationRole permissions
@@ -147,23 +139,11 @@ export const checkUserPermission = async (
       return successResponse(res, { hasPermission: true, permission });
     }
 
-    // Check via User.roleRelation
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        roleRelation: {
-          select: {
-            rolePermissions: {
-              where: { permission: { key: permission } },
-              select: { permissionId: true },
-            },
-          },
-        },
-      },
-    });
-
-    if (user?.roleRelation && user.roleRelation.rolePermissions.length > 0) {
-      return successResponse(res, { hasPermission: true, permission });
+    if (req.user.roleId) {
+      const rp = await prisma.rolePermission.findFirst({
+        where: { roleId: Number(req.user.roleId), permission: { key: permission } }
+      });
+      if (rp) return successResponse(res, { hasPermission: true, permission });
     }
 
     // Check via UserOrganizationRole

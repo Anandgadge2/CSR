@@ -40,9 +40,8 @@ export const logVerificationEvent = (input: VerificationAuditInput): void => {
   prisma.auditLog
     .create({
       data: {
-        userId: req.user?.id,
-        actorUserId: req.user?.id,
-        actorRole: req.user?.role,
+        userId: req.user?.id || null,
+        actorUserId: req.user?.id || null,
         action: input.action,
         entityType: "VerificationRecord",
         entityId: input.recordId,
@@ -64,8 +63,7 @@ export const logVerificationEvent = (input: VerificationAuditInput): void => {
           roleId: req.user?.roleId ?? null,
           ...input.extra
         },
-        ipAddress: req.ip || (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() || null,
-        userAgent: userAgent || null
+        ipAddress: req.ip || (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() || null
       }
     })
     .catch((err) => {

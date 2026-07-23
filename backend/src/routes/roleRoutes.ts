@@ -2,41 +2,25 @@ import { Router } from "express";
 import {
   getRoles,
   getRoleById,
+  getPermissionGroups,
+  getPages,
   createRole,
   updateRole,
-  cloneRole,
-  deleteRole,
-  getPermissions,
-  getPageRegistry,
-  getPermissionGroups,
-  createPermissionGroup,
-  assignUserRoles,
-  getUserRoles } from "../controllers/roleController";
+  deleteRole
+} from "../controllers/roleController";
 import { authenticateToken } from "../middlewares/authMiddleware";
-import { checkPermission } from "../middlewares/accessControlMiddleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
 
 const router = Router();
 
-// Protect all role routes with token authentication
 router.use(authenticateToken);
 
-// Permissions listing
-router.get("/permissions", checkPermission("permission:view"), asyncHandler(getPermissions));
-router.get("/pages", checkPermission("permission:view"), asyncHandler(getPageRegistry));
-router.get("/permission-groups", checkPermission("permission:view"), asyncHandler(getPermissionGroups));
-router.post("/permission-groups", checkPermission("permission:configure"), asyncHandler(createPermissionGroup));
-
-// Roles CRUD
-router.get("/", checkPermission("role:view"), asyncHandler(getRoles));
-router.post("/", checkPermission("role:create"), asyncHandler(createRole));
-router.get("/:id", checkPermission("role:view"), asyncHandler(getRoleById));
-router.put("/:id", checkPermission("role:update"), asyncHandler(updateRole));
-router.post("/:id/clone", checkPermission("role:create"), asyncHandler(cloneRole));
-router.delete("/:id", checkPermission("role:delete"), asyncHandler(deleteRole));
-
-// User-Role Assignments
-router.get("/users/:userId", checkPermission("role:view"), asyncHandler(getUserRoles));
-router.post("/users/:userId", checkPermission("role:configure"), asyncHandler(assignUserRoles));
+router.get("/", asyncHandler(getRoles));
+router.get("/permission-groups", asyncHandler(getPermissionGroups));
+router.get("/pages", asyncHandler(getPages));
+router.post("/", asyncHandler(createRole));
+router.get("/:id", asyncHandler(getRoleById));
+router.put("/:id", asyncHandler(updateRole));
+router.delete("/:id", asyncHandler(deleteRole));
 
 export default router;

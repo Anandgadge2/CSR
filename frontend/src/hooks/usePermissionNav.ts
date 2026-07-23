@@ -215,7 +215,7 @@ export const getDashboardNavItems = (userRole?: string): NavItem[] => {
   ];
 
   const adminItems: NavItem[] = [
-    { label: "Dashboard", href: "/admin/dashboard" },
+    { label: "Dashboard", href: "/dashboard" },
     { label: "Users", href: "/admin/users-roles", permission: "user:invite" },
     { label: "Onboarding Approvals", href: "/admin/onboarding-approvals", permission: "organization:approve" },
     { label: "Government Departments", href: "/admin/organizations", permission: "organization:view" },

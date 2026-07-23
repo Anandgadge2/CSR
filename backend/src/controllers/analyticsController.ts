@@ -3,39 +3,22 @@ import prisma from "../config/db";
 
 export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 1. Get totals
-    const totalNgos = await prisma.nGO.count({ where: { status: "VERIFIED" } });
-    const totalCompanies = await prisma.company.count({ where: { status: "VERIFIED" } });
-    const totalProjects = await prisma.project.count({ where: { status: { in: ["APPROVED", "FUNDED", "COMPLETED"] } } });
+    const totalNgos = await prisma.organization.count({ where: { kind: "NGO", status: "ACTIVE" } });
+    const totalCompanies = await prisma.organization.count({ where: { kind: "CSR_COMPANY", status: "ACTIVE" } });
+    const totalProjects = await prisma.project.count();
     
-    // Sum total funding
     const totalBudgetAggregate = await prisma.project.aggregate({
-      where: { status: { in: ["FUNDED", "COMPLETED"] } },
-      _sum: { budgetFunded: true }
+      _sum: { approvedBudget: true }
     });
-    const totalFunding = totalBudgetAggregate._sum.budgetFunded || 0;
+    const totalFunding = totalBudgetAggregate._sum.approvedBudget || 0;
 
-    // 2. SDG Coverage Distribution
-    const projectsBySdg = await prisma.project.groupBy({
-      by: ["sdgGoal"],
-      where: { status: { in: ["APPROVED", "FUNDED", "COMPLETED"] } },
+    const projectsBySector = await prisma.project.groupBy({
+      by: ["sector"],
       _count: { id: true }
     });
 
-    const sdgCoverage = projectsBySdg.map((item) => ({
-      sdgGoal: item.sdgGoal,
-      count: item._count.id
-    }));
-
-    // 3. Focus Area Distribution
-    const projectsByFocusArea = await prisma.project.groupBy({
-      by: ["focusArea"],
-      where: { status: { in: ["APPROVED", "FUNDED", "COMPLETED"] } },
-      _count: { id: true }
-    });
-
-    const focusAreaCoverage = projectsByFocusArea.map((item) => ({
-      focusArea: item.focusArea,
+    const sectorCoverage = projectsBySector.map((item) => ({
+      sector: item.sector,
       count: item._count.id
     }));
 
@@ -44,8 +27,7 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
       totalCompanies,
       totalProjects,
       totalFunding,
-      sdgCoverage,
-      focusAreaCoverage
+      sectorCoverage
     });
   } catch (error) {
     next(error);
@@ -54,58 +36,13 @@ export const getDashboardStats = async (req: Request, res: Response, next: NextF
 
 export const getGisData = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Group Projects and sum parameters by district in Maharashtra
     const projectStats = await prisma.project.groupBy({
       by: ["district"],
-      where: { status: { in: ["FUNDED", "COMPLETED"] } },
-      _sum: {
-        budgetFunded: true,
-        beneficiaryCount: true
-      },
-      _count: {
-        id: true
-      }
+      _count: { id: true },
+      _sum: { approvedBudget: true }
     });
 
-    // Group NGOs by district
-    const ngoStats = await prisma.nGO.groupBy({
-      by: ["district"],
-      where: { status: "VERIFIED" },
-      _count: {
-        id: true
-      }
-    });
-
-    // Merge statistics by district name
-    const districtStatsMap: Record<string, any> = {};
-
-    projectStats.forEach((p) => {
-      districtStatsMap[p.district] = {
-        district: p.district,
-        projectsCount: p._count.id,
-        totalFunding: p._sum.budgetFunded || 0,
-        totalBeneficiaries: p._sum.beneficiaryCount || 0,
-        ngosCount: 0
-      };
-    });
-
-    ngoStats.forEach((n) => {
-      if (!districtStatsMap[n.district]) {
-        districtStatsMap[n.district] = {
-          district: n.district,
-          projectsCount: 0,
-          totalFunding: 0,
-          totalBeneficiaries: 0,
-          ngosCount: n._count.id
-        };
-      } else {
-        districtStatsMap[n.district].ngosCount = n._count.id;
-      }
-    });
-
-    const gisData = Object.values(districtStatsMap);
-
-    return res.json(gisData);
+    return res.json(projectStats);
   } catch (error) {
     next(error);
   }

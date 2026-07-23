@@ -1,4 +1,4 @@
-import { VerificationEntityType, VerificationModuleType, VerificationRecordStatus } from "@prisma/client";
+import { VerificationModuleType, VerificationRecordStatus } from "@prisma/client";
 import prisma from "../../../config/db";
 import { getApiSetuConfig } from "../../../config/env";
 import { callApiSetu, getUpstreamStatus, getUpstreamErrorBody } from "../clients/apiSetuClient";
@@ -14,6 +14,7 @@ import {
 import { logger } from "../utils/logger";
 import * as recordService from "./verificationRecordService";
 import { mirrorToOnboardingCheck } from "./gstVerificationService";
+import { VerificationEntityType } from "../../../types/verification";
 
 /**
  * Aadhaar OTP eKYC via API Setu / UIDAI.

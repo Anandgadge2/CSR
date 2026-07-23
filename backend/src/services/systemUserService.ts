@@ -1,13 +1,12 @@
 import prisma from "../config/db";
+import { ROLE_ID } from "../types/role";
 
 export const SYSTEM_USER_EMAIL = "system@mahacsr.gov.in";
 
 let cachedSystemUserId: string | null = null;
 
 /**
- * Resolve (and cache) the seeded system user used for automated workflow
- * actions. WorkflowHistory.actionPerformedByUserId is a required FK, so
- * system-driven transitions must reference a real user row.
+ * Resolve (and cache) the seeded system user used for automated workflow actions.
  */
 export async function getSystemUserId(): Promise<string> {
   if (cachedSystemUserId) return cachedSystemUserId;
@@ -18,17 +17,14 @@ export async function getSystemUserId(): Promise<string> {
     return existing.id;
   }
 
-  // Self-heal in environments where the seed has not run: create a locked,
-  // unusable system account (random password hash, INACTIVE so login is impossible).
   const crypto = await import("crypto");
   const created = await prisma.user.create({
     data: {
       email: SYSTEM_USER_EMAIL,
       passwordHash: crypto.randomBytes(48).toString("hex"),
-      role: null,
+      roleId: ROLE_ID.SUPER_ADMIN,
       accountStatus: "INACTIVE",
-      isVerified: false,
-      isSystemSeeded: true
+      isVerified: false
     }
   });
   cachedSystemUserId = created.id;

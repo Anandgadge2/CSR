@@ -24,10 +24,10 @@ export const PAGE_REGISTRY: PageDef[] = [
   { slug: "profile", label: "Profile", route: "/profile", group: "General" },
   { slug: "settings", label: "Settings", route: "/settings", group: "General" },
   { slug: "reports", label: "Reports", route: "/reports", group: "General" },
-  { slug: "audit-trail", label: "Audit Trail", route: "/admin/audit-trail", group: "General" },
+  { slug: "audit-trail", label: "Audit Trail", route: "/audit-logs", group: "General" },
 
   // Admin / platform administration
-  { slug: "admin-dashboard", label: "Admin Dashboard", route: "/admin/dashboard", group: "Administration" },
+  { slug: "admin-dashboard", label: "Admin Dashboard", route: "/dashboard", group: "Administration" },
   { slug: "user-management", label: "User Management", route: "/admin/user-management", group: "Administration" },
   { slug: "roles-permissions", label: "Roles & Permissions", route: "/admin/roles-permissions", group: "Administration" },
   { slug: "onboarding-approvals", label: "Onboarding Approvals", route: "/admin/onboarding-approvals", group: "Administration" },

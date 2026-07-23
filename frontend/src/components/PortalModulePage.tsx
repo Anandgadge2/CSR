@@ -81,18 +81,26 @@ export default function PortalModulePage({
               </tr>
             </thead>
             <tbody className="divide-y divide-gov-line">
-              {(rows.length > 0 ? rows : [["No records", "Nothing pending in this queue", "System", "Clear"]]).map((row) => (
-                <tr key={row.join("-")} className="bg-white">
-                  <td className="px-5 py-4 font-bold text-gov-blue">{row[0]}</td>
-                  <td className="px-5 py-4 font-semibold text-gov-ink">{row[1]}</td>
-                  <td className="px-5 py-4 text-gov-muted">{row[2]}</td>
-                  <td className="px-5 py-4 text-right">
-                    <span className="border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900">
-                      {row[3]}
-                    </span>
+              {rows.length > 0 ? (
+                rows.map((row) => (
+                  <tr key={row.join("-")} className="bg-white">
+                    <td className="px-5 py-4 font-bold text-gov-blue">{row[0]}</td>
+                    <td className="px-5 py-4 font-semibold text-gov-ink">{row[1]}</td>
+                    <td className="px-5 py-4 text-gov-muted">{row[2]}</td>
+                    <td className="px-5 py-4 text-right">
+                      <span className="border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-bold text-amber-900">
+                        {row[3]}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="px-5 py-8 text-center text-slate-500 font-medium">
+                    No records found in database
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

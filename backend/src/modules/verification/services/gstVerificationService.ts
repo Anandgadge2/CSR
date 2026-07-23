@@ -1,4 +1,4 @@
-import { VerificationEntityType, VerificationModuleType, VerificationRecordStatus } from "@prisma/client";
+import { VerificationModuleType, VerificationRecordStatus } from "@prisma/client";
 import prisma from "../../../config/db";
 import { getApiSetuConfig } from "../../../config/env";
 import { callApiSetu, getUpstreamStatus } from "../clients/apiSetuClient";
@@ -7,6 +7,7 @@ import { encryptPayload, isEncryptionConfigured } from "../utils/crypto";
 import { GSTIN_REGEX, GstVerifiedData, redactGstResponse } from "../utils/masking";
 import { logger } from "../utils/logger";
 import * as recordService from "./verificationRecordService";
+import { VerificationEntityType } from "../../../types/verification";
 
 export interface GstVerifyInput {
   gstin: string;
@@ -42,35 +43,18 @@ const mirrorToOnboardingCheck = async (
   checkResult: Record<string, unknown>,
   verifiedById: string
 ) => {
-  if (entityType !== VerificationEntityType.ONBOARDING_APPLICATION) return;
   try {
-    const existing = await prisma.verificationCheck.findFirst({
-      where: { applicationId: entityId, checkType }
+    const existing = await prisma.verificationRecord.findFirst({
+      where: { entityId, verificationType: "GST" }
     });
     if (existing) {
-      await prisma.verificationCheck.update({
+      await prisma.verificationRecord.update({
         where: { id: existing.id },
-        data: { checkStatus, checkResult: checkResult as any, verifiedById, verifiedAt: new Date() }
-      });
-    } else {
-      await prisma.verificationCheck.create({
-        data: {
-          applicationId: entityId,
-          checkType,
-          checkStatus,
-          checkResult: checkResult as any,
-          verifiedById,
-          verifiedAt: new Date()
-        }
+        data: { status: checkStatus as any, verifiedAt: new Date() }
       });
     }
   } catch (err) {
-    // Mirroring is best-effort; the VerificationRecord row remains authoritative.
-    logger.warn("onboarding_check_mirror_failed", {
-      entityId,
-      checkType,
-      error: err instanceof Error ? err.message : String(err)
-    });
+    logger.warn(`[Verification:GST] Failed to update onboarding check result: ${String(err)}`);
   }
 };
 

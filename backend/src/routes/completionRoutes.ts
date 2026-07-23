@@ -1,19 +1,13 @@
-/**
- * @deprecated LEGACY - NOT MOUNTED in app.ts (ENABLE_LEGACY_NGO_MARKETPLACE guard).
- * This router is not registered; changes here have no runtime effect.
- */
 import { Router } from "express";
-import {
-  submitCompletionReport,
-  generateImpactReport,
-  getImpactReport
-} from "../controllers/completionController";
 import { authenticateToken } from "../middlewares/authMiddleware";
+import { initiateCompletion, submitFinalUC, verifyCompletion, getCompletionDetails } from "../controllers/completionController";
 
 const router = Router();
+router.use(authenticateToken);
 
-router.post("/requirement/:requirementId/submit", authenticateToken, submitCompletionReport);
-router.post("/requirement/:requirementId/generate-impact", authenticateToken, generateImpactReport);
-router.get("/requirement/:requirementId/impact", authenticateToken, getImpactReport);
+router.post("/:projectId/initiate", initiateCompletion);
+router.post("/:projectId/final-uc", submitFinalUC);
+router.post("/:projectId/verify", verifyCompletion);
+router.get("/:projectId", getCompletionDetails);
 
 export default router;

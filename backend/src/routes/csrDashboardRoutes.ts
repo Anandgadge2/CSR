@@ -1,13 +1,10 @@
-/**
- * Mounted at /api/csr-dashboard — serves role-based dashboard stats
- * for the department portal (/department/dashboard) and related views.
- */
 import { Router } from "express";
-import { getCSRDashboardStats } from "../controllers/csrDashboardController";
 import { authenticateToken } from "../middlewares/authMiddleware";
+import { getCsrCompanyDashboard } from "../controllers/csrDashboardController";
 
 const router = Router();
+router.use(authenticateToken);
 
-router.get("/stats", authenticateToken, getCSRDashboardStats);
+router.get("/", getCsrCompanyDashboard);
 
 export default router;

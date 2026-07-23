@@ -24,9 +24,7 @@ export async function sendOtp(purpose: OtpPurpose, channel: OtpChannel, target: 
 
   const recentCount = await prisma.otpVerification.count({
     where: {
-      purpose,
-      channel,
-      target: normalizedTarget,
+      identifier: `${purpose}:${channel}:${normalizedTarget}`,
       createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
     },
   });
@@ -36,15 +34,12 @@ export async function sendOtp(purpose: OtpPurpose, channel: OtpChannel, target: 
   }
 
   const otp = "123456";
-
   const otpHash = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
   await prisma.otpVerification.create({
     data: {
-      purpose,
-      channel,
-      target: normalizedTarget,
+      identifier: `${purpose}:${channel}:${normalizedTarget}`,
       otpHash,
       expiresAt,
     },
@@ -59,12 +54,12 @@ export async function sendOtp(purpose: OtpPurpose, channel: OtpChannel, target: 
 
 export async function verifyOtp(purpose: OtpPurpose, channel: OtpChannel, target: string, otp: string) {
   const normalizedTarget = normalizeTarget(channel, target);
+  const identifier = `${purpose}:${channel}:${normalizedTarget}`;
+
   const record = await prisma.otpVerification.findFirst({
     where: {
-      purpose,
-      channel,
-      target: normalizedTarget,
-      verifiedAt: null,
+      identifier,
+      verified: false,
       expiresAt: { gt: new Date() },
     },
     orderBy: { createdAt: "desc" },
@@ -90,7 +85,7 @@ export async function verifyOtp(purpose: OtpPurpose, channel: OtpChannel, target
   const verificationToken = crypto.randomBytes(32).toString("hex");
   await prisma.otpVerification.update({
     where: { id: record.id },
-    data: { verifiedAt: new Date(), verificationToken },
+    data: { verified: true },
   });
 
   return { verificationToken, expiresInMinutes: OTP_TTL_MINUTES };
@@ -107,18 +102,17 @@ export async function assertOtpVerified(
   }
 
   const normalizedTarget = normalizeTarget(channel, target);
+  const identifier = `${purpose}:${channel}:${normalizedTarget}`;
+
   const record = await prisma.otpVerification.findFirst({
     where: {
-      purpose,
-      channel,
-      target: normalizedTarget,
-      verificationToken,
-      verifiedAt: { not: null },
-      expiresAt: { gt: new Date() },
+      identifier,
+      verified: true
     },
+    orderBy: { createdAt: "desc" },
   });
 
   if (!record) {
-    throw new Error(`${channel} OTP verification is invalid or expired`);
+    throw new Error("OTP verification record expired or missing.");
   }
 }

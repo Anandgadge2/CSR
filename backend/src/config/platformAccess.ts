@@ -165,10 +165,10 @@ export const PAGE_REGISTRY = [
   ["profile", "Profile", "/profile", "General"],
   ["settings", "Settings", "/settings", "General"],
   ["reports", "Reports", "/reports", "General"],
-  ["audit-trail", "Audit Trail", "/admin/audit-trail", "General"],
+  ["audit-trail", "Audit Trail", "/audit-logs", "General"],
 
   // Admin / platform administration
-  ["admin-dashboard", "Admin Dashboard", "/admin/dashboard", "Administration"],
+  ["admin-dashboard", "Admin Dashboard", "/dashboard", "Administration"],
   ["user-management", "User Management", "/admin/user-management", "Administration"],
   ["roles-permissions", "Roles & Permissions", "/admin/roles-permissions", "Administration"],
   ["onboarding-approvals", "Onboarding Approvals", "/admin/onboarding-approvals", "Administration"],
@@ -224,9 +224,9 @@ export const SYSTEM_ROLE_IDS = {
   DISTRICT_NODAL_OFFICER: 4,
   DISTRICT_NODAL_CONSULTANT: 5,
   RELATIONSHIP_MANAGER: 6,
-  NGO_ADMIN: 7,
+  GOVERNMENT_OFFICER: 7,
   COMPANY_ADMIN: 8,
-  GOVERNMENT_OFFICER: 12,
+  NGO_ADMIN: 9,
 } as const;
 
 /**

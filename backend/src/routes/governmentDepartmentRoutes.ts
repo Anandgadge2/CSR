@@ -1,13 +1,11 @@
 import { Router } from "express";
-import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import { getMyBeneficiaryProfile, upsertBeneficiaryProfile } from "../controllers/csrRequirementController";
 
 const router = Router();
+router.use(authenticateToken);
 
-const departmentRoles = [Role.BENEFICIARY_AGENCY, Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN];
-
-router.post("/register", authenticateToken, authorizeRoles(departmentRoles), upsertBeneficiaryProfile);
-router.get("/me", authenticateToken, authorizeRoles(departmentRoles), getMyBeneficiaryProfile);
+router.get("/beneficiary-profile", getMyBeneficiaryProfile);
+router.put("/beneficiary-profile", upsertBeneficiaryProfile);
 
 export default router;

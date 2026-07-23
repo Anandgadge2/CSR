@@ -1,13 +1,11 @@
 import { Router } from "express";
 import {
   getOrCreateDraftApplication,
-  saveDraft,
   submitApplication,
   getApplicationStatus,
   respondToQuery
 } from "../controllers/onboardingController";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { Role } from "../types/role";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import {
   deleteOnboardingDocument,
   getCompanyOnboardingProfile,
@@ -32,79 +30,32 @@ import {
 
 const router = Router();
 
-/**
- * NGO Onboarding Routes
- * All routes require authentication
- * NGO users can manage their own applications
- */
+router.use(authenticateToken);
 
-const organizationOnboardingAccess = [
-  authenticateToken,
-  authorizeRoles([Role.SUPER_ADMIN, Role.PORTAL_ADMIN, Role.CSR_ADMIN, Role.BENEFICIARY_AGENCY, Role.COMPANY_ADMIN, Role.COMPANY_MEMBER, Role.CORPORATE_USER, Role.NGO_ADMIN, Role.NGO_MEMBER])
-];
+router.get("/draft", getOrCreateDraftApplication);
+router.post("/submit", submitApplication);
+router.get("/status", getApplicationStatus);
+router.post("/queries/:id/respond", respondToQuery);
 
-router.get("/status", ...organizationOnboardingAccess, getOnboardingStatus);
-router.get("/profile", ...organizationOnboardingAccess, getOnboardingProfile);
-router.put("/profile", ...organizationOnboardingAccess, updateOnboardingProfile);
-router.post("/documents", ...organizationOnboardingAccess, uploadOnboardingDocument);
-router.get("/documents", ...organizationOnboardingAccess, listOnboardingDocuments);
-router.delete("/documents/:id", ...organizationOnboardingAccess, deleteOnboardingDocument);
-router.post("/submit", ...organizationOnboardingAccess, submitOnboarding);
+router.get("/profile", getOnboardingProfile);
+router.patch("/profile", updateOnboardingProfile);
+router.get("/company", getCompanyOnboardingProfile);
+router.patch("/company", updateCompanyOnboardingProfile);
+router.patch("/company/compliance", updateCompanyCompliance);
+router.patch("/company/preferences", updateCompanyPreferences);
+router.post("/company/submit", submitCompanyOnboarding);
 
-router.get("/company/profile", ...organizationOnboardingAccess, getCompanyOnboardingProfile);
-router.put("/company/profile", ...organizationOnboardingAccess, updateCompanyOnboardingProfile);
-router.put("/company/compliance", ...organizationOnboardingAccess, updateCompanyCompliance);
-router.put("/company/preferences", ...organizationOnboardingAccess, updateCompanyPreferences);
-router.post("/company/submit", ...organizationOnboardingAccess, submitCompanyOnboarding);
+router.get("/department", getDepartmentOnboardingProfile);
+router.patch("/department", updateDepartmentOnboardingProfile);
+router.patch("/department/nodal", updateDepartmentNodalOfficer);
+router.patch("/department/authorization", updateDepartmentAuthorization);
+router.patch("/department/jurisdiction", updateDepartmentJurisdiction);
+router.patch("/department/permissions", updateDepartmentPermissions);
+router.post("/department/submit", submitDepartmentOnboarding);
 
-router.get("/department/profile", ...organizationOnboardingAccess, getDepartmentOnboardingProfile);
-router.put("/department/profile", ...organizationOnboardingAccess, updateDepartmentOnboardingProfile);
-router.put("/department/nodal-officer", ...organizationOnboardingAccess, updateDepartmentNodalOfficer);
-router.put("/department/authorization", ...organizationOnboardingAccess, updateDepartmentAuthorization);
-router.put("/department/jurisdiction", ...organizationOnboardingAccess, updateDepartmentJurisdiction);
-router.put("/department/permissions", ...organizationOnboardingAccess, updateDepartmentPermissions);
-router.post("/department/submit", ...organizationOnboardingAccess, submitDepartmentOnboarding);
-
-// Get or create draft application
-router.get(
-  "/application",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.AUTHORIZED_SIGNATORY, Role.NGO_MEMBER]),
-  getOrCreateDraftApplication
-);
-
-// Save draft (any step)
-router.post(
-  "/application/draft",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.AUTHORIZED_SIGNATORY]),
-  saveDraft
-);
-
-// Submit application for review
-router.post(
-  "/application/submit",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.AUTHORIZED_SIGNATORY]),
-  submitApplication
-);
-
-// Get application status and timeline
-router.get(
-  "/application/status",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.AUTHORIZED_SIGNATORY, Role.NGO_MEMBER]),
-  getApplicationStatus
-);
-
-// Respond to query
-router.post(
-  "/queries/:queryId/respond",
-  authenticateToken,
-  authorizeRoles([Role.NGO_ADMIN, Role.AUTHORIZED_SIGNATORY]),
-  respondToQuery
-);
+router.get("/documents", listOnboardingDocuments);
+router.post("/documents", uploadOnboardingDocument);
+router.delete("/documents/:id", deleteOnboardingDocument);
+router.post("/complete", submitOnboarding);
 
 export default router;
-
-// Made with Bob

@@ -1,126 +1,35 @@
 import { Router } from "express";
-import { Role } from "../types/role";
-import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { authenticateToken } from "../middlewares/authMiddleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
 import {
   getDashboard,
-  getMyProjects,
-  updateMilestoneStatus,
+  getAssignedProjects,
+  getProjectById,
+  updateProjectStatus,
   verifyMilestone,
   verifyUC,
-  respondToGrievance,
-  generateProgressReport,
+  resolveGrievance,
+  getProjectGrievances,
+  getCorporateEnquiries,
+  getGovernmentPitches,
   getInspections,
-  createInspection,
-  confirmHandover,
-  updateMouStatus,
-  listNgoVerificationQueue,
-  submitFinalNgoVerification
+  createInspection
 } from "../controllers/nodalOfficerController";
 
 const router = Router();
+router.use(authenticateToken);
 
-// Nodal Officer Dashboard
-router.get(
-  "/dashboard",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(getDashboard)
-);
-
-// Get my projects
-router.get(
-  "/projects",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(getMyProjects)
-);
-
-// Update milestone status
-router.patch(
-  "/milestones/:id/status",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(updateMilestoneStatus)
-);
-
-// Verify milestone
-router.post(
-  "/milestones/:id/verify",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(verifyMilestone)
-);
-
-// Verify UC
-router.patch(
-  "/utilization-certificates/:id/verify",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(verifyUC)
-);
-
-// Get all inspections
-router.get(
-  "/inspections",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(getInspections)
-);
-
-// Create new inspection record
-router.post(
-  "/inspections",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(createInspection)
-);
-
-// Confirm project completion & handover
-router.post(
-  "/projects/:id/handover",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(confirmHandover)
-);
-
-// Update standard tripartite MoU status / terms
-router.patch(
-  "/projects/:id/mou",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(updateMouStatus)
-);
-
-// Respond to grievance
-router.post(
-  "/grievances/:id/respond",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(respondToGrievance)
-);
-
-// Generate progress report
-router.get(
-  "/projects/:id/progress-report",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(generateProgressReport)
-);
-
-// NGO Verification Queue
-router.get(
-  "/ngos/verification-queue",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(listNgoVerificationQueue)
-);
-
-router.post(
-  "/ngos/:ngoId/final-verification",
-  authenticateToken,
-  authorizeRoles([Role.DISTRICT_NODAL_OFFICER, Role.SUPER_ADMIN, Role.PORTAL_ADMIN]),
-  asyncHandler(submitFinalNgoVerification)
-);
+router.get("/dashboard", asyncHandler(getDashboard));
+router.get("/projects", asyncHandler(getAssignedProjects));
+router.get("/projects/:id", asyncHandler(getProjectById));
+router.patch("/projects/:id/status", asyncHandler(updateProjectStatus));
+router.post("/milestones/:id/verify", asyncHandler(verifyMilestone));
+router.patch("/utilization-certificates/:id/verify", asyncHandler(verifyUC));
+router.post("/grievances/:id/respond", asyncHandler(resolveGrievance));
+router.get("/projects/:projectId/grievances", asyncHandler(getProjectGrievances));
+router.get("/corporate-enquiries", asyncHandler(getCorporateEnquiries));
+router.get("/government-pitches", asyncHandler(getGovernmentPitches));
+router.get("/inspections", asyncHandler(getInspections));
+router.post("/inspections", asyncHandler(createInspection));
 
 export default router;

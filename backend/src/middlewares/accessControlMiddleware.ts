@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express";
-import { OrganizationKind, OrganizationOnboardingStatus, OrganizationStatus } from "@prisma/client";
+import { OrganizationKind, OrganizationStatus } from "@prisma/client";
 import { Role } from "../types/role";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "./authMiddleware";
@@ -8,14 +8,11 @@ import { resolveUserPermission } from "../services/permissionService";
 const auditBlockedAccess = async (req: AuthenticatedRequest, action: string, details: Record<string, unknown>) => {
   await prisma.auditLog.create({
     data: {
-      userId: req.user?.id,
-      actorUserId: req.user?.id,
-      actorRole: req.user?.role,
+      actorUserId: req.user?.id || null,
       action,
       entityType: "ACCESS_GUARD",
       details: details as any,
-      ipAddress: req.ip,
-      userAgent: req.get("user-agent") || null
+      ipAddress: req.ip
     }
   }).catch(() => {});
 };
@@ -39,8 +36,7 @@ export const checkOrganizationApproved = async (req: AuthenticatedRequest, res: 
     const organization = await prisma.organization.findUnique({ where: { id: organizationId } });
     if (
       !organization ||
-      organization.status !== OrganizationStatus.ACTIVE ||
-      organization.onboardingStatus !== OrganizationOnboardingStatus.APPROVED
+      organization.status !== OrganizationStatus.ACTIVE
     ) {
       await auditBlockedAccess(req, "ONBOARDING_ACCESS_BLOCKED", {
         reason: "ORGANIZATION_NOT_APPROVED",
@@ -115,25 +111,22 @@ export const requireApprovedOrganization = (requiredKind: OrganizationKind) => {
 
       const organization = await prisma.organization.findUnique({ where: { id: organizationId } });
 
-      if (!organization || organization.organizationType !== requiredKind) {
+      if (!organization || organization.kind !== requiredKind) {
         await auditBlockedAccess(req, "SUBMISSION_BLOCKED", {
           reason: "WRONG_ORGANIZATION_KIND",
           organizationId,
           requiredKind,
-          actualKind: organization?.organizationType,
+          actualKind: organization?.kind,
           path: req.originalUrl
         });
         return res.status(403).json({ error: "This action is not available for your organization type." });
       }
 
-      if (
-        organization.status !== OrganizationStatus.ACTIVE ||
-        organization.onboardingStatus !== OrganizationOnboardingStatus.APPROVED
-      ) {
+      if (organization.status !== OrganizationStatus.ACTIVE) {
         await auditBlockedAccess(req, "SUBMISSION_BLOCKED", {
           reason: "ORGANIZATION_NOT_APPROVED",
           organizationId,
-          onboardingStatus: organization.onboardingStatus,
+          status: organization.status,
           path: req.originalUrl
         });
         return res.status(403).json({

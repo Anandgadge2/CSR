@@ -31,7 +31,7 @@ export const getLoginHistory = async (req: AuthenticatedRequest, res: Response) 
 
     const history = await prisma.session.findMany({
       where: { userId },
-      orderBy: { loginTime: "desc" },
+      orderBy: { createdAt: "desc" },
       take: 50
     });
 

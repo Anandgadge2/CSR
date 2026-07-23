@@ -1143,8 +1143,7 @@ export async function generateMoUFromRecord(mouId: string): Promise<GeneratedMoU
     const mou = await prisma.standardMou.findUnique({
       where: { id: mouId },
       include: {
-        corporateEnquiry: true,
-        governmentPitch: true,
+        project: true,
       },
     });
 
@@ -1165,26 +1164,26 @@ export async function generateMoUFromRecord(mouId: string): Promise<GeneratedMoU
       : [];
     
     const input: MoUGenerationInput = {
-      districtDepartmentName: mou.districtDepartmentName,
-      nodalOfficerName: mou.nodalOfficerName,
-      corporateName: mou.corporateName,
-      cin: mou.cin,
-      projectTitle: mou.projectTitle,
-      projectDescription: mou.projectDescription,
-      scheduleVIIClause: mou.scheduleVIIClause,
-      projectLocation: mou.projectLocation,
-      district: mou.districtDepartmentName, // Using department name as proxy for district
+      districtDepartmentName: mou.districtDepartmentName || "",
+      nodalOfficerName: mou.nodalOfficerName || "",
+      corporateName: mou.corporateName || "",
+      cin: mou.cin || "",
+      projectTitle: mou.projectTitle || "",
+      projectDescription: mou.projectDescription || "",
+      scheduleVIIClause: mou.scheduleVIIClause || "",
+      projectLocation: mou.projectLocation || "",
+      district: mou.districtDepartmentName || "",
       deliverables,
-      timelineMonths: mou.timelineMonths,
+      timelineMonths: mou.timelineMonths || 12,
       financialContribution,
       governmentContribution,
-      implementationMode: mou.implementationMode as any,
-      ownershipAfterCompletion: mou.ownershipAfterCompletion,
-      maintenanceResponsibility: mou.maintenanceResponsibility,
+      implementationMode: (mou.implementationMode as any) || "DIRECT",
+      ownershipAfterCompletion: mou.ownershipAfterCompletion || "",
+      maintenanceResponsibility: mou.maintenanceResponsibility || "",
       implementingAgencyName: mou.implementingAgencyName || undefined,
       corporateEnquiryId: mou.corporateEnquiryId || undefined,
       governmentPitchId: mou.governmentPitchId || undefined,
-      paymentSchedule: [], // Would need to be populated from related records
+      paymentSchedule: [],
     };
 
     return generateMoU(input, mou.mouReferenceId);
@@ -1287,9 +1286,7 @@ export class MouTemplateService {
       const mou = await prisma.standardMou.findUnique({
         where: { mouReferenceId: referenceId },
         include: {
-          corporateEnquiry: true,
-          governmentPitch: true,
-          convergenceProject: true,
+          project: true,
         },
       });
       return mou;

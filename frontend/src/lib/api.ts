@@ -9,6 +9,17 @@ export const getAccessToken = () => {
   return localStorage.getItem("accessToken");
 };
 
+export const getStoredUser = () => {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem("user");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 export const clearApiCache = () => {
   if (typeof window === "undefined") return;
   Object.keys(localStorage)
@@ -69,30 +80,65 @@ const networkFetch = async <T>(path: string, init: RequestInit, isCacheable: boo
 
   const data = await response.json().catch(() => null);
 
-  const isSessionExpired =
+  const errorPayload = data?.error;
+  const errorMessage = typeof errorPayload === "string"
+    ? errorPayload
+    : errorPayload?.message || data?.message || "Request failed";
+
+  let isSessionExpired =
     response.status === 401 ||
-    (response.status === 403 && /invalid or expired/i.test(data?.error || ""));
+    (response.status === 403 && /invalid or expired/i.test(errorMessage));
+
+  // If 401 occurs on an authenticated route, attempt silent token refresh using HTTP-only cookie.
+  if (response.status === 401 && path !== "/auth/refresh" && path !== "/auth/login" && typeof window !== "undefined") {
+    try {
+      const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include"
+      });
+      const refreshData = await refreshRes.json().catch(() => null);
+      if (refreshRes.ok && refreshData?.accessToken) {
+        localStorage.setItem("accessToken", refreshData.accessToken);
+        if (refreshData.user) {
+          localStorage.setItem("user", JSON.stringify(refreshData.user));
+        }
+        headers.set("Authorization", `Bearer ${refreshData.accessToken}`);
+        const retryRes = await fetch(`${API_BASE_URL}${path}`, {
+          cache: "no-store",
+          ...init,
+          headers,
+          credentials: "include"
+        });
+        const retryData = await retryRes.json().catch(() => null);
+        if (retryRes.ok) {
+          if (isCacheable && retryData) setCachedData(path, retryData);
+          return retryData as T;
+        }
+      }
+    } catch {
+      // Refresh attempt failed; session expired modal will trigger below.
+    }
+  }
 
   if (isSessionExpired && typeof window !== "undefined") {
     const hadToken = Boolean(token);
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
-    // Only prompt re-login if the user actually had a session that expired.
     if (hadToken) {
       window.dispatchEvent(new CustomEvent("auth:session-expired"));
     }
   }
 
   if (!response.ok) {
-    const error = new Error(data?.error || "Request failed") as Error & {
+    const error = new Error(errorMessage) as Error & {
       validationErrors?: string[];
       status?: number;
       errorCode?: string;
       meta?: Record<string, unknown>;
     };
-    error.validationErrors = data?.validationErrors || data?.details;
+    error.validationErrors = data?.validationErrors || errorPayload?.details || data?.details;
     error.status = response.status;
-    error.errorCode = data?.errorCode;
+    error.errorCode = data?.errorCode || errorPayload?.code;
     error.meta = data?.meta;
     throw error;
   }
@@ -114,7 +160,6 @@ export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise
     const cached = getCachedData<T>(path);
     if (cached) {
       if (cached.isStale && !inflight.has(path)) {
-        // Stale-while-revalidate: return instantly, refresh in background.
         const refresh = networkFetch<T>(path, init, true)
           .catch(() => {})
           .finally(() => inflight.delete(path));
@@ -136,7 +181,7 @@ export const apiFetch = async <T>(path: string, init: RequestInit = {}): Promise
 
 export const invalidateCache = (pathPattern?: string): void => {
   if (typeof window === "undefined") return;
-  
+
   if (pathPattern) {
     Object.keys(localStorage)
       .filter(key => key.startsWith(CACHE_PREFIX) && key.includes(btoa(pathPattern)))
@@ -146,131 +191,20 @@ export const invalidateCache = (pathPattern?: string): void => {
   }
 };
 
-export const getStoredUser = () => {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem("user");
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    localStorage.removeItem("user");
-    return null;
-  }
+export const fetchUserPermissions = async () => {
+  const res = await apiFetch<any>("/auth/permissions");
+  return res?.data ?? res;
 };
 
-// Permission API functions
-export interface PermissionResponse {
-  permissions: string[];
-  roles: string[];
-  roleDetails: {
-    id: string;
-    name: string;
-    scope: string;
-    isSystemRole: boolean;
-  }[];
-  isAdmin: boolean;
-}
-
-export interface ModulePermissionResponse {
-  module: string;
-  permissions: string[];
-}
-
-export interface CheckPermissionResponse {
-  hasPermission: boolean;
-  permission: string;
-}
-
-/**
- * Fetch current user's permissions from the server.
- *
- * The backend wraps every payload in a `{ success, data, message }` envelope
- * (see successResponse). apiFetch returns that raw envelope, so we must read
- * `.data` here — otherwise callers get { permissions: undefined, ... } and
- * downstream `permissions.includes(...)` throws. The `?? []` / `?? false`
- * fallbacks guarantee the shape even if the response is malformed.
- */
-export const fetchUserPermissions = async (): Promise<PermissionResponse> => {
-  const res = await apiFetch<{ success: boolean; data?: Partial<PermissionResponse> }>(
-    "/auth/permissions"
-  );
-  const data = res?.data ?? {};
-  return {
-    permissions: data.permissions ?? [],
-    roles: data.roles ?? [],
-    roleDetails: data.roleDetails ?? [],
-    isAdmin: data.isAdmin ?? false,
-  };
+export const fetchModulePermissions = async (module: string) => {
+  const res = await apiFetch<any>(`/auth/permissions/${module}`);
+  return res?.data ?? res;
 };
 
-/**
- * Fetch permissions for a specific module
- */
-export const fetchModulePermissions = async (module: string): Promise<ModulePermissionResponse> => {
-  const res = await apiFetch<{ success: boolean; data?: Partial<ModulePermissionResponse> }>(
-    `/auth/permissions/${module}`
-  );
-  const data = res?.data ?? {};
-  return {
-    module: data.module ?? module,
-    permissions: data.permissions ?? [],
-  };
-};
-
-/**
- * Check if user has a specific permission
- */
-export const checkPermission = async (permission: string): Promise<CheckPermissionResponse> => {
-  const res = await apiFetch<{ success: boolean; data?: Partial<CheckPermissionResponse> }>(
-    "/auth/check-permission",
-    {
-      method: "POST",
-      body: JSON.stringify({ permission }),
-    }
-  );
-  const data = res?.data ?? {};
-  return {
-    hasPermission: data.hasPermission ?? false,
-    permission: data.permission ?? permission,
-  };
-};
-
-// ─── JS assignment cascade (District → District Nodal Consultant) ───────────
-
-export interface NodalConsultant {
-  id: string;
-  email: string;
-  assignedDistrict: string | null;
-  organizationId: string | null;
-  officerProfile: { fullName: string | null; designation: string | null; department: string | null } | null;
-}
-
-/** Canonical Maharashtra district list for the JS assignment cascade. */
-export const fetchAssignmentDistricts = async (): Promise<string[]> => {
-  const res = await apiFetch<{ success: boolean; data: { districts: string[] } }>("/assignments/districts");
-  return res.data?.districts || [];
-};
-
-/** District Nodal Consultants active in a district (step 2 of the cascade). */
-export const fetchNodalConsultants = async (district: string): Promise<NodalConsultant[]> => {
-  const res = await apiFetch<{ success: boolean; data: { consultants: NodalConsultant[] } }>(
-    `/assignments/nodal-consultants?district=${encodeURIComponent(district)}`
-  );
-  return res.data?.consultants || [];
-};
-
-/** JS appoints a DNC to an approved enquiry/pitch. */
-export const appointNodalConsultant = async (input: {
-  entityType: "CORPORATE_ENQUIRY" | "GOVERNMENT_PITCH";
-  entityId: string;
-  nodalOfficerId: string;
-  district: string;
-  remarks?: string;
-}): Promise<void> => {
-  await apiFetch("/assignments/appoint-nodal-consultant", {
+export const checkPermission = async (permission: string) => {
+  const res = await apiFetch<any>("/auth/check-permission", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ permission })
   });
+  return res?.data ?? res;
 };
-

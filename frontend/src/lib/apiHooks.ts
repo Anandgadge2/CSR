@@ -15,8 +15,8 @@ export const useApiQuery = <T>(
     queryKey: key,
     queryFn: () => apiFetch<T>(path),
     enabled: options?.enabled ?? true,
-    staleTime: options?.staleTime ?? 60 * 1000,
-    gcTime: options?.gcTime ?? 5 * 60 * 1000,
+    staleTime: options?.staleTime ?? 5 * 60 * 1000,
+    gcTime: options?.gcTime ?? 15 * 60 * 1000,
   });
 };
 
@@ -64,5 +64,5 @@ export const usePrefetchRoutes = (routes: string[]) => {
         staleTime: 5 * 60 * 1000,
       });
     });
-  }, [queryClient, routes]);
+  }, [routes, queryClient]);
 };

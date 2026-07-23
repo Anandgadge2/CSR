@@ -98,21 +98,22 @@ async function getNextSequence(prefix: string, year: number): Promise<number> {
     }
 
     case TRACKING_ID_PREFIXES.PROJECT: {
-      const project = await prisma.convergenceProject.findFirst({
+      const project = await prisma.project.findFirst({
         where: {
+          type: "CONVERGENCE_FRAMEWORK",
           createdAt: {
             gte: yearStart,
             lt: yearEnd,
           },
         },
         orderBy: {
-          projectId: "desc",
+          projectCode: "desc",
         },
         select: {
-          projectId: true,
+          projectCode: true,
         },
       });
-      lastTrackingId = project?.projectId || null;
+      lastTrackingId = project?.projectCode || null;
       break;
     }
 
@@ -125,13 +126,13 @@ async function getNextSequence(prefix: string, year: number): Promise<number> {
           },
         },
         orderBy: {
-          grievanceId: "desc",
+          grievanceCode: "desc",
         },
         select: {
-          grievanceId: true,
+          grievanceCode: true,
         },
       });
-      lastTrackingId = grievance?.grievanceId || null;
+      lastTrackingId = grievance?.grievanceCode || null;
       break;
     }
 
@@ -412,7 +413,7 @@ export class TrackingIdService {
       prisma.governmentPitch.count({
         where: { createdAt: { gte: yearStart, lt: yearEnd } },
       }),
-      prisma.convergenceProject.count({
+      prisma.project.count({
         where: { createdAt: { gte: yearStart, lt: yearEnd } },
       }),
       prisma.grievance.count({

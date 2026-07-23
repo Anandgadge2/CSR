@@ -1,16 +1,4 @@
 "use client";
-
-/**
- * DashboardEngine — the single permission-driven dashboard renderer.
- *
- * Fetches GET /api/dashboard/summary and renders only the KPI cards, sections,
- * and quick actions the caller's permissions unlock. All visibility decisions
- * come from the server-provided `summary.permissions` map (which already applied
- * SUPER_ADMIN bypass and role→permission resolution), so there are no hardcoded
- * role branches here — this is the frontend half of the unified Dashboard Engine.
- *
- * Registries + types live in @/lib/dashboardEngine.
- */
 import Link from "next/link";
 import { useApiQuery } from "@/lib/apiHooks";
 import {

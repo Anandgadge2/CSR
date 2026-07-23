@@ -1,6 +1,9 @@
-import { Prisma, VerificationEntityType, VerificationModuleType, VerificationRecordStatus } from "@prisma/client";
+import { Prisma, VerificationModuleType, VerificationRecordStatus } from "@prisma/client";
 import prisma from "../../../config/db";
 import { VerificationError } from "../utils/errors";
+import { VerificationEntityType } from "../../../types/verification";
+
+export { VerificationEntityType };
 
 /**
  * Append-only verification record store.

@@ -6,7 +6,7 @@ export const generalRateLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many requests. Please try again later." },
+  message: { success: false, error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } },
 });
 
 export const authRateLimiter = rateLimit({
@@ -14,7 +14,7 @@ export const authRateLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many failed login attempts. Please try again in 15 minutes." },
+  message: { success: false, error: { code: "RATE_LIMITED", message: "Too many failed login attempts. Please try again in 15 minutes." } },
   // Only failed attempts count toward the limit — normal logins never lock users out.
   skipSuccessfulRequests: true,
 });
@@ -24,7 +24,7 @@ export const strictRateLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many requests from this IP. Please try again in 1 hour." },
+  message: { success: false, error: { code: "RATE_LIMITED", message: "Too many requests from this IP. Please try again in 1 hour." } },
 });
 
 export const createCustomRateLimiter = (windowMs: number, max: number, message?: string) => {
@@ -33,6 +33,6 @@ export const createCustomRateLimiter = (windowMs: number, max: number, message?:
     max,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: message || "Too many requests. Please try again later." },
+    message: { success: false, error: { code: "RATE_LIMITED", message: message || "Too many requests. Please try again later." } },
   });
 };
