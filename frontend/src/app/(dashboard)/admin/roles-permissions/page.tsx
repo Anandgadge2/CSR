@@ -420,7 +420,7 @@ export default function AdminRolesPermissionsPage() {
                               letterSpacing: "0.5px"
                             }}
                           >
-                            SYSTEM ROLE - IMMUTABLE
+                            ROOT SUPER ADMIN - FULL ACCESS
                           </span>
                         )}
                       </div>

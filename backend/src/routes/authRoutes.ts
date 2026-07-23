@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, verifyOtp, refreshToken, logout } from "../controllers/authController";
+import { register, login, verifyOtp, resendOtp, refreshToken, logout } from "../controllers/authController";
 import { getInvitation, acceptInvitation } from "../controllers/invitationController";
 import { getCurrentUserPermissions, getModulePermissions, checkUserPermission } from "../controllers/permissionController";
 import { validateRequest } from "../middlewares/validationMiddleware";
@@ -18,9 +18,9 @@ const registerSchema = z.object({
     profile: z.object({
       name: z.string().min(2, "Name is required"),
       cin: z.string().optional(),
-      pan: z.string().min(10).max(10),
-      address: z.string().min(5),
-      district: z.string().min(2)
+      pan: z.string().optional(),
+      address: z.string().optional(),
+      district: z.string().optional()
     }).passthrough()
   })
 });
@@ -35,7 +35,17 @@ const loginSchema = z.object({
 const verifyOtpSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email format"),
-    otp: z.string().length(6, "OTP must be exactly 6 digits")
+    otp: z.string().length(6, "OTP must be exactly 6 digits").optional(),
+    otpCode: z.string().length(6, "OTP must be exactly 6 digits").optional()
+  }).refine(data => data.otp || data.otpCode, {
+    message: "OTP code is required",
+    path: ["otpCode"]
+  })
+});
+
+const resendOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email("Invalid email format")
   })
 });
 
@@ -44,6 +54,7 @@ const otpRateLimit = strictRateLimiter;
 
 router.post("/register", authRateLimit, validateRequest(registerSchema), asyncHandler(register));
 router.post("/verify-otp", otpRateLimit, validateRequest(verifyOtpSchema), asyncHandler(verifyOtp));
+router.post("/resend-otp", otpRateLimit, validateRequest(resendOtpSchema), asyncHandler(resendOtp));
 router.post("/login", authRateLimit, validateRequest(loginSchema), asyncHandler(login));
 router.post("/refresh", asyncHandler(refreshToken));
 router.post("/logout", asyncHandler(logout));

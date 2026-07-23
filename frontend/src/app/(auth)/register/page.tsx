@@ -206,15 +206,19 @@ export default function RegisterPage() {
 
       const data = await response.json();
       if (!response.ok) {
-        if (data.details && Array.isArray(data.details)) {
+        const details = data.details || data.error?.details;
+        if (details && Array.isArray(details)) {
           const errors: Record<string, string> = {};
-          data.details.forEach((err: any) => {
-            const cleanKey = err.field.replace(/^body\.profile\./, "").replace(/^body\./, "");
+          details.forEach((err: any) => {
+            const cleanKey = err.field?.replace(/^body\.profile\./, "").replace(/^body\./, "") || "field";
             errors[cleanKey] = err.message;
           });
           setFieldErrors(errors);
         }
-        throw new Error(data.error || "Failed to register");
+        const msg = typeof data.error === "string" 
+          ? data.error 
+          : data.error?.message || data.message || "Failed to register";
+        throw new Error(msg);
       }
 
       setSuccessMsg("Registration initiated. A 6-digit verification code has been sent to your email.");
@@ -244,13 +248,15 @@ export default function RegisterPage() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to verify OTP code");
+        const msg = typeof data.error === "string"
+          ? data.error
+          : data.error?.message || data.message || "Failed to verify OTP code";
+        throw new Error(msg);
       }
 
       setSuccessMsg("Email verified successfully! Redirecting to workspace login...");
       setTimeout(() => {
-        const nextPath = role === "CORPORATE" ? "/partner/dashboard" : "/department/dashboard";
-        router.push(`/login?next=${encodeURIComponent(nextPath)}`);
+        router.push(`/login?next=${encodeURIComponent("/dashboard")}`);
       }, 1500);
     } catch (err: any) {
       setErrorMsg(err.message || "Verification failed");

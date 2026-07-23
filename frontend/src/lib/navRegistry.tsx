@@ -298,34 +298,7 @@ export function resolveNavItems(params: {
     return normalizedRole && normalizedTargetRoles.includes(normalizedRole);
   };
 
-  if (roleIs("SUPER_ADMIN", "super-admin")) {
-    const allMenus = [
-      ...adminItems,
-      ...departmentItems,
-      ...companyItems,
-      ...ngoOrganizationItems,
-      ...rmItems,
-      ...jsItems,
-      ...secretaryItems,
-      ...stateCellItems,
-      ...nodalItems,
-      ...partnerItems,
-      ...agencyItems,
-      ...districtItems,
-      ...portalAdminItems,
-      ...masterItems,
-      ...genericDashboardItems
-    ];
-    const seen = new Set<string>();
-    const uniqueItems: NavItem[] = [];
-    for (const item of allMenus) {
-      if (!seen.has(item.href)) {
-        seen.add(item.href);
-        uniqueItems.push(item);
-      }
-    }
-    return uniqueItems;
-  }
+
 
   // 1. Fixed-role menus (original `if (storedRole)` early returns).
   if (normalizedRole && ROLE_NAV[normalizedRole]) {

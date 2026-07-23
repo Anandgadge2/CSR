@@ -36,7 +36,9 @@ export const getDashboardSummary = async (req: AuthenticatedRequest, res: Respon
 
     let openEscalations = 0;
     try {
-      openEscalations = await (prisma as any).grievance?.count({ where: { status: "OPEN" } }) ?? 0;
+      openEscalations = await prisma.grievance.count({
+        where: { status: { in: ["RAISED", "ACKNOWLEDGED", "LEVEL_1_REVIEW", "ESCALATED_TO_STATE_CELL", "ESCALATED_TO_JS_SECRETARY"] } }
+      });
     } catch {
       openEscalations = 0;
     }

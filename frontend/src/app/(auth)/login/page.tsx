@@ -119,28 +119,24 @@ function LoginForm() {
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("user", JSON.stringify(user));
 
-      const nextPath = searchParams.get("next") || searchParams.get("redirect");
-      if (nextPath?.startsWith("/")) {
+      const invalidNextPaths = ["/partner/dashboard", "/department/dashboard", "/company/dashboard", "/ngo/dashboard", "/nodal/dashboard", "/rm/dashboard"];
+      const rawNextPath = searchParams.get("next") || searchParams.get("redirect");
+      const nextPath = rawNextPath && !invalidNextPaths.includes(rawNextPath) && rawNextPath.startsWith("/") ? rawNextPath : null;
+
+      if (nextPath) {
         router.push(nextPath);
         setLoginSuccess(true);
         return;
       }
 
-      const onboardingStatus = user.organization?.onboardingStatus;
-      const dest = resolveDashboardPath(
-        {
-          roleNumericId: user.roleNumericId,
-          roleSlug: user.roleSlug,
-          role: user.role
-        },
-        "/"
-      );
+      const orgStatus = user.organization?.status;
+      const isSuperAdmin = user.roleNumericId === 1 || user.role === "SUPER_ADMIN";
 
-      const orgPersonaDests = ["/company/dashboard", "/department/dashboard", "/ngo/dashboard"];
-      if (onboardingStatus && onboardingStatus !== "APPROVED" && orgPersonaDests.includes(dest)) {
-        router.push("/organization/onboarding/status");
+      // If user's organization onboarding is incomplete or not ACTIVE, direct to onboarding workspace
+      if (!isSuperAdmin && user.organization && orgStatus !== "ACTIVE") {
+        router.push("/organization/onboarding");
       } else {
-        router.push(dest);
+        router.push("/dashboard");
       }
       setLoginSuccess(true);
     } catch (err: any) {

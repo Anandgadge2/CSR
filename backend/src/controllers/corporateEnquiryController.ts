@@ -1,18 +1,44 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
-import { successResponse, notFoundResponse } from "../utils/apiResponse";
+import { notFoundResponse } from "../utils/apiResponse";
+import { selectLeastLoadedRm } from "../services/rmAssignmentService";
+import { ROLE_ID } from "../types/role";
 
 export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    // Fetch user and organization to check onboarding status
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { organization: true }
+    });
+
+    // Enforce Onboarding Guard for non-superadmins
+    if (user?.roleId !== ROLE_ID.SUPER_ADMIN && user?.organization?.status !== "ACTIVE") {
+      return res.status(403).json({
+        error: "Organization onboarding must be completed and approved by Super Admin before submitting enquiries."
+      });
+    }
+
+    const preferredDistrict = req.body.geography?.[0] || req.body.district || null;
+
+    // Auto-assign RM via round-robin least loaded algorithm
+    const assignedRmId = await selectLeastLoadedRm(preferredDistrict);
+
     const enquiry = await prisma.corporateEnquiry.create({
       data: {
         trackingId: `CE-${Date.now()}`,
-        corporateName: req.body.companyName || req.body.corporateName || "Company",
-        contactEmail: req.body.email || req.body.contactEmail || "contact@company.com",
+        organizationId: user?.organizationId || null,
+        corporateName: req.body.companyName || req.body.corporateName || user?.organization?.name || "Company",
+        contactEmail: req.body.email || req.body.contactEmail || user?.email || "contact@company.com",
+        assignedRelationshipManagerId: assignedRmId,
         status: "SUBMITTED"
       }
     });
+
     return res.status(201).json(enquiry);
   } catch (error) {
     next(error);

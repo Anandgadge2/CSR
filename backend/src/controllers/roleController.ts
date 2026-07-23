@@ -11,7 +11,8 @@ import {
   PERMISSIONS,
   PAGE_PERMISSIONS,
   PAGE_REGISTRY,
-  SEED_ROLE_PERMISSIONS
+  SEED_ROLE_PERMISSIONS,
+  resolveSeedRolePermissionKeys
 } from "../config/platformAccess";
 
 const SYSTEM_ROLES_ARRAY = [
@@ -34,57 +35,53 @@ let isSeeded = false;
 export const ensurePermissionsSeeded = async () => {
   if (isSeeded) return;
   try {
-    const existingCount = await prisma.permission.count();
-    if (existingCount < PERMISSIONS.length) {
-      console.log("[RBAC Engine] Auto-seeding enterprise permissions...");
-      const allDefs = [
-        ...PERMISSIONS.map(([key, description, module]) => ({ key, description, module })),
-        ...PAGE_PERMISSIONS.map(([key, description, module]) => ({ key, description, module }))
-      ];
+    const allDefs = [
+      ...PERMISSIONS.map(([key, description, module]) => ({ key, description, module })),
+      ...PAGE_PERMISSIONS.map(([key, description, module]) => ({ key, description, module }))
+    ];
 
-      await prisma.permission.createMany({
-        data: allDefs,
-        skipDuplicates: true,
+    await prisma.permission.createMany({
+      data: allDefs,
+      skipDuplicates: true,
+    });
+
+    for (const sysRole of SYSTEM_ROLES_ARRAY) {
+      let roleRecord = await prisma.role.findFirst({
+        where: { name: sysRole.name }
       });
 
-      for (const sysRole of SYSTEM_ROLES_ARRAY) {
-        let roleRecord = await prisma.role.findFirst({
-          where: { name: sysRole.name }
-        });
-
-        if (!roleRecord) {
-          try {
-            roleRecord = await prisma.role.create({
-              data: {
-                id: sysRole.id,
-                name: sysRole.name,
-                description: sysRole.description,
-                isSystemRole: true,
-                isProtected: true
-              }
-            });
-          } catch {
-            roleRecord = await prisma.role.findFirst({ where: { name: sysRole.name } });
-          }
-        }
-
-        if (roleRecord) {
-          const rolePermKeys = SEED_ROLE_PERMISSIONS[sysRole.name] || [];
-          if (rolePermKeys.length > 0) {
-            const permsInDb = await prisma.permission.findMany({
-              where: { key: { in: rolePermKeys as string[] } },
-              select: { id: true }
-            });
-
-            if (permsInDb.length > 0) {
-              await prisma.rolePermission.createMany({
-                data: permsInDb.map((p) => ({
-                  roleId: roleRecord.id,
-                  permissionId: p.id,
-                })),
-                skipDuplicates: true,
-              });
+      if (!roleRecord) {
+        try {
+          roleRecord = await prisma.role.create({
+            data: {
+              id: sysRole.id,
+              name: sysRole.name,
+              description: sysRole.description,
+              isSystemRole: true,
+              isProtected: true
             }
+          });
+        } catch {
+          roleRecord = await prisma.role.findFirst({ where: { name: sysRole.name } });
+        }
+      }
+
+      if (roleRecord) {
+        const rolePermKeys = resolveSeedRolePermissionKeys(sysRole.name);
+        if (rolePermKeys.length > 0) {
+          const permsInDb = await prisma.permission.findMany({
+            where: { key: { in: rolePermKeys as string[] } },
+            select: { id: true }
+          });
+
+          if (permsInDb.length > 0) {
+            await prisma.rolePermission.createMany({
+              data: permsInDb.map((p) => ({
+                roleId: roleRecord.id,
+                permissionId: p.id,
+              })),
+              skipDuplicates: true,
+            });
           }
         }
       }
@@ -153,7 +150,7 @@ export const getRoles = async (
 
     const roles = rolesList.map(r => ({
       ...r,
-      isPermanent: r.isSystemRole || r.isProtected,
+      isPermanent: r.name === "SUPER_ADMIN" || r.id === 1,
       status: "ACTIVE",
       permissions: r.rolePermissions.map(rp => rp.permission.key)
     }));
@@ -207,7 +204,7 @@ export const getRoleById = async (
 
     const role = {
       ...roleData,
-      isPermanent: roleData.isSystemRole || roleData.isProtected,
+      isPermanent: roleData.name === "SUPER_ADMIN" || roleData.id === 1,
       status: "ACTIVE",
       permissions: roleData.rolePermissions.map(rp => rp.permission.key)
     };
@@ -251,6 +248,7 @@ export const getPermissionGroups = async (
     const groups = Array.from(groupMap.entries()).map(([name, perms]) => ({
       id: name.toLowerCase().replace(/[^a-z0-9]/g, "-"),
       name,
+      description: null,
       permissions: perms
     }));
 
@@ -264,7 +262,7 @@ export const getPermissionGroups = async (
  * Get pages definition
  */
 export const getPages = async (
-  req: AuthenticatedRequest,
+  _req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
@@ -357,6 +355,8 @@ export const updateRole = async (
       return notFoundResponse(res, "Role not found");
     }
 
+    const isSuperAdminRole = existingRole.name === "SUPER_ADMIN" || existingRole.id === 1;
+
     const updatedRole = await prisma.role.update({
       where: { id: roleId },
       data: {
@@ -365,7 +365,7 @@ export const updateRole = async (
       }
     });
 
-    if (Array.isArray(permissions) && !existingRole.isSystemRole && !existingRole.isProtected) {
+    if (Array.isArray(permissions) && !isSuperAdminRole) {
       await prisma.rolePermission.deleteMany({ where: { roleId } });
       const permsInDb = await prisma.permission.findMany({
         where: { key: { in: permissions } },
