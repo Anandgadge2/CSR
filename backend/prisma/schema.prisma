@@ -292,10 +292,14 @@ model Organization {
   name               String
   legalName          String?
   displayName        String?
-  registrationNumber String?            @unique
-  cin                String?            @unique
-  pan                String?            @unique
-  gstin              String?            @unique
+  registrationNumber String?
+  registrationNumberHash String?        @unique
+  cin                String?
+  cinHash            String?            @unique
+  pan                String?
+  panHash            String?            @unique
+  gstin              String?
+  gstinHash          String?            @unique
   
   // Contact & Location
   officialEmail      String?
@@ -335,6 +339,10 @@ model Organization {
   @@index([kind, status])
   @@index([officialEmail])
   @@index([createdAt])
+  @@index([registrationNumberHash])
+  @@index([cinHash])
+  @@index([panHash])
+  @@index([gstinHash])
 }
 
 model CSRCompanyProfile {
@@ -365,8 +373,10 @@ model NGOProfile {
   organizationId         String       @unique
   organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  darpanNumber           String?      @unique
-  csr1Number             String?      @unique
+  darpanNumber           String?
+  darpanNumberHash       String?      @unique
+  csr1Number             String?
+  csr1NumberHash         String?      @unique
   certificate12AUrl      String?
   certificate80GUrl      String?
   fcraDetails            String?
@@ -380,6 +390,9 @@ model NGOProfile {
 
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
+
+  @@index([darpanNumberHash])
+  @@index([csr1NumberHash])
 }
 
 model GovDepartmentProfile {
@@ -620,6 +633,7 @@ model BankAccount {
   bankName           String
   branchName         String
   accountNumber      String
+  accountNumberHash  String?      @unique
   ifscCode           String
   accountType        String
   
@@ -633,7 +647,7 @@ model BankAccount {
   paymentOrders      PaymentOrder[]
 
   @@index([organizationId])
-  @@index([accountNumber])
+  @@index([accountNumberHash])
 }
 
 model PaymentOrder {
