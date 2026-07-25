@@ -73,7 +73,7 @@ async function main() {
   ];
 
   for (const user of demoUsers) {
-    await prisma.user.upsert({
+    const createdUser = await prisma.user.upsert({
       where: { email: user.email },
       create: {
         email: user.email,
@@ -87,10 +87,25 @@ async function main() {
       },
       update: {
         passwordHash: defaultPasswordHash,
+        firstName: user.firstName,
+        lastName: user.lastName,
         roleId: user.roleId,
         organizationId: user.orgId,
         accountStatus: "ACTIVE",
         isVerified: true
+      }
+    });
+
+    await prisma.userOfficerProfile.upsert({
+      where: { userId: createdUser.id },
+      create: {
+        userId: createdUser.id,
+        fullName: `${user.firstName} ${user.lastName}`,
+        designation: "Platform Administrator",
+        department: "Maharashtra State CSR Cell",
+      },
+      update: {
+        fullName: `${user.firstName} ${user.lastName}`,
       }
     });
     console.log(`✓ User created/updated: ${user.email} (Role ID: ${user.roleId})`);

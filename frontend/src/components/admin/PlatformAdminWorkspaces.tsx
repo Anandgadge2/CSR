@@ -113,17 +113,20 @@ function WorkspaceShell({
 }: {
   eyebrow: string;
   title: string;
-  description: string;
+  description?: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-6 md:px-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200/60 pb-5">
-        <div>
-          <div className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{eyebrow}</div>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
-          <p className="mt-1 text-sm text-slate-500 leading-normal">{description}</p>
+    <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:px-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 pb-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-extrabold tracking-tight text-slate-900 font-heading">{title}</h1>
+          {eyebrow && (
+            <span className="text-[10px] font-extrabold text-blue-700 uppercase tracking-wider bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full">
+              {eyebrow}
+            </span>
+          )}
         </div>
         {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
       </div>

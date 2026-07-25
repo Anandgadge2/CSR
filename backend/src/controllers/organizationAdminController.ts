@@ -116,7 +116,13 @@ export const getOnboardingProfile = async (req: AuthenticatedRequest, res: Respo
     const org = await getOwnedOrganization(req);
     return res.json(org);
   } catch (error: any) {
-    return res.status(400).json({ error: error.message });
+    return res.json({
+      id: null,
+      name: req.user?.email ? req.user.email.split("@")[0] : "New Organization",
+      onboardingStatus: "DRAFT",
+      status: "REGISTERED",
+      documents: []
+    });
   }
 };
 
@@ -198,7 +204,16 @@ export const getCompanyOnboardingProfile = async (req: AuthenticatedRequest, res
     const org = await getOwnedOrganization(req, "CSR_COMPANY");
     return res.json({ organization: org, profile: org.csrCompanyProfile });
   } catch (error: any) {
-    return res.status(400).json({ error: error.message });
+    return res.json({
+      organization: {
+        id: null,
+        name: req.user?.email ? req.user.email.split("@")[0] : "New Company",
+        kind: "CSR_COMPANY",
+        onboardingStatus: "DRAFT",
+        status: "REGISTERED"
+      },
+      profile: null
+    });
   }
 };
 
@@ -261,7 +276,16 @@ export const getDepartmentOnboardingProfile = async (req: AuthenticatedRequest, 
     const org = await getOwnedOrganization(req, "GOVERNMENT_DEPARTMENT");
     return res.json({ organization: org, profile: org.govDeptProfile });
   } catch (error: any) {
-    return res.status(400).json({ error: error.message });
+    return res.json({
+      organization: {
+        id: null,
+        name: req.user?.email ? req.user.email.split("@")[0] : "New Department",
+        kind: "GOVERNMENT_DEPARTMENT",
+        onboardingStatus: "DRAFT",
+        status: "REGISTERED"
+      },
+      profile: null
+    });
   }
 };
 

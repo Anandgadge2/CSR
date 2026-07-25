@@ -72,15 +72,25 @@ const networkFetch = async <T>(path: string, init: RequestInit, isCacheable: boo
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 2500);
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    cache: "no-store",
-    ...init,
-    headers,
-    credentials: "include",
-    signal: init.signal || controller.signal,
-  }).finally(() => clearTimeout(timeoutId));
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      cache: "no-store",
+      ...init,
+      headers,
+      credentials: "include",
+      signal: init.signal || controller.signal,
+    });
+  } catch (err: any) {
+    if (err.name === "AbortError" || err.message?.includes("aborted")) {
+      throw new Error("Network request timed out. Please check your connection and try again.");
+    }
+    throw new Error(err.message || "Network request failed");
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const data = await response.json().catch(() => null);
 

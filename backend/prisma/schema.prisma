@@ -325,6 +325,7 @@ model Organization {
   bankAccounts       BankAccount[]
   roles              Role[]
   userRoles          UserOrganizationRole[]
+  agencySubLogins    AgencySubLogin[]   @relation("OrganizationSubLogins")
 
   // Soft Delete & Timestamps
   deletedAt          DateTime?
@@ -477,6 +478,7 @@ model Project {
   grievances               Grievance[]
   mou                      StandardMou?
   agreements               Agreement[]
+  agencySubLogins          AgencySubLogin[]   @relation("ProjectAgencySubLogins")
 
   @@index([district, sector])
   @@index([status])
@@ -1170,4 +1172,30 @@ model Message {
 
   @@index([chatId])
   @@index([senderUserId])
+}
+
+// =============================================================================
+// IMPLEMENTING AGENCY SUB-LOGIN ENGINE (Corporate Company Sub-Logins)
+// =============================================================================
+
+model AgencySubLogin {
+  id                String       @id @default(uuid())
+  organizationId    String       // Belongs exclusively to Corporate Company (Company Admin)
+  organization      Organization @relation("OrganizationSubLogins", fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  ngoName           String
+  darpanId          String?
+  email             String       @unique
+  contactPerson     String?
+  phone             String?
+  assignedProjectId String?
+  assignedProject   Project?     @relation("ProjectAgencySubLogins", fields: [assignedProjectId], references: [id], onDelete: SetNull)
+  
+  status            String       @default("ACTIVE") // ACTIVE, INVITE_SENT, SUSPENDED
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([assignedProjectId])
 }

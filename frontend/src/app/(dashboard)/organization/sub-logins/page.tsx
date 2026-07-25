@@ -16,7 +16,7 @@ interface AgencySubLogin {
   contactPerson: string;
   phone: string;
   assignedProject: string;
-  roleScope: "Milestone Manager" | "Project Reporter" | "Expenditure Manager";
+  roleScope: string;
   status: "ACTIVE" | "INVITE_SENT" | "SUSPENDED";
   createdDate: string;
 }
@@ -30,7 +30,7 @@ const mockSubLogins: AgencySubLogin[] = [
     contactPerson: "Dr. Suresh Patil",
     phone: "+91 98230 11223",
     assignedProject: "Gadchiroli Tele-ICU Facilities Project",
-    roleScope: "Milestone Manager",
+    roleScope: "Assigned Project Manager",
     status: "ACTIVE",
     createdDate: "2026-07-15",
   },
@@ -42,7 +42,7 @@ const mockSubLogins: AgencySubLogin[] = [
     contactPerson: "Shri Aniket Deshmukh",
     phone: "+91 94221 88392",
     assignedProject: "Solapur Rural Solar RO Water Plants",
-    roleScope: "Expenditure Manager",
+    roleScope: "Assigned Project Manager",
     status: "ACTIVE",
     createdDate: "2026-07-20",
   },
@@ -54,7 +54,7 @@ const mockSubLogins: AgencySubLogin[] = [
     contactPerson: "Ms. Sunita Jadhav",
     phone: "+91 98901 44210",
     assignedProject: "Vidarbha Cotton Farmer Micro-Irrigation",
-    roleScope: "Project Reporter",
+    roleScope: "Assigned Project Manager",
     status: "INVITE_SENT",
     createdDate: "2026-07-24",
   },
@@ -73,7 +73,7 @@ export default function AgencySubLoginsPage() {
   const [contactPerson, setContactPerson] = useState("");
   const [phone, setPhone] = useState("");
   const [assignedProject, setAssignedProject] = useState("");
-  const [roleScope, setRoleScope] = useState<"Milestone Manager" | "Project Reporter" | "Expenditure Manager">("Milestone Manager");
+  const [roleScope, setRoleScope] = useState("Assigned Project Manager");
 
   const handleCreateSubLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +87,7 @@ export default function AgencySubLoginsPage() {
       contactPerson: contactPerson || "Authorized Representative",
       phone: phone || "+91 90000 00000",
       assignedProject: assignedProject || "State CSR Partnership Project",
-      roleScope,
+      roleScope: "Assigned Project Manager",
       status: "INVITE_SENT",
       createdDate: new Date().toISOString().split("T")[0],
     };
@@ -104,7 +104,7 @@ export default function AgencySubLoginsPage() {
     setContactPerson("");
     setPhone("");
     setAssignedProject("");
-    setRoleScope("Milestone Manager");
+    setRoleScope("Assigned Project Manager");
   };
 
   const handleCopyInvite = (id: string) => {
@@ -355,9 +355,10 @@ export default function AgencySubLoginsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Assigned CSR Project</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Assigned CSR Project *</label>
                 <input
                   type="text"
+                  required
                   placeholder="e.g. Gadchiroli Hospital Tele-ICU Expansion"
                   value={assignedProject}
                   onChange={(e) => setAssignedProject(e.target.value)}
@@ -366,16 +367,16 @@ export default function AgencySubLoginsPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Role Scope & Permissions</label>
-                <select
-                  value={roleScope}
-                  onChange={(e) => setRoleScope(e.target.value as any)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3 text-xs font-medium text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
-                >
-                  <option value="Milestone Manager">Milestone Manager (Upload UC, Bills, Progress)</option>
-                  <option value="Expenditure Manager">Expenditure Manager (Submit Fund Release Requests)</option>
-                  <option value="Project Reporter">Project Reporter (Field Photo & Status Updates)</option>
-                </select>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Scope & Access Permissions</label>
+                <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3.5 text-xs text-blue-950 flex items-start gap-2.5 shadow-sm">
+                  <ShieldCheck size={18} className="text-blue-700 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-slate-900">Unified Assigned Project Access</p>
+                    <p className="text-[11px] text-slate-600 font-medium leading-relaxed mt-0.5">
+                      Implementing agencies can access only their explicitly assigned projects to update milestones, submit fund requests, upload Utilization Certificates (UCs), and post field status reports.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

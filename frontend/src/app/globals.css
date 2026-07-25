@@ -606,20 +606,20 @@ html.lenis, html.lenis body {
 /* Liquid Glass Navigation Bar */
 .liquid-glass-nav {
   position: fixed !important;
-  top: 16px !important;
+  top: 12px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  width: calc(100% - 32px) !important;
+  width: calc(100% - 24px) !important;
   max-width: 1380px !important;
   border-radius: 9999px !important;
-  background: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(28px) saturate(210%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
   box-shadow: 
-    inset 0 1px 2px 0 rgba(255, 255, 255, 0.4),
-    0 8px 30px -4px rgba(15, 23, 42, 0.04) !important;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.5),
+    0 8px 30px -4px rgba(15, 23, 42, 0.06) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 .liquid-glass-nav-scrolled {
@@ -628,16 +628,17 @@ html.lenis, html.lenis body {
   left: 50% !important;
   transform: translateX(-50%) !important;
   width: calc(100% - 24px) !important;
-  max-width: 1400px !important;
+  max-width: 1380px !important;
   border-radius: 9999px !important;
-  background: rgba(255, 255, 255, 0.82) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(32px) saturate(220%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.75) !important;
-  border-bottom-color: rgba(226, 232, 240, 0.8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  border-bottom-color: rgba(226, 232, 240, 0.9) !important;
   box-shadow: 
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.6),
-    0 16px 40px -6px rgba(15, 23, 42, 0.08) !important;
+    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.8),
+    0 16px 40px -6px rgba(15, 23, 42, 0.1) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 .liquid-glass-pill-btn {

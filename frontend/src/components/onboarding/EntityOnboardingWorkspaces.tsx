@@ -178,15 +178,14 @@ function Shell({
   status?: string;
 }) {
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-8">
-      {/* 3D Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass">
-        <div>
-          <span className="text-[11px] font-extrabold text-blue-700 uppercase tracking-widest bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
-            Organization Verification Workspace
+    <main className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 md:px-8">
+      {/* Compact Space-Saving Header */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200/60 pb-3">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-extrabold tracking-tight text-slate-900 font-heading">{title}</h1>
+          <span className="text-[10px] font-extrabold text-blue-700 uppercase tracking-wider bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full">
+            Verification Workspace
           </span>
-          <h1 className="mt-2.5 text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 font-heading">{title}</h1>
-          <p className="mt-1 text-xs md:text-sm text-slate-500 font-medium leading-relaxed max-w-3xl">{description}</p>
         </div>
         {status && <Badge>{status}</Badge>}
       </div>
