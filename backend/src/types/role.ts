@@ -58,6 +58,10 @@ export const Role = {
   "company-admin": 8,
   "corporate-user": 8,
   "ngo-admin": 9,
+  GOV_ENTITY: 7,
+  GOVERNMENT_ENTITY: 7,
+  GOVERNMENT: 7,
+  12: 7,
 } as const;
 
 export type Role = number | string;
@@ -65,9 +69,13 @@ export type Role = number | string;
 export function getRoleId(roleInput: number | string | null | undefined): number | null {
   if (roleInput == null) return null;
   if (typeof roleInput === "number") {
+    if (roleInput === 12) return 7;
     return roleInput;
   }
   const parsed = parseInt(roleInput, 10);
-  if (!isNaN(parsed)) return parsed;
+  if (!isNaN(parsed)) {
+    if (parsed === 12) return 7;
+    return parsed;
+  }
   return (Role as Record<string, number>)[roleInput] ?? null;
 }

@@ -178,7 +178,7 @@ export default function RegisterPage() {
       const payload = {
         email: formData.email,
         password: formData.password,
-        role: isGovEntity ? 12 : 8,
+        role: isGovEntity ? 7 : 8,
         profile: {
           name: formData.name,
           pan: formData.pan.toUpperCase(),

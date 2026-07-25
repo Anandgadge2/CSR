@@ -138,63 +138,160 @@ const generateTokens = (user: {
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password, role: rawRole, profile } = req.body;
-    const roleId = getRoleId(rawRole);
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: "Email already registered" });
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const normalizedEmail = email.trim().toLowerCase();
+    let effectiveRoleId = getRoleId(rawRole) ?? 7;
+    if (effectiveRoleId > 9 || effectiveRoleId < 1) {
+      effectiveRoleId = 7;
+    }
+
+    // 1. Ensure target Role exists in DB
+    let existingRole = await prisma.role.findUnique({ where: { id: effectiveRoleId } });
+    if (!existingRole) {
+      const systemRolesMap: Record<number, { name: string; description: string }> = {
+        1: { name: "SUPER_ADMIN", description: "Super Administrator" },
+        2: { name: "PLANNING_SECRETARY", description: "Planning Secretary" },
+        3: { name: "JOINT_SECRETARY", description: "Joint Secretary" },
+        4: { name: "DISTRICT_NODAL_OFFICER", description: "District Nodal Officer" },
+        5: { name: "DISTRICT_NODAL_CONSULTANT", description: "District Nodal Consultant" },
+        6: { name: "RELATIONSHIP_MANAGER", description: "CSR Relationship Manager" },
+        7: { name: "GOVERNMENT_OFFICER", description: "Government Department Officer" },
+        8: { name: "COMPANY_ADMIN", description: "Corporate Admin" },
+        9: { name: "NGO_ADMIN", description: "NGO / Implementing Agency Admin" },
+      };
+
+      const sysRole = systemRolesMap[effectiveRoleId] || { name: `ROLE_${effectiveRoleId}`, description: "System Role" };
+      try {
+        await prisma.role.create({
+          data: {
+            id: effectiveRoleId,
+            name: sysRole.name,
+            description: sysRole.description,
+            isSystemRole: true,
+            isProtected: true,
+          }
+        });
+      } catch {
+        /* ignore if created concurrently */
+      }
+    }
 
     const cleanPan = profile?.pan && profile.pan.trim().length > 0 ? profile.pan.trim().toUpperCase() : null;
     const cleanCin = profile?.cin && profile.cin.trim().length > 0 ? profile.cin.trim().toUpperCase() : null;
 
+    // 2. Check existing user
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      include: { organization: true }
+    });
+
+    if (existingUser && existingUser.isVerified) {
+      return res.status(400).json({ error: "An account with this email is already registered and verified. Please sign in." });
+    }
+
+    // 3. Check existing organization by PAN
     if (cleanPan) {
-      const existingPan = await prisma.organization.findFirst({ where: { pan: cleanPan } });
-      if (existingPan) {
-        return res.status(400).json({ error: "An organization with this PAN is already registered" });
-      }
-    }
-
-    if (cleanCin) {
-      const existingCin = await prisma.organization.findFirst({ where: { cin: cleanCin } });
-      if (existingCin) {
-        return res.status(400).json({ error: "An organization with this CIN is already registered" });
-      }
-    }
-
-    let organizationId: string | null = null;
-    if (profile?.name) {
-      const org = await prisma.organization.create({
-        data: {
-          name: profile.name,
-          kind: roleId === 8 ? "CSR_COMPANY" : roleId === 7 ? "GOVERNMENT_DEPARTMENT" : "NGO",
-          cin: cleanCin,
-          pan: cleanPan,
-          officialEmail: email,
-          address: profile.address || null,
-          district: profile.district || null
-        }
+      const existingPanOrg = await prisma.organization.findFirst({
+        where: { pan: cleanPan },
+        include: { users: true }
       });
-      organizationId = org.id;
+      if (existingPanOrg) {
+        const isVerifiedOrg = existingPanOrg.users.some((u) => u.isVerified);
+        if (isVerifiedOrg && (!existingUser || existingUser.organizationId !== existingPanOrg.id)) {
+          return res.status(400).json({ error: "An organization with this PAN is already registered and verified." });
+        }
+      }
     }
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-        roleId,
-        organizationId,
-        isVerified: false
+    // 4. Check existing organization by CIN
+    if (cleanCin) {
+      const existingCinOrg = await prisma.organization.findFirst({
+        where: { cin: cleanCin },
+        include: { users: true }
+      });
+      if (existingCinOrg) {
+        const isVerifiedOrg = existingCinOrg.users.some((u) => u.isVerified);
+        if (isVerifiedOrg && (!existingUser || existingUser.organizationId !== existingCinOrg.id)) {
+          return res.status(400).json({ error: "An organization with this CIN is already registered and verified." });
+        }
+      }
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const orgKind = effectiveRoleId === 8 ? "CSR_COMPANY" : effectiveRoleId === 7 ? "GOVERNMENT_DEPARTMENT" : "NGO";
+
+    // 5. Execute User & Organization creation / update inside atomic Prisma Transaction
+    const user = await prisma.$transaction(async (tx) => {
+      let organizationId: string | null = null;
+
+      if (profile?.name) {
+        if (existingUser && existingUser.organizationId) {
+          // Update existing pending organization
+          const updatedOrg = await tx.organization.update({
+            where: { id: existingUser.organizationId },
+            data: {
+              name: profile.name,
+              kind: orgKind,
+              cin: cleanCin,
+              pan: cleanPan,
+              officialEmail: normalizedEmail,
+              address: profile.address || null,
+              district: profile.district || null,
+            }
+          });
+          organizationId = updatedOrg.id;
+        } else {
+          // Create new organization
+          const newOrg = await tx.organization.create({
+            data: {
+              name: profile.name,
+              kind: orgKind,
+              cin: cleanCin,
+              pan: cleanPan,
+              officialEmail: normalizedEmail,
+              address: profile.address || null,
+              district: profile.district || null,
+            }
+          });
+          organizationId = newOrg.id;
+        }
+      }
+
+      if (existingUser) {
+        // Update unverified pending user record
+        return await tx.user.update({
+          where: { id: existingUser.id },
+          data: {
+            passwordHash,
+            roleId: effectiveRoleId,
+            organizationId: organizationId || existingUser.organizationId,
+            isVerified: false,
+            accountStatus: "PENDING_ACTIVATION",
+          }
+        });
+      } else {
+        // Create new user record
+        return await tx.user.create({
+          data: {
+            email: normalizedEmail,
+            passwordHash,
+            roleId: effectiveRoleId,
+            organizationId,
+            isVerified: false,
+            accountStatus: "PENDING_ACTIVATION",
+          }
+        });
       }
     });
 
-    // Generate OTP, store in DB, and send verification email
-    await createAndSendOtp(email);
+    // 6. Generate & send OTP
+    await createAndSendOtp(normalizedEmail);
 
     return res.status(201).json({
-      message: "Registration successful. A 6-digit verification code has been sent to your email.",
+      message: "Registration initiated. A 6-digit verification code has been sent to your email.",
       userId: user.id
     });
   } catch (error) {
