@@ -71,12 +71,16 @@ const networkFetch = async <T>(path: string, init: RequestInit, isCacheable: boo
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2500);
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
     ...init,
     headers,
-    credentials: "include"
-  });
+    credentials: "include",
+    signal: init.signal || controller.signal,
+  }).finally(() => clearTimeout(timeoutId));
 
   const data = await response.json().catch(() => null);
 

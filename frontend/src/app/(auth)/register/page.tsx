@@ -16,7 +16,8 @@ import {
   EyeOff,
   CheckCircle2,
   Sparkles,
-  KeyRound
+  KeyRound,
+  ShieldCheck
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { locationData, allStatesList } from "@/lib/locationData";
@@ -169,7 +170,6 @@ export default function RegisterPage() {
 
     try {
       const isGovEntity = role === "GOV_ENTITY";
-      const isCorporate = role === "CORPORATE";
       const stateVal = formData.state === "Other" ? customState : formData.state;
       const districtVal = formData.district === "Other" ? customDistrict : formData.district;
       const cityVal = formData.city === "Other" ? customCity : formData.city;
@@ -266,65 +266,65 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0d1c3a] to-[#14274e] px-4 py-12 text-slate-900 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#060d19] via-[#09152b] to-[#0f2142] px-4 py-10 text-slate-900 relative overflow-hidden font-sans">
       {/* Decorative background glows */}
-      <div className="absolute top-0 right-0 w-[30rem] h-[30rem] bg-[#f7941d]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-[#3b82f6]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[35rem] h-[35rem] bg-gradient-to-br from-amber-500/20 via-orange-600/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[35rem] h-[35rem] bg-gradient-to-tr from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="w-full max-w-3xl bg-white/95 backdrop-blur-2xl p-8 rounded-3xl border border-white/20 shadow-2xl shadow-black/40 relative z-10 flex flex-col gap-6">
+      <div className="w-full max-w-3xl bg-white/95 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/60 shadow-2xl shadow-black/50 relative z-10 flex flex-col gap-6">
         
         {/* Header Branding */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-5">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#f7941d] to-[#d97706] p-0.5 shadow-md flex items-center justify-center">
-              <div className="w-full h-full bg-[#0d1c3a] rounded-[10px] flex items-center justify-center">
-                <Sparkles size={18} className="text-[#f7941d]" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md flex items-center justify-center">
+              <div className="w-full h-full bg-[#09152b] rounded-[14px] flex items-center justify-center">
+                <Sparkles size={20} className="text-amber-400" />
               </div>
             </div>
             <div>
-              <h1 className="font-heading font-extrabold text-xl text-[#0d1c3a] tracking-tight">
-                MahaCSR Portal Onboarding
+              <h1 className="font-heading font-extrabold text-xl text-slate-900 tracking-tight">
+                MahaCSR Setu Entity Registration
               </h1>
-              <p className="text-xs text-slate-500 font-medium">
-                Official Entity & Department Registration Gateway
+              <p className="text-xs text-slate-500 font-semibold">
+                Government & Corporate Onboarding Portal
               </p>
             </div>
           </div>
-          <Link href="/login" className="text-xs font-semibold text-[#14274e] hover:text-[#f7941d] transition-colors">
+          <Link href="/login" className="text-xs font-extrabold text-blue-900 hover:text-amber-600 transition-colors">
             Back to Sign In
           </Link>
         </div>
 
         {/* Animated Step Tracker */}
-        <div className="grid grid-cols-3 gap-2 text-center text-xs font-semibold">
-          <div className={`py-2 px-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+        <div className="grid grid-cols-3 gap-2.5 text-center text-xs font-extrabold">
+          <div className={`py-2.5 px-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
             step === 1
-              ? "bg-[#0d1c3a] text-white border-[#0d1c3a] shadow-sm"
+              ? "bg-blue-950 text-white border-blue-950 shadow-md"
               : step > 1
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : "bg-slate-50 text-slate-400 border-slate-200"
           }`}>
-            <span className="w-5 h-5 rounded-full bg-white/20 text-current text-[11px] font-bold flex items-center justify-center">1</span>
+            <span className="w-5 h-5 rounded-full bg-white/20 text-current text-[11px] font-extrabold flex items-center justify-center">1</span>
             <span className="hidden sm:inline">Entity Category</span>
           </div>
 
-          <div className={`py-2 px-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+          <div className={`py-2.5 px-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
             step === 2
-              ? "bg-[#0d1c3a] text-white border-[#0d1c3a] shadow-sm"
+              ? "bg-blue-950 text-white border-blue-950 shadow-md"
               : step > 2
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : "bg-slate-50 text-slate-400 border-slate-200"
           }`}>
-            <span className="w-5 h-5 rounded-full bg-white/20 text-current text-[11px] font-bold flex items-center justify-center">2</span>
+            <span className="w-5 h-5 rounded-full bg-white/20 text-current text-[11px] font-extrabold flex items-center justify-center">2</span>
             <span className="hidden sm:inline">Details & Location</span>
           </div>
 
-          <div className={`py-2 px-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
+          <div className={`py-2.5 px-3 rounded-xl border transition-all flex items-center justify-center gap-2 ${
             step === 3
-              ? "bg-[#0d1c3a] text-white border-[#0d1c3a] shadow-sm"
+              ? "bg-blue-950 text-white border-blue-950 shadow-md"
               : "bg-slate-50 text-slate-400 border-slate-200"
           }`}>
-            <span className="w-5 h-5 rounded-full bg-white/20 text-current text-[11px] font-bold flex items-center justify-center">3</span>
+            <span className="w-5 h-5 rounded-full bg-white/20 text-current text-[11px] font-extrabold flex items-center justify-center">3</span>
             <span className="hidden sm:inline">OTP Verification</span>
           </div>
         </div>
@@ -334,7 +334,7 @@ export default function RegisterPage() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 p-3.5 rounded-xl text-red-700 text-xs flex items-center gap-2.5 font-medium"
+            className="bg-red-50 border border-red-200 p-3.5 rounded-2xl text-red-700 text-xs flex items-center gap-2.5 font-bold shadow-sm"
           >
             <AlertCircle size={18} className="text-red-500 shrink-0" />
             <span>{errorMsg}</span>
@@ -345,7 +345,7 @@ export default function RegisterPage() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-emerald-800 text-xs flex items-center gap-2.5 font-medium"
+            className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl text-emerald-800 text-xs flex items-center gap-2.5 font-bold shadow-sm"
           >
             <FileCheck size={18} className="text-emerald-600 shrink-0" />
             <span>{successMsg}</span>
@@ -363,36 +363,36 @@ export default function RegisterPage() {
               className="flex flex-col gap-6"
             >
               <div className="text-center">
-                <h2 className="font-heading font-bold text-xl text-[#0d1c3a]">
+                <h2 className="font-heading font-extrabold text-xl text-slate-900">
                   Select Registration Profile
                 </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Choose your organization type to customize your onboarding workspace
+                <p className="text-xs text-slate-500 font-semibold mt-1">
+                  Choose your organization category to customize your onboarding workspace
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div
                   onClick={() => setRole("CORPORATE")}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer flex flex-col gap-3 transition-all relative ${
+                  className={`p-6 rounded-3xl border-2 cursor-pointer flex flex-col gap-3 transition-all duration-300 relative ${
                     role === "CORPORATE"
-                      ? "border-[#f7941d] bg-amber-500/5 shadow-md shadow-amber-500/10"
-                      : "border-slate-200 bg-slate-50/50 hover:border-slate-300"
+                      ? "border-blue-900 bg-blue-50/50 shadow-xl scale-[1.02]"
+                      : "border-slate-200/80 bg-slate-50/50 hover:border-slate-300"
                   }`}
                 >
                   {role === "CORPORATE" && (
-                    <CheckCircle2 size={20} className="absolute top-4 right-4 text-[#f7941d]" />
+                    <CheckCircle2 size={22} className="absolute top-5 right-5 text-blue-900" />
                   )}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    role === "CORPORATE" ? "bg-[#0d1c3a] text-[#f7941d]" : "bg-slate-200 text-slate-600"
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                    role === "CORPORATE" ? "bg-blue-950 text-amber-400 shadow-md" : "bg-slate-200 text-slate-600"
                   }`}>
                     <Building2 size={24} />
                   </div>
                   <div>
-                    <h3 className="font-heading font-bold text-base text-[#0d1c3a]">
+                    <h3 className="font-heading font-extrabold text-base text-slate-900">
                       Corporate Partner
                     </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium mt-1">
                       Register with MCA21 CIN to submit CSR enquiries, commit funds, sign MoUs, and review project progress.
                     </p>
                   </div>
@@ -400,25 +400,25 @@ export default function RegisterPage() {
 
                 <div
                   onClick={() => setRole("GOV_ENTITY")}
-                  className={`p-5 rounded-2xl border-2 cursor-pointer flex flex-col gap-3 transition-all relative ${
+                  className={`p-6 rounded-3xl border-2 cursor-pointer flex flex-col gap-3 transition-all duration-300 relative ${
                     role === "GOV_ENTITY"
-                      ? "border-[#f7941d] bg-amber-500/5 shadow-md shadow-amber-500/10"
-                      : "border-slate-200 bg-slate-50/50 hover:border-slate-300"
+                      ? "border-blue-900 bg-blue-50/50 shadow-xl scale-[1.02]"
+                      : "border-slate-200/80 bg-slate-50/50 hover:border-slate-300"
                   }`}
                 >
                   {role === "GOV_ENTITY" && (
-                    <CheckCircle2 size={20} className="absolute top-4 right-4 text-[#f7941d]" />
+                    <CheckCircle2 size={22} className="absolute top-5 right-5 text-blue-900" />
                   )}
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    role === "GOV_ENTITY" ? "bg-[#0d1c3a] text-[#f7941d]" : "bg-slate-200 text-slate-600"
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                    role === "GOV_ENTITY" ? "bg-blue-950 text-amber-400 shadow-md" : "bg-slate-200 text-slate-600"
                   }`}>
                     <Landmark size={24} />
                   </div>
                   <div>
-                    <h3 className="font-heading font-bold text-base text-[#0d1c3a]">
+                    <h3 className="font-heading font-extrabold text-base text-slate-900">
                       Government Department / Local Body
                     </h3>
-                    <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium mt-1">
                       Register state departments or district local bodies to post CSR requirements and receive corporate proposals.
                     </p>
                   </div>
@@ -427,7 +427,7 @@ export default function RegisterPage() {
 
               <button
                 onClick={() => setStep(2)}
-                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0d1c3a] to-[#14274e] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group mt-2"
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 text-white font-extrabold text-xs shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group mt-2 hover:scale-[1.01]"
               >
                 <span>Continue to Registration Details</span>
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -446,17 +446,17 @@ export default function RegisterPage() {
               className="flex flex-col gap-4"
             >
               <div className="text-center mb-1">
-                <h2 className="font-heading font-bold text-xl text-[#0d1c3a]">
-                  Organization & Contact Information
+                <h2 className="font-heading font-extrabold text-xl text-slate-900">
+                  Organization & Credentials
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 font-semibold mt-0.5">
                   Provide official registration credentials for automated verification
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label className="text-xs font-bold text-slate-800">
                     {role === "GOV_ENTITY" ? "Department / Local Body Name *" : "Organization Name *"}
                   </label>
                   <input
@@ -465,13 +465,13 @@ export default function RegisterPage() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="e.g. Pune Municipal Corporation"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   />
-                  {fieldErrors.name && <span className="text-red-500 text-[11px]">{fieldErrors.name}</span>}
+                  {fieldErrors.name && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.name}</span>}
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">
+                  <label className="text-xs font-bold text-slate-800">
                     {role === "GOV_ENTITY" ? "Official Department Email *" : "Corporate Email *"}
                   </label>
                   <input
@@ -482,13 +482,13 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     onBlur={handleBlurValidate}
                     placeholder="e.g. nodal.pune@mahacsr.gov.in"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   />
-                  {fieldErrors.email && <span className="text-red-500 text-[11px]">{fieldErrors.email}</span>}
+                  {fieldErrors.email && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.email}</span>}
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">Password *</label>
+                  <label className="text-xs font-bold text-slate-800">Password *</label>
                   <div className="relative">
                     <input
                       required
@@ -498,7 +498,7 @@ export default function RegisterPage() {
                       onChange={handleChange}
                       minLength={6}
                       placeholder="Min 6 characters"
-                      className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                      className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                     />
                     <button
                       type="button"
@@ -508,11 +508,11 @@ export default function RegisterPage() {
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
-                  {fieldErrors.password && <span className="text-red-500 text-[11px]">{fieldErrors.password}</span>}
+                  {fieldErrors.password && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.password}</span>}
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">PAN Card Number *</label>
+                  <label className="text-xs font-bold text-slate-800">PAN Card Number *</label>
                   <input
                     required
                     name="pan"
@@ -522,13 +522,13 @@ export default function RegisterPage() {
                     maxLength={10}
                     minLength={10}
                     placeholder="ABCDE1234F"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   />
-                  {fieldErrors.pan && <span className="text-red-500 text-[11px]">{fieldErrors.pan}</span>}
+                  {fieldErrors.pan && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.pan}</span>}
                 </div>
 
                 <div className="flex flex-col gap-1 md:col-span-2">
-                  <label className="text-xs font-semibold text-slate-700">Registered Address *</label>
+                  <label className="text-xs font-bold text-slate-800">Registered Address *</label>
                   <input
                     required
                     name="address"
@@ -536,39 +536,39 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     minLength={5}
                     placeholder="Official registered office address"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   />
-                  {fieldErrors.address && <span className="text-red-500 text-[11px]">{fieldErrors.address}</span>}
+                  {fieldErrors.address && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.address}</span>}
                 </div>
 
                 {role === "GOV_ENTITY" ? (
                   <>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-700">Department Code *</label>
+                      <label className="text-xs font-bold text-slate-800">Department Code *</label>
                       <input
                         required
                         name="registrationNumber"
                         value={formData.registrationNumber}
                         onChange={handleChange}
                         placeholder="e.g. ZP-PUNE-CSR"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                        className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                       />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-700">Nodal Designation *</label>
+                      <label className="text-xs font-bold text-slate-800">Nodal Designation *</label>
                       <input
                         required
                         name="cin"
                         value={formData.cin}
                         onChange={handleChange}
                         placeholder="e.g. District Nodal Officer"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                        className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                       />
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col gap-1 md:col-span-2">
-                    <label className="text-xs font-semibold text-slate-700">MCA21 CIN Number *</label>
+                    <label className="text-xs font-bold text-slate-800">MCA21 CIN Number *</label>
                     <input
                       required
                       name="cin"
@@ -577,20 +577,20 @@ export default function RegisterPage() {
                       onBlur={handleBlurValidate}
                       maxLength={21}
                       placeholder="L72200MH2018PLC309876"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                      className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold uppercase text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                     />
-                    {fieldErrors.cin && <span className="text-red-500 text-[11px]">{fieldErrors.cin}</span>}
+                    {fieldErrors.cin && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.cin}</span>}
                   </div>
                 )}
 
-                {/* Cascading State/District/City/Taluka */}
+                {/* State/District Dropdowns */}
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">State *</label>
+                  <label className="text-xs font-bold text-slate-800">State *</label>
                   <select
                     name="state"
                     value={formData.state}
                     onChange={(e) => handleStateChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   >
                     {allStatesList.map((st) => (
                       <option key={st} value={st}>{st}</option>
@@ -600,12 +600,12 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-700">District *</label>
+                  <label className="text-xs font-bold text-slate-800">District *</label>
                   <select
                     name="district"
                     value={formData.district}
                     onChange={(e) => handleDistrictChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   >
                     {availableDistricts.map((d) => (
                       <option key={d.name} value={d.name}>{d.name}</option>
@@ -620,7 +620,7 @@ export default function RegisterPage() {
                   type="button"
                   disabled={loading}
                   onClick={() => setStep(1)}
-                  className="w-1/3 py-3 px-4 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
+                  className="w-1/3 py-3 px-4 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-1.5"
                 >
                   <ArrowLeft size={16} />
                   <span>Back</span>
@@ -628,7 +628,7 @@ export default function RegisterPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-2/3 py-3 px-4 rounded-xl bg-gradient-to-r from-[#0d1c3a] to-[#14274e] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-2/3 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01]"
                 >
                   {loading ? "Registering..." : "Submit & Send OTP"}
                 </button>
@@ -646,17 +646,17 @@ export default function RegisterPage() {
               onSubmit={handleVerifyOtp}
               className="flex flex-col gap-6 items-center text-center py-4"
             >
-              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[#f7941d] flex items-center justify-center shadow-inner">
+              <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shadow-inner">
                 <KeyRound size={28} />
               </div>
 
               <div>
-                <h2 className="font-heading font-bold text-2xl text-[#0d1c3a]">
+                <h2 className="font-heading font-extrabold text-2xl text-slate-900">
                   Verify Email Address
                 </h2>
-                <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                <p className="text-xs text-slate-500 font-medium mt-1 max-w-sm">
                   We sent a 6-digit verification code to{" "}
-                  <strong className="text-[#0d1c3a] font-semibold">{formData.email}</strong>
+                  <strong className="text-slate-900 font-bold">{formData.email}</strong>
                 </p>
               </div>
 
@@ -668,14 +668,14 @@ export default function RegisterPage() {
                   onChange={(e) => setOtp(e.target.value)}
                   placeholder="123456"
                   disabled={loading}
-                  className="w-full text-center bg-slate-50 border-2 border-slate-200 focus:border-[#f7941d] rounded-2xl py-3.5 text-2xl font-bold tracking-[0.4em] text-[#0d1c3a] focus:outline-none focus:bg-white transition-all shadow-inner disabled:opacity-50"
+                  className="w-full text-center bg-slate-50 border-2 border-slate-200 focus:border-blue-900 rounded-2xl py-3.5 text-2xl font-extrabold tracking-[0.4em] text-blue-950 focus:outline-none focus:bg-white transition-all shadow-inner disabled:opacity-50"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full max-w-xs py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0d1c3a] to-[#14274e] text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full max-w-xs py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01]"
               >
                 {loading ? "Verifying OTP..." : "Complete Verification"}
               </button>

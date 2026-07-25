@@ -126,15 +126,35 @@ export const submitApplication = async (req: AuthenticatedRequest, res: Response
 
 export const getApplicationStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const orgId = req.user?.organizationId || req.user?.ngoId;
+    let orgId = req.user?.organizationId || req.user?.ngoId || req.user?.companyId;
+    if (!orgId && req.user?.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { organizationId: true }
+      });
+      orgId = user?.organizationId || null;
+    }
     if (!orgId) return res.status(400).json({ error: "Organization context is required" });
 
     const org = await prisma.organization.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true, status: true }
+      include: {
+        csrCompanyProfile: true,
+        ngoProfile: true,
+        govDeptProfile: true,
+        documents: true
+      }
     });
 
-    return res.json({ success: true, data: org });
+    if (!org) return res.status(404).json({ error: "Organization not found" });
+
+    const payload = {
+      ...org,
+      organizationType: org.kind,
+      onboardingStatus: org.status
+    };
+
+    return res.json(payload);
   } catch (error) {
     next(error);
   }

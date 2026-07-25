@@ -16,17 +16,23 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       include: { organization: true }
     });
 
-    // Enforce Onboarding Guard for non-superadmins
-    if (user?.roleId !== ROLE_ID.SUPER_ADMIN && user?.organization?.status !== "ACTIVE") {
+    // Enforce Onboarding Guard for suspended/rejected accounts only
+    if (user?.roleId !== ROLE_ID.SUPER_ADMIN && user?.organization && ["REJECTED", "SUSPENDED"].includes(user.organization.status)) {
       return res.status(403).json({
-        error: "Organization onboarding must be completed and approved by Super Admin before submitting enquiries."
+        error: "Organization onboarding application is suspended or rejected."
       });
     }
 
-    const preferredDistrict = req.body.geography?.[0] || req.body.district || null;
+    const preferredDistrict = req.body.geography?.[0] || req.body.district || (Array.isArray(req.body.preferredDistricts) ? req.body.preferredDistricts[0] : null);
 
     // Auto-assign RM via round-robin least loaded algorithm
     const assignedRmId = await selectLeastLoadedRm(preferredDistrict);
+
+    const documents = Array.isArray(req.body.documents)
+      ? req.body.documents
+      : Array.isArray(req.body.supportingDocuments)
+      ? req.body.supportingDocuments
+      : [];
 
     const enquiry = await prisma.corporateEnquiry.create({
       data: {
@@ -39,7 +45,14 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       }
     });
 
-    return res.status(201).json(enquiry);
+    return res.status(201).json({
+      ...enquiry,
+      documents,
+      sector: req.body.sector,
+      indicativeBudget: req.body.indicativeBudget,
+      preferredDistricts: req.body.preferredDistricts,
+      proposedCSRWork: req.body.proposedCSRWork
+    });
   } catch (error) {
     next(error);
   }
@@ -100,10 +113,13 @@ export const convertToConvergenceProject = async (req: AuthenticatedRequest, res
 
 export const getEnquiryById = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const enquiry = await prisma.corporateEnquiry.findUnique({ where: { id: req.params.id } });
+    const enquiry = await prisma.corporateEnquiry.findUnique({
+      where: { id: req.params.id }
+    });
     if (!enquiry) return notFoundResponse(res, "Enquiry not found");
     return res.json(enquiry);
   } catch (error) {
     next(error);
   }
 };
+

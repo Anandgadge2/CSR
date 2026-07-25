@@ -15,7 +15,10 @@ import {
   ShieldCheck,
   Award,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Landmark,
+  CheckCircle2,
+  Check
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { resolveDashboardPath } from "@/lib/roleRouting";
@@ -132,7 +135,6 @@ function LoginForm() {
       const orgStatus = user.organization?.status;
       const isSuperAdmin = user.roleNumericId === 1 || user.role === "SUPER_ADMIN";
 
-      // If user's organization onboarding is incomplete or not ACTIVE, direct to onboarding workspace
       if (!isSuperAdmin && user.organization && orgStatus !== "ACTIVE") {
         router.push("/organization/onboarding");
       } else {
@@ -147,90 +149,86 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0d1c3a] to-[#14274e] px-4 py-12 relative overflow-hidden text-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#060d19] via-[#09152b] to-[#0f2142] px-4 py-10 relative overflow-hidden text-slate-100 font-sans">
       {loading && loginSuccess && <Loader label="Initializing workspace & permissions..." fullscreen />}
 
-      {/* Decorative ambient background glows */}
-      <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#f7941d]/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -right-32 w-[30rem] h-[30rem] bg-[#3b82f6]/15 rounded-full blur-3xl pointer-events-none" />
+      {/* Radiant 3D ambient glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[35rem] h-[35rem] bg-gradient-to-br from-amber-500/20 via-orange-600/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-gradient-to-tl from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10">
         
-        {/* Left Side: Brand Showcase & State Crest */}
+        {/* Left Side: Brand Showcase & 3D Emblem */}
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="lg:col-span-6 flex flex-col gap-6 text-white pr-0 lg:pr-6"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold text-[#f7941d] backdrop-blur-md w-fit">
-            <Sparkles size={14} className="animate-pulse" />
-            <span>Official Government of Maharashtra Portal</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-bold text-amber-400 backdrop-blur-xl w-fit shadow-glass">
+            <Sparkles size={14} className="animate-pulse text-amber-400" />
+            <span>Government of Maharashtra CSR Portal</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#f7941d] to-[#d97706] p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center shrink-0">
-              <div className="w-full h-full bg-[#0d1c3a] rounded-[14px] flex items-center justify-center">
-                <svg viewBox="0 0 100 100" className="w-10 h-10" fill="none" stroke="currentColor">
-                  <polygon points="50,5 82,18 95,50 82,82 50,95 18,82 5,50 18,18" stroke="#f7941d" strokeWidth="4.5" fill="#f7941d" fillOpacity="0.15" />
-                  <path d="M28,32 L72,32 M32,44 L68,44 M28,56 L72,56 M36,68 L64,68" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
-                  <path d="M42,80 L58,80" stroke="#f7941d" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 p-0.5 shadow-2xl shadow-amber-500/30 flex items-center justify-center shrink-0 transform-gpu hover:scale-105 transition-transform">
+              <div className="w-full h-full bg-[#09152b] rounded-[14px] flex items-center justify-center">
+                <Landmark size={32} className="text-amber-400" />
               </div>
             </div>
             <div>
-              <h1 className="text-3xl font-heading font-extrabold tracking-tight text-white">
-                MahaCSR Portal
+              <h1 className="text-3xl font-extrabold tracking-tight text-white font-heading">
+                MahaCSR Setu
               </h1>
-              <p className="text-xs text-amber-200/80 font-medium tracking-wide uppercase mt-0.5">
-                State-Led CSR Convergence & Impact Framework
+              <p className="text-xs text-amber-300/90 font-bold tracking-widest uppercase mt-0.5">
+                State CSR Convergence & Impact Platform
               </p>
             </div>
           </div>
 
-          <p className="text-sm text-slate-300 leading-relaxed font-normal">
-            Unified digital gateway connecting Corporate CSR capital with verified State Government development priorities and District execution workflows across Maharashtra.
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+            Unified digital gateway connecting Corporate CSR capital with verified Maharashtra State Government development priorities and District execution workflows under MCA Section 135.
           </p>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3">
-              <ShieldCheck className="text-[#f7941d] shrink-0" size={22} />
+          <div className="grid grid-cols-2 gap-3.5 pt-2">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-glass">
+              <ShieldCheck className="text-amber-400 shrink-0" size={24} />
               <div>
-                <p className="text-xs font-bold text-white">API Setu Verified</p>
-                <p className="text-[11px] text-slate-400">GSTN & Aadhaar eKYC</p>
+                <p className="text-xs font-extrabold text-white">API Setu Verified</p>
+                <p className="text-[11px] text-slate-300 font-medium">GSTN & eKYC Audit</p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-3">
-              <Award className="text-emerald-400 shrink-0" size={22} />
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-glass">
+              <Award className="text-emerald-400 shrink-0" size={24} />
               <div>
-                <p className="text-xs font-bold text-white">5-3-2 SLA Engine</p>
-                <p className="text-[11px] text-slate-400">Strict Timelines</p>
+                <p className="text-xs font-extrabold text-white">SLA Engine</p>
+                <p className="text-[11px] text-slate-300 font-medium">Verified Turnarounds</p>
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Right Side: Login Glass Container */}
+        {/* Right Side: 3D Glassmorphism Login Container */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-          className="lg:col-span-6 bg-white/95 backdrop-blur-2xl p-8 rounded-3xl border border-white/20 shadow-2xl shadow-black/40 text-slate-900"
+          className="lg:col-span-6 bg-white/95 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/60 shadow-2xl shadow-black/50 text-slate-900"
         >
           <div className="mb-6">
-            <h2 className="text-2xl font-heading font-bold text-[#0d1c3a] tracking-tight">
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight font-heading">
               Sign In to Your Workspace
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Enter your credentials to access your persona dashboard
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Enter your official credentials to access your persona dashboard
             </p>
           </div>
 
-          {/* Quick Demo Login Selectors */}
-          <div className="mb-6">
-            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
-              Quick Login Roles (Demo):
+          {/* Quick Demo Role Selector Pills */}
+          <div className="mb-5">
+            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
+              Quick Role Switcher (Demo Review):
             </label>
             <div className="flex flex-wrap gap-1.5">
               {DEMO_LOGINS.map((demo) => (
@@ -238,10 +236,10 @@ function LoginForm() {
                   key={demo.email}
                   type="button"
                   onClick={() => handleQuickLogin(demo.email)}
-                  className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-all ${
+                  className={`text-[11px] px-3 py-1.5 rounded-xl border font-bold transition-all duration-200 ${
                     email === demo.email
-                      ? "bg-[#14274e] text-white border-[#14274e] shadow-sm scale-105"
-                      : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                      ? "bg-blue-950 text-white border-blue-950 shadow-md scale-105"
+                      : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80"
                   }`}
                 >
                   {demo.label}
@@ -254,17 +252,17 @@ function LoginForm() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-5 bg-red-50 border border-red-200 p-3.5 rounded-xl text-red-700 text-xs flex items-center gap-3"
+              className="mb-5 bg-red-50 border border-red-200 p-3.5 rounded-2xl text-red-700 text-xs flex items-center gap-3 font-semibold shadow-sm"
             >
               <AlertCircle size={18} className="text-red-500 shrink-0" />
-              <span className="font-medium">{error}</span>
+              <span>{error}</span>
             </motion.div>
           )}
 
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Corporate / Official Email Address
+              <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                Corporate / Official Email Address *
               </label>
               <div className="relative">
                 <input
@@ -274,16 +272,16 @@ function LoginForm() {
                   placeholder="e.g. admin@mahacsr.gov.in"
                   disabled={loading}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e] focus:bg-white transition-all disabled:opacity-50"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-50 shadow-sm"
                 />
-                <Mail size={18} className="absolute left-3.5 top-3 text-slate-400" />
+                <Mail size={17} className="absolute left-3.5 top-3.5 text-slate-400" />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-slate-700">
-                  Password
+                <label className="block text-xs font-bold text-slate-800">
+                  Password *
                 </label>
               </div>
               <div className="relative">
@@ -294,15 +292,15 @@ function LoginForm() {
                   placeholder="••••••••••••"
                   disabled={loading}
                   required
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f7941d]/50 focus:border-[#14274e] focus:bg-white transition-all disabled:opacity-50"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-50 shadow-sm"
                 />
-                <Lock size={18} className="absolute left-3.5 top-3 text-slate-400" />
+                <Lock size={17} className="absolute left-3.5 top-3.5 text-slate-400" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
               </div>
             </div>
@@ -310,10 +308,10 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-3 w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#0d1c3a] via-[#14274e] to-[#1b3469] hover:from-[#14274e] hover:to-[#0d1c3a] text-white font-semibold text-sm shadow-md shadow-slate-900/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="mt-2 w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 hover:from-blue-900 hover:to-blue-950 text-white font-extrabold text-xs shadow-lg shadow-blue-950/20 hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-50 hover:scale-[1.01]"
             >
               {loading ? (
-                <span>Signing in...</span>
+                <span>Signing in to Workspace...</span>
               ) : (
                 <>
                   <span>Sign In to Workspace</span>
@@ -323,9 +321,9 @@ function LoginForm() {
             </button>
           </form>
 
-          <div className="text-center text-xs text-slate-500 mt-6 pt-5 border-t border-slate-100 font-medium">
+          <div className="text-center text-xs text-slate-500 mt-6 pt-5 border-t border-slate-100 font-semibold">
             New corporate or government entity?{" "}
-            <Link href="/register" className="text-[#14274e] hover:text-[#f7941d] font-bold transition-colors">
+            <Link href="/register" className="text-blue-900 hover:text-amber-600 font-extrabold transition-colors">
               Register Organization
             </Link>
           </div>

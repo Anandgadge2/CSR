@@ -18,6 +18,7 @@ export interface AuthenticatedRequest extends Request {
     companyId?: string | null;
     assignedDistrict?: string | null;
     beneficiaryProfileId?: string | null;
+    organization?: any;
   };
 }
 

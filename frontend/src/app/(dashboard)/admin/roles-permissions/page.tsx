@@ -55,6 +55,86 @@ const MATRIX_COLUMNS = [
   { label: "Approve", suffix: [":approve", ":publish", ":verify", ":release", ":execute", ":verify-utilization"] }
 ];
 
+const PERMISSION_TITLE_MAP: Record<string, { title: string; hint: string }> = {
+  "dashboard:view": { title: "View Dashboard", hint: "Access the main unified dashboard." },
+  "dashboard:widget-kpis": { title: "Headline KPI Cards", hint: "Display top metric summary cards on dashboard." },
+  "dashboard:widget-workqueue": { title: "Work Queue Widget", hint: "Display pending work queue items." },
+  "dashboard:widget-sla": { title: "SLA / Escalation Timers", hint: "Display SLA timers & escalation alerts." },
+  "dashboard:widget-approvals": { title: "Pending Approvals Widget", hint: "Display pending approvals summary card." },
+  "dashboard:widget-charts": { title: "Analytics Charts", hint: "Display analytics charts on dashboard." },
+  "dashboard:widget-activity": { title: "Recent Activity Feed", hint: "Display recent audit trail activity." },
+  "dashboard:widget-quick-actions": { title: "Quick Action Shortcuts", hint: "Display quick shortcut buttons." },
+
+  "requirement:view": { title: "View CSR Requirements", hint: "Browse department CSR needs & requirements." },
+  "requirement:create": { title: "Create CSR Requirements", hint: "Submit department CSR requirement." },
+  "requirement:approve": { title: "Approve Requirements", hint: "Approve submitted CSR requirements." },
+
+  "pitch:view": { title: "View Govt Pitches", hint: "View government development pitches." },
+  "pitch:create": { title: "Create Govt Pitch", hint: "Create a new government development pitch." },
+  "pitch:edit_before_approval": { title: "Edit Pitch Draft", hint: "Edit pitch before final approval." },
+  "pitch:submit": { title: "Submit Pitch for Review", hint: "Submit pitch for review." },
+  "pitch:approve": { title: "Approve Govt Pitches", hint: "Approve development pitches." },
+  "pitch:reject": { title: "Reject Govt Pitches", hint: "Reject submitted pitches." },
+  "pitch:verify": { title: "Verify Pitch Details", hint: "Verify feasibility & pitch documentation." },
+
+  "assessment:view": { title: "View Feasibility Assessments", hint: "View need assessment reports." },
+  "assessment:create": { title: "Create Assessment Report", hint: "Generate need assessment report." },
+  "assessment:submit": { title: "Submit Assessment to JS", hint: "Send feasibility report to Joint Secretary." },
+
+  "interest:view": { title: "View Corporate Interests", hint: "See expressions of interest." },
+  "interest:express": { title: "Express Corporate Interest", hint: "Submit corporate interest in project." },
+  "interest:approve": { title: "Approve Corporate Interest", hint: "Approve corporate project interest." },
+
+  "project:view": { title: "View CSR Projects", hint: "View convergence projects." },
+  "project:create": { title: "Create CSR Projects", hint: "Create new convergence project." },
+  "project:approve": { title: "Approve CSR Projects", hint: "Approve project for execution." },
+  "project:assign": { title: "Assign Project Officers", hint: "Assign nodal officers to project." },
+  "project:close": { title: "Close Completed Projects", hint: "Mark completed projects closed." },
+
+  "milestone:view": { title: "View Milestones", hint: "View project milestone progress." },
+  "milestone:create": { title: "Create Milestones", hint: "Add milestone deliverables." },
+  "milestone:verify": { title: "Verify Milestones", hint: "Verify milestone deliverables." },
+
+  "inspection:upload": { title: "Upload Field Inspections", hint: "Upload inspection logs & reports." },
+  "photo:upload": { title: "Upload Inspection Photos", hint: "Upload field photos." },
+  "photo:upload_geotagged": { title: "Upload Geo-Tagged Photos", hint: "Upload GPS-tagged field photos." },
+
+  "fund:view": { title: "View Funds & Utilization", hint: "View fund releases & UC status." },
+  "fund:commit": { title: "Commit Corporate Funds", hint: "Pledge corporate CSR funds." },
+  "fund:release": { title: "Release Funds to Agency", hint: "Release funds to implementing NGO." },
+  "uc:upload": { title: "Upload Utilization Certificate (UC)", hint: "Upload signed UC document." },
+  "bill:upload": { title: "Upload Expenditure Receipts", hint: "Upload bills & receipts." },
+
+  "company_profile:manage": { title: "Manage Corporate Profile & KYC", hint: "Manage corporate organization details & KYC." },
+  "organization:approve": { title: "Approve Organization Onboarding", hint: "Approve company, dept, or NGO onboarding." },
+
+  "user:create": { title: "Create Users", hint: "Create user accounts." },
+  "user:invite": { title: "Invite Org Users", hint: "Invite organization team members." },
+  "user:activate": { title: "Activate User Accounts", hint: "Activate pending user accounts." },
+  "user:suspend": { title: "Suspend User Accounts", hint: "Suspend user access." },
+
+  "role:view": { title: "View System Roles", hint: "View role catalog." },
+  "role:create": { title: "Create Custom Roles", hint: "Create dynamic role." },
+  "role:configure": { title: "Configure Permissions Matrix", hint: "Edit role permission matrix." },
+
+  "mou:sign": { title: "Sign MoU Agreement", hint: "Sign Memorandum of Understanding." },
+  "audit:view": { title: "View Audit Logs", hint: "Inspect system audit trail." },
+  "record:delete-single": { title: "Delete Single Record", hint: "Delete individual database record." },
+  "record:delete-bulk": { title: "Bulk Delete Records", hint: "Delete multiple selected records." },
+  "record:import-excel": { title: "Bulk Import Data", hint: "Bulk import records from Excel/CSV." },
+};
+
+function getFriendlyPermission(key: string, defaultDesc?: string) {
+  const mapped = PERMISSION_TITLE_MAP[key];
+  if (mapped) return mapped;
+  const parts = key.split(":");
+  const title = parts.map((p) => p.replace(/[-_]/g, " ")).join(" · ");
+  return {
+    title: title.charAt(0).toUpperCase() + title.slice(1),
+    hint: defaultDesc || key,
+  };
+}
+
 export default function AdminRolesPermissionsPage() {
   const [loading, setLoading] = useState(true);
   const [dynamicRoles, setDynamicRoles] = useState<DynamicRole[]>([]);
@@ -63,6 +143,7 @@ export default function AdminRolesPermissionsPage() {
   const [selectedRolePerms, setSelectedRolePerms] = useState<string[]>([]);
   const [newRolePerms, setNewRolePerms] = useState<string[]>([]);
   const [roleSearchTerm, setRoleSearchTerm] = useState("");
+  const [permissionSearchTerm, setPermissionSearchTerm] = useState("");
   const [roleTypeFilter, setRoleTypeFilter] = useState<"all" | "system" | "custom">("all");
 
   const [pages, setPages] = useState<PageDef[]>([]);
@@ -89,7 +170,6 @@ export default function AdminRolesPermissionsPage() {
     setLoading(true);
     setError("");
     try {
-      // High limit so pagination never hides system or custom roles.
       const rolesResponse = await apiFetch<any>("/roles?limit=200");
       const rolesData = rolesResponse?.data || rolesResponse || {};
       const fetchedRoles: DynamicRole[] = rolesData?.roles || [];
@@ -102,7 +182,6 @@ export default function AdminRolesPermissionsPage() {
 
       const groupsResponse = await apiFetch<any>("/roles/permission-groups");
       const groupsData = groupsResponse?.data || groupsResponse || [];
-      // Controller may return { groups: [...] } or a bare array.
       const groupsList = Array.isArray(groupsData) ? groupsData : (groupsData?.groups || []);
       setPermissionGroups(Array.isArray(groupsList) ? groupsList : []);
 
@@ -278,6 +357,19 @@ export default function AdminRolesPermissionsPage() {
   });
 
   const selectedRole = dynamicRoles.find((r) => r.id === selectedRoleId);
+
+  // Filter permission groups based on search term
+  const term = permissionSearchTerm.toLowerCase();
+  const filteredGroups = permissionGroups.filter((g) => {
+    if (!term) return true;
+    if (g.name.toLowerCase().includes(term)) return true;
+    return g.permissions.some(
+      (p) =>
+        p.key.toLowerCase().includes(term) ||
+        (p.description && p.description.toLowerCase().includes(term)) ||
+        getFriendlyPermission(p.key).title.toLowerCase().includes(term)
+    );
+  });
 
   return (
     <GovPortalLayout>
@@ -466,28 +558,38 @@ export default function AdminRolesPermissionsPage() {
                   </div>
                 </GovCardHeader>
                 <GovCardBody>
-                  <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h4 style={{ fontWeight: 600, color: "#1e293b", margin: 0 }}>Permissions Matrix Mapping</h4>
-                    <span style={{ fontSize: "13px", color: "#475569" }}>
-                      Selected permissions: <strong>{selectedRolePerms.length}</strong>
-                    </span>
+                  <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                    <div>
+                      <h4 style={{ fontWeight: 600, color: "#1e293b", margin: 0 }}>Permissions Matrix Mapping</h4>
+                      <span style={{ fontSize: "12px", color: "#64748b" }}>
+                        Active permissions assigned: <strong>{selectedRolePerms.length}</strong>
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      className="gov-input"
+                      placeholder="Filter permissions (e.g. pitch, fund, user)..."
+                      value={permissionSearchTerm}
+                      onChange={(e) => setPermissionSearchTerm(e.target.value)}
+                      style={{ padding: "6px 12px", fontSize: "13px", width: "280px" }}
+                    />
                   </div>
 
                   <div className="gov-table-container" style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
                     <table className="gov-table" style={{ margin: 0 }}>
                       <thead style={{ backgroundColor: "#f8fafc" }}>
                         <tr>
-                          <th style={{ width: "240px" }}>Permission Group / module</th>
+                          <th style={{ width: "280px" }}>Permission Group / Module</th>
                           {MATRIX_COLUMNS.map((col) => (
                             <th key={col.label} style={{ textAlign: "center", width: "100px" }}>{col.label}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {permissionGroups.map((group) => (
+                        {filteredGroups.map((group) => (
                           <tr key={group.id}>
                             <td style={{ fontWeight: 600, color: "#334155" }}>
-                              <div>{group.name}</div>
+                              <div style={{ fontSize: "14px" }}>{group.name}</div>
                               {group.description && (
                                 <div style={{ fontSize: "11px", fontWeight: "normal", color: "#94a3b8", marginTop: 2 }}>
                                   {group.description}
@@ -507,6 +609,7 @@ export default function AdminRolesPermissionsPage() {
                                 );
                               }
 
+                              const friendly = getFriendlyPermission(matchedPerm.key, matchedPerm.description || undefined);
                               const isChecked = selectedRolePerms.includes(matchedPerm.key);
                               const disabled = selectedRole.isPermanent;
 
@@ -523,7 +626,7 @@ export default function AdminRolesPermissionsPage() {
                                       cursor: disabled ? "not-allowed" : "pointer",
                                       accentColor: "#1e3a8a"
                                     }}
-                                    title={matchedPerm.description}
+                                    title={`${friendly.title} (${matchedPerm.key}): ${friendly.hint}`}
                                   />
                                 </td>
                               );
@@ -534,23 +637,23 @@ export default function AdminRolesPermissionsPage() {
                     </table>
                   </div>
 
-                  {/* Non-standard Permissions list — excludes PAGE perms (page:*),
-                      which get their own Page Access section below. */}
-                  {permissionGroups.some((g) =>
+                  {/* Non-standard Capabilities list */}
+                  {filteredGroups.some((g) =>
                     g.permissions.some((p) =>
                       !p.key.startsWith("page:") &&
                       !MATRIX_COLUMNS.some((col) => col.suffix.some((suf) => p.key.endsWith(suf)))
                     )
                   ) && (
                     <div style={{ marginTop: 24 }}>
-                      <h5 style={{ fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Bulk / Miscellaneous Capabilities</h5>
+                      <h5 style={{ fontWeight: 600, color: "#1e293b", marginBottom: 12 }}>Bulk & Action Capabilities</h5>
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12 }}>
-                        {permissionGroups.flatMap((g) =>
+                        {filteredGroups.flatMap((g) =>
                           g.permissions.filter((p) =>
                             !p.key.startsWith("page:") &&
                             !MATRIX_COLUMNS.some((col) => col.suffix.some((suf) => p.key.endsWith(suf)))
                           )
                         ).map((perm) => {
+                          const friendly = getFriendlyPermission(perm.key, perm.description || undefined);
                           const isChecked = selectedRolePerms.includes(perm.key);
                           const disabled = selectedRole.isPermanent;
                           return (
@@ -561,9 +664,9 @@ export default function AdminRolesPermissionsPage() {
                                 alignItems: "flex-start",
                                 gap: 10,
                                 padding: "10px 12px",
-                                backgroundColor: "#f8fafc",
+                                backgroundColor: isChecked ? "#f0f9ff" : "#f8fafc",
                                 borderRadius: "6px",
-                                border: "1px solid #e2e8f0",
+                                border: "1px solid " + (isChecked ? "#bae6fd" : "#e2e8f0"),
                                 cursor: disabled ? "not-allowed" : "pointer"
                               }}
                             >
@@ -575,8 +678,15 @@ export default function AdminRolesPermissionsPage() {
                                 style={{ marginTop: 2, accentColor: "#1e3a8a" }}
                               />
                               <div>
-                                <div style={{ fontWeight: 600, fontSize: "13px", color: "#334155" }}>{perm.key}</div>
-                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: 2 }}>{perm.description}</div>
+                                <div style={{ fontWeight: 700, fontSize: "13px", color: "#1e293b" }}>
+                                  {friendly.title}
+                                </div>
+                                <div style={{ fontSize: "10px", color: "#0284c7", fontWeight: 600, fontFamily: "monospace", marginTop: 1 }}>
+                                  {perm.key}
+                                </div>
+                                <div style={{ fontSize: "11px", color: "#64748b", marginTop: 3, lineHeight: "1.3" }}>
+                                  {friendly.hint}
+                                </div>
                               </div>
                             </label>
                           );
@@ -585,8 +695,7 @@ export default function AdminRolesPermissionsPage() {
                     </div>
                   )}
 
-                  {/* Page Access — PAGE-visibility permissions (checkbox lit = page
-                      visible in nav and reachable; unlit = hidden + route blocked). */}
+                  {/* Page Access */}
                   {pages.length > 0 && (
                     <div style={{ marginTop: 28 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
@@ -722,9 +831,10 @@ export default function AdminRolesPermissionsPage() {
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       {group.permissions.map((perm) => {
+                        const friendly = getFriendlyPermission(perm.key, perm.description || undefined);
                         const isChecked = newRolePerms.includes(perm.key);
                         return (
-                          <label key={perm.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, cursor: "pointer" }}>
+                          <label key={perm.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "4px 6px", backgroundColor: isChecked ? "#eff6ff" : "transparent", borderRadius: 4 }}>
                             <input
                               type="checkbox"
                               checked={isChecked}
@@ -738,11 +848,14 @@ export default function AdminRolesPermissionsPage() {
                               style={{ marginTop: 2, accentColor: "#1e3a8a" }}
                             />
                             <div style={{ display: "flex", flexDirection: "column" }}>
-                              <span style={{ fontSize: "11px", fontWeight: 600, color: "#334155" }} title={perm.key}>
+                              <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e293b" }}>
+                                {friendly.title}
+                              </span>
+                              <span style={{ fontSize: "10px", color: "#0284c7", fontWeight: 600, fontFamily: "monospace" }}>
                                 {perm.key}
                               </span>
-                              <span style={{ fontSize: "9px", color: "#64748b", lineHeight: "1.2" }}>
-                                {perm.description}
+                              <span style={{ fontSize: "10px", color: "#64748b", lineHeight: "1.2", marginTop: 2 }}>
+                                {friendly.hint}
                               </span>
                             </div>
                           </label>

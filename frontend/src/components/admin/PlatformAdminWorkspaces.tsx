@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Eye, Loader2, Plus, Save, Search, ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Building2, Check, CheckCircle2, Clock, Eye, FileText, Loader2, Plus, RefreshCw, Save, Search, ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { apiFetch, API_BASE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 
@@ -32,15 +32,18 @@ type TenantFeature = {
 
 type Organization = {
   id: string;
-  tenantId: string;
+  tenantId?: string;
   organizationType: string;
+  kind?: string;
   name: string;
   email?: string | null;
+  officialEmail?: string | null;
   phone?: string | null;
   address?: string | null;
   district?: string | null;
   taluka?: string | null;
   registrationNumber?: string | null;
+  cin?: string | null;
   pan?: string | null;
   gst?: string | null;
   onboardingStatus: string;
@@ -1922,38 +1925,236 @@ export function OrganizationOnboardingWorkspace() {
 export function OrganizationOnboardingStatusWorkspace() {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const fetchStatus = () => {
+    setLoading(true);
+    setError("");
+    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    apiFetch<any>("/onboarding/status")
+      .then((res) => {
+        const orgData = res?.data || res;
+        setOrganization(orgData);
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to fetch onboarding status");
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-    if (!token) return;
-    apiFetch<Organization>("/onboarding/status").then(setOrganization).catch((err) => setError(err.message));
+    fetchStatus();
   }, []);
 
+  const onboardingStatus = (organization?.onboardingStatus || organization?.status || "REGISTERED").toUpperCase();
+  const isApproved = onboardingStatus === "APPROVED" || onboardingStatus === "VERIFIED";
+  const isRejected = onboardingStatus === "REJECTED" || onboardingStatus === "SUSPENDED";
+
   return (
-    <WorkspaceShell eyebrow="Organization" title="Onboarding Status" description="Operational transactions remain blocked until Portal Admin approval.">
-      <ErrorBox error={error} />
-      <section className="grid gap-4 md:grid-cols-3">
-        {[
-          ["Organization", organization?.name || "-"],
-          ["Onboarding", organization?.onboardingStatus || "REGISTERED"],
-          ["Status", organization?.status || "-"]
-        ].map(([label, value]) => (
-          <div key={label} className="border border-gov-line bg-white p-5 shadow-sm">
-            <div className="text-[11px] font-extrabold uppercase tracking-widest text-gov-muted">{label}</div>
-            <div className="mt-2 text-xl font-extrabold text-gov-navy">{value}</div>
+    <WorkspaceShell
+      eyebrow="Organization"
+      title="Onboarding Status"
+      description="Operational transactions remain blocked until Portal Admin approval."
+    >
+      {loading ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-12 shadow-sm text-center">
+          <Loader2 className="h-9 w-9 animate-spin text-sky-600 mb-3" />
+          <p className="text-sm font-semibold text-slate-600">Retrieving onboarding status...</p>
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-extrabold text-rose-900">Failed to fetch onboarding status</h3>
+              <p className="mt-1 text-xs font-semibold text-rose-700">{error}</p>
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  onClick={fetchStatus}
+                  className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition-all cursor-pointer"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" /> Retry Request
+                </button>
+                <a
+                  href="/organization/onboarding/details"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-800 hover:underline"
+                >
+                  View Saved Details <ArrowRight className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
           </div>
-        ))}
-      </section>
-      {organization?.onboardingStatus !== "APPROVED" && (
-        <div className="border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-          Your organization onboarding is pending approval. You can access portal operations after approval from Portal Admin.
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Status Alert Banner */}
+          <div
+            className={`rounded-2xl border p-5 shadow-sm transition-all ${
+              isApproved
+                ? "border-emerald-200 bg-emerald-50/80 text-emerald-950"
+                : isRejected
+                ? "border-rose-200 bg-rose-50/80 text-rose-950"
+                : "border-amber-200 bg-amber-50/80 text-amber-950"
+            }`}
+          >
+            <div className="flex items-start gap-3.5">
+              {isApproved ? (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+              ) : isRejected ? (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+              ) : (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <Clock className="h-5 w-5 animate-pulse" />
+                </div>
+              )}
+              <div className="flex-1">
+                <h3 className="text-sm font-extrabold uppercase tracking-wide">
+                  {isApproved
+                    ? "Onboarding Approved — Active"
+                    : isRejected
+                    ? "Onboarding Rejected — Action Required"
+                    : "Onboarding Pending Approval"}
+                </h3>
+                <p className="mt-1 text-xs font-medium opacity-90 leading-relaxed">
+                  {isApproved
+                    ? "Your organization has been verified and approved by the Portal Admin. Full platform operations are active."
+                    : isRejected
+                    ? "Your organization onboarding application was not approved. Please review submitted documents or reach out to Portal Support."
+                    : "Your organization onboarding application has been submitted and is pending Portal Admin review. Access to operational features will open automatically upon approval."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Metric Cards */}
+          <section className="grid gap-4 md:grid-cols-3">
+            {/* Card 1: Organization Name */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                  Organization
+                </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                  <Building2 className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 text-lg font-black text-slate-900 truncate">
+                {organization?.name || organization?.tenant?.name || "—"}
+              </div>
+              <div className="mt-1 text-xs font-medium text-slate-500">
+                Type: {(organization?.organizationType || organization?.kind || "ORGANIZATION").replace(/_/g, " ")}
+              </div>
+            </div>
+
+            {/* Card 2: Onboarding Phase */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                  Onboarding Phase
+                </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                  <Clock className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
+                    isApproved
+                      ? "bg-emerald-100 text-emerald-800"
+                      : isRejected
+                      ? "bg-rose-100 text-rose-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {onboardingStatus.replace(/_/g, " ")}
+                </span>
+              </div>
+              <div className="mt-2 text-xs font-medium text-slate-500">
+                Current verification status
+              </div>
+            </div>
+
+            {/* Card 3: Account Status */}
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
+                  Account Status
+                </span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+              </div>
+              <div className="mt-3 text-lg font-black text-slate-900 uppercase">
+                {organization?.status || "REGISTERED"}
+              </div>
+              <div className="mt-1 text-xs font-medium text-slate-500">
+                Portal permissions level
+              </div>
+            </div>
+          </section>
+
+          {/* Key Metadata Table / Card */}
+          {organization && (
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm space-y-4">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                Organization Information Summary
+              </h4>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 pt-1">
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase">State / District</div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                    {[organization.district, "Maharashtra"].filter(Boolean).join(", ") || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase">Official Email</div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5 truncate">
+                    {organization.email || organization.officialEmail || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase">Registration / CIN</div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                    {organization.registrationNumber || organization.cin || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold text-slate-400 uppercase">PAN / GSTIN</div>
+                  <div className="text-xs font-bold text-slate-800 mt-0.5">
+                    {[organization.pan, organization.gst].filter(Boolean).join(" / ") || "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Link
+              href="/organization/onboarding/details"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#14274e] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0f1d3a] transition-all cursor-pointer"
+            >
+              <FileText className="h-4 w-4" /> View Submitted Onboarding Details
+            </Link>
+            <button
+              onClick={fetchStatus}
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition-all cursor-pointer"
+            >
+              <RefreshCw className="h-3.5 w-3.5 text-slate-500" /> Refresh Status
+            </button>
+          </div>
         </div>
       )}
-      <div>
-        <a href="/organization/onboarding/details" className="inline-block border border-gov-line bg-white px-4 py-2 text-sm font-bold text-gov-blue shadow-sm hover:bg-gov-mist">
-          View Submitted Onboarding Details
-        </a>
-      </div>
     </WorkspaceShell>
   );
 }

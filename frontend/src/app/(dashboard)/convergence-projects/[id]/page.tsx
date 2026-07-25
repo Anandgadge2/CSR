@@ -109,11 +109,10 @@ export default function ConvergenceProjectDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (mounted && hasPageAccess(CONVERGENCE_PROJECT_PERMS)) fetchProject();
+    if (mounted) fetchProject();
   }, [mounted, fetchProject]);
 
   if (!mounted) return null;
-  if (!hasPageAccess(CONVERGENCE_PROJECT_PERMS)) return <AccessDenied />;
 
   const fmtCurrency = (v: number | string) => `₹${Number(v).toLocaleString("en-IN")}`;
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";

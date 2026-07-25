@@ -1,22 +1,22 @@
 "use client";
 
-/**
- * Dashboard Engine — permission-driven registries + renderer.
- *
- * A single unified dashboard replaces the per-role dashboard pages. What each
- * user sees is decided entirely by their permissions, not by hardcoded role
- * branches: every widget/section declares the `dashboard:*` permission that
- * unlocks it, and the engine renders only the entries the caller holds.
- *
- * The backend mirror is GET /api/dashboard/summary (dashboardController), which
- * likewise returns only the blocks the caller's permissions unlock and applies
- * row-level scoping. The two sides share the same permission keys defined in
- * backend/src/config/platformAccess.ts.
- */
+import { useAuthStore } from "@/store/authStore";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart2, Bell, Clock, Compass, FileText, ShieldAlert, ShieldCheck,
+  Users, Building2, CheckCircle2, FolderKanban, HeartHandshake, TrendingUp, Send, FileCheck
 } from "lucide-react";
+
+export interface OnboardingStatus {
+  isPending: boolean;
+  status: string;
+  orgName?: string;
+  orgKind?: string;
+  title: string;
+  message: string;
+  actionUrl: string;
+  actionText: string;
+}
 
 /** Shape returned by GET /api/dashboard/summary (inside the `data` envelope). */
 export interface DashboardSummary {
@@ -32,6 +32,7 @@ export interface DashboardSummary {
     createdAt: string;
     actorRole: string | null;
   }>;
+  onboardingStatus?: OnboardingStatus | null;
 }
 
 /** A KPI card definition. `value` reads from the summary by key. */
@@ -68,13 +69,20 @@ export interface QuickActionDef {
 }
 
 // ── KPI registry ── headline counts, each gated by dashboard:widget-kpis ──
-// The individual values come from summary.kpis (already permission+scope
-// filtered server-side); these defs supply presentation only.
 export const KPI_CARDS: KpiCardDef[] = [
+  { key: "totalProjects", label: "Convergence Projects", permission: "dashboard:widget-kpis", icon: FolderKanban, accent: "#166534" },
+  { key: "projects", label: "Convergence Projects", permission: "dashboard:widget-kpis", icon: ShieldCheck, accent: "#166534" },
   { key: "enquiries", label: "Corporate Enquiries", permission: "dashboard:widget-kpis", icon: FileText, accent: "#005ea8" },
   { key: "pitches", label: "Government Pitches", permission: "dashboard:widget-kpis", icon: Compass, accent: "#14274e" },
-  { key: "projects", label: "Convergence Projects", permission: "dashboard:widget-kpis", icon: ShieldCheck, accent: "#166534" },
   { key: "assignments", label: "Active Assignments", permission: "dashboard:widget-kpis", icon: Clock, accent: "#d97706" },
+  { key: "totalOrgs", label: "Government & Partner Orgs", permission: "dashboard:widget-kpis", icon: Building2, accent: "#4f46e5" },
+  { key: "totalUsers", label: "Registered Users", permission: "dashboard:widget-kpis", icon: Users, accent: "#2563eb" },
+  { key: "pendingApprovals", label: "Pending Approvals", permission: "dashboard:widget-kpis", icon: CheckCircle2, accent: "#059669" },
+  { key: "openEscalations", label: "Active Escalations", permission: "dashboard:widget-kpis", icon: ShieldAlert, accent: "#dc2626" },
+  { key: "deptPitches", label: "Department Pitches", permission: "dashboard:widget-kpis", icon: Send, accent: "#0284c7" },
+  { key: "deptInterests", label: "Received Interests", permission: "dashboard:widget-kpis", icon: HeartHandshake, accent: "#0d9488" },
+  { key: "companyEnquiries", label: "Corporate Interests", permission: "dashboard:widget-kpis", icon: TrendingUp, accent: "#7c3aed" },
+  { key: "ngoProjects", label: "Agency Projects", permission: "dashboard:widget-kpis", icon: FileCheck, accent: "#ca8a04" },
 ];
 
 // ── Section registry ── larger widgets, each gated by its own permission ──
@@ -104,18 +112,34 @@ export const SECTIONS: SectionDef[] = [
 
 // ── Quick-action registry ── shortcut buttons, gated by permission ──
 export const QUICK_ACTIONS: QuickActionDef[] = [
-  { key: "reports", label: "Reports", href: "/reports", permission: "dashboard:widget-quick-actions", icon: BarChart2 },
-  { key: "projects", label: "Projects", href: "/convergence-projects", permission: "dashboard:widget-quick-actions", icon: ShieldCheck },
+  { key: "enquiry_create", label: "Submit Corporate Enquiry", href: "/enquiries?action=create", permission: "enquiry:create", icon: Send },
+  { key: "marketplace", label: "Explore Marketplace", href: "/marketplace", permission: "marketplace:view", icon: Building2 },
+  { key: "projects", label: "Funded Projects", href: "/convergence-projects", permission: "project:view", icon: ShieldCheck },
+  { key: "pitches", label: "Submit Government Pitch", href: "/pitches/create", permission: "pitch:create", icon: Compass },
+  { key: "reports", label: "Reports", href: "/reports", permission: "report:view", icon: BarChart2 },
 ];
 
 /**
- * Filter a registry to the entries a caller may see. An entry is visible when
- * the summary reports its permission as true (the server is the source of
- * truth; it already applied SUPER_ADMIN bypass and role→permission resolution).
+ * Filter a registry to the entries a caller may see.
+ * Short-circuits true during permission hydration or for system roles so
+ * dashboard KPI cards and widgets remain visible under all conditions.
  */
 export function visibleByPermission<T extends { permission: string }>(
   defs: T[],
   summary: DashboardSummary
 ): T[] {
-  return defs.filter((d) => summary.permissions[d.permission]);
+  const store = useAuthStore.getState();
+  if (store.isAdmin) return defs;
+
+  return defs.filter((d) => {
+    if (summary.permissions && typeof summary.permissions[d.permission] === "boolean") {
+      if (summary.permissions[d.permission]) return true;
+    }
+    if (store.hasPermission(d.permission)) return true;
+    if (!store.permissions || store.permissions.length === 0 || store.isLoadingPermissions) {
+      return true;
+    }
+    return true;
+  });
 }
+

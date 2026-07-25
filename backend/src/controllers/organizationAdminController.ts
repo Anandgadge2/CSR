@@ -3,7 +3,16 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 
 export const getOwnedOrganization = async (req: AuthenticatedRequest, kind?: string) => {
-  const organizationId = req.user?.organizationId;
+  let organizationId = req.user?.organizationId || req.user?.ngoId || req.user?.companyId;
+
+  if (!organizationId && req.user?.id) {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { organizationId: true }
+    });
+    organizationId = user?.organizationId || null;
+  }
+
   if (!organizationId) throw new Error("Organization is required");
 
   const organization = await prisma.organization.findUnique({

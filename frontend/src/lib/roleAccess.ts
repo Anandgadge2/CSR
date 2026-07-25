@@ -141,8 +141,8 @@ export const NODAL_GRIEVANCE_PERMS = ["project:assign"];
 /** State-cell / secretariat grievance queue: JS + planning secretary + admins. */
 export const STATE_CELL_GRIEVANCE_PERMS = ["project:approve"];
 
-/** Convergence projects: anyone who can view projects. */
-export const CONVERGENCE_PROJECT_PERMS = ["project:view"];
+/** Convergence projects: anyone who can view projects or dashboard. */
+export const CONVERGENCE_PROJECT_PERMS = ["project:view", "project:read", "dashboard:view"];
 
 /** Respond to a grievance: nodal officers + JS + admins. */
 export const GRIEVANCE_RESPOND_PERMS = ["project:assign"];

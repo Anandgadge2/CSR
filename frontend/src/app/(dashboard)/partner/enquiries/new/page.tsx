@@ -1,0 +1,810 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import GovInput from "@/components/gov/GovInput";
+import GovSelect from "@/components/gov/GovSelect";
+import GovTextarea from "@/components/gov/GovTextarea";
+import GovButton from "@/components/gov/GovButton";
+import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
+import GovAlert from "@/components/gov/GovAlert";
+import GovPortalLayout from "@/components/layout/GovPortalLayout";
+import GovPageHeader from "@/components/layout/GovPageHeader";
+import { 
+  Building2, Handshake, CheckCircle, Loader2, Copy, ArrowLeft, ChevronDown, X, 
+  Search, Mail, Coins, ShieldCheck, CheckCircle2, Sparkles, Phone, User, Edit3, Paperclip, FileText, Trash2 
+} from "lucide-react";
+import Link from "next/link";
+import { locationData } from "@/lib/locationData";
+
+const SECTORS = [
+  { value: "", label: "Select Sector" },
+  { value: "EDUCATION", label: "Education & Digital Literacy" },
+  { value: "HEALTH", label: "Health, Telemedicine & Sanitation" },
+  { value: "WATER", label: "Water Security & Irrigation" },
+  { value: "RURAL_DEVELOPMENT", label: "Rural Infrastructure & Development" },
+  { value: "ENVIRONMENT", label: "Environment, Solar & Climate Action" },
+  { value: "WOMEN_EMPOWERMENT", label: "Women Empowerment & Livelihood" },
+  { value: "SKILL_DEVELOPMENT", label: "Skill Development & Youth Employability" },
+  { value: "AGRICULTURE", label: "Agriculture & Agritech Support" },
+  { value: "SPORTS", label: "Youth Sports Infrastructure" },
+  { value: "OTHER", label: "Other Focus Area" },
+];
+
+const DIVISION_TO_DISTRICTS: Record<string, string[]> = {
+  Amravati: ["Akola", "Amravati", "Buldhana", "Washim", "Yavatmal"],
+  Aurangabad: ["Aurangabad", "Beed", "Hingoli", "Jalna", "Latur", "Nanded", "Osmanabad", "Parbhani"],
+  Konkan: ["Mumbai City", "Mumbai Suburban", "Palghar", "Raigad", "Ratnagiri", "Sindhudurg", "Thane"],
+  Nagpur: ["Bhandara", "Chandrapur", "Gadchiroli", "Gondia", "Nagpur", "Wardha"],
+  Nashik: ["Ahmednagar", "Dhule", "Jalgaon", "Nandurbar", "Nashik"],
+  Pune: ["Kolhapur", "Pune", "Sangli", "Satara", "Solapur"],
+};
+
+function MultiSelectField({
+  label,
+  values,
+  options,
+  onChange,
+  required = false,
+  placeholder = "Select options"
+}: {
+  label: string;
+  values: string[];
+  options: string[];
+  onChange: (values: string[]) => void;
+  required?: boolean;
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  
+  const selectedSet = new Set(values || []);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt =>
+    opt.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggleOption = (option: string) => {
+    const next = new Set(selectedSet);
+    if (next.has(option)) {
+      next.delete(option);
+    } else {
+      next.add(option);
+    }
+    onChange(Array.from(next));
+  };
+
+  const removeOption = (option: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = new Set(selectedSet);
+    next.delete(option);
+    onChange(Array.from(next));
+  };
+
+  return (
+    <div className={`flex flex-col gap-1.5 text-xs font-bold text-slate-800 relative ${isOpen ? "z-[100]" : "z-20"}`} ref={dropdownRef}>
+      <label className="flex items-center justify-between">
+        <span>
+          {label}
+          {required && <span className="text-rose-500 ml-1">*</span>}
+        </span>
+        {values && values.length > 0 && (
+          <span className="text-[10px] text-blue-800 font-bold bg-blue-50 px-2 py-0.5 rounded-full">
+            {values.length} selected
+          </span>
+        )}
+      </label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className={`min-h-[46px] border bg-slate-50/60 hover:bg-white focus-within:bg-white px-3.5 py-2 flex items-center justify-between gap-2 cursor-pointer outline-none rounded-xl shadow-xs transition-all duration-200 ${
+          isOpen ? "border-blue-700 ring-4 ring-blue-800/10 bg-white shadow-md" : "border-slate-200/90"
+        }`}
+      >
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {values && values.length > 0 ? (
+            values.map(val => (
+              <span key={val} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-950 border border-blue-200/70 text-xs font-bold px-2.5 py-1 rounded-lg shadow-2xs">
+                {val}
+                <button 
+                  type="button" 
+                  onClick={(e) => removeOption(val, e)}
+                  className="hover:bg-blue-200/80 rounded p-0.5 transition-colors text-blue-900 focus:outline-none"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))
+          ) : (
+            <span className="text-slate-400 font-medium text-xs">{placeholder}</span>
+          )}
+        </div>
+        <ChevronDown size={18} className={`text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-blue-800" : ""}`} />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-[999] border border-slate-200/90 bg-white shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="p-2.5 border-b border-slate-100 bg-slate-50/90 flex items-center gap-2">
+            <Search size={14} className="text-slate-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search regions..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full border-none bg-transparent text-xs font-semibold outline-none text-slate-800 placeholder:text-slate-400"
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch("")} className="text-xs text-slate-400 hover:text-slate-700">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="overflow-y-auto flex-grow divide-y divide-slate-100 max-h-52" data-lenis-prevent>
+            {filteredOptions.length === 0 ? (
+              <div className="p-4 text-xs text-slate-400 font-medium text-center">No options found</div>
+            ) : (
+              filteredOptions.map(option => {
+                const isChecked = selectedSet.has(option);
+                return (
+                  <div
+                    key={option}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleOption(option);
+                    }}
+                    className={`flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold cursor-pointer hover:bg-blue-50/50 transition-colors ${isChecked ? "bg-blue-50/80 text-blue-950 font-bold" : "text-slate-800"}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}} 
+                        className="rounded border-slate-300 text-blue-900 focus:ring-blue-800 accent-blue-900"
+                      />
+                      <span>{option}</span>
+                    </div>
+                    {isChecked && <CheckCircle2 size={14} className="text-blue-800" />}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface EnquiryForm {
+  companyName: string;
+  mca21CIN: string;
+  sector: string;
+  customSector: string;
+  indicativeBudget: string;
+  preferredDivisions: string[];
+  preferredDistricts: string[];
+  preferredCities: string[];
+  preferredTalukas: string[];
+  contactPersonName: string;
+  mobile: string;
+  email: string;
+  proposedCSRWork: string;
+  supportingDocuments: File[];
+}
+
+interface FormErrors {
+  [key: string]: string;
+}
+
+export default function CreateCorporateEnquiryPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [referenceId, setReferenceId] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const [form, setForm] = useState<EnquiryForm>({
+    companyName: "",
+    mca21CIN: "",
+    sector: "",
+    customSector: "",
+    indicativeBudget: "",
+    preferredDivisions: [],
+    preferredDistricts: [],
+    preferredCities: [],
+    preferredTalukas: [],
+    contactPersonName: "",
+    mobile: "",
+    email: "",
+    proposedCSRWork: "",
+    supportingDocuments: [],
+  });
+
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  // Prepopulate from user session
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = localStorage.getItem("user");
+    if (!raw) return;
+    try {
+      const u = JSON.parse(raw);
+      setForm((prev) => ({
+        ...prev,
+        companyName: u.organization?.name || u.companyName || prev.companyName,
+        contactPersonName: u.name || prev.contactPersonName,
+        email: u.email || prev.email,
+        mobile: u.mobile || prev.mobile,
+      }));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const maharashtraState = locationData.find(s => s.name === "Maharashtra");
+  const districtsList = maharashtraState ? maharashtraState.districts : [];
+
+  const handleDivisionsChange = (nextDivisions: string[]) => {
+    const validDistricts = nextDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || []);
+    const nextDistricts = form.preferredDistricts.filter(d => validDistricts.includes(d));
+
+    const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
+    const nextCities = form.preferredCities.filter(c => validCities.includes(c));
+
+    const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
+    const nextTalukas = form.preferredTalukas.filter(t => validTalukas.includes(t));
+
+    setForm(prev => ({
+      ...prev,
+      preferredDivisions: nextDivisions,
+      preferredDistricts: nextDistricts,
+      preferredCities: nextCities,
+      preferredTalukas: nextTalukas
+    }));
+
+    if (errors.preferredDivisions && nextDivisions.length > 0) {
+      setErrors(prev => ({ ...prev, preferredDivisions: "" }));
+    }
+    if (errors.preferredDistricts && nextDistricts.length > 0) {
+      setErrors(prev => ({ ...prev, preferredDistricts: "" }));
+    }
+  };
+
+  const handleDistrictsChange = (nextDistricts: string[]) => {
+    const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
+    const nextCities = form.preferredCities.filter(c => validCities.includes(c));
+
+    const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
+    const nextTalukas = form.preferredTalukas.filter(t => validTalukas.includes(t));
+
+    setForm(prev => ({
+      ...prev,
+      preferredDistricts: nextDistricts,
+      preferredCities: nextCities,
+      preferredTalukas: nextTalukas
+    }));
+
+    if (errors.preferredDistricts && nextDistricts.length > 0) {
+      setErrors(prev => ({ ...prev, preferredDistricts: "" }));
+    }
+  };
+
+  const handleSupportingDocumentsUpload = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    if (ev.target.files) {
+      const files = Array.from(ev.target.files);
+      setForm((prev) => ({
+        ...prev,
+        supportingDocuments: [...prev.supportingDocuments, ...files],
+      }));
+    }
+  };
+
+  const removeSupportingDocument = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      supportingDocuments: prev.supportingDocuments.filter((_, i) => i !== index),
+    }));
+  };
+
+  const uploadFile = async (file: File): Promise<string> =>
+    `https://dev.mahacsr.local/uploads/${encodeURIComponent(file.name)}`;
+
+  const validateForm = (): boolean => {
+    const errs: FormErrors = {};
+    if (!form.companyName.trim()) errs.companyName = "Company name is required";
+    if (!form.sector) errs.sector = "Primary sector is required";
+    if (form.sector === "OTHER" && !form.customSector.trim()) {
+      errs.customSector = "Please specify your custom focus sector";
+    }
+    if (form.preferredDivisions.length === 0) errs.preferredDivisions = "At least one division must be selected";
+    if (form.preferredDistricts.length === 0) errs.preferredDistricts = "At least one district must be selected";
+    if (!form.contactPersonName.trim()) errs.contactPersonName = "Contact person name is required";
+    if (!form.mobile.trim() || !/^[6-9]\d{9}$/.test(form.mobile)) errs.mobile = "Valid 10-digit mobile number is required";
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Valid email is required";
+    if (!form.proposedCSRWork.trim()) errs.proposedCSRWork = "Proposed CSR work description is required";
+    
+    const words = form.proposedCSRWork.trim().split(/\s+/).filter(Boolean).length;
+    if (words > 200) errs.proposedCSRWork = "Description must not exceed 200 words";
+
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setLoading(true);
+
+    const finalSector = form.sector === "OTHER" 
+      ? (form.customSector.trim() ? `Other: ${form.customSector.trim()}` : "OTHER")
+      : form.sector;
+
+    try {
+      const documentUrls: string[] = [];
+      for (const doc of form.supportingDocuments) {
+        documentUrls.push(await uploadFile(doc));
+      }
+
+      const response = await apiFetch<any>("/corporate-enquiries", {
+        method: "POST",
+        body: JSON.stringify({
+          companyName: form.companyName,
+          mca21CIN: form.mca21CIN,
+          sector: finalSector,
+          indicativeBudget: form.indicativeBudget ? parseFloat(form.indicativeBudget) : undefined,
+          preferredDivisions: form.preferredDivisions,
+          preferredDistricts: form.preferredDistricts,
+          preferredCities: form.preferredCities,
+          preferredTalukas: form.preferredTalukas,
+          contactPersonName: form.contactPersonName,
+          mobile: form.mobile,
+          email: form.email,
+          proposedCSRWork: form.proposedCSRWork,
+          documents: documentUrls,
+        }),
+      });
+
+      const data = response?.data || response;
+      setReferenceId(data?.trackingId || data?.id || `ENQ-${Date.now().toString().slice(-5)}`);
+      setSubmitted(true);
+    } catch (err) {
+      setErrors({ submit: err instanceof Error ? err.message : "Failed to submit corporate enquiry" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyRefId = () => {
+    if (!referenceId) return;
+    navigator.clipboard.writeText(referenceId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const wordCount = form.proposedCSRWork.trim().split(/\s+/).filter(Boolean).length;
+
+  if (submitted) {
+    return (
+      <GovPortalLayout>
+        <div className="mx-auto max-w-3xl px-4 py-12">
+          <div className="rounded-3xl border border-emerald-200 bg-white p-8 md:p-12 text-center shadow-xl flex flex-col items-center gap-5">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shadow-sm">
+              <CheckCircle size={36} />
+            </div>
+            <div>
+              <span className="inline-block text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider mb-2">
+                Enquiry Registered Successfully
+              </span>
+              <h2 className="text-2xl font-bold text-slate-900">Corporate Partnership Enquiry Received</h2>
+              <p className="text-xs text-slate-500 mt-1">Tracking Reference ID</p>
+              <div className="mt-2 text-xl font-mono font-extrabold text-blue-900 bg-blue-50 px-4 py-2 rounded-xl inline-flex items-center gap-2 border border-blue-200">
+                <span>{referenceId}</span>
+                <button onClick={copyRefId} className="text-xs text-blue-700 hover:text-blue-950 font-sans font-bold">
+                  {copied ? "Copied!" : <Copy size={16} />}
+                </button>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 max-w-lg leading-relaxed">
+              Your partnership expression of interest has been logged. A dedicated Relationship Manager (RM) from Maharashtra State Secretariat will be assigned shortly.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 pt-4 border-t border-slate-100 w-full">
+              <GovButton variant="secondary" onClick={() => router.push("/enquiries")}>
+                View My Enquiries
+              </GovButton>
+              <GovButton variant="primary" onClick={() => { setSubmitted(false); setForm((prev) => ({ ...prev, proposedCSRWork: "", supportingDocuments: [] })); }}>
+                Submit Another Enquiry
+              </GovButton>
+            </div>
+          </div>
+        </div>
+      </GovPortalLayout>
+    );
+  }
+
+  return (
+    <GovPortalLayout>
+      <div className="mx-auto max-w-7xl flex flex-col gap-6 px-4 py-6 md:px-8">
+        {/* Navigation & Header */}
+        <div className="flex items-center justify-between gap-4">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-blue-950 transition-colors bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-xs"
+          >
+            <ArrowLeft size={16} /> Back to Enquiries
+          </button>
+
+          <div className="flex items-center gap-2 text-[11px] font-bold text-blue-900 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200/60">
+            <Handshake size={14} /> Corporate Partnership Desk
+          </div>
+        </div>
+
+        <GovPageHeader
+          title="Submit Corporate CSR Partnership Enquiry"
+          breadcrumb="Home / Enquiries / Partner with Maharashtra"
+          description="Register your corporate CSR initiative, budget allocation, and target district preferences for direct Relationship Manager alignment."
+        />
+
+        {errors.submit && <GovAlert variant="danger">{errors.submit}</GovAlert>}
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {/* SECTION 1: CORPORATE IDENTITY */}
+          <GovCard className="rounded-3xl border border-slate-200/80 bg-white shadow-sm relative overflow-visible z-30">
+            <GovCardHeader className="bg-slate-50/60 border-b border-slate-100 p-5 md:p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-900 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                  01
+                </div>
+                <div>
+                  <GovCardTitle className="text-base font-bold text-slate-900">Corporate & Sector Information</GovCardTitle>
+                  <p className="text-xs text-slate-500 font-normal">Prepopulated corporate profile credentials and CSR sector focus</p>
+                </div>
+              </div>
+            </GovCardHeader>
+            <GovCardBody className="p-6 md:p-8 overflow-visible">
+              <div className="gov-form-grid">
+                <div className="gov-field">
+                  <GovInput
+                    label="Corporate / Company Legal Name"
+                    required
+                    value={form.companyName}
+                    error={errors.companyName}
+                    onChange={(e) => {
+                      setForm({ ...form, companyName: e.target.value });
+                      if (errors.companyName) setErrors({ ...errors, companyName: "" });
+                    }}
+                    placeholder="Official Company Name"
+                  />
+                </div>
+
+                <div className="gov-field">
+                  <GovInput
+                    label="MCA21 CIN Number (Optional)"
+                    value={form.mca21CIN}
+                    onChange={(e) => {
+                      const value = e.target.value.toUpperCase().slice(0, 21);
+                      setForm({ ...form, mca21CIN: value });
+                      if (errors.mca21CIN) setErrors({ ...errors, mca21CIN: "" });
+                    }}
+                    error={errors.mca21CIN}
+                    placeholder="U12345MH2024PTC123456"
+                  />
+                </div>
+
+                <div className="gov-field">
+                  <GovSelect
+                    label="Primary Sector of Interest"
+                    required
+                    value={form.sector}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setForm({ ...form, sector: val, customSector: val !== "OTHER" ? "" : form.customSector });
+                      if (errors.sector) setErrors({ ...errors, sector: "" });
+                      if (errors.customSector) setErrors({ ...errors, customSector: "" });
+                    }}
+                    error={errors.sector}
+                  >
+                    {SECTORS.map((s) => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
+                  </GovSelect>
+                </div>
+
+                <div className="gov-field">
+                  <GovInput
+                    label="Indicative CSR Outlay (₹ - Optional)"
+                    type="number"
+                    value={form.indicativeBudget}
+                    onChange={(e) => setForm({ ...form, indicativeBudget: e.target.value })}
+                    placeholder="e.g. 15000000"
+                  />
+                </div>
+
+                {/* Conditional Custom Sector Input when OTHER is selected */}
+                {form.sector === "OTHER" && (
+                  <div className="gov-field full bg-blue-50/40 p-4 rounded-2xl border border-blue-200/80 animate-in fade-in duration-200">
+                    <GovInput
+                      label="Specify Custom Sector / Focus Area"
+                      required
+                      value={form.customSector}
+                      error={errors.customSector}
+                      onChange={(e) => {
+                        setForm({ ...form, customSector: e.target.value });
+                        if (errors.customSector) setErrors({ ...errors, customSector: "" });
+                      }}
+                      placeholder="e.g. Disaster Relief & Rehabilitation, Heritage Preservation, Animal Welfare..."
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1 font-medium flex items-center gap-1">
+                      <Edit3 size={12} className="text-blue-700" /> Specify your exact specialized focus area for Secretariat RM routing.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* SECTION 2: PREFERRED GEOGRAPHY */}
+          <GovCard className="rounded-3xl border border-slate-200/80 bg-white shadow-sm relative overflow-visible z-20">
+            <GovCardHeader className="bg-slate-50/60 border-b border-slate-100 p-5 md:p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-900 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                  02
+                </div>
+                <div>
+                  <GovCardTitle className="text-base font-bold text-slate-900">Preferred Target Geography</GovCardTitle>
+                  <p className="text-xs text-slate-500 font-normal">Cascading regional filters for target project matching</p>
+                </div>
+              </div>
+            </GovCardHeader>
+            <GovCardBody className="p-6 md:p-8 overflow-visible">
+              {errors.preferredDivisions && <GovAlert variant="danger" className="mb-4">{errors.preferredDivisions}</GovAlert>}
+              {errors.preferredDistricts && <GovAlert variant="danger" className="mb-4">{errors.preferredDistricts}</GovAlert>}
+
+              <div className="gov-form-grid">
+                <div className="gov-field">
+                  <MultiSelectField
+                    label="Preferred Division(s)"
+                    required
+                    values={form.preferredDivisions}
+                    options={Object.keys(DIVISION_TO_DISTRICTS)}
+                    onChange={handleDivisionsChange}
+                    placeholder="Select division(s)..."
+                  />
+                </div>
+
+                <div className="gov-field">
+                  <MultiSelectField
+                    label="Preferred District(s)"
+                    required
+                    values={form.preferredDistricts}
+                    options={form.preferredDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || [])}
+                    onChange={handleDistrictsChange}
+                    placeholder={form.preferredDivisions.length === 0 ? "Select division first..." : "Select district(s)..."}
+                  />
+                </div>
+
+                <div className="gov-field">
+                  <MultiSelectField
+                    label="Preferred City / Cities (Optional)"
+                    values={form.preferredCities}
+                    options={
+                      districtsList
+                        .filter(d => form.preferredDistricts.includes(d.name))
+                        .flatMap(d => d.cities || [])
+                    }
+                    onChange={(values) => setForm(prev => ({ ...prev, preferredCities: values }))}
+                    placeholder={form.preferredDistricts.length === 0 ? "Select district first..." : "Select city/cities..."}
+                  />
+                </div>
+
+                <div className="gov-field">
+                  <MultiSelectField
+                    label="Preferred Taluka(s) (Optional)"
+                    values={form.preferredTalukas}
+                    options={
+                      districtsList
+                        .filter(d => form.preferredDistricts.includes(d.name))
+                        .flatMap(d => d.talukas || [])
+                    }
+                    onChange={(values) => setForm(prev => ({ ...prev, preferredTalukas: values }))}
+                    placeholder={form.preferredDistricts.length === 0 ? "Select district first..." : "Select taluka(s)..."}
+                  />
+                </div>
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* SECTION 3: CONTACT PERSON */}
+          <GovCard className="rounded-3xl border border-slate-200/80 bg-white shadow-sm relative overflow-visible z-10">
+            <GovCardHeader className="bg-slate-50/60 border-b border-slate-100 p-5 md:p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-950 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                  03
+                </div>
+                <div>
+                  <GovCardTitle className="text-base font-bold text-slate-900">Authorized CSR Contact Credentials</GovCardTitle>
+                  <p className="text-xs text-slate-500 font-normal">Contact details for Relationship Manager coordination</p>
+                </div>
+              </div>
+            </GovCardHeader>
+            <GovCardBody className="p-6 md:p-8 overflow-visible">
+              <div className="gov-form-grid">
+                <div className="gov-field third">
+                  <GovInput
+                    label="Contact Person Name"
+                    required
+                    format="name"
+                    value={form.contactPersonName}
+                    onChange={(e) => {
+                      setForm({ ...form, contactPersonName: e.target.value });
+                      if (errors.contactPersonName) setErrors({ ...errors, contactPersonName: "" });
+                    }}
+                    error={errors.contactPersonName}
+                    placeholder="Full Name"
+                  />
+                </div>
+
+                <div className="gov-field third">
+                  <GovInput
+                    label="Official Mobile Number"
+                    required
+                    format="phone"
+                    value={form.mobile}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                      setForm({ ...form, mobile: value });
+                      if (errors.mobile) setErrors({ ...errors, mobile: "" });
+                    }}
+                    error={errors.mobile}
+                    placeholder="10-digit mobile number"
+                  />
+                </div>
+
+                <div className="gov-field third">
+                  <GovInput
+                    label="Official Email Address"
+                    type="email"
+                    required
+                    format="email"
+                    value={form.email}
+                    onChange={(e) => {
+                      setForm({ ...form, email: e.target.value });
+                      if (errors.email) setErrors({ ...errors, email: "" });
+                    }}
+                    error={errors.email}
+                    placeholder="csr@company.com"
+                  />
+                </div>
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* SECTION 4: PROPOSED WORK */}
+          <GovCard className="rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+            <GovCardHeader className="bg-slate-50/60 border-b border-slate-100 p-5 md:p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-900 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                  04
+                </div>
+                <div>
+                  <GovCardTitle className="text-base font-bold text-slate-900">Proposed CSR Initiative & Scope</GovCardTitle>
+                  <p className="text-xs text-slate-500 font-normal">Outline initiative goals, target outcomes, and implementation timeline</p>
+                </div>
+              </div>
+            </GovCardHeader>
+            <GovCardBody className="p-6 md:p-8">
+              <GovTextarea
+                label="Proposed CSR Work Description (Max 200 words)"
+                required
+                value={form.proposedCSRWork}
+                onChange={(e) => {
+                  setForm({ ...form, proposedCSRWork: e.target.value });
+                  if (errors.proposedCSRWork) setErrors({ ...errors, proposedCSRWork: "" });
+                }}
+                error={errors.proposedCSRWork}
+                placeholder="Describe your proposed CSR initiative, target beneficiaries, expected outcomes, and timeline..."
+                rows={5}
+              />
+              <div className="flex items-center justify-between mt-1.5">
+                <p className={`text-xs font-bold ${wordCount > 200 ? "text-rose-600" : "text-slate-500"}`}>
+                  {wordCount} / 200 words
+                </p>
+                {wordCount > 200 && <span className="text-xs text-rose-600 font-semibold">Exceeds 200-word limit</span>}
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* SECTION 5: SUPPORTING DOCUMENTS */}
+          <GovCard className="rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+            <GovCardHeader className="bg-slate-50/60 border-b border-slate-100 p-5 md:p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-teal-900 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
+                  05
+                </div>
+                <div>
+                  <GovCardTitle className="text-base font-bold text-slate-900">Supporting Documents & CSR Attachments (Optional)</GovCardTitle>
+                  <p className="text-xs text-slate-500 font-normal">Attach corporate CSR policy, annual report, budget breakdown, or presentation decks</p>
+                </div>
+              </div>
+            </GovCardHeader>
+            <GovCardBody className="p-6 md:p-8 flex flex-col gap-5">
+              <div>
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-2">
+                  <Paperclip size={16} className="text-blue-900" /> Supporting Documents / CSR Policy / Decks (Optional)
+                </label>
+                <div className="border-2 border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-100/60 transition-all rounded-2xl p-6 text-center cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*"
+                    multiple
+                    onChange={handleSupportingDocumentsUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100/70 text-blue-900 flex items-center justify-center font-bold">
+                      <Paperclip size={20} />
+                    </div>
+                    <p className="text-xs font-bold text-slate-800">Click or drag & drop documents to attach</p>
+                    <p className="text-[11px] text-slate-400">PDF, DOCX, XLSX, PPTX, JPG, PNG (Multiple files allowed)</p>
+                  </div>
+                </div>
+
+                {form.supportingDocuments.length > 0 && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    {form.supportingDocuments.map((doc, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-200/90 bg-white shadow-2xs text-xs font-semibold">
+                        <div className="flex items-center gap-2.5 truncate">
+                          <FileText size={16} className="text-blue-900 shrink-0" />
+                          <span className="truncate text-slate-900 font-bold">{doc.name}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">({(doc.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => removeSupportingDocument(i)} 
+                          className="text-rose-600 hover:text-rose-800 font-bold text-xs shrink-0 ml-2 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </GovCardBody>
+          </GovCard>
+
+          {/* ACTION BUTTONS */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs"
+            >
+              Cancel
+            </button>
+            <GovButton type="submit" variant="primary" disabled={loading} className="px-7 py-3 rounded-xl font-bold shadow-md">
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 size={16} className="animate-spin" /> Submitting Enquiry…
+                </span>
+              ) : (
+                "Submit Corporate Enquiry"
+              )}
+            </GovButton>
+          </div>
+        </form>
+      </div>
+    </GovPortalLayout>
+  );
+}

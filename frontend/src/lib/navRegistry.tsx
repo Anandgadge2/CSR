@@ -54,6 +54,7 @@ const companyItems: NavItem[] = [
   { label: "Track Status", href: "/track", icon: Clock },
   { label: "Organization Onboarding", href: "/organization/onboarding", icon: Landmark },
   { label: "Onboarding Status", href: "/organization/onboarding/status", icon: Clock },
+  { label: "Agency Sub-Logins", href: "/organization/sub-logins", icon: Users },
   { label: "Project Marketplace", href: "/marketplace", icon: Compass, featureKey: "enableCSRMarketplace" },
   { label: "My Interests", href: "/interests", icon: Sparkles, featureKey: "enableCompanyInterest" },
   { label: "Implementing Agencies", href: "/agencies", icon: Building2 },

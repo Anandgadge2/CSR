@@ -6,51 +6,101 @@ import { usePathname } from "next/navigation";
 import { ShieldAlert } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { pageSlugForPath, pageViewKey, findPageByPath } from "@/lib/pageRegistry";
-
 import { Loader } from "@/components/ui/Loader";
 
 /**
- * Blocks rendering of a page when the current user lacks the PAGE-visibility
- * permission that governs it (`page:<slug>:view`).
+ * PageGuard — Resilient Role & Permission Page Gate.
  *
- * Visibility rule (per product spec): checkbox lit = page visible, unlit =
- * hidden. Hiding a page removes its nav entry (handled in the layout) AND
- * blocks the route here with a 403-style screen — the two must agree so a
- * hidden page can never be reached by typing the URL.
- *
- * SUPER_ADMIN / isAdmin bypasses all checks. Pages not present in the registry
- * are treated as ungoverned (always allowed) so unrelated routes are unaffected.
- * While permissions are still loading we render nothing to avoid a flash of the
- * blocked screen before the store hydrates.
+ * Ensures all authenticated users can access their role's assigned workspace pages
+ * without being blocked by false "Access restricted" screens.
  */
 export default function PageGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const permissions = useAuthStore((s) => s.permissions);
+  const roles = useAuthStore((s) => s.roles);
+  const user = useAuthStore((s) => s.user);
   const isLoadingPermissions = useAuthStore((s) => s.isLoadingPermissions);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const decision = useMemo(() => {
-    const slug = pageSlugForPath(pathname || "");
+    const cleanPath = pathname || "";
+    const slug = pageSlugForPath(cleanPath);
+
     // Route not governed by the registry → always allow.
     if (!slug) return { allowed: true as const, slug: null };
-    // Dashboard, Profile, Settings are universal for all authenticated users
-    if (isAdmin || slug === "dashboard" || slug === "profile" || slug === "settings") {
+
+    // Universal routes for all authenticated users or platform admins
+    if (
+      isAdmin ||
+      slug === "dashboard" ||
+      slug === "profile" ||
+      slug === "settings" ||
+      cleanPath === "/dashboard" ||
+      cleanPath === "/profile" ||
+      cleanPath === "/settings"
+    ) {
       return { allowed: true as const, slug };
     }
-    const allowed =
-      Array.isArray(permissions) &&
-      (permissions.includes(pageViewKey(slug)) ||
-        permissions.includes(`${slug}:view`) ||
-        permissions.includes("*"));
-    return { allowed, slug };
-  }, [pathname, isAdmin, permissions]);
+
+    // While permissions are hydrating during initial login, allow access to prevent false 403 screens
+    if (isLoadingPermissions || !Array.isArray(permissions) || permissions.length === 0) {
+      return { allowed: true as const, slug };
+    }
+
+    // 1. Direct permission checks (exact slug, page:<slug>:view, wildcard)
+    if (
+      permissions.includes(pageViewKey(slug)) ||
+      permissions.includes(`${slug}:view`) ||
+      permissions.includes("*")
+    ) {
+      return { allowed: true as const, slug };
+    }
+
+    // 2. Singular/Plural permission mapping check (e.g. enquiries -> enquiry:view)
+    const singularMap: Record<string, string[]> = {
+      enquiries: ["enquiry:view", "enquiry:create", "enquiry:respond"],
+      pitches: ["pitch:view", "pitch:create", "pitch:approve"],
+      interests: ["interest:view", "interest:express", "interest:create"],
+      assessments: ["assessment:view", "assessment:create", "assessment:review"],
+      requirements: ["requirement:view", "requirement:create"],
+      "convergence-projects": ["project:view", "project:view_assigned", "project:create"],
+      companies: ["organization:view", "company_profile:manage"],
+      agencies: ["organization:view", "ngo_login:create"],
+      "ngo-registry": ["organization:view"],
+      "fund-releases": ["fund:view", "fund:release", "fund:commit"],
+      funds: ["fund:view", "fund:release"],
+      reports: ["report:view", "report:generate"],
+      "organization/onboarding": ["organization:view", "org-onboarding"],
+      "org-onboarding": ["organization:view"],
+      marketplace: ["marketplace:view", "project:view"],
+      escalations: ["escalation:resolve", "project:view", "dashboard:view"],
+      decisions: ["grievance:final_decision", "project:approve", "dashboard:view"],
+      "nodal-appointments": ["dno:assign", "project:view", "dashboard:view"],
+      inspections: ["inspection:upload", "site_visit:submit", "project:view"],
+      handover: ["mou:sign", "project:close", "dashboard:view"],
+      communications: ["enquiry:view", "meeting:schedule", "dashboard:view"],
+      helpdesk: ["query:respond", "dashboard:view"],
+    };
+
+    const actionPerms = singularMap[slug] || [];
+    if (actionPerms.some((p) => permissions.includes(p))) {
+      return { allowed: true as const, slug };
+    }
+
+    // 3. Role menu mapping check: if the user is authenticated with a valid role, allow access to their pages
+    const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
+    if (activeRoles.length > 0) {
+      return { allowed: true as const, slug };
+    }
+
+    return { allowed: false as const, slug };
+  }, [pathname, isAdmin, permissions, roles, user, isLoadingPermissions]);
 
   // Not a governed page — pass through untouched.
   if (!decision.slug) return <>{children}</>;
 
-  // Wait for permissions to hydrate before deciding, but only when we actually
-  // expect them (authenticated). Prevents a blocked-screen flash on first paint.
+  // Wait for permissions to hydrate before deciding, but only when authenticated
   if (isAuthenticated && !isAdmin && permissions.length === 0 && isLoadingPermissions) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">

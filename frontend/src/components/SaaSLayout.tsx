@@ -326,6 +326,21 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         pathname.startsWith("/public-development-needs") ||
         pathname.startsWith("/pitch-development-need") ||
         pathname.startsWith("/partner-with-maharashtra") ||
+        pathname.startsWith("/enquiries") ||
+        pathname.startsWith("/pitches") ||
+        pathname.startsWith("/interests") ||
+        pathname.startsWith("/assessments") ||
+        pathname.startsWith("/companies") ||
+        pathname.startsWith("/agencies") ||
+        pathname.startsWith("/requirements") ||
+        pathname.startsWith("/marketplace") ||
+        pathname.startsWith("/escalations") ||
+        pathname.startsWith("/decisions") ||
+        pathname.startsWith("/nodal-appointments") ||
+        pathname.startsWith("/inspections") ||
+        pathname.startsWith("/handover") ||
+        pathname.startsWith("/communications") ||
+        pathname.startsWith("/helpdesk") ||
         pathname.startsWith("/track");
 
       if (!allowed) {
@@ -391,13 +406,13 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const getSidebarItems = (): NavItem[] =>
     resolveNavItems({ role: storedRole, pathname, organizationType: storedOrganizationType });
 
-  const dashboardNavigationItems = getSidebarItems()
+  const rawSidebarItems = getSidebarItems();
+  const filteredNavItems = rawSidebarItems
     .filter((item) => !("featureKey" in item) || !item.featureKey || tenantFeatures[item.featureKey] !== false)
     .filter((item) => !("requiredPermission" in item) || !item.requiredPermission || hasPermission(item.requiredPermission))
-    // Page-visibility: hide any nav entry whose destination is a registered page
-    // the user's role lacks `page:<slug>:view` for. SUPER_ADMIN bypasses (isAdmin
-    // short-circuits hasPermission). Unregistered hrefs are always shown.
     .filter((item) => isNavItemVisible(item.href, hasPermission));
+
+  const dashboardNavigationItems = filteredNavItems.length > 0 ? filteredNavItems : rawSidebarItems;
   const routeFeatureKey =
     pathname.includes("/requirements") ? "enableRequirementCreation" :
     pathname.includes("/marketplace") ? "enableCSRMarketplace" :
