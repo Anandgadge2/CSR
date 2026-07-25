@@ -42,6 +42,9 @@ export default function RegisterPage() {
 
   const [formData, setFormData] = useState({
     name: "",
+    firstName: "",
+    lastName: "",
+    designation: "",
     email: "",
     password: "",
     pan: "",
@@ -178,9 +181,15 @@ export default function RegisterPage() {
       const payload = {
         email: formData.email,
         password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        designation: formData.designation,
         role: isGovEntity ? 7 : 8,
         profile: {
           name: formData.name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          designation: formData.designation,
           pan: formData.pan.toUpperCase(),
           address: formData.address,
           state: stateVal,
@@ -455,7 +464,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 md:col-span-2">
                   <label className="text-xs font-bold text-slate-800">
                     {role === "GOV_ENTITY" ? "Department / Local Body Name *" : "Organization Name *"}
                   </label>
@@ -468,6 +477,48 @@ export default function RegisterPage() {
                     className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
                   />
                   {fieldErrors.name && <span className="text-red-500 text-[11px] font-bold">{fieldErrors.name}</span>}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-800">
+                    {role === "GOV_ENTITY" ? "Nodal Officer First Name *" : "Authorized Person First Name *"}
+                  </label>
+                  <input
+                    required
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder="e.g. Anand"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-800">
+                    {role === "GOV_ENTITY" ? "Nodal Officer Last Name *" : "Authorized Person Last Name *"}
+                  </label>
+                  <input
+                    required
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder="e.g. Gadge"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1 md:col-span-2">
+                  <label className="text-xs font-bold text-slate-800">
+                    Official Designation / Title *
+                  </label>
+                  <input
+                    required
+                    name="designation"
+                    value={formData.designation}
+                    onChange={handleChange}
+                    placeholder="e.g. Executive Engineer / Head of CSR / District Nodal Officer"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all shadow-sm"
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">

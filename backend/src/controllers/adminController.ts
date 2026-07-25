@@ -51,12 +51,16 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response, next: 
           id: true,
           organizationId: true,
           email: true,
+          firstName: true,
+          lastName: true,
+          mobile: true,
           accountStatus: true,
           isVerified: true,
           createdAt: true,
           roleId: true,
           role: { select: { id: true, name: true } },
-          organization: { select: { id: true, name: true, kind: true } }
+          organization: { select: { id: true, name: true, kind: true } },
+          officerProfile: { select: { designation: true, fullName: true, department: true } }
         },
         orderBy: { createdAt: "desc" },
         skip,

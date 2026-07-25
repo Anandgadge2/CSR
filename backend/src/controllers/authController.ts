@@ -137,10 +137,14 @@ const generateTokens = (user: {
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password, role: rawRole, profile } = req.body;
+    const { email, password, firstName, lastName, designation, role: rawRole, profile } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
+
+    const userFirstName = (firstName || profile?.firstName || profile?.contactPersonFirstName || "").trim() || null;
+    const userLastName = (lastName || profile?.lastName || profile?.contactPersonLastName || "").trim() || null;
+    const userDesignation = (designation || profile?.designation || profile?.cin || "").trim() || null;
 
     const normalizedEmail = email.trim().toLowerCase();
     let effectiveRoleId = getRoleId(rawRole) ?? 7;
@@ -260,12 +264,16 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         }
       }
 
+      let createdOrUpdatedUser;
       if (existingUser) {
         // Update unverified pending user record
-        return await tx.user.update({
+        createdOrUpdatedUser = await tx.user.update({
           where: { id: existingUser.id },
           data: {
             passwordHash,
+            firstName: userFirstName,
+            lastName: userLastName,
+            designation: userDesignation,
             roleId: effectiveRoleId,
             organizationId: organizationId || existingUser.organizationId,
             isVerified: false,
@@ -274,10 +282,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         });
       } else {
         // Create new user record
-        return await tx.user.create({
+        createdOrUpdatedUser = await tx.user.create({
           data: {
             email: normalizedEmail,
             passwordHash,
+            firstName: userFirstName,
+            lastName: userLastName,
+            designation: userDesignation,
             roleId: effectiveRoleId,
             organizationId,
             isVerified: false,
@@ -285,6 +296,29 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
           }
         });
       }
+
+      // Upsert UserOfficerProfile to store designation & full name
+      const fullName = [userFirstName, userLastName].filter(Boolean).join(" ") || profile?.name || "Official User";
+      await tx.userOfficerProfile.upsert({
+        where: { userId: createdOrUpdatedUser.id },
+        create: {
+          userId: createdOrUpdatedUser.id,
+          fullName,
+          designation: userDesignation,
+          department: profile?.name || null,
+          district: profile?.district || null,
+          officeAddress: profile?.address || null,
+        },
+        update: {
+          fullName,
+          designation: userDesignation,
+          department: profile?.name || null,
+          district: profile?.district || null,
+          officeAddress: profile?.address || null,
+        }
+      });
+
+      return createdOrUpdatedUser;
     });
 
     // 6. Generate & send OTP

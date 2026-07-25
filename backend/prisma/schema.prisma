@@ -133,6 +133,7 @@ model User {
   // Basic Metadata
   firstName         String?
   lastName          String?
+  designation       String?
   mobile            String?           @unique
 
   // Primary Role Reference (Strict Integer ID: 1-9 for System Roles, 10+ for Dynamic Roles)

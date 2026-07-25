@@ -39,6 +39,8 @@ const MAHARASHTRA_DISTRICTS = [
 type UserRow = {
   id: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   role: string | null;
   roleId?: string | null;
   roleRelation?: { id: string; name: string } | null;
@@ -47,6 +49,8 @@ type UserRow = {
   isVerified?: boolean;
   ngo?: { name: string };
   company?: { name: string };
+  organization?: { name: string; kind: string };
+  officerProfile?: { designation?: string | null; fullName?: string | null; department?: string | null } | null;
   dynamicRoles?: { roleId: string; roleName: string }[];
 };
 
@@ -335,7 +339,9 @@ export default function AdminUserManagementPage() {
                 <table className="gov-table">
                   <thead>
                     <tr>
+                      <th>User / Official Name</th>
                       <th>User Email</th>
+                      <th>Designation</th>
                       <th>Role</th>
                       <th>Additional Dynamic Roles</th>
                       <th>Assigned District</th>
@@ -346,15 +352,24 @@ export default function AdminUserManagementPage() {
                   <tbody>
                     {filteredUsers.map((u) => {
                       const isActive = (u.accountStatus || "ACTIVE") === "ACTIVE";
+                      const fullName = ([u.firstName, u.lastName].filter(Boolean).join(" ")) || u.officerProfile?.fullName || "Official User";
                       return (
                         <tr key={u.id}>
                           <td className="gov-font-semibold gov-text-primary" style={{ verticalAlign: "middle" }}>
-                            {u.email}
-                            {(u.ngo?.name || u.company?.name) && (
-                              <div style={{ fontSize: "11px", color: "#94a3b8", fontWeight: 400 }}>
-                                {u.ngo?.name || u.company?.name}
+                            <div>{fullName}</div>
+                            {(u.ngo?.name || u.company?.name || u.organization?.name) && (
+                              <div style={{ fontSize: "11px", color: "#64748b", fontWeight: 500 }}>
+                                {u.ngo?.name || u.company?.name || u.organization?.name}
                               </div>
                             )}
+                          </td>
+                          <td style={{ verticalAlign: "middle", fontSize: "12px", color: "#334155" }}>
+                            {u.email}
+                          </td>
+                          <td style={{ verticalAlign: "middle" }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#0f172a" }}>
+                              {u.officerProfile?.designation || "N/A"}
+                            </span>
                           </td>
                           <td style={{ verticalAlign: "middle" }}>
                             {effectiveRole(u) ? (
