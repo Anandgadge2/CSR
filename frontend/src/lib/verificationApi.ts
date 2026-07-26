@@ -9,6 +9,7 @@ export type VerificationEntityType = "COMPANY" | "NGO" | "ORGANIZATION" | "ONBOA
 
 export interface GstVerifiedData {
   gstin: string;
+  pan?: string | null;
   legalName: string | null;
   tradeName: string | null;
   gstinStatus: string | null;

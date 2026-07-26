@@ -50,7 +50,7 @@ const mirrorToOnboardingCheck = async (
     if (existing) {
       await prisma.verificationRecord.update({
         where: { id: existing.id },
-        data: { status: checkStatus as any, verifiedAt: new Date() }
+        data: { status: VerificationRecordStatus.SUCCESS, verifiedAt: new Date() }
       });
     }
   } catch (err) {
@@ -74,6 +74,8 @@ export const verifyGstin = async (input: GstVerifyInput): Promise<GstVerifyResul
 
   await recordService.assertNoInFlight(input.entityType, input.entityId, VerificationModuleType.GST);
 
+  // A normal verify must not silently reuse an old response. Re-verification
+  // is the explicit path that creates a fresh GSTN request.
   if (!input.isReverify) {
     const latest = await recordService.getLatestRecord(input.entityType, input.entityId, VerificationModuleType.GST);
     if (latest && latest.status === VerificationRecordStatus.SUCCESS && latest.maskedIdentifier === gstin) {
@@ -95,11 +97,19 @@ export const verifyGstin = async (input: GstVerifyInput): Promise<GstVerifyResul
 
   const config = getApiSetuConfig();
 
+  let rawData: any;
+  let responseTimeMs = 250;
+
   try {
+    let path = config.gstVerifyEndpoint;
+    if (path.includes("{gstin}")) {
+      path = path.replace("{gstin}", gstin);
+    }
+
     const response = await callApiSetu({
-      method: "POST",
-      path: config.gstVerifyEndpoint,
-      data: {
+      method: path.includes(gstin) ? "GET" : "POST",
+      path,
+      data: path.includes(gstin) ? undefined : {
         gstin,
         txnId: input.correlationId,
         consentArtifact: {
@@ -110,41 +120,10 @@ export const verifyGstin = async (input: GstVerifyInput): Promise<GstVerifyResul
       },
       correlationId: input.correlationId
     });
-
-    const data = redactGstResponse(response.data, gstin);
-    const transactionId = response.data?.txnId ?? response.data?.transactionId ?? input.correlationId;
-
-    const completed = await recordService.completeRecord({
-      recordId: record.id,
-      status: VerificationRecordStatus.SUCCESS,
-      transactionId,
-      responseData: data as any,
-      encryptedPayload: encryptPayload(JSON.stringify(response.data)),
-      responseTimeMs: response.responseTimeMs,
-      verifiedAt: new Date()
-    });
-
-    await mirrorToOnboardingCheck(
-      input.entityType,
-      input.entityId,
-      "GSTIN_APISETU",
-      "VERIFIED",
-      { gstin, legalName: data.legalName, gstinStatus: data.gstinStatus, recordId: record.id },
-      input.initiatedById
-    );
-
-    return {
-      recordId: completed.id,
-      status: "SUCCESS",
-      attempt: completed.attempt,
-      transactionId: completed.transactionId,
-      verifiedAt: completed.verifiedAt as Date,
-      responseTimeMs: response.responseTimeMs,
-      data
-    };
+    rawData = response.data;
+    responseTimeMs = response.responseTimeMs;
   } catch (err) {
     const mapped = mapGstError(err);
-
     await recordService.completeRecord({
       recordId: record.id,
       status: VerificationRecordStatus.FAILED,
@@ -152,9 +131,79 @@ export const verifyGstin = async (input: GstVerifyInput): Promise<GstVerifyResul
       errorMessage: mapped.message,
       responseTimeMs: null
     }).catch(() => {});
-
     throw mapped;
   }
+
+  const providerGstin = extractProviderGstin(rawData);
+  if (providerGstin && providerGstin !== gstin) {
+    const mismatch = new VerificationError("VERIFICATION_FAILED", 502);
+    await recordService.completeRecord({
+      recordId: record.id,
+      status: VerificationRecordStatus.FAILED,
+      errorCode: mismatch.errorCode,
+      errorMessage: "GSTN returned details for a different GSTIN",
+      responseTimeMs
+    }).catch(() => {});
+    throw mismatch;
+  }
+
+  const data = redactGstResponse(rawData, gstin);
+  if (!data.legalName && !data.tradeName && !data.gstinStatus) {
+    const empty = new VerificationError("GSTIN_NOT_FOUND", 422);
+    await recordService.completeRecord({
+      recordId: record.id,
+      status: VerificationRecordStatus.FAILED,
+      errorCode: empty.errorCode,
+      errorMessage: empty.message,
+      responseTimeMs
+    }).catch(() => {});
+    throw empty;
+  }
+  const transactionId = rawData?.txnId ?? rawData?.transactionId ?? input.correlationId;
+
+  const completed = await recordService.completeRecord({
+    recordId: record.id,
+    status: VerificationRecordStatus.SUCCESS,
+    transactionId,
+    responseData: data as any,
+    encryptedPayload: encryptPayload(JSON.stringify(rawData)),
+    responseTimeMs,
+    verifiedAt: new Date()
+  });
+
+  await mirrorToOnboardingCheck(
+    input.entityType,
+    input.entityId,
+    "GSTIN_APISETU",
+    "VERIFIED",
+    { gstin, legalName: data.legalName, gstinStatus: data.gstinStatus, recordId: record.id },
+    input.initiatedById
+  );
+
+  return {
+    recordId: completed.id,
+    status: "SUCCESS",
+    attempt: completed.attempt,
+    transactionId: completed.transactionId,
+    verifiedAt: completed.verifiedAt as Date,
+    responseTimeMs,
+    data
+  };
+};
+
+const extractProviderGstin = (raw: any): string | null => {
+  const candidates = [
+    raw?.gstin,
+    raw?.gstIn,
+    raw?.GSTIN,
+    raw?.data?.gstin,
+    raw?.data?.gstIn,
+    raw?.data?.GSTIN,
+    raw?.data?.result?.gstin,
+    raw?.result?.gstin
+  ];
+  const value = candidates.find(candidate => typeof candidate === "string" && candidate.trim());
+  return value ? value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() : null;
 };
 
 const mapGstError = (err: unknown): VerificationError => {

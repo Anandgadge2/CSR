@@ -54,6 +54,7 @@ export const isValidAadhaarChecksum = (aadhaarNumber: string): boolean => {
 
 export interface GstVerifiedData {
   gstin: string;
+  pan: string | null;
   legalName: string | null;
   tradeName: string | null;
   gstinStatus: string | null;
@@ -72,29 +73,66 @@ export interface GstVerifiedData {
  * public search API and the API Setu certificate API — cover both.
  */
 export const redactGstResponse = (raw: any, gstin: string): GstVerifiedData => {
-  const data = raw?.data || raw || {};
-  const principalAddress = data.pradr?.addr || data.principalPlaceOfBusiness || {};
-  const addressParts = [
-    principalAddress.bno,
-    principalAddress.flno,
-    principalAddress.bnm,
-    principalAddress.st,
-    principalAddress.loc,
-    principalAddress.city
-  ].filter(Boolean);
+  const data = raw?.data?.result || raw?.data?.gstinData || raw?.data?.gstDetails || raw?.data || raw?.result || raw || {};
+  const principal = data.pradr ||
+    data.principalPlaceOfBusinessFields?.principalPlaceOfBusinessAddress ||
+    data.principalPlaceOfBusinessFields ||
+    data.principalPlaceOfBusiness?.addr ||
+    data.principalPlaceOfBusiness ||
+    data.principalAddress ||
+    data.principal_place_of_business ||
+    data.address ||
+    {};
+  const principalAddress = principal.addr || principal.address || principal;
+
+  let addressStr = "";
+  if (typeof principalAddress === "string") {
+    addressStr = principalAddress;
+  } else {
+    const addressParts = [
+      principalAddress.bno,
+      principalAddress.buildingNumber,
+      principalAddress.flno,
+      principalAddress.floorNumber,
+      principalAddress.floor,
+      principalAddress.bnm,
+      principalAddress.buildingName,
+      principalAddress.st,
+      principalAddress.streetName,
+      principalAddress.street,
+      principalAddress.loc,
+      principalAddress.location,
+      principalAddress.locality,
+      principalAddress.landMark,
+      principalAddress.city,
+      principalAddress.town,
+      principalAddress.village,
+      principalAddress.dst,
+      principalAddress.district,
+      principalAddress.stcd,
+      principalAddress.state,
+      principalAddress.pncd,
+      principalAddress.pinCode,
+      principalAddress.pincode
+    ].filter(Boolean);
+    addressStr = addressParts.join(", ");
+  }
+
+  const derivedPan = gstin && gstin.length >= 12 ? gstin.substring(2, 12).toUpperCase() : null;
 
   return {
     gstin,
-    legalName: data.lgnm ?? data.legalName ?? null,
-    tradeName: data.tradeNam ?? data.tradeName ?? null,
-    gstinStatus: data.sts ?? data.status ?? null,
-    registrationDate: data.rgdt ?? data.registrationDate ?? null,
-    constitutionOfBusiness: data.ctb ?? data.constitutionOfBusiness ?? null,
-    taxpayerType: data.dty ?? data.taxpayerType ?? null,
-    state: principalAddress.stcd ?? data.state ?? null,
-    district: principalAddress.dst ?? data.district ?? null,
-    address: addressParts.length > 0 ? addressParts.join(", ") : (data.address ?? null),
-    pincode: principalAddress.pncd ?? data.pincode ?? null
+    pan: data.pan ?? data.panNo ?? derivedPan,
+    legalName: data.lgnm ?? data.legalName ?? data.legalNameOfBusiness ?? null,
+    tradeName: data.tradeNam ?? data.tradeName ?? data.trade_name ?? null,
+    gstinStatus: data.sts ?? data.gstnStatus ?? data.status ?? null,
+    registrationDate: data.rgdt ?? data.dateOfRegistration ?? data.registrationDate ?? null,
+    constitutionOfBusiness: data.ctb ?? data.constitutionOfBusiness ?? data.constitution ?? null,
+    taxpayerType: data.dty ?? data.taxpayerType ?? data.registrationType ?? null,
+    state: principalAddress.stcd ?? principalAddress.state ?? principalAddress.stateName ?? data.state ?? data.stateName ?? null,
+    district: principalAddress.dst ?? principalAddress.district ?? principalAddress.dist ?? data.district ?? null,
+    address: addressStr || (typeof data.addressString === "string" ? data.addressString : typeof data.address === "string" ? data.address : null),
+    pincode: principalAddress.pncd ?? principalAddress.pinCode ?? principalAddress.pincode ?? principalAddress.pin ?? data.pincode ?? data.pinCode ?? null
   };
 };
 

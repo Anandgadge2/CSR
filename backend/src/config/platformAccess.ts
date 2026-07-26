@@ -210,6 +210,12 @@ export const PERMISSIONS = [
   ["audit:view", "View audit logs", "audit"],
   ["audit:export", "Export audit logs", "audit"],
 
+  // ── Verification & Identity ──
+  ["verification:execute", "Execute identity, GST, PAN & Aadhaar verification", "verification"],
+  ["verification:reverify", "Re-verify identity, GST & PAN details", "verification"],
+  ["verification:view-history", "View identity verification audit history", "verification"],
+  ["verification:dashboard", "View identity verification dashboard metrics", "verification"],
+
   // ── Bulk Operations ──
   ["record:delete-single", "Delete a single record", "bulk-ops"],
   ["record:delete-bulk", "Delete multiple selected records", "bulk-ops"],
@@ -250,6 +256,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "override:js_decision", "assign:joint_secretary", "escalation:resolve", "grievance:final_decision",
     "report:view", "report:export", "audit:view", "audit:export",
     "fund:view", "fund:release", "fund:verify-utilization", "fund:export",
+    "verification:execute", "verification:reverify", "verification:view-history", "verification:dashboard",
   ],
 
   // 3. Joint Secretary: Operational approval authority
@@ -259,6 +266,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "project:view", "assessment:review", "project:approve", "project:reject", "project:record_rejection_reason",
     "pitch:approve", "dno:assign", "report:view_district", "organization:view", "organization:approve",
     "fund:view", "fund:release", "fund:export", "report:view", "report:export",
+    "verification:execute", "verification:reverify", "verification:view-history", "verification:dashboard",
   ],
 
   // 4. CSR Relationship Manager: Operational SPOC
@@ -269,6 +277,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "pitch:view", "pitch:verify", "assessment:view", "assessment:create", "assessment:update", "assessment:submit",
     "meeting:schedule", "followup:assign", "project:recommend", "project:recommend_rejection", "organization:view",
     "report:view",
+    "verification:execute", "verification:reverify", "verification:view-history", "verification:dashboard",
   ],
 
   // 5. District Nodal Consultant: District field coordinator
@@ -276,6 +285,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "dashboard:view", "project:view_district", "organization:view", "requirement:view",
     "inspection:upload", "photo:upload", "site_visit:submit", "completion:recommend", "issue:raise",
     "report:view",
+    "verification:execute", "verification:reverify", "verification:view-history",
   ],
 
   // 6. District Nodal Officer: Project-level appointed monitoring & MoU
@@ -284,6 +294,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "project:view_assigned", "milestone:edit", "deliverable_change:approve", "progress:verify",
     "completion:approve", "grievance:resolve", "verification:upload", "report:generate", "mou:sign",
     "organization:view", "fund:view", "fund:verify-utilization", "report:view",
+    "verification:execute", "verification:reverify", "verification:view-history",
   ],
 
   // 7. Government Officer: Department Admin
@@ -292,6 +303,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "pitch:create", "pitch:edit_before_approval", "photo:upload", "project:view_assigned",
     "status:track", "query:respond", "requirement:create", "requirement:view", "organization:view",
     "report:view",
+    "verification:execute", "verification:reverify", "verification:view-history",
   ],
 
   // 8. Company Admin: Corporate CSR Head
@@ -300,6 +312,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "company_profile:manage", "user:create", "company_role:assign", "enquiry:create", "interest:express",
     "mou:sign", "ngo_login:create", "project:view", "project:close", "fund:view", "fund:commit",
     "report:view",
+    "verification:execute", "verification:reverify", "verification:view-history",
   ],
 
   // 9. NGO Admin: Implementing Agency
@@ -307,6 +320,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "dashboard:view", "dashboard:widget-kpis", "dashboard:widget-workqueue",
     "project:view_assigned", "milestone:update", "photo:upload_geotagged", "bill:upload", "uc:upload",
     "issue:raise", "query:respond", "fund:view", "report:view",
+    "verification:execute", "verification:reverify", "verification:view-history",
   ],
 };
 

@@ -2,6 +2,16 @@ import prisma from "../config/db";
 import { ROLE_ID, getRoleId } from "../types/role";
 import { isSuperAdmin } from "./roleResolver";
 
+const BASELINE_PERMISSIONS = new Set([
+  "page:dashboard:view",
+  "dashboard:view",
+  "page:profile:view",
+  "page:settings:view",
+  "verification:execute",
+  "verification:reverify",
+  "verification:view-history",
+]);
+
 export async function resolveUserPermission(
   userId: string,
   permissionKey: string,
@@ -9,6 +19,7 @@ export async function resolveUserPermission(
 ): Promise<boolean> {
   const roleId = getRoleId(options?.role);
   if (roleId === ROLE_ID.SUPER_ADMIN) return true;
+  if (BASELINE_PERMISSIONS.has(permissionKey)) return true;
 
   const userDirect = await prisma.user.findUnique({
     where: { id: userId },
@@ -67,10 +78,7 @@ export async function computeUserPermissions(principal: {
   const permissionSet = new Set<string>();
 
   // Baseline permissions for all authenticated users
-  permissionSet.add("page:dashboard:view");
-  permissionSet.add("dashboard:view");
-  permissionSet.add("page:profile:view");
-  permissionSet.add("page:settings:view");
+  BASELINE_PERMISSIONS.forEach((perm) => permissionSet.add(perm));
 
   const user = await prisma.user.findUnique({
     where: { id: userId },

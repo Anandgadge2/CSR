@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { computeBlindHash, encryptField } from "../src/utils/fieldCrypto";
 
 const prisma = new PrismaClient();
 
@@ -35,10 +36,14 @@ async function main() {
 
   // 2. Create Default System Organization
   console.log("Seeding system organization...");
+  const mainOrgRegNo = "MAHACSR-ORG-001";
+  const mainOrgRegHash = computeBlindHash(mainOrgRegNo)!;
+
   const mainOrg = await prisma.organization.upsert({
-    where: { registrationNumber: "MAHACSR-ORG-001" },
+    where: { registrationNumberHash: mainOrgRegHash },
     create: {
-      registrationNumber: "MAHACSR-ORG-001",
+      registrationNumber: encryptField(mainOrgRegNo),
+      registrationNumberHash: mainOrgRegHash,
       name: "Maharashtra CSR Authority",
       kind: "PORTAL_ADMIN_ORG",
       state: "Maharashtra",
@@ -48,10 +53,14 @@ async function main() {
     update: {}
   });
 
+  const companyOrgRegNo = "MAHACSR-COMP-001";
+  const companyOrgRegHash = computeBlindHash(companyOrgRegNo)!;
+
   const companyOrg = await prisma.organization.upsert({
-    where: { registrationNumber: "MAHACSR-COMP-001" },
+    where: { registrationNumberHash: companyOrgRegHash },
     create: {
-      registrationNumber: "MAHACSR-COMP-001",
+      registrationNumber: encryptField(companyOrgRegNo),
+      registrationNumberHash: companyOrgRegHash,
       name: "TATA CSR Foundation",
       kind: "CSR_COMPANY",
       state: "Maharashtra",

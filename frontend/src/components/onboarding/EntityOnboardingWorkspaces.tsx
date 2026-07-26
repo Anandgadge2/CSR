@@ -626,11 +626,10 @@ export function CompanyOnboardingStep() {
     : [];
 
   const setData = (key: string, value: any) => {
-    if (["legalName", "displayName", "cin", "llpin", "pan", "gstin", "officialEmail", "officialPhone", "website", "district"].includes(key)) {
+    if (["legalName", "displayName", "cin", "llpin", "pan", "gstin", "officialEmail", "officialPhone", "website", "district", "address"].includes(key)) {
       setOrganization((current) => current ? { ...current, [key]: value } : current);
-    } else {
-      setProfile((current) => ({ ...current, [key]: value }));
     }
+    setProfile((current) => ({ ...current, [key]: value }));
   };
 
   const save = async (event: FormEvent) => {
@@ -721,14 +720,28 @@ export function CompanyOnboardingStep() {
             <div className="md:col-span-2">
               <GstVerificationField
                 value={data.gstin || ""}
-                onChange={(value) => setData("gstin", value)}
+                onChange={(value) => {
+                  setData("gstin", value);
+                  if (value && value.length >= 12) {
+                    const panFromGstin = value.substring(2, 12).toUpperCase();
+                    if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panFromGstin)) {
+                      setData("pan", panFromGstin);
+                    }
+                  }
+                }}
                 entityType="ORGANIZATION"
                 entityId={organization.id}
                 source="onboarding"
                 onVerified={(result) => {
+                  const extractedPan = result.data.pan || (data.gstin && data.gstin.length >= 12 ? data.gstin.substring(2, 12).toUpperCase() : "");
+                  if (extractedPan) setData("pan", extractedPan);
                   if (result.data.legalName) setData("legalName", result.data.legalName);
                   if (result.data.tradeName) setData("displayName", result.data.tradeName);
-                  if (result.data.address) setData("registeredOfficeAddress", result.data.address);
+                  if (result.data.address) {
+                    setData("address", result.data.address);
+                    setData("registeredOfficeAddress", result.data.address);
+                    setData("corporateOfficeAddress", result.data.address);
+                  }
                   if (result.data.district) setData("district", result.data.district);
                 }}
               />

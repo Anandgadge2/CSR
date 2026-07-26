@@ -7,8 +7,9 @@ import { GstVerifiedData } from "@/lib/verificationApi";
  * shown after a successful GSTIN verification.
  */
 export default function VerifiedDetailsCard({ data }: { data: GstVerifiedData }) {
-  const rows: Array<[string, string | null]> = [
+  const rows: Array<[string, string | null | undefined]> = [
     ["GSTIN", data.gstin],
+    ["PAN", data.pan || (data.gstin && data.gstin.length >= 12 ? data.gstin.substring(2, 12).toUpperCase() : null)],
     ["Legal Business Name", data.legalName],
     ["Trade Name", data.tradeName],
     ["Registration Status", data.gstinStatus],

@@ -65,6 +65,7 @@ export const getLatestRecord = async (
 };
 
 export const createRecord = async (input: CreateRecordInput) => {
+  const { ipAddress, userAgent, ...createData } = input;
   const previous = await prisma.verificationRecord.findFirst({
     where: {
       entityType: input.entityType,
@@ -77,7 +78,7 @@ export const createRecord = async (input: CreateRecordInput) => {
 
   return prisma.verificationRecord.create({
     data: {
-      ...input,
+      ...createData,
       attempt: (previous?.attempt ?? 0) + 1,
       isLatest: false, // becomes latest only on completion (SUCCESS) or explicit flip
       status: VerificationRecordStatus.IN_PROGRESS
