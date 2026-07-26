@@ -21,6 +21,20 @@ const DIVISION_TO_DISTRICTS: Record<string, string[]> = {
   Pune: ["Kolhapur", "Pune", "Sangli", "Satara", "Solapur"],
 };
 
+const yearFromGstRegistrationDate = (value: unknown): string => {
+  const date = String(value ?? '').trim();
+  if (!date) return '';
+
+  // GSTN commonly returns DD/MM/YYYY, while some API Setu responses use an
+  // ISO date or YYYY-MM-DD. Read the year explicitly to avoid timezone shifts.
+  const dayFirst = date.match(/^\d{1,2}[/-]\d{1,2}[/-](\d{4})/);
+  if (dayFirst) return dayFirst[1];
+  const yearFirst = date.match(/^(\d{4})[/-]\d{1,2}[/-]\d{1,2}/);
+  if (yearFirst) return yearFirst[1];
+  const yearOnly = date.match(/^(\d{4})$/);
+  return yearOnly ? yearOnly[1] : '';
+};
+
 type OrganizationDocument = {
   id: string;
   documentType: string;
@@ -639,9 +653,13 @@ export function CompanyOnboardingStep() {
     setValidationErrors([]);
     try {
       const endpoint = step === "profile" ? "/onboarding/company/profile" : step === "compliance" ? "/onboarding/company/compliance" : "/onboarding/company/preferences";
-      await apiFetch(endpoint, { method: "PUT", body: JSON.stringify(data) }).catch((err) => {
-        console.warn("[Onboarding save] API endpoint warning:", err.message);
-      });
+      const method = step === "profile" ? "PUT" : "PATCH";
+      // A failed request must stop the flow. Do not advance as if the data
+      // had been persisted.
+      await apiFetch(endpoint, { method, body: JSON.stringify(data) });
+      // Hydrate from the database after saving so the next render represents
+      // persisted values, not merely the local draft.
+      await load();
       
       const currentIdx = companySteps.findIndex((s) => s.key === step);
       if (currentIdx < companySteps.length - 1) {
@@ -737,6 +755,8 @@ export function CompanyOnboardingStep() {
                   if (extractedPan) setData("pan", extractedPan);
                   if (result.data.legalName) setData("legalName", result.data.legalName);
                   if (result.data.tradeName) setData("displayName", result.data.tradeName);
+                  const incorporationYear = yearFromGstRegistrationDate(result.data.registrationDate);
+                  if (incorporationYear) setData("yearOfIncorporation", incorporationYear);
                   if (result.data.address) {
                     setData("address", result.data.address);
                     setData("registeredOfficeAddress", result.data.address);

@@ -306,6 +306,13 @@ model Organization {
   officialPhone      String?
   website            String?
   address            String?
+  registeredOfficeAddress String?
+  corporateOfficeAddress String?
+  officialEmailDomain String?
+  yearOfIncorporation Int?
+  companyType        String?
+  mcaVerificationStatus String?
+  companyStatus      String?
   state              String             @default("Maharashtra")
   district           String?
   taluka             String?
@@ -353,13 +360,22 @@ model CSRCompanyProfile {
   
   csrRegistrationNo        String?
   annualCsrBudget          Decimal?     @db.Decimal(15, 2)
+  currentYearCsrBudget     Decimal?     @db.Decimal(15, 2)
   netWorth                 Decimal?     @db.Decimal(15, 2)
   turnover                 Decimal?     @db.Decimal(15, 2)
   netProfit                Decimal?     @db.Decimal(15, 2)
+  averageNetProfit         Decimal?     @db.Decimal(15, 2)
+  csrObligationAmount      Decimal?     @db.Decimal(15, 2)
+  unspentCsrAmount         Decimal?     @db.Decimal(15, 2)
   twoPercentCsrObligation  Decimal?     @db.Decimal(15, 2)
+  financialYear            String?
+  csrApplicable            Boolean?
 
   preferredDistricts       String[]
   preferredSectors         String[]
+  preferredDivisions       String[]    @default([])
+  preferredCities           String[]    @default([])
+  preferredTalukas          String[]    @default([])
   
   csrHeadName              String?
   csrHeadEmail             String?

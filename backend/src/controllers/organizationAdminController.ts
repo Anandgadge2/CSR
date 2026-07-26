@@ -220,11 +220,49 @@ export const getCompanyOnboardingProfile = async (req: AuthenticatedRequest, res
 export const updateCompanyOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const org = await getOwnedOrganization(req, "CSR_COMPANY");
+    const body = req.body || {};
+    const has = (key: string) => Object.prototype.hasOwnProperty.call(body, key);
+    const text = (key: string) => {
+      if (!has(key)) return undefined;
+      const value = body[key];
+      return value === null || value === "" ? null : String(value).trim();
+    };
+    const year = has("yearOfIncorporation") && body.yearOfIncorporation !== ""
+      ? Number(body.yearOfIncorporation)
+      : has("yearOfIncorporation") ? null : undefined;
+
     const updated = await prisma.organization.update({
       where: { id: org.id },
-      data: { name: req.body.name || org.name }
+      data: {
+        ...(text("name") !== undefined ? { name: text("name") || org.name } : {}),
+        ...(text("legalName") !== undefined ? { legalName: text("legalName") } : {}),
+        ...(text("displayName") !== undefined ? { displayName: text("displayName") } : {}),
+        ...(text("cin") !== undefined ? { cin: text("cin") } : {}),
+        ...(text("pan") !== undefined ? { pan: text("pan") } : {}),
+        ...(text("gstin") !== undefined ? { gstin: text("gstin") } : {}),
+        ...(text("officialEmail") !== undefined ? { officialEmail: text("officialEmail") } : {}),
+        ...(text("officialPhone") !== undefined ? { officialPhone: text("officialPhone") } : {}),
+        ...(text("website") !== undefined ? { website: text("website") } : {}),
+        ...(text("address") !== undefined ? { address: text("address") } : {}),
+        ...(text("registeredOfficeAddress") !== undefined ? { registeredOfficeAddress: text("registeredOfficeAddress") } : {}),
+        ...(text("corporateOfficeAddress") !== undefined ? { corporateOfficeAddress: text("corporateOfficeAddress") } : {}),
+        ...(text("officialEmailDomain") !== undefined ? { officialEmailDomain: text("officialEmailDomain") } : {}),
+        ...(text("companyType") !== undefined ? { companyType: text("companyType") } : {}),
+        ...(text("mcaVerificationStatus") !== undefined ? { mcaVerificationStatus: text("mcaVerificationStatus") } : {}),
+        ...(text("companyStatus") !== undefined ? { companyStatus: text("companyStatus") } : {}),
+        ...(text("district") !== undefined ? { district: text("district") } : {}),
+        ...(text("state") ? { state: String(text("state")) } : {}),
+        ...(text("pincode") !== undefined ? { pincode: text("pincode") } : {}),
+        ...(year === null || (typeof year === "number" && Number.isInteger(year) && year >= 1800 && year <= 2200)
+          ? { yearOfIncorporation: year }
+          : {})
+      }
     });
-    return res.json(updated);
+    const saved = await prisma.organization.findUnique({
+      where: { id: updated.id },
+      include: { csrCompanyProfile: true, documents: true }
+    });
+    return res.json(saved || updated);
   } catch (error: any) {
     return res.status(400).json({ error: error.message });
   }
@@ -233,10 +271,42 @@ export const updateCompanyOnboardingProfile = async (req: AuthenticatedRequest, 
 export const updateCompanyCompliance = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const org = await getOwnedOrganization(req, "CSR_COMPANY");
+    const body = req.body || {};
+    const numberValue = (key: string) => body[key] === "" || body[key] === undefined || body[key] === null ? null : Number(body[key]);
     const profile = await prisma.cSRCompanyProfile.upsert({
       where: { organizationId: org.id },
-      create: { organizationId: org.id, preferredDistricts: [], preferredSectors: [] },
-      update: {}
+      create: {
+        organizationId: org.id,
+        preferredDistricts: Array.isArray(body.preferredDistricts) ? body.preferredDistricts : [],
+        preferredSectors: Array.isArray(body.preferredSectors) ? body.preferredSectors : [],
+        currentYearCsrBudget: numberValue("currentYearCsrBudget"),
+        annualCsrBudget: numberValue("annualCsrBudget"),
+        netWorth: numberValue("netWorth"),
+        turnover: numberValue("turnover"),
+        netProfit: numberValue("netProfit"),
+        averageNetProfit: numberValue("averageNetProfit"),
+        csrObligationAmount: numberValue("csrObligationAmount"),
+        unspentCsrAmount: numberValue("unspentCsrAmount"),
+        twoPercentCsrObligation: numberValue("twoPercentCsrObligation"),
+        financialYear: body.financialYear || null,
+        csrApplicable: typeof body.csrApplicable === "boolean" ? body.csrApplicable : null,
+        preferredDivisions: Array.isArray(body.preferredDivisions) ? body.preferredDivisions : [],
+        preferredCities: Array.isArray(body.preferredCities) ? body.preferredCities : [],
+        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : []
+      },
+      update: {
+        currentYearCsrBudget: numberValue("currentYearCsrBudget"),
+        annualCsrBudget: numberValue("annualCsrBudget"),
+        netWorth: numberValue("netWorth"),
+        turnover: numberValue("turnover"),
+        netProfit: numberValue("netProfit"),
+        averageNetProfit: numberValue("averageNetProfit"),
+        csrObligationAmount: numberValue("csrObligationAmount"),
+        unspentCsrAmount: numberValue("unspentCsrAmount"),
+        twoPercentCsrObligation: numberValue("twoPercentCsrObligation"),
+        financialYear: body.financialYear || null,
+        csrApplicable: typeof body.csrApplicable === "boolean" ? body.csrApplicable : null
+      }
     });
     return res.json(profile);
   } catch (error: any) {
@@ -247,10 +317,24 @@ export const updateCompanyCompliance = async (req: AuthenticatedRequest, res: Re
 export const updateCompanyPreferences = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const org = await getOwnedOrganization(req, "CSR_COMPANY");
+    const body = req.body || {};
     const profile = await prisma.cSRCompanyProfile.upsert({
       where: { organizationId: org.id },
-      create: { organizationId: org.id, preferredDistricts: [], preferredSectors: [] },
-      update: {}
+      create: {
+        organizationId: org.id,
+        preferredDistricts: Array.isArray(body.preferredDistricts) ? body.preferredDistricts : [],
+        preferredSectors: Array.isArray(body.preferredSectors) ? body.preferredSectors : [],
+        preferredDivisions: Array.isArray(body.preferredDivisions) ? body.preferredDivisions : [],
+        preferredCities: Array.isArray(body.preferredCities) ? body.preferredCities : [],
+        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : []
+      },
+      update: {
+        preferredDistricts: Array.isArray(body.preferredDistricts) ? body.preferredDistricts : [],
+        preferredSectors: Array.isArray(body.preferredSectors) ? body.preferredSectors : [],
+        preferredDivisions: Array.isArray(body.preferredDivisions) ? body.preferredDivisions : [],
+        preferredCities: Array.isArray(body.preferredCities) ? body.preferredCities : [],
+        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : []
+      }
     });
     return res.json(profile);
   } catch (error: any) {
