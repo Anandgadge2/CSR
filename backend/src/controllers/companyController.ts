@@ -6,8 +6,13 @@ import { OrganizationKind } from "@prisma/client";
 export const getCompanies = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const companies = await prisma.organization.findMany({
-      where: { kind: OrganizationKind.CSR_COMPANY },
-      include: { csrCompanyProfile: true },
+      where: {
+        OR: [
+          { kind: OrganizationKind.CSR_COMPANY },
+          { csrCompanyProfile: { isNot: null } }
+        ]
+      },
+      include: { csrCompanyProfile: true, documents: true },
       orderBy: { name: "asc" }
     });
 
@@ -23,7 +28,7 @@ export const getCompanyById = async (req: AuthenticatedRequest, res: Response, n
 
     const company = await prisma.organization.findUnique({
       where: { id },
-      include: { csrCompanyProfile: true }
+      include: { csrCompanyProfile: true, documents: true }
     });
 
     if (!company || company.kind !== OrganizationKind.CSR_COMPANY) {

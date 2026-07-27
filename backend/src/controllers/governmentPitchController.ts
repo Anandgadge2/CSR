@@ -3,6 +3,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { selectLeastLoadedRm } from "../services/rmAssignmentService";
 import { ROLE_ID } from "../types/role";
+import { notifyHierarchy } from "../services/hierarchyNotificationService";
 
 export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -42,6 +43,19 @@ export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
         departmentId: req.body.departmentId || user?.organizationId || null,
         status: "SUBMITTED"
       }
+    });
+
+    await notifyHierarchy({
+      title: "New Government Pitch Submitted",
+      message: `Government pitch ${pitch.pitchReferenceId} ("${pitch.title}") submitted for review.`,
+      organizationId: pitch.departmentId,
+      assignedRmId: pitch.assignedRelationshipManagerId,
+      district: preferredDistrict,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeDistrictOfficers: true,
+      includeStateOfficers: true,
+      actionButtonUrl: `/government-pitch/${pitch.pitchReferenceId}`
     });
 
     return res.status(201).json(pitch);
@@ -90,6 +104,16 @@ export const assignPitchRelationshipManager = async (req: AuthenticatedRequest, 
       where: { id: req.params.id },
       data: { assignedRelationshipManagerId: req.body.relationshipManagerId }
     });
+
+    await notifyHierarchy({
+      title: "Relationship Manager Assigned to Pitch",
+      message: `Relationship Manager assigned to Government Pitch ${updated.pitchReferenceId}.`,
+      assignedRmId: req.body.relationshipManagerId,
+      organizationId: updated.departmentId,
+      includePortalAdmins: true,
+      actionButtonUrl: `/government-pitch/${updated.pitchReferenceId}`
+    });
+
     return res.json(updated);
   } catch (error) {
     next(error);

@@ -81,8 +81,8 @@ export async function dispatchNotification(input: DispatchInput): Promise<void> 
     where: { name: input.templateName }
   });
 
-  const subject = template?.subject ? interpolate(template.subject, variables) : input.templateName;
-  const emailBody = (template?.emailBody || template?.body) ? interpolate(template?.emailBody || template?.body || "", variables) : subject;
+  const subject = template?.subject ? interpolate(template.subject, variables) : (variables.title as string) || input.templateName;
+  const emailBody = (template?.emailBody || template?.body) ? interpolate(template?.emailBody || template?.body || "", variables) : (variables.message as string) || subject;
   const channels =
     input.channels ||
     ((template?.channels?.length ? template.channels : ["IN_APP", "SOCKET", "EMAIL"]) as NotificationJobPayload["channels"]);

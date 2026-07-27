@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import { notifyHierarchy } from "../services/hierarchyNotificationService";
 
 export const getOrCreateDraftApplication = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -115,7 +116,17 @@ export const submitApplication = async (req: AuthenticatedRequest, res: Response
 
     const org = await prisma.organization.update({
       where: { id: orgId },
-      data: { status: "ACTIVE" }
+      data: { status: "UNDER_VERIFICATION" }
+    });
+
+    await notifyHierarchy({
+      title: "New Organization Onboarding Submitted",
+      message: `Organization "${org.name}" submitted profile for verification.`,
+      organizationId: org.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeStateOfficers: true,
+      actionButtonUrl: `/admin/onboarding-approvals`
     });
 
     return res.json({ success: true, data: org });

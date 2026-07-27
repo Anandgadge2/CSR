@@ -3,16 +3,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
-import GovPageShell from "@/components/gov/GovPageShell";
-import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
-import GovButton from "@/components/gov/GovButton";
-import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
-import GovAlert from "@/components/gov/GovAlert";
-import AccessDenied from "@/components/gov/AccessDenied";
+import GovPageHeader from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
+import GovStatusBadge from "@/components/gov/GovStatusBadge";
+import { Loader } from "@/components/ui/Loader";
 import { apiFetch } from "@/lib/api";
-import { hasPageAccess, CONVERGENCE_PROJECT_PERMS } from "@/lib/roleAccess";
 import { useAuthStore } from "@/store/authStore";
+import { 
+  Building2, Coins, CheckCircle2, FileText, ArrowLeft, MapPin, 
+  Calendar, UserCheck, ShieldCheck, FileCheck, ExternalLink, AlertCircle, Layers
+} from "lucide-react";
 
 interface Milestone {
   id: string;
@@ -114,16 +116,21 @@ export default function ConvergenceProjectDetailPage() {
 
   if (!mounted) return null;
 
-  const fmtCurrency = (v: number | string) => `₹${Number(v).toLocaleString("en-IN")}`;
+  const fmtCurrency = (v: number | string) => {
+    const num = Number(v);
+    if (isNaN(num) || num === 0) return "₹0";
+    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+    if (num >= 100000) return `₹${(num / 100000).toFixed(2)} Lakhs`;
+    return `₹${num.toLocaleString("en-IN")}`;
+  };
+
   const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
   if (loading) {
     return (
       <GovPortalLayout>
-        <div style={{ textAlign: "center", padding: 64 }}>
-          <div style={{ width: 36, height: 36, border: "3px solid var(--gov-border)", borderTopColor: "var(--gov-primary)", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
-          <p style={{ color: "var(--gov-text-muted)" }}>Loading project…</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="py-20 flex justify-center">
+          <Loader label="Loading Project Details from Database..." />
         </div>
       </GovPortalLayout>
     );
@@ -132,243 +139,296 @@ export default function ConvergenceProjectDetailPage() {
   if (error || !project) {
     return (
       <GovPortalLayout>
-        <GovPageShell breadcrumb="Home / Projects / Detail" title="Project Not Found">
-          <GovAlert variant="danger">{error || "Project not found"}</GovAlert>
-          <GovButton variant="muted" onClick={() => router.push("/convergence-projects")} style={{ marginTop: 12 }}>← Back</GovButton>
-        </GovPageShell>
+        <GovPageHeader breadcrumb="Home / Projects / Detail" title="Project Not Found" />
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center max-w-lg mx-auto my-8">
+          <AlertCircle className="mx-auto text-rose-600 mb-2" size={40} />
+          <h3 className="font-bold text-rose-950 text-base">{error || "Project record not found"}</h3>
+          <button
+            onClick={() => router.push("/convergence-projects")}
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-900 text-white font-bold text-xs shadow-xs hover:bg-rose-950 transition-all"
+          >
+            <ArrowLeft size={14} /> Back to Projects Register
+          </button>
+        </div>
       </GovPortalLayout>
     );
   }
 
-  const tabs = ["overview", "mou", "milestones", "uc", "grievances"];
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "mou", label: "MoU Details" },
+    { id: "milestones", label: `Milestones (${project.milestones?.length || 0})` },
+    { id: "uc", label: "Utilisation Certificates" },
+    { id: "grievances", label: `Grievances (${project.grievances?.length || 0})` },
+  ];
 
   return (
     <GovPortalLayout>
-      <GovPageShell
+      <GovPageHeader
         breadcrumb="Home / Projects / Detail"
         title={project.title}
         description={`${project.projectId} — ${project.district}, ${project.sector}`}
         actions={
-          <div style={{ display: "flex", gap: 8 }}>
-            <GovStatusBadge variant={statusToVariant(project.status)} style={{ fontSize: 14, padding: "6px 14px" }}>{project.status.replace(/_/g, " ")}</GovStatusBadge>
-            <Link href={`/projects/${project.id}/tracking`}><GovButton variant="secondary">Milestone Tracking</GovButton></Link>
+          <div className="flex items-center gap-3">
+            <GovStatusBadge variant={project.status === "COMPLETED" ? "success" : project.status === "IN_PROGRESS" ? "info" : "warning"}>
+              {project.status.replace(/_/g, " ")}
+            </GovStatusBadge>
+
+            <Link
+              href={`/projects/${project.id}/tracking`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs shadow-xs transition-all"
+            >
+              <FileCheck size={15} /> Milestone Tracking
+            </Link>
           </div>
         }
-      >
-        {/* Summary Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>
-          {[
-            { label: "Approved Budget", value: fmtCurrency(project.approvedBudget) },
-            { label: "Amount Utilised", value: fmtCurrency(project.utilizedAmount) },
-            { label: "Physical Progress", value: `${project.physicalProgressPercent}%` },
-            { label: "Nodal Officer", value: project.nodalOfficerUser?.email?.split("@")[0] || "—" },
-            { label: "Implementing Agency", value: project.implementingAgencyUser?.email?.split("@")[0] || "—" },
-            { label: "Corporate", value: project.corporateName },
-          ].map((item) => (
-            <GovCard key={item.label}>
-              <GovCardBody>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", textTransform: "uppercase" }}>{item.label}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6, color: "var(--gov-primary-dark)" }}>{item.value}</div>
-              </GovCardBody>
-            </GovCard>
-          ))}
+      />
+
+      <div className="space-y-6">
+        {/* KPI Metrics Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">Approved Budget</span>
+            <span className="font-extrabold text-blue-950 text-base mt-1 block">{fmtCurrency(project.approvedBudget)}</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">Amount Utilised</span>
+            <span className="font-extrabold text-emerald-700 text-base mt-1 block">{fmtCurrency(project.utilizedAmount)}</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">Physical Progress</span>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-extrabold text-blue-900 text-base">{project.physicalProgressPercent}%</span>
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-600 rounded-full" style={{ width: `${project.physicalProgressPercent}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">Nodal Officer</span>
+            <span className="font-bold text-slate-800 text-xs mt-1 block truncate">{project.nodalOfficerUser?.email?.split("@")[0] || "District Nodal"}</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">Implementing Agency</span>
+            <span className="font-bold text-slate-800 text-xs mt-1 block truncate">{project.implementingAgencyUser?.email?.split("@")[0] || "State Agency"}</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-2xs">
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">Corporate Sponsor</span>
+            <span className="font-bold text-purple-900 text-xs mt-1 block truncate">{project.corporateName}</span>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--gov-border)", marginTop: 20 }}>
+        {/* Tab Strip */}
+        <div className="flex items-center gap-2 border-b border-slate-200/80 overflow-x-auto pb-0.5">
           {tabs.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                padding: "10px 20px",
-                border: "none",
-                borderBottom: activeTab === tab ? "3px solid var(--gov-primary)" : "3px solid transparent",
-                background: "none",
-                cursor: "pointer",
-                fontWeight: activeTab === tab ? 700 : 500,
-                color: activeTab === tab ? "var(--gov-primary)" : "var(--gov-text-muted)",
-                fontSize: 13,
-                textTransform: "capitalize",
-              }}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+                activeTab === tab.id
+                  ? "border-blue-900 text-blue-900 bg-blue-50/50 rounded-t-xl"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
             >
-              {tab === "uc" ? "Utilisation Certificates" : tab}
+              {tab.label}
             </button>
           ))}
         </div>
 
-        {/* Tab Content */}
-        <div style={{ marginTop: 16 }}>
+        {/* Tab Content Panels */}
+        <div>
           {activeTab === "overview" && (
-            <GovCard>
-              <GovCardBody>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                  {[
-                    ["Sector", project.sector],
-                    ["Location", `${project.taluka}, ${project.district}`],
-                    ["Exact Location", project.location],
-                    ["Status", project.status.replace(/_/g, " ")],
-                    ["Created", fmtDate(project.createdAt)],
-                    ["Last Updated", fmtDate(project.updatedAt)],
-                  ].map(([label, value]) => (
-                    <div key={label}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-text-muted)" }}>{label}</div>
-                      <div style={{ fontSize: 14, marginTop: 4 }}>{value}</div>
-                    </div>
-                  ))}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+                <Layers size={15} className="text-blue-700" /> Project Summary & Location Details
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 font-medium block">Development Sector</span>
+                  <span className="font-bold text-slate-900 text-sm">{project.sector}</span>
                 </div>
-              </GovCardBody>
-            </GovCard>
+                <div>
+                  <span className="text-slate-400 font-medium block">Taluka & District</span>
+                  <span className="font-bold text-slate-900 text-sm">{project.taluka}, {project.district}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block">Exact Site Location</span>
+                  <span className="font-semibold text-slate-800">{project.location || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block">Project Execution Status</span>
+                  <span className="font-bold text-blue-900 uppercase">{project.status.replace(/_/g, " ")}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block">Created Date</span>
+                  <span className="font-semibold text-slate-800">{fmtDate(project.createdAt)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-medium block">Last Updated Date</span>
+                  <span className="font-semibold text-slate-800">{fmtDate(project.updatedAt)}</span>
+                </div>
+              </div>
+            </div>
           )}
 
           {activeTab === "mou" && (
-            <GovCard>
-              <GovCardHeader><GovCardTitle>Tripartite MoU</GovCardTitle></GovCardHeader>
-              <GovCardBody>
-                {project.mou ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    {[
-                      ["MoU Reference", project.mou.mouReferenceId],
-                      ["Status", project.mou.status],
-                      ["Government Party", project.mou.governmentParty],
-                      ["Corporate Party", project.mou.corporateParty],
-                      ["Implementing Agency", project.mou.implementingAgency],
-                    ].map(([label, value]) => (
-                      <div key={label}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-text-muted)" }}>{label}</div>
-                        <div style={{ fontSize: 14, marginTop: 4 }}>{value || "—"}</div>
-                      </div>
-                    ))}
-                    {project.mou.signedDocumentUrl && (
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--gov-text-muted)" }}>Signed Document</div>
-                        <a href={project.mou.signedDocumentUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, marginTop: 4, display: "block" }}>Download Signed MoU</a>
-                      </div>
-                    )}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+                <FileText size={15} className="text-indigo-600" /> Tripartite Memorandum of Understanding (MoU)
+              </h3>
+              {project.mou ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-medium block">MoU Reference ID</span>
+                    <span className="font-mono font-bold text-indigo-900">{project.mou.mouReferenceId}</span>
                   </div>
-                ) : (
-                  <p style={{ color: "var(--gov-text-muted)" }}>MoU details not available.</p>
-                )}
-              </GovCardBody>
-            </GovCard>
+                  <div>
+                    <span className="text-slate-400 font-medium block">MoU Status</span>
+                    <span className="font-bold text-emerald-700">{project.mou.status}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Government Party</span>
+                    <span className="font-semibold text-slate-800">{project.mou.governmentParty}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Corporate Party</span>
+                    <span className="font-semibold text-slate-800">{project.mou.corporateParty}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Implementing Agency</span>
+                    <span className="font-semibold text-slate-800">{project.mou.implementingAgency}</span>
+                  </div>
+                  {project.mou.signedDocumentUrl && (
+                    <div>
+                      <span className="text-slate-400 font-medium block">Signed Document</span>
+                      <a
+                        href={project.mou.signedDocumentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 mt-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors"
+                      >
+                        View Signed MoU <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 font-medium py-4">No tripartite MoU record attached yet.</p>
+              )}
+            </div>
           )}
 
           {activeTab === "milestones" && (
-            <GovCard>
-              <GovCardHeader><GovCardTitle>Project Milestones</GovCardTitle></GovCardHeader>
-              <GovCardBody style={{ padding: 0 }}>
-                <div className="gov-table-container">
-                  <table className="gov-table">
-                    <thead>
-                      <tr>
-                        <th>Milestone</th>
-                        <th>Work Type</th>
-                        <th>Status</th>
-                        <th>Funds Utilised</th>
-                        <th>Photos</th>
-                        <th>Verification</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(project.milestones || []).length === 0 ? (
-                        <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--gov-text-muted)" }}>No milestones defined.</td></tr>
-                      ) : (
-                        project.milestones!.map((m) => (
-                          <tr key={m.id}>
-                            <td><div style={{ fontWeight: 700 }}>{m.name}</div>{m.description && <div style={{ fontSize: 12, color: "var(--gov-text-muted)" }}>{m.description}</div>}</td>
-                            <td>{m.workType.replace(/_/g, " ")}</td>
-                            <td><GovStatusBadge variant={statusToVariant(m.status)}>{m.status.replace(/_/g, " ")}</GovStatusBadge></td>
-                            <td>{fmtCurrency(m.fundsUtilized)}</td>
-                            <td>{m.geoTaggedPhotoUrls?.length || 0} photo(s)</td>
-                            <td>{m.verifiedAt ? <GovStatusBadge variant="success">Verified</GovStatusBadge> : <GovStatusBadge variant="muted">Pending</GovStatusBadge>}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+            <div className="space-y-3">
+              {(project.milestones || []).length === 0 ? (
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-xs">
+                  <p className="text-xs text-slate-500 font-medium">No milestones defined for this convergence project.</p>
                 </div>
-              </GovCardBody>
-            </GovCard>
+              ) : (
+                project.milestones?.map((m, idx) => (
+                  <div key={m.id} className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                          #{idx + 1}
+                        </span>
+                        <h4 className="font-bold text-sm text-slate-900">{m.name}</h4>
+                        <GovStatusBadge variant={m.status === "COMPLETED" ? "success" : "info"}>
+                          {m.status.replace(/_/g, " ")}
+                        </GovStatusBadge>
+                      </div>
+                      {m.description && <p className="text-xs text-slate-500 mt-1">{m.description}</p>}
+                      <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 mt-2">
+                        <span>Work Type: {m.workType}</span>
+                        <span>Funds Utilised: {fmtCurrency(m.fundsUtilized)}</span>
+                        <span>Verification: {m.verifiedAt ? "✓ Verified" : "Pending"}</span>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/projects/${project.id}/tracking`}
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-blue-900 font-bold text-xs border border-slate-200 transition-colors shrink-0"
+                    >
+                      Track Progress →
+                    </Link>
+                  </div>
+                ))
+              )}
+            </div>
           )}
 
           {activeTab === "uc" && (
-            <GovCard>
-              <GovCardHeader><GovCardTitle>Utilisation Certificates</GovCardTitle></GovCardHeader>
-              <GovCardBody style={{ padding: 0 }}>
-                <div className="gov-table-container">
-                  <table className="gov-table">
-                    <thead>
-                      <tr>
-                        <th>Uploaded At</th>
-                        <th>Amount Utilised</th>
-                        <th>Status</th>
-                        <th>Uploaded By</th>
-                        <th>Verified By</th>
-                        <th>Document</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(project.utilizationCertificates || []).length === 0 ? (
-                        <tr><td colSpan={6} style={{ textAlign: "center", padding: 24, color: "var(--gov-text-muted)" }}>No Utilisation Certificates uploaded.</td></tr>
-                      ) : (
-                        project.utilizationCertificates!.map((uc) => (
-                          <tr key={uc.id}>
-                            <td>{fmtDate(uc.uploadedAt)}</td>
-                            <td>{fmtCurrency(uc.amountUtilized)}</td>
-                            <td><GovStatusBadge variant={statusToVariant(uc.verificationStatus)}>{uc.verificationStatus}</GovStatusBadge></td>
-                            <td>{uc.uploadedByUser?.email?.split("@")[0] || "—"}</td>
-                            <td>{uc.verifiedByNodalOfficer?.email?.split("@")[0] || "Pending"}</td>
-                            <td><a href={uc.certificateDocumentUrl} target="_blank" rel="noopener noreferrer">View</a></td>
-                          </tr>
-                        ))
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-2">
+                <FileCheck size={15} className="text-emerald-600" /> Utilisation Certificates (UC)
+              </h3>
+              {(project.utilizationCertificates || []).length === 0 ? (
+                <p className="text-xs text-slate-500 font-medium py-4">No Utilisation Certificates uploaded for this project yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {project.utilizationCertificates?.map((uc) => (
+                    <div key={uc.id} className="flex items-center justify-between p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 text-xs">
+                      <div>
+                        <div className="font-bold text-slate-900">Utilisation Certificate — {fmtCurrency(uc.amountUtilized)}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">Uploaded: {fmtDate(uc.uploadedAt)}</div>
+                      </div>
+                      {uc.certificateDocumentUrl && (
+                        <a
+                          href={uc.certificateDocumentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs border border-blue-200 transition-colors"
+                        >
+                          View Certificate <ExternalLink size={12} />
+                        </a>
                       )}
-                    </tbody>
-                  </table>
+                    </div>
+                  ))}
                 </div>
-              </GovCardBody>
-            </GovCard>
+              )}
+            </div>
           )}
 
           {activeTab === "grievances" && (
-            <GovCard>
-              <GovCardHeader>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <GovCardTitle>Related Grievances</GovCardTitle>
-                  <GovButton variant="secondary" onClick={() => router.push("/grievances")} style={{ fontSize: 12, padding: "4px 12px", minHeight: 28 }}>Raise Grievance</GovButton>
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
+                Project Grievances & Queries
+              </h3>
+              {(project.grievances || []).length === 0 ? (
+                <p className="text-xs text-slate-500 font-medium py-4">No grievances or issues reported for this project.</p>
+              ) : (
+                <div className="space-y-3">
+                  {project.grievances?.map((g) => (
+                    <div key={g.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                      <div>
+                        <span className="font-mono font-bold text-blue-900">{g.grievanceId}</span>
+                        <div className="font-bold text-slate-900 mt-0.5">{g.issueTitle}</div>
+                      </div>
+                      <GovStatusBadge variant={g.status === "RESOLVED" ? "success" : "warning"}>
+                        {g.status}
+                      </GovStatusBadge>
+                    </div>
+                  ))}
                 </div>
-              </GovCardHeader>
-              <GovCardBody style={{ padding: 0 }}>
-                <div className="gov-table-container">
-                  <table className="gov-table">
-                    <thead>
-                      <tr><th>ID</th><th>Issue</th><th>Status</th><th>Raised</th><th>Action</th></tr>
-                    </thead>
-                    <tbody>
-                      {(project.grievances || []).length === 0 ? (
-                        <tr><td colSpan={5} style={{ textAlign: "center", padding: 24, color: "var(--gov-text-muted)" }}>No grievances for this project.</td></tr>
-                      ) : (
-                        project.grievances!.map((g) => (
-                          <tr key={g.id}>
-                            <td style={{ fontWeight: 700, color: "var(--gov-link)" }}>{g.grievanceId}</td>
-                            <td>{g.issueTitle}</td>
-                            <td><GovStatusBadge variant={statusToVariant(g.status)}>{g.status.replace(/_/g, " ")}</GovStatusBadge></td>
-                            <td>{fmtDate(g.createdAt)}</td>
-                            <td><Link href={`/grievances/${g.id}`}><GovButton variant="muted" style={{ fontSize: 11, padding: "3px 10px", minHeight: 28 }}>View</GovButton></Link></td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </GovCardBody>
-            </GovCard>
+              )}
+            </div>
           )}
         </div>
 
-        <div style={{ marginTop: 16 }}>
-          <GovButton variant="muted" onClick={() => router.push("/convergence-projects")}>← Back to Projects</GovButton>
+        <div className="pt-4 border-t border-slate-200/80">
+          <button
+            onClick={() => router.push("/convergence-projects")}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors border border-slate-200"
+          >
+            ← Back to Projects Register
+          </button>
         </div>
-      </GovPageShell>
+      </div>
     </GovPortalLayout>
   );
 }

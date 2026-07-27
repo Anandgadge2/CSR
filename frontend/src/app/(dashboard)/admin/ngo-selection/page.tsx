@@ -2,14 +2,24 @@
 
 import { useState, useEffect, useCallback } from "react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
-import GovPageShell from "@/components/gov/GovPageShell";
-import { GovCard, GovCardBody, GovCardHeader, GovCardTitle } from "@/components/gov/GovCard";
-import GovDataTable from "@/components/gov/GovDataTable";
-import GovButton from "@/components/gov/GovButton";
+import GovPageHeader from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import AccessDenied from "@/components/gov/AccessDenied";
+import { Loader } from "@/components/ui/Loader";
 import { apiFetch, invalidateCache } from "@/lib/api";
 import { hasPageAccess, ADMIN_ACCESS_PERMS } from "@/lib/roleAccess";
+import {
+  Award,
+  MapPin,
+  Clock,
+  Building2,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  UserCheck,
+  Building
+} from "lucide-react";
 
 interface NodalAppointment {
   id: string;
@@ -44,6 +54,7 @@ export default function NgoSelectionPage() {
   const [agenciesLoading, setAgenciesLoading] = useState(true);
   const [agenciesError, setAgenciesError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -82,6 +93,7 @@ export default function NgoSelectionPage() {
 
   const decideAgency = async (id: string, decision: "APPROVE" | "REJECT") => {
     setActionError("");
+    setProcessingId(id);
     try {
       await apiFetch(`/implementing-agency/approvals/${id}`, {
         method: "PATCH",
@@ -91,6 +103,8 @@ export default function NgoSelectionPage() {
       fetchAgencies();
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Failed to submit decision");
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -99,102 +113,204 @@ export default function NgoSelectionPage() {
     return <AccessDenied />;
   }
 
-  const kpis = [
-    { label: "Nodal Appointments", value: appointments.length, color: "var(--gov-primary)" },
-    { label: "Districts Covered", value: new Set(appointments.map((a) => a.district)).size, color: "var(--gov-link)" },
-    { label: "Pending IA Approvals", value: agencies.length, color: "var(--gov-danger)" },
-  ];
-
-  const appointmentColumns = [
-    { key: "nodalOfficerName", label: "Nodal Officer", render: (v: unknown, row: Record<string, unknown>) => {
-      const user = row.nodalOfficerUser as NodalAppointment["nodalOfficerUser"];
-      return (
-        <div>
-          <div style={{ fontWeight: 700 }}>{(v as string) || "—"}</div>
-          <div style={{ fontSize: 12, color: "var(--gov-text-muted)" }}>{user?.email || ""}</div>
-        </div>
-      );
-    }},
-    { key: "district", label: "District" },
-    { key: "domain", label: "Domain" },
-    { key: "department", label: "Department" },
-    { key: "designation", label: "Designation" },
-    { key: "corporateEnquiry", label: "Source", render: (_: unknown, row: Record<string, unknown>) => {
-      const enquiry = row.corporateEnquiry as NodalAppointment["corporateEnquiry"];
-      const pitch = row.governmentPitch as NodalAppointment["governmentPitch"];
-      if (enquiry) return <span>{enquiry.trackingId} · {enquiry.companyName}</span>;
-      if (pitch) return <span>{pitch.pitchReferenceId}</span>;
-      return "—";
-    }},
-    { key: "appointedAt", label: "Appointed", render: (v: unknown) => (v ? new Date(v as string).toLocaleDateString() : "—") },
-  ];
-
-  const agencyColumns = [
-    { key: "iaAgencyName", label: "Agency", render: (v: unknown) => <span style={{ fontWeight: 700 }}>{(v as string) || "—"}</span> },
-    { key: "email", label: "Email" },
-    { key: "iaCsr1Number", label: "CSR-1 Number", render: (v: unknown) => (v as string) || "—" },
-    { key: "parentCorporateUser", label: "Sponsoring Corporate", render: (v: unknown) => {
-      const parent = v as PendingAgency["parentCorporateUser"];
-      return parent?.email || "—";
-    }},
-    { key: "createdAt", label: "Requested", render: (v: unknown) => (v ? new Date(v as string).toLocaleDateString() : "—") },
-    { key: "id", label: "Action", align: "right" as const, render: (_: unknown, row: Record<string, unknown>) => (
-      <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-        <GovButton variant="primary" style={{ fontSize: 11, padding: "3px 10px", minHeight: 28 }} onClick={(e) => { e.stopPropagation(); decideAgency(row.id as string, "APPROVE"); }}>Approve</GovButton>
-        <GovButton variant="danger" style={{ fontSize: 11, padding: "3px 10px", minHeight: 28 }} onClick={(e) => { e.stopPropagation(); decideAgency(row.id as string, "REJECT"); }}>Reject</GovButton>
-      </div>
-    )},
-  ];
+  const districtsCount = new Set(appointments.map((a) => a.district).filter(Boolean)).size;
 
   return (
     <GovPortalLayout>
-      <GovPageShell
+      <GovPageHeader
         breadcrumb="Home / Admin / Agency Selection"
         title="Implementing Agency & Nodal Selection"
         description="District nodal officer appointments for approved CSR initiatives, and pending implementing-agency (NGO) account approvals."
-      >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>
-          {kpis.map((k) => (
-            <GovCard key={k.label}>
-              <GovCardBody>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{k.label}</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: k.color, marginTop: 6 }}>{k.value}</div>
-              </GovCardBody>
-            </GovCard>
-          ))}
-        </div>
+      />
 
-        <GovCard style={{ marginTop: 16 }}>
-          <GovCardHeader>
-            <GovCardTitle>Pending Implementing Agency Approvals</GovCardTitle>
-            {actionError && <GovStatusBadge variant="danger">{actionError}</GovStatusBadge>}
-          </GovCardHeader>
-        </GovCard>
-        <div style={{ marginTop: 8 }}>
-          <GovDataTable
-            columns={agencyColumns}
-            data={agencies as unknown as Record<string, unknown>[]}
-            loading={agenciesLoading}
-            error={agenciesError}
-            emptyMessage="No implementing agency accounts awaiting approval."
+      <div className="space-y-6">
+        {/* KPI Metrics Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            label="Nodal Appointments"
+            value={appointments.length}
+            icon={Award}
+            index={0}
+            colorTheme="purple"
+            badge="District Nodal"
+            sublabel="Officer Appointments"
+          />
+          <StatCard
+            label="Districts Covered"
+            value={districtsCount}
+            icon={MapPin}
+            index={1}
+            colorTheme="emerald"
+            badge="Coverage"
+            sublabel="Statewide Districts"
+          />
+          <StatCard
+            label="Pending IA Approvals"
+            value={agencies.length}
+            icon={Clock}
+            index={2}
+            colorTheme="amber"
+            badge="Pending Approvals"
+            sublabel="Implementing Agencies"
           />
         </div>
 
-        <GovCard style={{ marginTop: 20 }}>
-          <GovCardHeader>
-            <GovCardTitle>Nodal Officer Appointments</GovCardTitle>
-          </GovCardHeader>
-        </GovCard>
-        <div style={{ marginTop: 8 }}>
-          <GovDataTable
-            columns={appointmentColumns}
-            data={appointments as unknown as Record<string, unknown>[]}
-            loading={appointmentsLoading}
-            error={appointmentsError}
-            emptyMessage="No nodal officer appointments yet."
-          />
+        {/* Action Error Alert */}
+        {actionError && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-bold text-rose-800 flex items-center justify-between">
+            <span>{actionError}</span>
+            <button type="button" onClick={() => setActionError("")} className="text-rose-600 hover:text-rose-900 font-extrabold">✕</button>
+          </div>
+        )}
+
+        {/* Section 1: Pending Implementing Agency Approvals */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Building2 className="text-amber-600" size={20} />
+              <h2 className="text-base font-extrabold text-slate-900">Pending Implementing Agency Approvals</h2>
+              <span className="font-mono text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                {agencies.length} Pending
+              </span>
+            </div>
+          </div>
+
+          {agenciesLoading ? (
+            <div className="py-8 flex justify-center">
+              <Loader label="Loading pending implementing agency approvals..." />
+            </div>
+          ) : agenciesError ? (
+            <div className="py-6 text-center text-xs font-semibold text-rose-600">
+              {agenciesError}
+            </div>
+          ) : agencies.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <Building className="mx-auto text-slate-300" size={40} />
+              <p className="text-xs font-semibold text-slate-500">No implementing agency accounts awaiting approval.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="gov-table w-full text-xs">
+                <thead>
+                  <tr>
+                    <th>Agency</th>
+                    <th>Email</th>
+                    <th>CSR-1 Number</th>
+                    <th>Sponsoring Corporate</th>
+                    <th>Requested</th>
+                    <th className="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {agencies.map((agency) => (
+                    <tr key={agency.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="font-bold text-slate-900">{agency.iaAgencyName || "—"}</td>
+                      <td className="text-slate-700 font-medium">{agency.email}</td>
+                      <td className="font-mono text-xs text-purple-700 font-semibold">{agency.iaCsr1Number || "—"}</td>
+                      <td className="text-slate-600 font-medium">{agency.parentCorporateUser?.email || "—"}</td>
+                      <td className="text-slate-500">{agency.createdAt ? new Date(agency.createdAt).toLocaleDateString() : "—"}</td>
+                      <td className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            disabled={processingId === agency.id}
+                            onClick={() => decideAgency(agency.id, "APPROVE")}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-all"
+                          >
+                            <CheckCircle2 size={13} /> Approve
+                          </button>
+                          <button
+                            type="button"
+                            disabled={processingId === agency.id}
+                            onClick={() => decideAgency(agency.id, "REJECT")}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-all"
+                          >
+                            <XCircle size={13} /> Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </GovPageShell>
+
+        {/* Section 2: Nodal Officer Appointments */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <UserCheck className="text-purple-600" size={20} />
+              <h2 className="text-base font-extrabold text-slate-900">Nodal Officer Appointments</h2>
+              <span className="font-mono text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full">
+                {appointments.length} Total
+              </span>
+            </div>
+          </div>
+
+          {appointmentsLoading ? (
+            <div className="py-8 flex justify-center">
+              <Loader label="Loading nodal officer appointments..." />
+            </div>
+          ) : appointmentsError ? (
+            <div className="py-6 text-center text-xs font-semibold text-rose-600">
+              {appointmentsError}
+            </div>
+          ) : appointments.length === 0 ? (
+            <div className="py-10 text-center space-y-2">
+              <Award className="mx-auto text-slate-300" size={40} />
+              <p className="text-xs font-semibold text-slate-500">No nodal officer appointments recorded yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="gov-table w-full text-xs">
+                <thead>
+                  <tr>
+                    <th>Nodal Officer</th>
+                    <th>District</th>
+                    <th>Domain</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Source</th>
+                    <th>Appointed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map((app) => (
+                    <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td>
+                        <div className="font-bold text-slate-900">{app.nodalOfficerName || "—"}</div>
+                        <div className="text-[11px] text-slate-400 font-medium">{app.nodalOfficerUser?.email || ""}</div>
+                      </td>
+                      <td className="text-slate-700 font-semibold">{app.district}</td>
+                      <td className="text-slate-600 font-medium">{app.domain}</td>
+                      <td className="text-slate-600 font-medium">{app.department}</td>
+                      <td className="text-slate-600 font-medium">{app.designation}</td>
+                      <td>
+                        {app.corporateEnquiry ? (
+                          <span className="font-mono text-xs font-bold text-blue-700">
+                            {app.corporateEnquiry.trackingId} · {app.corporateEnquiry.companyName}
+                          </span>
+                        ) : app.governmentPitch ? (
+                          <span className="font-mono text-xs font-bold text-indigo-700">
+                            {app.governmentPitch.pitchReferenceId}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="text-slate-500">
+                        {app.appointedAt ? new Date(app.appointedAt).toLocaleDateString() : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
     </GovPortalLayout>
   );
 }

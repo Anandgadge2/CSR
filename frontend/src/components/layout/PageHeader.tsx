@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { ChevronRight, Home } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import { resolveDashboardPath } from "@/lib/roleRouting";
 
 interface BreadcrumbItem {
   label: string;
@@ -27,6 +29,9 @@ export function PageHeader({
   actions,
   className
 }: PageHeaderProps) {
+  const user = useAuthStore((s) => s.user);
+  const homeHref = user ? resolveDashboardPath(user, "/dashboard") : "/";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -38,8 +43,9 @@ export function PageHeader({
       {breadcrumbs.length > 0 && (
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-3">
           <Link 
-            href="/" 
+            href={homeHref} 
             className="hover:text-gray-700 transition-colors flex items-center"
+            title={user ? "Go to Dashboard" : "Go to Home"}
           >
             <Home size={14} />
           </Link>
@@ -88,11 +94,15 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
+  const user = useAuthStore((s) => s.user);
+  const homeHref = user ? resolveDashboardPath(user, "/dashboard") : "/";
+
   return (
     <nav className={cn("flex items-center gap-2 text-sm text-gray-500", className)}>
       <Link 
-        href="/" 
+        href={homeHref} 
         className="hover:text-gray-700 transition-colors flex items-center"
+        title={user ? "Go to Dashboard" : "Go to Home"}
       >
         <Home size={14} />
       </Link>

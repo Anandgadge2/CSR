@@ -4,6 +4,7 @@ import { createAdminUser, getAdminOverview, listUsers, deleteUser, updateUser } 
 import { getConvergenceOverview, listPitchInterests } from "../controllers/adminConvergenceController";
 import {
   listOrganizations,
+  listPendingOrganizations,
   getOrganizationById,
   approveOrganization,
   rejectOrganization,
@@ -28,6 +29,7 @@ router.delete("/users/:id", deleteUser);
 
 // Organization management endpoints
 router.get("/organizations", listOrganizations);
+router.get("/organizations/pending", listPendingOrganizations);
 router.get("/organizations/:id", getOrganizationById);
 router.post("/organizations/:id/approve", approveOrganization);
 router.post("/organizations/:id/reject", rejectOrganization);

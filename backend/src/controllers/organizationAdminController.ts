@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
+import { OrganizationStatus } from "@prisma/client";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import { notifyHierarchy } from "../services/hierarchyNotificationService";
 
 export const getOwnedOrganization = async (req: AuthenticatedRequest, kind?: string) => {
   let organizationId = req.user?.organizationId || req.user?.ngoId || req.user?.companyId;
@@ -44,8 +46,54 @@ export const listOrganizations = async (req: AuthenticatedRequest, res: Response
 
 export const listPendingOrganizations = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const { status, kind } = req.query;
+    const whereClause: any = {};
+
+    if (status === "APPROVED" || status === "ACTIVE") {
+      whereClause.status = OrganizationStatus.ACTIVE;
+    } else if (status === "PENDING") {
+      whereClause.status = {
+        in: [
+          OrganizationStatus.UNDER_VERIFICATION,
+          OrganizationStatus.REGISTERED,
+          OrganizationStatus.DOCUMENTS_PENDING,
+          OrganizationStatus.CLARIFICATION_REQUIRED,
+          OrganizationStatus.PROFILE_INCOMPLETE
+        ]
+      };
+    } else if (status && typeof status === "string" && status !== "ALL") {
+      whereClause.status = status;
+    } else if (status === "ALL") {
+      // Return all organizations regardless of status
+    }
+
+    if (kind && typeof kind === "string" && kind !== "ALL") {
+      if (kind === "CSR_COMPANY") {
+        whereClause.OR = [
+          { kind: "CSR_COMPANY" },
+          { kind: "CORPORATE" },
+          { csrCompanyProfile: { isNot: null } }
+        ];
+      } else if (kind === "NGO") {
+        whereClause.OR = [
+          { kind: "NGO" },
+          { kind: "IMPLEMENTING_AGENCY" },
+          { ngoProfile: { isNot: null } }
+        ];
+      } else if (kind === "GOVERNMENT_DEPARTMENT") {
+        whereClause.OR = [
+          { kind: "GOVERNMENT_DEPARTMENT" },
+          { kind: "GOVT_DEPT" },
+          { govDeptProfile: { isNot: null } }
+        ];
+      } else {
+        whereClause.kind = kind;
+      }
+    }
+
     const orgs = await prisma.organization.findMany({
-      where: { status: "REGISTERED" },
+      where: whereClause,
+      include: { csrCompanyProfile: true, ngoProfile: true, govDeptProfile: true, documents: true },
       orderBy: { createdAt: "desc" }
     });
     return res.json(orgs);
@@ -73,6 +121,15 @@ export const approveOrganization = async (req: AuthenticatedRequest, res: Respon
       where: { id: req.params.id },
       data: { status: "ACTIVE" }
     });
+    await notifyHierarchy({
+      title: "Organization Onboarding Approved",
+      message: `Organization "${updated.name}" has been approved and activated.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeStateOfficers: true,
+      actionButtonUrl: `/organization/onboarding`
+    });
     return res.json(updated);
   } catch (error) {
     next(error);
@@ -84,6 +141,14 @@ export const rejectOrganization = async (req: AuthenticatedRequest, res: Respons
     const updated = await prisma.organization.update({
       where: { id: req.params.id },
       data: { status: "REJECTED" }
+    });
+    await notifyHierarchy({
+      title: "Organization Onboarding Rejected",
+      message: `Organization "${updated.name}" onboarding request has been rejected.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      actionButtonUrl: `/organization/onboarding`
     });
     return res.json(updated);
   } catch (error) {
@@ -97,6 +162,14 @@ export const suspendOrganization = async (req: AuthenticatedRequest, res: Respon
       where: { id: req.params.id },
       data: { status: "SUSPENDED" }
     });
+    await notifyHierarchy({
+      title: "Organization Account Suspended",
+      message: `Organization "${updated.name}" status has been updated to suspended.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      actionButtonUrl: `/organization/onboarding`
+    });
     return res.json(updated);
   } catch (error) {
     next(error);
@@ -105,7 +178,19 @@ export const suspendOrganization = async (req: AuthenticatedRequest, res: Respon
 
 export const requestClarification = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    return res.json({ success: true, message: "Clarification requested" });
+    const updated = await prisma.organization.update({
+      where: { id: req.params.id },
+      data: { status: "CLARIFICATION_REQUIRED" }
+    });
+    await notifyHierarchy({
+      title: "Clarification Required for Onboarding",
+      message: `Clarification requested for organization "${updated.name}". Please update requested profile documents.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      actionButtonUrl: `/organization/onboarding`
+    });
+    return res.json(updated);
   } catch (error) {
     next(error);
   }
@@ -191,7 +276,16 @@ export const submitOnboarding = async (req: AuthenticatedRequest, res: Response,
     const org = await getOwnedOrganization(req);
     const updated = await prisma.organization.update({
       where: { id: org.id },
-      data: { status: "ACTIVE" }
+      data: { status: "UNDER_VERIFICATION" }
+    });
+    await notifyHierarchy({
+      title: "New Organization Onboarding Submitted",
+      message: `Organization "${updated.name}" submitted profile for verification.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeStateOfficers: true,
+      actionButtonUrl: `/admin/onboarding-approvals`
     });
     return res.json(updated);
   } catch (error: any) {
@@ -351,8 +445,103 @@ export const updateCompanyPreferences = async (req: AuthenticatedRequest, res: R
       }
     });
     return res.json(profile);
-  } catch (error: any) {
-    return res.status(400).json({ error: error.message });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listOrgRoles = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const roles = await prisma.role.findMany({ where: { organizationId: req.user?.organizationId || undefined } });
+    return res.json(roles);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const role = await prisma.role.create({
+      data: {
+        name: req.body.name,
+        description: req.body.description,
+        organizationId: req.user?.organizationId || null,
+        isSystemRole: false
+      }
+    });
+    return res.status(201).json(role);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const role = await prisma.role.update({
+      where: { id: Number(req.params.id) },
+      data: { name: req.body.name, description: req.body.description }
+    });
+    return res.json(role);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    await prisma.role.delete({ where: { id: Number(req.params.id) } });
+    return res.json({ message: "Role deleted" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listOrgUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const users = await prisma.user.findMany({ where: { organizationId: req.user?.organizationId || undefined } });
+    return res.json(users);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const inviteOrgUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email: req.body.email,
+        passwordHash: "placeholder",
+        roleId: req.body.roleId ? Number(req.body.roleId) : 9,
+        organizationId: req.user?.organizationId || null
+      }
+    });
+    return res.status(201).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrgUserRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { roleId: Number(req.body.roleId) }
+    });
+    return res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrgUserStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { accountStatus: req.body.accountStatus }
+    });
+    return res.json(user);
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -361,7 +550,16 @@ export const submitCompanyOnboarding = async (req: AuthenticatedRequest, res: Re
     const org = await getOwnedOrganization(req, "CSR_COMPANY");
     const updated = await prisma.organization.update({
       where: { id: org.id },
-      data: { status: "ACTIVE" }
+      data: { status: "UNDER_VERIFICATION" }
+    });
+    await notifyHierarchy({
+      title: "New CSR Company Onboarding Submitted",
+      message: `CSR Company "${updated.name}" submitted onboarding application for verification.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeStateOfficers: true,
+      actionButtonUrl: `/admin/onboarding-approvals`
     });
     return res.json(updated);
   } catch (error: any) {
@@ -462,7 +660,16 @@ export const submitDepartmentOnboarding = async (req: AuthenticatedRequest, res:
     const org = await getOwnedOrganization(req, "GOVERNMENT_DEPARTMENT");
     const updated = await prisma.organization.update({
       where: { id: org.id },
-      data: { status: "ACTIVE" }
+      data: { status: "UNDER_VERIFICATION" }
+    });
+    await notifyHierarchy({
+      title: "New Government Department Onboarding Submitted",
+      message: `Government Department "${updated.name}" submitted onboarding application for verification.`,
+      organizationId: updated.id,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeStateOfficers: true,
+      actionButtonUrl: `/admin/onboarding-approvals`
     });
     return res.json(updated);
   } catch (error: any) {
@@ -474,101 +681,6 @@ export const listPermissions = async (_req: AuthenticatedRequest, res: Response,
   try {
     const perms = await prisma.permission.findMany();
     return res.json(perms);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const listOrgRoles = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const roles = await prisma.role.findMany({ where: { organizationId: req.user?.organizationId || undefined } });
-    return res.json(roles);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const createOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const role = await prisma.role.create({
-      data: {
-        name: req.body.name,
-        description: req.body.description,
-        organizationId: req.user?.organizationId || null,
-        isSystemRole: false
-      }
-    });
-    return res.status(201).json(role);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const role = await prisma.role.update({
-      where: { id: Number(req.params.id) },
-      data: { name: req.body.name, description: req.body.description }
-    });
-    return res.json(role);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const deleteOrgRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    await prisma.role.delete({ where: { id: Number(req.params.id) } });
-    return res.json({ message: "Role deleted" });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const listOrgUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const users = await prisma.user.findMany({ where: { organizationId: req.user?.organizationId || undefined } });
-    return res.json(users);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const inviteOrgUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const user = await prisma.user.create({
-      data: {
-        email: req.body.email,
-        passwordHash: "placeholder",
-        roleId: req.body.roleId ? Number(req.body.roleId) : 9,
-        organizationId: req.user?.organizationId || null
-      }
-    });
-    return res.status(201).json(user);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateOrgUserRole = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const user = await prisma.user.update({
-      where: { id: req.params.id },
-      data: { roleId: Number(req.body.roleId) }
-    });
-    return res.json(user);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateOrgUserStatus = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const user = await prisma.user.update({
-      where: { id: req.params.id },
-      data: { accountStatus: req.body.accountStatus }
-    });
-    return res.json(user);
   } catch (error) {
     next(error);
   }

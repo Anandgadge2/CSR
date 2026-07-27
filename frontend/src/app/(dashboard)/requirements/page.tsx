@@ -6,8 +6,10 @@ import Link from "next/link";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { Loader } from "@/components/ui/Loader";
 import { 
-  Sparkles, Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, FileText, Landmark
+  Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, FileText
 } from "lucide-react";
 
 interface Requirement {
@@ -21,60 +23,36 @@ interface Requirement {
   date: string;
 }
 
-const mockRequirements: Requirement[] = [
-  {
-    id: "req-1",
-    refId: "REQ-2026-901",
-    title: "Solar Power Micro-Grids for 50 Rural Primary Health Sub-Centres",
-    category: "Environment & Renewable Energy",
-    district: "Gadchiroli",
-    estimatedCostLakhs: 200,
-    status: "PUBLISHED",
-    date: "2026-07-24",
-  },
-  {
-    id: "req-2",
-    refId: "REQ-2026-844",
-    title: "Primary School Computer Labs & Broadband Setup",
-    category: "Education & Digital Literacy",
-    district: "Nandurbar",
-    estimatedCostLakhs: 140,
-    status: "APPROVED",
-    date: "2026-07-21",
-  },
-  {
-    id: "req-3",
-    refId: "REQ-2026-720",
-    title: "Clean Drinking Water Reverse Osmosis Plants in Drought-Prone Villages",
-    category: "Water Security & Sanitation",
-    district: "Solapur",
-    estimatedCostLakhs: 310,
-    status: "PUBLISHED",
-    date: "2026-07-18",
-  },
-];
-
 export default function RequirementsPage() {
   const { data: envelope, isLoading } = useApiQuery<any>(
     ["csr-requirements"],
     "/csr-requirements"
   );
 
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [search, setSearch] = useState("");
   const [filterDistrict, setFilterDistrict] = useState("ALL");
 
-  const rawReqs = envelope?.data?.requirements || envelope?.data || envelope?.requirements || (Array.isArray(envelope) ? envelope : []);
+  const rawReqs: any[] = Array.isArray(envelope)
+    ? envelope
+    : Array.isArray(envelope?.data)
+    ? envelope.data
+    : Array.isArray(envelope?.data?.requirements)
+    ? envelope.data.requirements
+    : Array.isArray(envelope?.requirements)
+    ? envelope.requirements
+    : [];
 
-  const reqsList: Requirement[] = rawReqs.length > 0 ? rawReqs.map((r: any) => ({
+  const reqsList: Requirement[] = rawReqs.map((r: any) => ({
     id: r.id,
-    refId: r.refId || `REQ-${r.id.slice(0, 6)}`,
+    refId: r.refId || `REQ-${r.id ? r.id.slice(0, 6) : "001"}`,
     title: r.title || r.projectName || "Department CSR Requirement",
     category: r.category || r.sector || "General Healthcare",
-    district: r.district || "Maharashtra District",
-    estimatedCostLakhs: r.estimatedCost ? Math.round(Number(r.estimatedCost) / 100000) : 150,
+    district: r.district || "Maharashtra",
+    estimatedCostLakhs: r.estimatedCost ? Math.round(Number(r.estimatedCost) / 100000) : 0,
     status: r.status || "PUBLISHED",
-    date: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "2026-07-24",
-  })) : mockRequirements;
+    date: r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
+  }));
 
   const filtered = reqsList.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -83,6 +61,8 @@ export default function RequirementsPage() {
     const matchesDist = filterDistrict === "ALL" || item.district === filterDistrict;
     return matchesSearch && matchesDist;
   });
+
+  const uniqueDistricts = Array.from(new Set(reqsList.map(r => r.district).filter(Boolean)));
 
   return (
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-5 px-4 py-6 md:px-8">
@@ -99,7 +79,7 @@ export default function RequirementsPage() {
         }
       />
 
-      {/* 3D Modern Metrics Grid */}
+      {/* Modern Metrics Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <StatCard 
           label="Total Requirements" 
@@ -144,7 +124,7 @@ export default function RequirementsPage() {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <Filter size={16} className="text-slate-400" />
               <select
@@ -153,11 +133,14 @@ export default function RequirementsPage() {
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none"
               >
                 <option value="ALL">All Districts</option>
-                <option value="Gadchiroli">Gadchiroli</option>
-                <option value="Nandurbar">Nandurbar</option>
-                <option value="Solapur">Solapur</option>
+                {uniqueDistricts.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </select>
             </div>
+
+            {/* List / Grid View Toggle Component */}
+            <ViewToggle view={viewMode} onChange={setViewMode} />
 
             <Link
               href="/requirements/create"
@@ -168,51 +151,120 @@ export default function RequirementsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((item, idx) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: idx * 0.05 }}
-              className="group relative rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/40 to-blue-50/20 p-5 shadow-sm hover:shadow-xl transition-all duration-300 transform-gpu hover:-translate-y-1.5"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-md font-mono">{item.refId}</span>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  item.status === "PUBLISHED" || item.status === "APPROVED"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-amber-100 text-amber-800"
-                }`}>
-                  {item.status}
-                </span>
-              </div>
-
-              <h3 className="mt-3 text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2">
-                {item.title}
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
-                <MapPin size={13} className="text-blue-600" /> District: {item.district}
-              </p>
-              <span className="mt-2 inline-block text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
-                {item.category}
-              </span>
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+        {/* Content View */}
+        {isLoading ? (
+          <div className="py-12 flex justify-center">
+            <Loader label="Loading Department Requirements..." />
+          </div>
+        ) : reqsList.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-12 text-center shadow-xs">
+            <FileText className="mx-auto text-slate-300 mb-3" size={48} />
+            <h3 className="text-base font-bold text-slate-800">No Requirements Found</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              There are currently no departmental CSR requirements in the database.
+            </p>
+          </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((item, idx) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                className="group relative rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/40 to-blue-50/20 p-5 shadow-sm hover:shadow-xl transition-all duration-300 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between"
+              >
                 <div>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Cost Estimate</span>
-                  <p className="text-sm font-extrabold text-blue-900 font-heading">₹{item.estimatedCostLakhs} Lakhs</p>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-blue-900 bg-blue-100 px-2.5 py-0.5 rounded-md font-mono">{item.refId}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      item.status === "PUBLISHED" || item.status === "APPROVED"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-3 text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
+                    <MapPin size={13} className="text-blue-600" /> District: {item.district}
+                  </p>
+                  <span className="mt-2 inline-block text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                    {item.category}
+                  </span>
                 </div>
-                <Link
-                  href="/convergence-projects"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 transition-colors"
-                >
-                  View Details <ArrowUpRight size={14} />
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Cost Estimate</span>
+                    <p className="text-sm font-extrabold text-blue-900 font-heading">₹{item.estimatedCostLakhs} Lakhs</p>
+                  </div>
+                  <Link
+                    href="/convergence-projects"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 transition-colors"
+                  >
+                    View Details <ArrowUpRight size={14} />
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs overflow-x-auto">
+            <table className="gov-table w-full text-xs">
+              <thead>
+                <tr>
+                  <th>Ref ID</th>
+                  <th>Requirement Title</th>
+                  <th>Sector / Category</th>
+                  <th>District</th>
+                  <th>Estimated Cost</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length > 0 ? (
+                  filtered.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="font-mono font-bold text-blue-900">{item.refId}</td>
+                      <td className="font-bold text-slate-900 max-w-xs truncate">{item.title}</td>
+                      <td className="text-slate-600 font-medium">{item.category}</td>
+                      <td className="text-slate-700">{item.district}</td>
+                      <td className="font-extrabold text-blue-950">₹{item.estimatedCostLakhs} Lakhs</td>
+                      <td>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          item.status === "PUBLISHED" || item.status === "APPROVED"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="text-right">
+                        <Link
+                          href="/convergence-projects"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          View Details <ArrowUpRight size={13} />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="text-center py-8 text-slate-500 font-medium">
+                      No requirements match your search criteria
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

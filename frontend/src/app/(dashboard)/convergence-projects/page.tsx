@@ -1,27 +1,20 @@
-// Convergence Projects List Page
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { 
-  Layers, Search, Filter, Eye, Plus, Download, MapPin, Building2, Calendar, ChevronRight, ArrowUpRight, Loader2
-} from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useApiQuery } from "@/lib/apiHooks";
-
-// New UI Components
-import { DashboardLayout } from "@/components/layout";
-import { PageHeader } from "@/components/layout";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { DataTable, Column } from "@/components/ui/DataTable";
-import { QuickFilterChips } from "@/components/ui/FilterBar";
-
-const sidebarItems = [
-  { label: "Projects", href: "/convergence-projects", icon: Layers },
-];
+import GovPortalLayout from "@/components/layout/GovPortalLayout";
+import GovPageHeader from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import GovStatusBadge from "@/components/gov/GovStatusBadge";
+import { Loader } from "@/components/ui/Loader";
+import { 
+  Layers, Search, MapPin, Building2, Coins, CheckCircle2, Eye, FileText, ArrowUpRight
+} from "lucide-react";
 
 interface Project {
   id: string;
@@ -41,105 +34,11 @@ interface Project {
 }
 
 const statusOptions = [
-  { label: "All", value: "", count: 156 },
-  { label: "Not Started", value: "NOT_STARTED", count: 12 },
-  { label: "In Progress", value: "IN_PROGRESS", count: 89 },
-  { label: "Completed", value: "COMPLETED", count: 45 },
-  { label: "On Hold", value: "ON_HOLD", count: 10 },
-];
-
-const getStatusVariant = (status: string) => {
-  const map: Record<string, "primary" | "success" | "warning" | "danger" | "info" | "muted"> = {
-    NOT_STARTED: "muted",
-    IN_PROGRESS: "info",
-    COMPLETED: "success",
-    ON_HOLD: "warning",
-    DELAYED: "danger",
-  };
-  return map[status] || "muted";
-};
-
-const DEFAULT_PROJECTS: Project[] = [
-  {
-    id: "1",
-    projectId: "PRJ-2026-0045",
-    title: "Digital Classroom Infrastructure",
-    company: "PugArch Technologies Pvt Ltd",
-    implementingAgency: "Education First Trust",
-    department: "Education Department",
-    district: "Thane",
-    sector: "Education",
-    budget: 5000000,
-    spent: 3200000,
-    startDate: "2026-01-15",
-    endDate: "2026-12-31",
-    status: "IN_PROGRESS",
-    progress: 65,
-  },
-  {
-    id: "2",
-    projectId: "PRJ-2026-0044",
-    title: "Primary Health Center Renovation",
-    company: "Healthcare Plus",
-    implementingAgency: "Health Serve Foundation",
-    department: "Health Department",
-    district: "Pune",
-    sector: "Health",
-    budget: 8000000,
-    spent: 6800000,
-    startDate: "2025-06-01",
-    endDate: "2026-06-30",
-    status: "IN_PROGRESS",
-    progress: 85,
-  },
-  {
-    id: "3",
-    projectId: "PRJ-2026-0043",
-    title: "Tree Plantation Drive Phase 2",
-    company: "Green Energy Corp",
-    implementingAgency: "Green Earth Foundation",
-    department: "Environment Department",
-    district: "Nashik",
-    sector: "Environment",
-    budget: 2500000,
-    spent: 2500000,
-    startDate: "2025-07-01",
-    endDate: "2026-06-30",
-    status: "COMPLETED",
-    progress: 100,
-  },
-  {
-    id: "4",
-    projectId: "PRJ-2026-0042",
-    title: "Women Skill Training Center",
-    company: "Finance First Ltd",
-    implementingAgency: "Rural Development Trust",
-    department: "Rural Development",
-    district: "Aurangabad",
-    sector: "Livelihood",
-    budget: 3500000,
-    spent: 800000,
-    startDate: "2026-04-01",
-    endDate: "2026-12-31",
-    status: "IN_PROGRESS",
-    progress: 25,
-  },
-  {
-    id: "5",
-    projectId: "PRJ-2026-0041",
-    title: "Road Infrastructure Improvement",
-    company: "Infrastructure Developers Ltd",
-    implementingAgency: "Build Right NGO",
-    department: "PWD",
-    district: "Nagpur",
-    sector: "Infrastructure",
-    budget: 15000000,
-    spent: 0,
-    startDate: "2026-08-01",
-    endDate: "2027-03-31",
-    status: "NOT_STARTED",
-    progress: 0,
-  },
+  { label: "All", value: "" },
+  { label: "In Progress", value: "IN_PROGRESS" },
+  { label: "Completed", value: "COMPLETED" },
+  { label: "Not Started", value: "NOT_STARTED" },
+  { label: "On Hold", value: "ON_HOLD" },
 ];
 
 export default function ProjectsPage() {
@@ -159,217 +58,299 @@ export default function ProjectsPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-  const rawProjects = apiResponse?.data || apiResponse || [];
+  const rawProjects: any[] = Array.isArray(apiResponse)
+    ? apiResponse
+    : Array.isArray(apiResponse?.data)
+    ? apiResponse.data
+    : Array.isArray(apiResponse?.data?.projects)
+    ? apiResponse.data.projects
+    : Array.isArray(apiResponse?.projects)
+    ? apiResponse.projects
+    : [];
   
-  const items: Project[] = Array.isArray(rawProjects) && rawProjects.length > 0
-    ? rawProjects.map((p: any, index: number) => ({
-        id: p.id || String(index + 1),
-        projectId: p.projectId || `PRJ-2026-00${index + 40}`,
-        title: p.title || p.name || "CSR Convergence Project",
-        company: p.corporateName || p.company || p.organization?.name || "Corporate Partner",
-        implementingAgency: p.implementingAgency || p.agencyName || "State Implementing Trust",
-        department: p.department || "Planning Department",
-        district: p.district || "Maharashtra",
-        sector: p.sector || "CSR Development",
-        budget: p.approvedBudget || p.budget || 5000000,
-        spent: p.utilizedAmount || p.spent || 0,
-        startDate: p.createdAt ? new Date(p.createdAt).toISOString().split("T")[0] : "2026-01-01",
-        endDate: "2026-12-31",
-        status: p.status || "IN_PROGRESS",
-        progress: p.physicalProgressPercent || p.progress || 50,
-      }))
-    : DEFAULT_PROJECTS;
+  const projectsList: Project[] = rawProjects.map((p: any, index: number) => ({
+    id: p.id || String(index + 1),
+    projectId: p.projectId || `PRJ-2026-00${index + 40}`,
+    title: p.title || p.projectName || "CSR Convergence Project",
+    company: p.corporateName || p.company || p.organization?.name || "Corporate Partner",
+    implementingAgency: p.implementingAgency || p.agencyName || "State Implementing Trust",
+    department: p.department || "Planning Department",
+    district: p.district || p.location || "Maharashtra",
+    sector: p.sector || "CSR Development",
+    budget: p.approvedBudget || p.budget || 0,
+    spent: p.utilizedAmount || p.spent || 0,
+    startDate: p.createdAt ? new Date(p.createdAt).toISOString().split("T")[0] : "2026-01-01",
+    endDate: "2026-12-31",
+    status: p.status || "IN_PROGRESS",
+    progress: p.physicalProgressPercent || p.progress || 0,
+  }));
 
-  // Filter projects for Company Admin so ONLY their company's projects are shown
   const scopedProjects = isCompany && companyName
-    ? items.filter((p) => 
+    ? projectsList.filter((p) => 
         p.company.toLowerCase().includes(companyName.toLowerCase()) || 
         companyName.toLowerCase().includes(p.company.toLowerCase())
       )
-    : items;
+    : projectsList;
 
-  // Fallback: If scoped projects list is empty for Company Admin, show primary corporate project
-  const displayProjects = (isCompany && scopedProjects.length === 0)
-    ? items.map(p => ({ ...p, company: companyName || p.company }))
-    : scopedProjects;
-
-  const filteredProjects = displayProjects.filter((project) => {
+  const filteredProjects = scopedProjects.filter((project) => {
     const matchesSearch = 
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.implementingAgency.toLowerCase().includes(searchQuery.toLowerCase());
+      project.implementingAgency.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.district.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter ? project.status === statusFilter : true;
     
     return matchesSearch && matchesStatus;
   });
 
-  const columns: Column<Project>[] = [
-    {
-      key: "projectId",
-      header: "Project ID",
-      render: (row) => (
-        <Link 
-          href={`/convergence-projects/${row.id}`}
-          className="font-mono font-bold text-blue-900 hover:text-blue-700 underline underline-offset-2"
-        >
-          {row.projectId}
-        </Link>
-      ),
-    },
-    {
-      key: "title",
-      header: "Project Title",
-      render: (row) => (
-        <div>
-          <div className="font-bold text-slate-900">{row.title}</div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5 font-medium">
-            <Building2 size={12} className="text-blue-700" />
-            {row.company}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "implementingAgency",
-      header: "Implementing Agency",
-      render: (row) => (
-        <span className="text-xs font-semibold text-slate-700">{row.implementingAgency}</span>
-      ),
-    },
-    {
-      key: "district",
-      header: "Location",
-      render: (row) => (
-        <div className="flex items-center gap-1 text-xs font-semibold text-slate-600">
-          <MapPin size={12} className="text-indigo-600" />
-          {row.district}
-        </div>
-      ),
-    },
-    {
-      key: "sector",
-      header: "Sector",
-      render: (row) => (
-        <Badge variant="info" size="sm">
-          {row.sector}
-        </Badge>
-      ),
-    },
-    {
-      key: "progress",
-      header: "Progress",
-      render: (row) => (
-        <div className="w-full max-w-[100px]">
-          <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-            <span className="text-slate-600">{row.progress}%</span>
-          </div>
-          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <div 
-              className={`h-full rounded-full ${
-                row.progress === 100 ? "bg-emerald-500" : 
-                row.progress > 50 ? "bg-blue-600" : "bg-amber-500"
-              }`}
-              style={{ width: `${row.progress}%` }}
-            />
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "budget",
-      header: "Outlay (₹)",
-      align: "right",
-      render: (row) => (
-        <div className="text-right font-mono">
-          <div className="font-bold text-slate-900">
-            ₹{(row.budget / 100000).toFixed(1)}L
-          </div>
-          <div className="text-[10px] text-slate-500">
-            {((row.spent / row.budget) * 100).toFixed(0)}% spent
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (row) => (
-        <Badge variant={getStatusVariant(row.status)}>
-          {row.status.replace(/_/g, " ")}
-        </Badge>
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      align: "right",
-      render: (row) => (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.push(`/convergence-projects/${row.id}`)}
-          className="font-bold text-blue-900 border-blue-200 hover:bg-blue-50"
-        >
-          <Eye size={14} className="mr-1.5" />
-          View Details
-        </Button>
-      ),
-    },
-  ];
+  const totalOutlay = scopedProjects.reduce((acc, p) => acc + p.budget, 0);
+  const formattedOutlay = totalOutlay >= 10000000 
+    ? `₹${(totalOutlay / 10000000).toFixed(2)} Cr` 
+    : totalOutlay > 0 
+    ? `₹${(totalOutlay / 100000).toFixed(1)} Lakhs` 
+    : "₹0.0 Cr";
+
+  const completedCount = scopedProjects.filter(p => p.status === "COMPLETED").length;
 
   return (
-    <DashboardLayout
-      userRole={isCompany ? "Company Admin" : "Portal User"}
-      userName={(user as any)?.name || "User"}
-      userEmail={user?.email || "user@maharashtra.gov.in"}
-      sidebarItems={sidebarItems}
-    >
-      <PageHeader
+    <GovPortalLayout>
+      <GovPageHeader
         title={isCompany ? `${companyName || "Corporate"} Funded Projects` : "Convergence Projects Register"}
-        description={isCompany ? "Manage and monitor your company's active CSR convergence projects, milestones, and fund utilization." : "Track and manage CSR convergence projects across Maharashtra"}
-        breadcrumbs={[{ label: "Projects" }]}
+        description={isCompany ? "Manage and monitor your company's active CSR convergence projects, milestones, and fund utilization." : "Track and manage CSR convergence projects across Maharashtra."}
+        breadcrumb="Home / Convergence Projects"
       />
 
-      <div className="space-y-4">
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
-          <div className="relative w-full sm:w-80">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-9 pr-4 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
-            />
-          </div>
-
-          <QuickFilterChips
-            options={statusOptions}
-            selected={statusFilter}
-            onChange={setStatusFilter}
+      <div className="space-y-6">
+        {/* KPI Metrics */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            label="Total Projects"
+            value={scopedProjects.length}
+            icon={Layers}
+            index={0}
+            colorTheme="purple"
+            badge="Convergence"
+            sublabel="Empaneled CSR Projects"
+          />
+          <StatCard
+            label="Total Outlay Budget"
+            value={formattedOutlay}
+            icon={Coins}
+            index={1}
+            colorTheme="amber"
+            badge="Pledged Budget"
+            sublabel="Statewide CSR Outlay"
+          />
+          <StatCard
+            label="Completed Projects"
+            value={completedCount}
+            icon={CheckCircle2}
+            index={2}
+            colorTheme="emerald"
+            badge="100% Physical Progress"
+            sublabel="Milestones Verified"
           />
         </div>
 
-        {/* Data Table */}
+        {/* Controls & Filter Bar */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative max-w-md w-full">
+            <Search className="absolute left-3.5 top-3 text-slate-400" size={15} />
+            <input
+              type="text"
+              placeholder="Search project title, ID, corporate, or district..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs font-medium text-slate-800 focus:bg-white focus:border-blue-600 focus:outline-none transition-all placeholder-slate-400"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Quick Status Filters */}
+            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60 overflow-x-auto">
+              {statusOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setStatusFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    statusFilter === opt.value
+                      ? "bg-white text-blue-900 shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            <span className="text-xs font-bold text-slate-500">{filteredProjects.length} Projects</span>
+            <ViewToggle view={viewMode} onChange={setViewMode} />
+          </div>
+        </div>
+
+        {/* Content View */}
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500 bg-white rounded-2xl border border-slate-200">
-            <Loader2 size={28} className="animate-spin text-blue-900" />
-            <p className="text-xs font-bold">Loading Projects…</p>
+          <div className="py-12 flex justify-center">
+            <Loader label="Loading Convergence Projects from Database..." />
+          </div>
+        ) : scopedProjects.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-12 text-center shadow-xs">
+            <FileText className="mx-auto text-slate-300 mb-3" size={48} />
+            <h3 className="text-base font-bold text-slate-800">No Convergence Projects Recorded</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              There are currently no active CSR convergence projects in the database.
+            </p>
+          </div>
+        ) : viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredProjects.map((p, idx) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: idx * 0.03 }}
+                className="group relative rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-blue-50/20 p-5 shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between gap-4 overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600" />
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] font-bold text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-md">
+                      {p.projectId}
+                    </span>
+                    <GovStatusBadge variant={p.status === "COMPLETED" ? "success" : p.status === "IN_PROGRESS" ? "info" : "warning"}>
+                      {p.status.replace(/_/g, " ")}
+                    </GovStatusBadge>
+                  </div>
+                  <h3 className="mt-3 font-extrabold text-sm text-slate-900 group-hover:text-blue-950 transition-colors line-clamp-2">
+                    {p.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
+                    <Building2 size={13} className="text-blue-600" /> {p.company}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1">
+                    <MapPin size={13} className="text-slate-400" /> Location: {p.district}
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-3 border-t border-slate-100 text-xs">
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span className="text-slate-500">Physical Progress</span>
+                      <span className="text-blue-900">{p.progress}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${p.progress === 100 ? "bg-emerald-500" : "bg-blue-600"}`}
+                        style={{ width: `${p.progress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="font-extrabold text-blue-950">₹{(p.budget / 100000).toFixed(1)} Lakhs</span>
+                    <Link
+                      href={`/convergence-projects/${p.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Eye size={14} /> View Details
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         ) : (
-          <Card className="p-0 overflow-hidden border border-slate-200/80">
-            <DataTable
-              columns={columns}
-              data={filteredProjects}
-              keyExtractor={(item) => item.id}
-            />
-          </Card>
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs overflow-x-auto">
+            <table className="gov-table w-full text-xs">
+              <thead>
+                <tr>
+                  <th>Project ID</th>
+                  <th>Project Title & Sponsor</th>
+                  <th>Implementing Agency</th>
+                  <th>Location</th>
+                  <th>Sector</th>
+                  <th>Progress</th>
+                  <th>Outlay (₹)</th>
+                  <th>Status</th>
+                  <th className="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProjects.length > 0 ? (
+                  filteredProjects.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="font-mono font-bold text-blue-900">
+                        <Link href={`/convergence-projects/${p.id}`} className="hover:underline">
+                          {p.projectId}
+                        </Link>
+                      </td>
+                      <td>
+                        <div className="font-bold text-slate-900">{p.title}</div>
+                        <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                          <Building2 size={11} className="text-blue-700" /> {p.company}
+                        </div>
+                      </td>
+                      <td className="text-slate-700 font-semibold">{p.implementingAgency}</td>
+                      <td>
+                        <span className="flex items-center gap-1 text-slate-700 font-medium">
+                          <MapPin size={12} className="text-indigo-600" /> {p.district}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-semibold">
+                          {p.sector}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="w-24">
+                          <div className="text-[10px] font-bold text-slate-700 mb-0.5">{p.progress}%</div>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${p.progress === 100 ? "bg-emerald-500" : "bg-blue-600"}`}
+                              style={{ width: `${p.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="font-extrabold text-blue-950 font-mono">₹{(p.budget / 100000).toFixed(1)}L</div>
+                        <div className="text-[10px] text-slate-400 font-medium">
+                          {p.budget > 0 ? ((p.spent / p.budget) * 100).toFixed(0) : 0}% spent
+                        </div>
+                      </td>
+                      <td>
+                        <GovStatusBadge variant={p.status === "COMPLETED" ? "success" : p.status === "IN_PROGRESS" ? "info" : "warning"}>
+                          {p.status.replace(/_/g, " ")}
+                        </GovStatusBadge>
+                      </td>
+                      <td className="text-center">
+                        <Link
+                          href={`/convergence-projects/${p.id}`}
+                          className="inline-flex items-center justify-center p-1.5 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                          title="View Details"
+                        >
+                          <Eye size={15} />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="text-center py-8 text-slate-500 font-medium">
+                      No convergence projects match your search criteria
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
-    </DashboardLayout>
+    </GovPortalLayout>
   );
 }

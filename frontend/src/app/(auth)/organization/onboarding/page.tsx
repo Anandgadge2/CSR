@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { OrganizationOnboardingWorkspace } from "@/components/admin/PlatformAdminWorkspaces";
 import { apiFetch, getStoredUser } from "@/lib/api";
 
@@ -12,7 +11,6 @@ type OrganizationStatus = {
 
 export default function OrganizationOnboardingPage() {
   const router = useRouter();
-  const [showGenericWorkspace, setShowGenericWorkspace] = useState(false);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -40,20 +38,11 @@ export default function OrganizationOnboardingPage() {
 
     apiFetch<OrganizationStatus>("/onboarding/status")
       .then((organization) => {
-        if (!routeByType(organization?.organizationType)) {
-          setShowGenericWorkspace(true);
-        }
+        routeByType(organization?.organizationType);
       })
-      .catch(() => setShowGenericWorkspace(true));
+      .catch(() => {});
   }, [router]);
 
-  if (showGenericWorkspace) return <OrganizationOnboardingWorkspace />;
-
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-6 text-sm text-gov-muted md:px-8">
-      <div className="border border-gov-line bg-white p-8 shadow-sm">
-        <Loader2 className="mr-2 inline animate-spin" size={16} /> Loading organization onboarding...
-      </div>
-    </section>
-  );
+  return <OrganizationOnboardingWorkspace />;
 }
+

@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { notFoundResponse } from "../utils/apiResponse";
 import { selectLeastLoadedRm } from "../services/rmAssignmentService";
 import { ROLE_ID } from "../types/role";
+import { notifyHierarchy } from "../services/hierarchyNotificationService";
 
 export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -52,6 +53,18 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       }
     });
 
+    await notifyHierarchy({
+      title: "New Corporate Enquiry Submitted",
+      message: `Corporate enquiry ${enquiry.trackingId} submitted by "${enquiry.corporateName}".`,
+      organizationId: enquiry.organizationId,
+      assignedRmId: enquiry.assignedRelationshipManagerId,
+      district: preferredDistrict,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeDistrictOfficers: true,
+      actionButtonUrl: `/corporate-enquiry/${enquiry.trackingId}`
+    });
+
     return res.status(201).json({
       ...enquiry,
       documents,
@@ -92,6 +105,16 @@ export const assignRelationshipManager = async (req: AuthenticatedRequest, res: 
       where: { id: req.params.id },
       data: { assignedRelationshipManagerId: req.body.relationshipManagerId }
     });
+
+    await notifyHierarchy({
+      title: "Relationship Manager Assigned",
+      message: `Relationship Manager assigned to Corporate Enquiry ${updated.trackingId}.`,
+      assignedRmId: req.body.relationshipManagerId,
+      organizationId: updated.organizationId,
+      includePortalAdmins: true,
+      actionButtonUrl: `/corporate-enquiry/${updated.trackingId}`
+    });
+
     return res.json(updated);
   } catch (error) {
     next(error);

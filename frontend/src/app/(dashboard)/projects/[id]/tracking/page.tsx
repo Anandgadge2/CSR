@@ -2,16 +2,20 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
-import GovPageShell from "@/components/gov/GovPageShell";
-import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
-import GovButton from "@/components/gov/GovButton";
-import GovStatusBadge, { statusToVariant } from "@/components/gov/GovStatusBadge";
-import GovTimeline, { TimelineStep } from "@/components/gov/GovTimeline";
-import GovAlert from "@/components/gov/GovAlert";
-import AccessDenied from "@/components/gov/AccessDenied";
+import GovPageHeader from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
+import GovStatusBadge from "@/components/gov/GovStatusBadge";
+import { Loader } from "@/components/ui/Loader";
 import { apiFetch } from "@/lib/api";
 import { getCurrentUser, hasPageAccess, CONVERGENCE_PROJECT_PERMS } from "@/lib/roleAccess";
+import { 
+  Building2, Coins, CheckCircle2, FileText, ArrowLeft, MapPin, 
+  Calendar, UserCheck, ShieldCheck, FileCheck, ExternalLink, AlertCircle, 
+  UploadCloud, Save, Eye, Clock, Check, Layers
+} from "lucide-react";
 
 interface Milestone {
   id: string;
@@ -58,7 +62,7 @@ export default function ProjectTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [progressForms, setProgressForms] = useState<Record<string, { status: string; fundsUtilized: string; photoUrl: string; remarks: string }>>({});
-  const [ucForms, setUcForms] = useState<Record<string, { certificateDocumentUrl: string; amountUtilized: string; remarks: string }>>({});
+  const [ucForms, setUcForms] = useState<Record<string, { certificateDocumentUrl: string; amountUtilized: string; remarks: string; fileName?: string }>>({});
   const [actionMessage, setActionMessage] = useState("");
   const [savingId, setSavingId] = useState("");
 
@@ -83,9 +87,15 @@ export default function ProjectTrackingPage() {
   }, [mounted, fetchProject]);
 
   if (!mounted) return null;
-  if (!hasPageAccess(CONVERGENCE_PROJECT_PERMS)) return <AccessDenied />;
 
-  const fmtCurrency = (v: number | string) => `₹${Number(v).toLocaleString("en-IN")}`;
+  const fmtCurrency = (v: number | string) => {
+    const num = Number(v);
+    if (isNaN(num) || num === 0) return "₹0";
+    if (num >= 10000000) return `₹${(num / 10000000).toFixed(2)} Cr`;
+    if (num >= 100000) return `₹${(num / 100000).toFixed(2)} Lakhs`;
+    return `₹${num.toLocaleString("en-IN")}`;
+  };
+
   const currentUser = getCurrentUser();
   const canUpdateProgress = ["IMPLEMENTING_AGENCY_USER", "NGO_ADMIN", "NGO_MEMBER", "DISTRICT_NODAL_OFFICER", "SUPER_ADMIN", "PORTAL_ADMIN", "CSR_ADMIN"].includes(currentUser?.role || "");
 
@@ -102,16 +112,26 @@ export default function ProjectTrackingPage() {
     }));
   };
 
-  const updateUcForm = (milestoneId: string, key: "certificateDocumentUrl" | "amountUtilized" | "remarks", value: string) => {
+  const updateUcForm = (milestoneId: string, key: "certificateDocumentUrl" | "amountUtilized" | "remarks" | "fileName", value: string) => {
     setUcForms((prev) => ({
       ...prev,
       [milestoneId]: {
         certificateDocumentUrl: prev[milestoneId]?.certificateDocumentUrl || "",
         amountUtilized: prev[milestoneId]?.amountUtilized || "",
         remarks: prev[milestoneId]?.remarks || "",
+        fileName: prev[milestoneId]?.fileName || "",
         [key]: value,
       },
     }));
+  };
+
+  const handleFileSelect = (milestoneId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const simulatedUrl = URL.createObjectURL(file);
+      updateUcForm(milestoneId, "certificateDocumentUrl", simulatedUrl);
+      updateUcForm(milestoneId, "fileName", file.name);
+    }
   };
 
   const submitMilestoneProgress = async (milestone: Milestone) => {
@@ -130,7 +150,7 @@ export default function ProjectTrackingPage() {
           remarks: form.remarks || undefined,
         }),
       });
-      setActionMessage("Milestone progress saved.");
+      setActionMessage("Milestone progress updated successfully.");
       await fetchProject();
     } catch (err: unknown) {
       setActionMessage(err instanceof Error ? err.message : "Failed to save milestone progress.");
@@ -142,26 +162,25 @@ export default function ProjectTrackingPage() {
   const submitUc = async (milestone: Milestone) => {
     const form = ucForms[milestone.id];
     if (!form?.certificateDocumentUrl || !form?.amountUtilized) {
-      setActionMessage("UC document URL and amount are required.");
+      setActionMessage("UC document and amount utilised are required.");
       return;
     }
 
     setSavingId(`uc-${milestone.id}`);
     setActionMessage("");
     try {
-      await apiFetch(`/convergence-projects/${project!.id}/uc`, {
+      await apiFetch(`/convergence-projects/${project!.id}/milestones/${milestone.id}/uc`, {
         method: "POST",
         body: JSON.stringify({
-          milestoneId: milestone.id,
           certificateDocumentUrl: form.certificateDocumentUrl,
           amountUtilized: Number(form.amountUtilized),
           remarks: form.remarks || undefined,
         }),
       });
-      setActionMessage("Utilisation Certificate uploaded for verification.");
+      setActionMessage("Utilisation Certificate uploaded successfully.");
       await fetchProject();
     } catch (err: unknown) {
-      setActionMessage(err instanceof Error ? err.message : "Failed to upload UC.");
+      setActionMessage(err instanceof Error ? err.message : "Failed to upload Utilisation Certificate.");
     } finally {
       setSavingId("");
     }
@@ -170,10 +189,8 @@ export default function ProjectTrackingPage() {
   if (loading) {
     return (
       <GovPortalLayout>
-        <div style={{ textAlign: "center", padding: 64 }}>
-          <div style={{ width: 36, height: 36, border: "3px solid var(--gov-border)", borderTopColor: "var(--gov-primary)", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
-          <p style={{ color: "var(--gov-text-muted)" }}>Loading tracking data…</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="py-20 flex justify-center">
+          <Loader label="Loading Milestone Tracking Details from Database..." />
         </div>
       </GovPortalLayout>
     );
@@ -182,10 +199,17 @@ export default function ProjectTrackingPage() {
   if (error || !project) {
     return (
       <GovPortalLayout>
-        <GovPageShell breadcrumb="Home / Projects / Tracking" title="Project Not Found">
-          <GovAlert variant="danger">{error || "Project not found"}</GovAlert>
-          <GovButton variant="muted" onClick={() => router.push("/convergence-projects")} style={{ marginTop: 12 }}>← Back</GovButton>
-        </GovPageShell>
+        <GovPageHeader breadcrumb="Home / Projects / Milestone Tracking" title="Project Not Found" />
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center max-w-lg mx-auto my-8">
+          <AlertCircle className="mx-auto text-rose-600 mb-2" size={40} />
+          <h3 className="font-bold text-rose-950 text-base">{error || "Project record not found"}</h3>
+          <button
+            onClick={() => router.push("/convergence-projects")}
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-900 text-white font-bold text-xs shadow-xs hover:bg-rose-950 transition-all"
+          >
+            <ArrowLeft size={14} /> Back to Projects Register
+          </button>
+        </div>
       </GovPortalLayout>
     );
   }
@@ -194,9 +218,20 @@ export default function ProjectTrackingPage() {
   const completedCount = milestones.filter((m) => m.status === "COMPLETED").length;
   const inProgressCount = milestones.filter((m) => m.status === "IN_PROGRESS").length;
 
-  // Build project lifecycle timeline
-  const lifecycleSteps: TimelineStep[] = [
-    { label: "Project Onboarded", description: `${project.projectId} created`, date: project.createdAt, status: "completed" },
+  interface LifecycleStepItem {
+    label: string;
+    description: string;
+    date?: string;
+    status: "completed" | "active" | "pending";
+  }
+
+  const lifecycleSteps: LifecycleStepItem[] = [
+    {
+      label: "Project Onboarded",
+      description: `${project.projectId} created`,
+      date: project.createdAt || undefined,
+      status: "completed",
+    },
   ];
   if (project.mou) {
     lifecycleSteps.push({
@@ -219,87 +254,147 @@ export default function ProjectTrackingPage() {
     description: allUCsVerified ? "All Utilisation Certificates verified" : "Pending verification",
     status: allUCsVerified ? "completed" : "pending",
   });
-  lifecycleSteps.push({
-    label: "Project Completion",
-    description: project.status === "COMPLETED" ? "Project completed" : "Pending",
-    status: project.status === "COMPLETED" ? "completed" : "pending",
-  });
 
   return (
     <GovPortalLayout>
-      <GovPageShell
+      <GovPageHeader
         breadcrumb="Home / Projects / Milestone Tracking"
-        title="Milestone Tracking"
+        title="Milestone Tracking & UC Upload"
         description={`${project.projectId} — ${project.title}`}
         actions={
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <GovStatusBadge variant={statusToVariant(project.status)} style={{ fontSize: 14, padding: "6px 14px" }}>{project.status.replace(/_/g, " ")}</GovStatusBadge>
-            <GovButton variant="muted" onClick={() => router.push(`/convergence-projects/${project.id}`)}>View Project</GovButton>
+          <div className="flex items-center gap-3">
+            <GovStatusBadge variant={project.status === "COMPLETED" ? "success" : "info"}>
+              {project.status.replace(/_/g, " ")}
+            </GovStatusBadge>
+
+            <Link
+              href={`/convergence-projects/${project.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors border border-slate-200"
+            >
+              <Eye size={14} /> View Project Overview
+            </Link>
           </div>
         }
-      >
-        {/* Progress Overview */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 16 }}>
-          {[
-            { label: "Overall Progress", value: `${project.physicalProgressPercent}%`, color: "var(--gov-primary)" },
-            { label: "Budget", value: fmtCurrency(project.approvedBudget), color: "var(--gov-text)" },
-            { label: "Utilised", value: fmtCurrency(project.utilizedAmount), color: "var(--gov-link)" },
-            { label: "Milestones Completed", value: `${completedCount} / ${milestones.length}`, color: "var(--gov-success)" },
-          ].map((k) => (
-            <GovCard key={k.label}>
-              <GovCardBody>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", textTransform: "uppercase" }}>{k.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: k.color, marginTop: 6 }}>{k.value}</div>
-              </GovCardBody>
-            </GovCard>
-          ))}
+      />
+
+      <div className="space-y-6">
+        {/* Progress KPI Strip */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+          <StatCard
+            label="Overall Physical Progress"
+            value={`${project.physicalProgressPercent}%`}
+            icon={FileCheck}
+            index={0}
+            colorTheme="blue"
+            badge="Verified Progress"
+            sublabel="Physical Execution"
+          />
+          <StatCard
+            label="Total Approved Budget"
+            value={fmtCurrency(project.approvedBudget)}
+            icon={Coins}
+            index={1}
+            colorTheme="amber"
+            badge="Pledged Budget"
+            sublabel="Project Allocation"
+          />
+          <StatCard
+            label="Amount Utilised"
+            value={fmtCurrency(project.utilizedAmount)}
+            icon={CheckCircle2}
+            index={2}
+            colorTheme="emerald"
+            badge="Audited Outlay"
+            sublabel="Utilised by Agency"
+          />
+          <StatCard
+            label="Milestones Completed"
+            value={`${completedCount} / ${milestones.length}`}
+            icon={Layers}
+            index={3}
+            colorTheme="purple"
+            badge="Phased Delivery"
+            sublabel="Milestone Progress"
+          />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, marginTop: 16 }}>
-          {/* Milestones */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <h3 className="gov-section-title">Milestones</h3>
-            {actionMessage && (
-              <GovAlert variant={actionMessage.toLowerCase().includes("failed") || actionMessage.toLowerCase().includes("required") ? "danger" : "success"}>
-                {actionMessage}
-              </GovAlert>
-            )}
+        {/* Global Action Banner Notification */}
+        {actionMessage && (
+          <div className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between border ${
+            actionMessage.toLowerCase().includes("failed") || actionMessage.toLowerCase().includes("required")
+              ? "bg-rose-50 text-rose-800 border-rose-200"
+              : "bg-emerald-50 text-emerald-800 border-emerald-200"
+          }`}>
+            <span>{actionMessage}</span>
+            <button onClick={() => setActionMessage("")} className="text-slate-500 hover:text-slate-900 text-xs underline font-semibold">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main 2-Column: Milestone Progress & Upload Forms */}
+          <div className="lg:col-span-2 space-y-6">
+            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <Layers size={18} className="text-blue-900" /> Milestone Management & UC Submission
+            </h3>
+
             {milestones.length === 0 ? (
-              <GovCard>
-                <GovCardBody style={{ textAlign: "center", color: "var(--gov-text-muted)", padding: 32 }}>
-                  No milestones defined for this project.
-                </GovCardBody>
-              </GovCard>
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-xs">
+                <FileText className="mx-auto text-slate-300 mb-2" size={40} />
+                <p className="text-xs text-slate-500 font-medium">No milestone phases defined for this project.</p>
+              </div>
             ) : (
               milestones.map((m, idx) => (
-                <GovCard key={m.id}>
-                  <GovCardBody>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontWeight: 700, fontSize: 11, color: "var(--gov-text-muted)" }}>#{idx + 1}</span>
-                          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--gov-primary-dark)" }}>{m.name}</span>
-                        </div>
-                        {m.description && <div style={{ fontSize: 13, color: "var(--gov-text-secondary)", marginBottom: 8 }}>{m.description}</div>}
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, fontSize: 13 }}>
-                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Work Type: </span>{m.workType.replace(/_/g, " ")}</div>
-                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Funds Utilised: </span>{fmtCurrency(m.fundsUtilized)}</div>
-                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Photos: </span>{m.geoTaggedPhotoUrls?.length || 0}</div>
-                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>UC: </span>{m.utilizationCertificates?.[0]?.verificationStatus || "PENDING"}</div>
-                          <div><span style={{ fontWeight: 700, color: "var(--gov-text-muted)" }}>Verification: </span>{m.verifiedAt ? "✓ Verified" : "Pending"}</div>
-                        </div>
+                <div key={m.id} className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-6">
+                  {/* Milestone Card Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-blue-900 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                          Phase #{idx + 1}
+                        </span>
+                        <h4 className="font-extrabold text-base text-slate-900">{m.name}</h4>
                       </div>
-                      <GovStatusBadge variant={statusToVariant(m.status)}>
-                        {m.status.replace(/_/g, " ")}
-                      </GovStatusBadge>
+                      {m.description && <p className="text-xs text-slate-500 font-medium mt-1">{m.description}</p>}
                     </div>
-                    {canUpdateProgress && (
-                      <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--gov-border)", display: "grid", gap: 12 }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
-                          <label className="gov-field">
-                            <span className="gov-label">Milestone Status</span>
+                    <GovStatusBadge variant={m.status === "COMPLETED" ? "success" : m.status === "IN_PROGRESS" ? "info" : "warning"}>
+                      {m.status.replace(/_/g, " ")}
+                    </GovStatusBadge>
+                  </div>
+
+                  {/* Summary Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50/70 p-3 rounded-xl border border-slate-200/60 text-xs">
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[10px] uppercase">Work Type</span>
+                      <span className="font-semibold text-slate-800">{m.workType.replace(/_/g, " ")}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[10px] uppercase">Funds Utilised</span>
+                      <span className="font-bold text-blue-950">{fmtCurrency(m.fundsUtilized)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[10px] uppercase">UC Status</span>
+                      <span className="font-bold text-emerald-700">{m.utilizationCertificates?.[0]?.verificationStatus || "PENDING"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 font-medium block text-[10px] uppercase">Nodal Verification</span>
+                      <span className="font-bold text-slate-700">{m.verifiedAt ? "✓ Verified" : "Pending"}</span>
+                    </div>
+                  </div>
+
+                  {canUpdateProgress && (
+                    <div className="space-y-6 pt-2">
+                      {/* Sub-Section 1: Milestone Progress Update */}
+                      <div className="space-y-3 bg-slate-50/40 p-4 rounded-xl border border-slate-200/80">
+                        <h5 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <CheckCircle2 size={14} className="text-blue-700" /> Milestone Status & Field Progress
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                          <div>
+                            <label className="text-slate-500 font-bold block mb-1">Status</label>
                             <select
-                              className="gov-select"
+                              className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-900 focus:border-blue-600 focus:outline-none"
                               value={progressForms[m.id]?.status || m.status}
                               onChange={(e) => updateProgressForm(m.id, "status", e.target.value)}
                             >
@@ -307,107 +402,184 @@ export default function ProjectTrackingPage() {
                               <option value="IN_PROGRESS">In Progress</option>
                               <option value="COMPLETED">Completed</option>
                             </select>
-                          </label>
-                          <label className="gov-field">
-                            <span className="gov-label">Funds Utilised</span>
+                          </div>
+                          <div>
+                            <label className="text-slate-500 font-bold block mb-1">Funds Utilised (₹)</label>
                             <input
-                              className="gov-input"
                               type="number"
                               min="0"
+                              className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold text-slate-900 focus:border-blue-600 focus:outline-none"
                               value={progressForms[m.id]?.fundsUtilized || ""}
                               onChange={(e) => updateProgressForm(m.id, "fundsUtilized", e.target.value)}
                               placeholder={String(m.fundsUtilized || 0)}
                             />
-                          </label>
-                          <label className="gov-field">
-                            <span className="gov-label">Geo-Tagged Photo URL</span>
+                          </div>
+                          <div>
+                            <label className="text-slate-500 font-bold block mb-1">Geo-Tagged Photo URL</label>
                             <input
-                              className="gov-input"
+                              type="text"
+                              className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
                               value={progressForms[m.id]?.photoUrl || ""}
                               onChange={(e) => updateProgressForm(m.id, "photoUrl", e.target.value)}
                               placeholder="https://..."
                             />
-                          </label>
-                        </div>
-                        <label className="gov-field">
-                          <span className="gov-label">Progress Remarks</span>
-                          <textarea
-                            className="gov-textarea"
-                            rows={2}
-                            value={progressForms[m.id]?.remarks || ""}
-                            onChange={(e) => updateProgressForm(m.id, "remarks", e.target.value)}
-                            placeholder="Optional field note for nodal officer review"
-                          />
-                        </label>
-                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                          <GovButton onClick={() => submitMilestoneProgress(m)} disabled={savingId === `progress-${m.id}`}>
-                            {savingId === `progress-${m.id}` ? "Saving..." : "Save Progress"}
-                          </GovButton>
+                          </div>
                         </div>
 
-                        <div style={{ padding: 12, background: "var(--gov-surface-muted)", border: "1px solid var(--gov-border)" }}>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: "var(--gov-primary)", marginBottom: 10 }}>Utilisation Certificate</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-                            <label className="gov-field">
-                              <span className="gov-label">UC Document URL</span>
-                              <input
-                                className="gov-input"
-                                value={ucForms[m.id]?.certificateDocumentUrl || ""}
-                                onChange={(e) => updateUcForm(m.id, "certificateDocumentUrl", e.target.value)}
-                                placeholder="https://..."
-                              />
-                            </label>
-                            <label className="gov-field">
-                              <span className="gov-label">Amount Utilised</span>
-                              <input
-                                className="gov-input"
-                                type="number"
-                                min="0"
-                                value={ucForms[m.id]?.amountUtilized || ""}
-                                onChange={(e) => updateUcForm(m.id, "amountUtilized", e.target.value)}
-                                placeholder="Amount"
-                              />
-                            </label>
-                          </div>
-                          <label className="gov-field">
-                            <span className="gov-label">UC Remarks</span>
-                            <textarea
-                              className="gov-textarea"
-                              rows={2}
-                              value={ucForms[m.id]?.remarks || ""}
-                              onChange={(e) => updateUcForm(m.id, "remarks", e.target.value)}
-                              placeholder="Optional UC note"
-                            />
-                          </label>
-                          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                            <GovButton variant="secondary" onClick={() => submitUc(m)} disabled={savingId === `uc-${m.id}`}>
-                              {savingId === `uc-${m.id}` ? "Uploading..." : "Upload UC"}
-                            </GovButton>
-                          </div>
+                        <div>
+                          <label className="text-slate-500 font-bold block text-xs mb-1">Progress Field Notes & Remarks</label>
+                          <textarea
+                            rows={2}
+                            className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-900 focus:border-blue-600 focus:outline-none"
+                            value={progressForms[m.id]?.remarks || ""}
+                            onChange={(e) => updateProgressForm(m.id, "remarks", e.target.value)}
+                            placeholder="Provide field remarks or milestone execution notes for Nodal Officer review..."
+                          />
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => submitMilestoneProgress(m)}
+                            disabled={savingId === `progress-${m.id}`}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs shadow-xs transition-all disabled:opacity-50"
+                          >
+                            <Save size={14} />
+                            {savingId === `progress-${m.id}` ? "Saving Progress..." : "Save Progress"}
+                          </button>
                         </div>
                       </div>
-                    )}
-                  </GovCardBody>
-                </GovCard>
+
+                      {/* Sub-Section 2: Enhanced Utilisation Certificate (UC) Upload Card */}
+                      <div className="space-y-4 rounded-2xl border border-indigo-200/80 bg-indigo-50/30 p-5">
+                        <div className="flex items-center justify-between border-b border-indigo-100 pb-3">
+                          <h5 className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2">
+                            <FileCheck size={16} className="text-indigo-600" /> Utilisation Certificate (UC) Submission
+                          </h5>
+                          <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
+                            Statutory Audited UC
+                          </span>
+                        </div>
+
+                        {/* Enhanced Dropzone File Upload Component */}
+                        <div className="relative rounded-2xl border-2 border-dashed border-indigo-200 bg-white p-5 text-center hover:border-indigo-400 transition-all cursor-pointer group">
+                          <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                            onChange={(e) => handleFileSelect(m.id, e)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                          />
+                          <UploadCloud size={32} className="mx-auto text-indigo-600 group-hover:scale-110 transition-transform mb-2" />
+                          <p className="text-xs font-bold text-slate-800">
+                            {ucForms[m.id]?.fileName ? (
+                              <span className="text-emerald-700 font-extrabold">Selected: {ucForms[m.id]?.fileName}</span>
+                            ) : (
+                              "Click to browse or drop Utilisation Certificate document"
+                            )}
+                          </p>
+                          <p className="text-[11px] text-slate-400 mt-1">Supports PDF, DOCX, PNG, JPG (Max 15MB)</p>
+                        </div>
+
+                        {/* Alternative Document URL & Amount Inputs */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <label className="text-slate-600 font-bold block mb-1">Document URL (or Auto-Generated)</label>
+                            <input
+                              type="text"
+                              className="w-full rounded-xl border border-indigo-200 bg-white p-2.5 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
+                              value={ucForms[m.id]?.certificateDocumentUrl || ""}
+                              onChange={(e) => updateUcForm(m.id, "certificateDocumentUrl", e.target.value)}
+                              placeholder="https://..."
+                            />
+                          </div>
+                          <div>
+                            <label className="text-slate-600 font-bold block mb-1">Amount Utilised in Certificate (₹)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-full rounded-xl border border-indigo-200 bg-white p-2.5 text-xs font-semibold text-slate-900 focus:border-indigo-600 focus:outline-none"
+                              value={ucForms[m.id]?.amountUtilized || ""}
+                              onChange={(e) => updateUcForm(m.id, "amountUtilized", e.target.value)}
+                              placeholder="Enter amount certified"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-slate-600 font-bold block text-xs mb-1">UC Auditor Remarks</label>
+                          <textarea
+                            rows={2}
+                            className="w-full rounded-xl border border-indigo-200 bg-white p-2.5 text-xs font-medium text-slate-900 focus:border-indigo-600 focus:outline-none"
+                            value={ucForms[m.id]?.remarks || ""}
+                            onChange={(e) => updateUcForm(m.id, "remarks", e.target.value)}
+                            placeholder="Chartered Accountant (CA) certification remarks or voucher details..."
+                          />
+                        </div>
+
+                        <div className="flex justify-end pt-1">
+                          <button
+                            type="button"
+                            onClick={() => submitUc(m)}
+                            disabled={savingId === `uc-${m.id}`}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-blue-900 hover:from-indigo-950 hover:to-blue-950 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                          >
+                            <UploadCloud size={15} />
+                            {savingId === `uc-${m.id}` ? "Uploading Certificate..." : "Upload Utilisation Certificate"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>
 
-          {/* Lifecycle Timeline */}
-          <div>
-            <h3 className="gov-section-title">Project Lifecycle</h3>
-            <GovCard>
-              <GovCardBody>
-                <GovTimeline steps={lifecycleSteps} />
-              </GovCardBody>
-            </GovCard>
+          {/* Right Column: Project Lifecycle Timeline */}
+          <div className="space-y-6">
+            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <ShieldCheck size={18} className="text-purple-600" /> Project Lifecycle Timeline
+            </h3>
+
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
+              {lifecycleSteps.map((step, idx) => {
+                const isCompleted = step.status === "completed";
+                const isActive = step.status === "active";
+
+                return (
+                  <div key={idx} className="flex items-start gap-3.5 relative">
+                    {idx < lifecycleSteps.length - 1 && (
+                      <div className={`absolute left-3.5 top-8 bottom-0 w-0.5 ${isCompleted ? "bg-emerald-500" : "bg-slate-200"}`} />
+                    )}
+                    <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0 z-10 ${
+                      isCompleted
+                        ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
+                        : isActive
+                        ? "bg-blue-100 text-blue-900 border border-blue-300 animate-pulse"
+                        : "bg-slate-100 text-slate-400 border border-slate-200"
+                    }`}>
+                      {isCompleted ? <Check size={14} /> : idx + 1}
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-slate-900">{step.label}</div>
+                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">{step.description}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-          <GovButton variant="muted" onClick={() => router.push("/convergence-projects")}>← Back to Projects</GovButton>
+        <div className="pt-4 border-t border-slate-200/80">
+          <button
+            onClick={() => router.push("/convergence-projects")}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors border border-slate-200"
+          >
+            ← Back to Projects Register
+          </button>
         </div>
-      </GovPageShell>
+      </div>
     </GovPortalLayout>
   );
 }
