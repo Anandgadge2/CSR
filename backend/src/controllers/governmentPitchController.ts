@@ -15,6 +15,13 @@ export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
       include: { organization: true }
     });
 
+    // Relationship Managers cannot submit government pitches
+    if (user?.roleId === ROLE_ID.RELATIONSHIP_MANAGER) {
+      return res.status(403).json({
+        error: "Relationship Managers are not allowed to submit government pitches."
+      });
+    }
+
     if (user?.roleId !== ROLE_ID.SUPER_ADMIN && user?.organization?.status !== "ACTIVE") {
       return res.status(403).json({
         error: "Organization onboarding must be completed and approved by Super Admin before submitting pitches."

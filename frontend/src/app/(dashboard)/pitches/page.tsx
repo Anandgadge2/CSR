@@ -5,9 +5,12 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { 
   Compass, Plus, Search, Filter, Landmark, MapPin, Coins, ArrowUpRight, CheckCircle2, Clock
 } from "lucide-react";
+
+import { useAuthStore } from "@/store/authStore";
 
 interface Pitch {
   id: string;
@@ -54,6 +57,11 @@ const mockPitches: Pitch[] = [
 ];
 
 export default function PitchesPage() {
+  const user = useAuthStore((s) => s.user);
+  const roles = useAuthStore((s) => s.roles);
+  const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
+  const isRM = activeRoles.some(r => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
+
   const { data: envelope, isLoading } = useApiQuery<any>(
     ["government-pitches"],
     "/government-pitches"
@@ -66,7 +74,7 @@ export default function PitchesPage() {
 
   const pitchesList: Pitch[] = rawPitches.length > 0 ? rawPitches.map((p: any) => ({
     id: p.id,
-    refNo: p.refNo || `PITCH-${p.id.slice(0, 6)}`,
+    refNo: p.pitchReferenceId || p.refNo || `PITCH-${p.id?.slice(0, 6) || "2026"}`,
     title: p.title || p.projectName || "Government Pitch Proposal",
     department: p.department || "Government Department",
     district: p.district || "Maharashtra District",
@@ -90,56 +98,43 @@ export default function PitchesPage() {
         title="Government Development Pitches & Proposals"
         eyebrow="Department Pitches"
         actions={
-          <Link
-            href="/pitches/create"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
-          >
-            <Plus size={16} /> Create Pitch
-          </Link>
+          !isRM ? (
+            <Link
+              href="/pitches/create"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
+            >
+              <Plus size={16} /> Create Pitch
+            </Link>
+          ) : null
         }
       />
 
       {/* 3D Modern Metrics Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <motion.div 
-          whileHover={{ y: -4, rotate: 1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-blue-50/80 via-white to-blue-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Total Pitches</span>
-            <Compass size={20} className="text-blue-600" />
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-blue-950 font-heading">{pitchesList.length}</p>
-          <span className="text-[11px] text-blue-700 font-semibold mt-1 block">State department submissions</span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -4, rotate: -1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-purple-50/80 via-white to-purple-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700">Total Outlay Required</span>
-            <Coins size={20} className="text-purple-600" />
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-purple-950 font-heading">
-            ₹{(pitchesList.reduce((acc, curr) => acc + curr.outlayLakhs, 0) / 100).toFixed(2)} Cr
-          </p>
-          <span className="text-[11px] text-purple-700 font-semibold mt-1 block">Required CSR funding</span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -4, rotate: 1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Secretariat Approved</span>
-            <CheckCircle2 size={20} className="text-emerald-600" />
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-emerald-950 font-heading">
-            {pitchesList.filter(p => p.status === "APPROVED" || p.status === "CSR_COMMITTED").length}
-          </p>
-          <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">Ready for corporate adoption</span>
-        </motion.div>
+        <StatCard 
+          label="Total Pitches" 
+          value={pitchesList.length} 
+          icon={Compass} 
+          index={0} 
+          badge="State Pitches" 
+          sublabel="State department submissions"
+        />
+        <StatCard 
+          label="Total Outlay Required" 
+          value={`₹${(pitchesList.reduce((acc, curr) => acc + curr.outlayLakhs, 0) / 100).toFixed(2)} Cr`} 
+          icon={Coins} 
+          index={1} 
+          badge="Outlay Required" 
+          sublabel="Required CSR funding"
+        />
+        <StatCard 
+          label="Secretariat Approved" 
+          value={pitchesList.filter(p => p.status === "APPROVED" || p.status === "CSR_COMMITTED").length} 
+          icon={CheckCircle2} 
+          index={2} 
+          badge="Verified & Ready" 
+          sublabel="Ready for corporate adoption"
+        />
       </div>
 
       {/* Main Content Area */}
@@ -171,12 +166,14 @@ export default function PitchesPage() {
               </select>
             </div>
 
-            <Link
-              href="/pitches/create"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
-            >
-              <Plus size={16} /> Create Pitch
-            </Link>
+            {!isRM && (
+              <Link
+                href="/pitches/create"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
+              >
+                <Plus size={16} /> Create Pitch
+              </Link>
+            )}
           </div>
         </div>
 

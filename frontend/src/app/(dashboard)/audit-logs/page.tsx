@@ -7,6 +7,8 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovInput from "@/components/gov/GovInput";
 import GovSelect from "@/components/gov/GovSelect";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
+import { StatCard } from "@/components/ui/StatCard";
+import { Activity, Users, ShieldCheck } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import "@/styles/gov-theme.css";
 
@@ -90,30 +92,30 @@ export default function AuditLogsPage() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <GovCard>
-          <GovCardBody>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
-              Total Logged Events
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-primary)" }}>{logs.length}</div>
-          </GovCardBody>
-        </GovCard>
-        <GovCard>
-          <GovCardBody>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
-              Distinct Active Users
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-link)" }}>{distinctUsers}</div>
-          </GovCardBody>
-        </GovCard>
-        <GovCard>
-          <GovCardBody>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--gov-text-muted)", marginBottom: 8 }}>
-              Action Categories
-            </div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "var(--gov-primary-dark)" }}>{actions.length}</div>
-          </GovCardBody>
-        </GovCard>
+        <StatCard 
+          label="Total Logged Events" 
+          value={logs.length} 
+          icon={Activity} 
+          index={0} 
+          badge="Audit Logged" 
+          sublabel="System events recorded"
+        />
+        <StatCard 
+          label="Distinct Active Users" 
+          value={distinctUsers} 
+          icon={Users} 
+          index={1} 
+          badge="Active Users" 
+          sublabel="Unique active accounts"
+        />
+        <StatCard 
+          label="Action Categories" 
+          value={actions.length} 
+          icon={ShieldCheck} 
+          index={2} 
+          badge="Audit Operations" 
+          sublabel="Tracked operation types"
+        />
       </div>
 
       {/* Log Search and Filters */}

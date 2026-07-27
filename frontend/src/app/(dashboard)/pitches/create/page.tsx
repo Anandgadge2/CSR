@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { locationData } from "@/lib/locationData";
+import { useAuthStore } from "@/store/authStore";
 
 const SERVICE_CLASSES = [
   { value: "", label: "Select Service Class" },
@@ -218,10 +219,39 @@ interface FormErrors {
 
 export default function CreatePitchDashboardPage() {
   const router = useRouter();
+  const user = useAuthStore((s: any) => s.user);
+  const roles = useAuthStore((s: any) => s.roles);
+  const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
+  const isRM = activeRoles.some((r: string) => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
+
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [referenceId, setReferenceId] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
+
+  if (isRM) {
+    return (
+      <GovPortalLayout userRole="RELATIONSHIP_MANAGER">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 mb-4 border border-amber-200">
+            <ShieldCheck size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900">Access Restricted</h2>
+          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+            Relationship Managers cannot submit government pitches. Your role is restricted to reviewing, assessing, and managing assigned pitches.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <GovButton variant="primary" onClick={() => router.push("/pitches")}>
+              Go to Pitches Register
+            </GovButton>
+            <GovButton variant="secondary" onClick={() => router.push("/dashboard")}>
+              Dashboard
+            </GovButton>
+          </div>
+        </div>
+      </GovPortalLayout>
+    );
+  }
 
   const [form, setForm] = useState<PitchForm>({
     officialName: "",

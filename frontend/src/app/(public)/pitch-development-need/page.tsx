@@ -26,7 +26,17 @@ export default function PitchDevelopmentNeedPage() {
     }
 
     if (isLoggedIn) {
-      router.replace("/department/pitches/create");
+      let isRM = false;
+      try {
+        const u = JSON.parse(localStorage.getItem("user") || "{}");
+        const role = (u.role || "").toUpperCase();
+        isRM = role.includes("RELATIONSHIP_MANAGER") || role.includes("RELATIONSHIP MANAGER");
+      } catch {}
+      if (isRM) {
+        router.replace("/pitches");
+      } else {
+        router.replace("/pitches/create");
+      }
     } else {
       router.replace("/login?next=/pitch-development-need");
     }

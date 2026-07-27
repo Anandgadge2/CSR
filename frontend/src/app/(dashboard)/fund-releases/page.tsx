@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { 
   Coins, Search, Filter, ShieldCheck, CheckCircle2, Clock, Landmark, ArrowUpRight, Check
 } from "lucide-react";
@@ -85,48 +86,30 @@ export default function FundReleasesPage() {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-xl shadow-glass flex items-center justify-between"
-        >
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">Total Pending Tranches</span>
-            <p className="mt-1 text-2xl font-extrabold text-blue-950 font-heading">{items.filter(i => i.status !== "DISBURSED").length}</p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Coins size={18} />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-xl shadow-glass flex items-center justify-between"
-        >
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700">Disbursement Ready</span>
-            <p className="mt-1 text-2xl font-extrabold text-purple-950 font-heading">
-              ₹{items.reduce((acc, curr) => acc + (curr.status === "VERIFIED_READY" ? curr.releaseAmountCr : 0), 0).toFixed(2)} Cr
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Landmark size={18} />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-xl shadow-glass flex items-center justify-between"
-        >
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Verified Disbursed</span>
-            <p className="mt-1 text-2xl font-extrabold text-emerald-950 font-heading">
-              {items.filter(i => i.status === "DISBURSED").length} Tranches
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <ShieldCheck size={18} />
-          </div>
-        </motion.div>
+        <StatCard 
+          label="Total Pending Tranches" 
+          value={items.filter(i => i.status !== "DISBURSED").length} 
+          icon={Coins} 
+          index={0} 
+          badge="Escrow Tranches" 
+          sublabel="Pending disbursement"
+        />
+        <StatCard 
+          label="Disbursement Ready" 
+          value={`₹${items.reduce((acc, curr) => acc + (curr.status === "VERIFIED_READY" ? curr.releaseAmountCr : 0), 0).toFixed(2)} Cr`} 
+          icon={Landmark} 
+          index={1} 
+          badge="Verified Ready" 
+          sublabel="Ready for transfer"
+        />
+        <StatCard 
+          label="Verified Disbursed" 
+          value={`${items.filter(i => i.status === "DISBURSED").length} Tranches`} 
+          icon={CheckCircle2} 
+          index={2} 
+          badge="Transfer Complete" 
+          sublabel="Disbursed to project"
+        />
       </div>
 
       {/* Main Content Area */}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Users, UserPlus, MapPin, Search, CheckCircle2, Shield, Calendar } from "lucide-react";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface NodalAssignment {
   id: string;
@@ -86,27 +87,33 @@ export default function NodalAppointmentsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Pending Appointments</span>
-          <p className="mt-2 text-3xl font-extrabold text-amber-950">
-            {items.filter(i => i.status === "PENDING_APPOINTMENT").length}
-          </p>
-          <span className="text-[11px] text-amber-700 font-medium">Projects awaiting DNO designation</span>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Active Nodal Officers</span>
-          <p className="mt-2 text-3xl font-extrabold text-emerald-950">
-            {items.filter(i => i.status === "ASSIGNED").length}
-          </p>
-          <span className="text-[11px] text-emerald-700 font-medium">Assigned to field monitoring</span>
-        </div>
-
-        <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Total Projects Gated</span>
-          <p className="mt-2 text-3xl font-extrabold text-blue-950">{items.length}</p>
-          <span className="text-[11px] text-blue-700 font-medium">State Convergence Matrix</span>
-        </div>
+        <StatCard 
+          label="Pending Appointments" 
+          value={items.filter(i => i.status === "PENDING_APPOINTMENT").length} 
+          icon={UserPlus} 
+          index={0} 
+          colorTheme="amber" 
+          badge="Awaiting DNO" 
+          sublabel="Awaiting DNO designation"
+        />
+        <StatCard 
+          label="Active Nodal Officers" 
+          value={items.filter(i => i.status === "ASSIGNED").length} 
+          icon={CheckCircle2} 
+          index={1} 
+          colorTheme="emerald" 
+          badge="Assigned" 
+          sublabel="Assigned to field monitoring"
+        />
+        <StatCard 
+          label="Total Projects Gated" 
+          value={items.length} 
+          icon={Users} 
+          index={2} 
+          colorTheme="blue" 
+          badge="State Matrix" 
+          sublabel="State Convergence Matrix"
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">

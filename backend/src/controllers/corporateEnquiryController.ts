@@ -16,6 +16,13 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       include: { organization: true }
     });
 
+    // Relationship Managers cannot submit corporate enquiries
+    if (user?.roleId === ROLE_ID.RELATIONSHIP_MANAGER) {
+      return res.status(403).json({
+        error: "Relationship Managers are not allowed to submit corporate enquiries."
+      });
+    }
+
     // Enforce Onboarding Guard for suspended/rejected accounts only
     if (user?.roleId !== ROLE_ID.SUPER_ADMIN && user?.organization && ["REJECTED", "SUSPENDED"].includes(user.organization.status)) {
       return res.status(403).json({

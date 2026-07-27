@@ -161,7 +161,9 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     pathname.startsWith("/pitch-development-need") ||
     pathname.startsWith("/public-development-needs") ||
     pathname.startsWith("/partner-with-maharashtra") ||
-    pathname.startsWith("/track");
+    pathname.startsWith("/track") ||
+    pathname.startsWith("/communications") ||
+    pathname.startsWith("/notifications");
 
   const isDashboard = pathname.startsWith("/ngo-dashboard") || 
                       pathname.startsWith("/company-dashboard") || 
@@ -207,6 +209,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       pathname.startsWith("/decisions") ||
                       pathname.startsWith("/nodal-appointments") ||
                       pathname.startsWith("/helpdesk") ||
+                      pathname.startsWith("/communications") ||
+                      pathname.startsWith("/notifications") ||
                       (pathname === "/partner" || pathname.startsWith("/partner/")) ||
                       pathname.startsWith("/grievances") ||
                       pathname.startsWith("/convergence-projects") ||

@@ -273,7 +273,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
   RELATIONSHIP_MANAGER: [
     "dashboard:view", "dashboard:widget-kpis", "dashboard:widget-workqueue", "dashboard:widget-sla",
     "dashboard:widget-activity", "dashboard:widget-quick-actions",
-    "enquiry:view", "enquiry:create", "enquiry:update", "enquiry:assign", "enquiry:respond", "enquiry:contact",
+    "enquiry:view", "enquiry:update", "enquiry:assign", "enquiry:respond", "enquiry:contact",
     "pitch:view", "pitch:verify", "assessment:view", "assessment:create", "assessment:update", "assessment:submit",
     "meeting:schedule", "followup:assign", "project:recommend", "project:recommend_rejection", "organization:view",
     "report:view",

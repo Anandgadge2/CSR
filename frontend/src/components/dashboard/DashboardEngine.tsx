@@ -1,21 +1,22 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
 import { useApiQuery } from "@/lib/apiHooks";
 import {
   DashboardSummary,
-  KPI_CARDS,
-  SECTIONS,
   QUICK_ACTIONS,
   visibleByPermission,
 } from "@/lib/dashboardEngine";
 import { 
   AlertTriangle, ArrowRight, ShieldAlert, Clock, CheckCircle2, 
   FolderKanban, ShieldCheck, FileText, Compass, Building2, Users,
-  HeartHandshake, TrendingUp, Sparkles, Activity
+  HeartHandshake, TrendingUp, Sparkles, Activity, Landmark, Coins, Layers, Send, FileCheck,
+  Briefcase, BarChart2, Target, Award, Globe, ClipboardCheck
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface SummaryEnvelope {
   success: boolean;
@@ -33,69 +34,122 @@ const DEFAULT_KPIS = [
   { key: "openEscalations", label: "Active Escalations", value: 2 },
 ];
 
-/** Shimmer Skeleton Loader for Ultra-Fast UX Feedback */
+/** Smooth Count-up Shutter Animation Component */
+function AnimatedCounter({ value }: { value: number | string }) {
+  const [displayValue, setDisplayValue] = useState<string | number>(0);
+
+  useEffect(() => {
+    const strVal = String(value);
+    const numericMatch = strVal.match(/[\d.]+/);
+    if (!numericMatch) {
+      setDisplayValue(value);
+      return;
+    }
+
+    const targetNum = parseFloat(numericMatch[0]);
+    if (isNaN(targetNum) || targetNum === 0) {
+      setDisplayValue(strVal);
+      return;
+    }
+
+    const isFloat = strVal.includes(".");
+    const startTime = performance.now();
+    const duration = 850;
+
+    let animationFrameId: number;
+
+    const updateCounter = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const currentVal = targetNum * easeProgress;
+
+      const formattedVal = isFloat ? currentVal.toFixed(1) : Math.round(currentVal);
+      const output = strVal.replace(/[\d.]+/, String(formattedVal));
+      setDisplayValue(output);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateCounter);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(updateCounter);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value]);
+
+  return <span>{displayValue}</span>;
+}
+
+/** Shimmer Skeleton Loader */
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8 animate-pulse">
-      {/* Quick Action Shimmers */}
+    <div className="space-y-6 animate-pulse">
       <div className="flex flex-wrap items-center gap-3">
         <div className="h-4 w-28 bg-slate-200/80 rounded-lg" />
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-9 w-32 bg-slate-200/70 rounded-xl" />
         ))}
       </div>
-
-      {/* KPI Cards Shimmer Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white/90 via-slate-50/90 to-slate-100/60 p-6 shadow-sm flex flex-col justify-between h-36 relative overflow-hidden"
-          >
-            <div className="flex items-center justify-between">
-              <div className="h-3.5 w-32 bg-slate-200/90 rounded-md" />
-              <div className="w-10 h-10 rounded-xl bg-slate-200/80" />
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-white/90 via-slate-50/90 to-slate-100/60 p-4 shadow-sm flex flex-col justify-between h-[110px] relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="h-3 w-28 bg-slate-200/90 rounded-md" />
+                <div className="w-7 h-7 rounded-lg bg-slate-200/80" />
+              </div>
+              <div className="flex items-baseline justify-between mt-2">
+                <div className="h-7 w-16 bg-slate-300/80 rounded-lg" />
+                <div className="h-4 w-12 bg-emerald-100/80 rounded-full" />
+              </div>
             </div>
-            <div className="flex items-baseline justify-between mt-4">
-              <div className="h-8 w-20 bg-slate-300/80 rounded-lg" />
-              <div className="h-5 w-14 bg-emerald-100/80 rounded-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Section Cards Shimmer Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-64 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-200/80" />
-            <div className="h-5 w-40 bg-slate-200/80 rounded-lg" />
-          </div>
-          <div className="space-y-3">
-            <div className="h-12 w-full bg-slate-100/80 rounded-xl" />
-            <div className="h-12 w-full bg-slate-100/80 rounded-xl" />
-          </div>
+          ))}
         </div>
-        <div className="h-64 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm flex flex-col justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-200/80" />
-            <div className="h-5 w-40 bg-slate-200/80 rounded-lg" />
-          </div>
-          <div className="space-y-3">
-            <div className="h-12 w-full bg-slate-100/80 rounded-xl" />
-            <div className="h-12 w-full bg-slate-100/80 rounded-xl" />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-white/90 via-slate-50/90 to-slate-100/60 p-4 shadow-sm flex flex-col justify-between h-[110px] relative overflow-hidden">
+              <div className="flex items-center justify-between">
+                <div className="h-3 w-28 bg-slate-200/90 rounded-md" />
+                <div className="w-7 h-7 rounded-lg bg-slate-200/80" />
+              </div>
+              <div className="flex items-baseline justify-between mt-2">
+                <div className="h-7 w-16 bg-slate-300/80 rounded-lg" />
+                <div className="h-4 w-12 bg-emerald-100/80 rounded-full" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
+export interface KpiCard3D {
+  id: string;
+  label: string;
+  sublabel: string;
+  value: string | number;
+  category: "company" | "government" | "my-org" | "platform";
+  icon: LucideIcon;
+  accent: string;
+  badge: string;
+  gradient: string;
+  bgTint: string;
+  borderHover: string;
+  badgeBg: string;
+  badgeText: string;
+  iconBg: string;
+  iconText: string;
+  metricColor: string;
+}
+
 export default function DashboardEngine() {
-  const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
+  const user = useAuthStore((s: any) => s.user);
+  const roles = useAuthStore((s: any) => s.roles);
   const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
-  const isCorporate = activeRoles.some(r => r.includes("COMPANY") || r.includes("CORPORATE"));
+  const isCorporate = activeRoles.some((r: string) => r.includes("COMPANY") || r.includes("CORPORATE"));
+  const isGovernment = activeRoles.some((r: string) => r.includes("GOVERNMENT") || r.includes("DEPARTMENT"));
+  const isRM = activeRoles.some((r: string) => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
 
   const { data: summaryEnvelope, isLoading } = useApiQuery<SummaryEnvelope>(
     ["dashboard", "summary"],
@@ -122,71 +176,378 @@ export default function DashboardEngine() {
     onboardingStatus: rawData?.onboardingStatus || null,
   };
 
-  const kpiCards = visibleByPermission(KPI_CARDS, summary);
   const rawQuickActions = visibleByPermission(QUICK_ACTIONS, summary);
   const quickActions = rawQuickActions.filter((action) => {
+    if (isRM && (action.key === "pitches" || action.key === "enquiry_create")) return false;
     if (isCorporate && action.key === "pitches") return false;
-    if (!isCorporate && action.key === "enquiry_create") return false;
+    if (isGovernment && action.key === "enquiry_create") return false;
+    if (!isCorporate && !isGovernment && action.key === "enquiry_create") return false;
     return true;
   });
 
-  const kpiValues = new Map((summary.kpis || []).map((k) => [k.key, k]));
-  const renderedKeys = new Set<string>();
-  const activeKpiCards = kpiCards.filter((card) => {
-    if (renderedKeys.has(card.key)) return false;
-    if (kpiValues.has(card.key)) {
-      renderedKeys.add(card.key);
-      return true;
-    }
-    return false;
-  });
-
-  const cardsToDisplay = activeKpiCards.length > 0 ? activeKpiCards : KPI_CARDS.slice(0, 4);
-
   const onboarding = summary.onboardingStatus;
+
+  const getKpiValue = (keys: string[], defaultVal: number | string): number | string => {
+    for (const key of keys) {
+      if (typeof rawData?.[key] === "number" || typeof rawData?.[key] === "string") {
+        return rawData[key];
+      }
+      const match = summary.kpis?.find(k => k.key === key);
+      if (match && typeof match.value !== "undefined") {
+        return match.value;
+      }
+    }
+    return defaultVal;
+  };
+
+  const orgName = rawData?.orgName || user?.organizationName || "My Organization";
+
+  // ── COMPANY USER: Personalized Company Dashboard ──
+  const companyRow1Left: KpiCard3D[] = [
+    {
+      id: "my-enquiries", label: "My Enquiries", sublabel: "Submitted Corporate Enquiries",
+      value: getKpiValue(["companyEnquiries", "enquiries"], 0), category: "my-org", icon: Send, accent: "#0284c7",
+      badge: "My Submissions", gradient: "from-blue-500 to-indigo-600",
+      bgTint: "from-white via-blue-50/30 to-slate-50/50", borderHover: "hover:border-blue-400/80 hover:shadow-blue-500/10",
+      badgeBg: "bg-blue-50/90 border-blue-200/80", badgeText: "text-blue-700",
+      iconBg: "bg-blue-100/70 border-blue-200/80", iconText: "text-blue-600", metricColor: "text-blue-950",
+    },
+    {
+      id: "my-projects", label: "My Active Projects", sublabel: "Company Convergence Projects",
+      value: getKpiValue(["companyProjects", "projects"], 0), category: "my-org", icon: FolderKanban, accent: "#7c3aed",
+      badge: "Active", gradient: "from-purple-500 to-indigo-600",
+      bgTint: "from-white via-purple-50/30 to-slate-50/50", borderHover: "hover:border-purple-400/80 hover:shadow-purple-500/10",
+      badgeBg: "bg-purple-50/90 border-purple-200/80", badgeText: "text-purple-700",
+      iconBg: "bg-purple-100/70 border-purple-200/80", iconText: "text-purple-600", metricColor: "text-purple-950",
+    },
+  ];
+  const companyRow1Right: KpiCard3D[] = [
+    {
+      id: "my-assignments", label: "My Assignments", sublabel: "Tasks Assigned to Company",
+      value: getKpiValue(["activeAssignments", "assignments"], 0), category: "my-org", icon: ClipboardCheck, accent: "#059669",
+      badge: "Pending", gradient: "from-emerald-500 to-teal-600",
+      bgTint: "from-white via-emerald-50/30 to-slate-50/50", borderHover: "hover:border-emerald-400/80 hover:shadow-emerald-500/10",
+      badgeBg: "bg-emerald-50/90 border-emerald-200/80", badgeText: "text-emerald-700",
+      iconBg: "bg-emerald-100/70 border-emerald-200/80", iconText: "text-emerald-600", metricColor: "text-emerald-950",
+    },
+    {
+      id: "my-outlay", label: "CSR Outlay", sublabel: "Indicative Budget Pledged",
+      value: rawData?.corporateOutlay ? `\u20B9${rawData.corporateOutlay} Cr` : "\u20B90 Cr", category: "my-org", icon: Coins, accent: "#d97706",
+      badge: "Committed", gradient: "from-amber-500 to-orange-600",
+      bgTint: "from-white via-amber-50/30 to-slate-50/50", borderHover: "hover:border-amber-400/80 hover:shadow-amber-500/10",
+      badgeBg: "bg-amber-50/90 border-amber-200/80", badgeText: "text-amber-800",
+      iconBg: "bg-amber-100/70 border-amber-200/80", iconText: "text-amber-600", metricColor: "text-amber-950",
+    },
+  ];
+  const companyRow2Left: KpiCard3D[] = [
+    {
+      id: "platform-projects", label: "Platform Projects", sublabel: "Total Convergence Projects",
+      value: getKpiValue(["totalProjects"], 0), category: "platform", icon: ShieldCheck, accent: "#0d9488",
+      badge: "Platform-Wide", gradient: "from-teal-500 to-emerald-600",
+      bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
+      badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
+      iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
+    },
+    {
+      id: "platform-orgs", label: "Registered Organizations", sublabel: "Government & Partner Orgs",
+      value: getKpiValue(["totalOrgs"], 0), category: "platform", icon: Landmark, accent: "#4f46e5",
+      badge: "All Orgs", gradient: "from-indigo-500 to-purple-600",
+      bgTint: "from-white via-indigo-50/30 to-slate-50/50", borderHover: "hover:border-indigo-400/80 hover:shadow-indigo-500/10",
+      badgeBg: "bg-indigo-50/90 border-indigo-200/80", badgeText: "text-indigo-700",
+      iconBg: "bg-indigo-100/70 border-indigo-200/80", iconText: "text-indigo-600", metricColor: "text-indigo-950",
+    },
+  ];
+  const companyRow2Right: KpiCard3D[] = [
+    {
+      id: "platform-pitches", label: "Available Pitches", sublabel: "Government Development Needs",
+      value: getKpiValue(["totalPitches", "pitches", "deptPitches"], 0), category: "platform", icon: Compass, accent: "#0284c7",
+      badge: "Marketplace", gradient: "from-sky-500 to-blue-600",
+      bgTint: "from-white via-sky-50/30 to-slate-50/50", borderHover: "hover:border-sky-400/80 hover:shadow-sky-500/10",
+      badgeBg: "bg-sky-50/90 border-sky-200/80", badgeText: "text-sky-700",
+      iconBg: "bg-sky-100/70 border-sky-200/80", iconText: "text-sky-600", metricColor: "text-sky-950",
+    },
+    {
+      id: "my-onboarding", label: "Profile Status", sublabel: "Organization Verification",
+      value: rawData?.orgStatus === "ACTIVE" ? "Verified" : (rawData?.orgStatus || "Pending").replace(/_/g, " "),
+      category: "my-org", icon: Award,
+      accent: rawData?.orgStatus === "ACTIVE" ? "#059669" : "#d97706",
+      badge: rawData?.orgStatus === "ACTIVE" ? "Active" : "Pending",
+      gradient: rawData?.orgStatus === "ACTIVE" ? "from-emerald-500 to-green-600" : "from-rose-500 to-red-600",
+      bgTint: rawData?.orgStatus === "ACTIVE" ? "from-white via-emerald-50/30 to-slate-50/50" : "from-white via-rose-50/30 to-slate-50/50",
+      borderHover: rawData?.orgStatus === "ACTIVE" ? "hover:border-emerald-400/80 hover:shadow-emerald-500/10" : "hover:border-rose-400/80 hover:shadow-rose-500/10",
+      badgeBg: rawData?.orgStatus === "ACTIVE" ? "bg-emerald-50/90 border-emerald-200/80" : "bg-rose-50/90 border-rose-200/80",
+      badgeText: rawData?.orgStatus === "ACTIVE" ? "text-emerald-700" : "text-rose-700",
+      iconBg: rawData?.orgStatus === "ACTIVE" ? "bg-emerald-100/70 border-emerald-200/80" : "bg-rose-100/70 border-rose-200/80",
+      iconText: rawData?.orgStatus === "ACTIVE" ? "text-emerald-600" : "text-rose-600",
+      metricColor: rawData?.orgStatus === "ACTIVE" ? "text-emerald-950" : "text-rose-950",
+    },
+  ];
+
+  // ── GOVERNMENT DEPARTMENT USER: Personalized Department Dashboard ──
+  const govtRow1Left: KpiCard3D[] = [
+    {
+      id: "my-pitches", label: "My Department Pitches", sublabel: "Development Need Proposals",
+      value: getKpiValue(["deptPitches", "pitches"], 0), category: "my-org", icon: Compass, accent: "#0284c7",
+      badge: "My Pitches", gradient: "from-sky-500 to-blue-600",
+      bgTint: "from-white via-sky-50/30 to-slate-50/50", borderHover: "hover:border-sky-400/80 hover:shadow-sky-500/10",
+      badgeBg: "bg-sky-50/90 border-sky-200/80", badgeText: "text-sky-700",
+      iconBg: "bg-sky-100/70 border-sky-200/80", iconText: "text-sky-600", metricColor: "text-sky-950",
+    },
+    {
+      id: "received-interests", label: "Received Corporate Interests", sublabel: "Companies Interested in My Pitches",
+      value: getKpiValue(["deptInterests", "companyInterests"], 0), category: "my-org", icon: HeartHandshake, accent: "#7c3aed",
+      badge: "Received", gradient: "from-purple-500 to-indigo-600",
+      bgTint: "from-white via-purple-50/30 to-slate-50/50", borderHover: "hover:border-purple-400/80 hover:shadow-purple-500/10",
+      badgeBg: "bg-purple-50/90 border-purple-200/80", badgeText: "text-purple-700",
+      iconBg: "bg-purple-100/70 border-purple-200/80", iconText: "text-purple-600", metricColor: "text-purple-950",
+    },
+  ];
+  const govtRow1Right: KpiCard3D[] = [
+    {
+      id: "my-dept-projects", label: "My Convergence Projects", sublabel: "Department Active Projects",
+      value: getKpiValue(["companyProjects", "projects", "totalProjects"], 0), category: "my-org", icon: FolderKanban, accent: "#059669",
+      badge: "Active", gradient: "from-emerald-500 to-teal-600",
+      bgTint: "from-white via-emerald-50/30 to-slate-50/50", borderHover: "hover:border-emerald-400/80 hover:shadow-emerald-500/10",
+      badgeBg: "bg-emerald-50/90 border-emerald-200/80", badgeText: "text-emerald-700",
+      iconBg: "bg-emerald-100/70 border-emerald-200/80", iconText: "text-emerald-600", metricColor: "text-emerald-950",
+    },
+    {
+      id: "my-dept-assignments", label: "My Assignments", sublabel: "Tasks Assigned to Department",
+      value: getKpiValue(["activeAssignments", "assignments"], 0), category: "my-org", icon: ClipboardCheck, accent: "#d97706",
+      badge: "Pending", gradient: "from-amber-500 to-orange-600",
+      bgTint: "from-white via-amber-50/30 to-slate-50/50", borderHover: "hover:border-amber-400/80 hover:shadow-amber-500/10",
+      badgeBg: "bg-amber-50/90 border-amber-200/80", badgeText: "text-amber-800",
+      iconBg: "bg-amber-100/70 border-amber-200/80", iconText: "text-amber-600", metricColor: "text-amber-950",
+    },
+  ];
+  const govtRow2Left: KpiCard3D[] = [
+    {
+      id: "platform-projects-g", label: "Platform Projects", sublabel: "Total Convergence Projects",
+      value: getKpiValue(["totalProjects"], 0), category: "platform", icon: ShieldCheck, accent: "#0d9488",
+      badge: "Platform-Wide", gradient: "from-teal-500 to-emerald-600",
+      bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
+      badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
+      iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
+    },
+    {
+      id: "platform-orgs-g", label: "Registered Organizations", sublabel: "Government & Partner Orgs",
+      value: getKpiValue(["totalOrgs"], 0), category: "platform", icon: Landmark, accent: "#4f46e5",
+      badge: "All Orgs", gradient: "from-indigo-500 to-purple-600",
+      bgTint: "from-white via-indigo-50/30 to-slate-50/50", borderHover: "hover:border-indigo-400/80 hover:shadow-indigo-500/10",
+      badgeBg: "bg-indigo-50/90 border-indigo-200/80", badgeText: "text-indigo-700",
+      iconBg: "bg-indigo-100/70 border-indigo-200/80", iconText: "text-indigo-600", metricColor: "text-indigo-950",
+    },
+  ];
+  const govtRow2Right: KpiCard3D[] = [
+    {
+      id: "platform-approvals-g", label: "Pending Approvals", sublabel: "Secretariat Verification Queue",
+      value: summary.pendingApprovals ?? 0, category: "platform", icon: CheckCircle2, accent: "#0284c7",
+      badge: "Pending Review", gradient: "from-blue-500 to-indigo-600",
+      bgTint: "from-white via-blue-50/30 to-slate-50/50", borderHover: "hover:border-blue-400/80 hover:shadow-blue-500/10",
+      badgeBg: "bg-blue-50/90 border-blue-200/80", badgeText: "text-blue-700",
+      iconBg: "bg-blue-100/70 border-blue-200/80", iconText: "text-blue-600", metricColor: "text-blue-950",
+    },
+    {
+      id: "dept-onboarding", label: "Profile Status", sublabel: "Department Verification",
+      value: rawData?.orgStatus === "ACTIVE" ? "Verified" : (rawData?.orgStatus || "Pending").replace(/_/g, " "),
+      category: "my-org", icon: Award,
+      accent: rawData?.orgStatus === "ACTIVE" ? "#059669" : "#d97706",
+      badge: rawData?.orgStatus === "ACTIVE" ? "Active" : "Pending",
+      gradient: rawData?.orgStatus === "ACTIVE" ? "from-emerald-500 to-green-600" : "from-rose-500 to-red-600",
+      bgTint: rawData?.orgStatus === "ACTIVE" ? "from-white via-emerald-50/30 to-slate-50/50" : "from-white via-rose-50/30 to-slate-50/50",
+      borderHover: rawData?.orgStatus === "ACTIVE" ? "hover:border-emerald-400/80 hover:shadow-emerald-500/10" : "hover:border-rose-400/80 hover:shadow-rose-500/10",
+      badgeBg: rawData?.orgStatus === "ACTIVE" ? "bg-emerald-50/90 border-emerald-200/80" : "bg-rose-50/90 border-rose-200/80",
+      badgeText: rawData?.orgStatus === "ACTIVE" ? "text-emerald-700" : "text-rose-700",
+      iconBg: rawData?.orgStatus === "ACTIVE" ? "bg-emerald-100/70 border-emerald-200/80" : "bg-rose-100/70 border-rose-200/80",
+      iconText: rawData?.orgStatus === "ACTIVE" ? "text-emerald-600" : "text-rose-600",
+      metricColor: rawData?.orgStatus === "ACTIVE" ? "text-emerald-950" : "text-rose-950",
+    },
+  ];
+
+  // ── ADMIN/OVERSIGHT (RM, JS, PS, Super Admin): Platform-Wide Overview ──
+  const adminRow1Left: KpiCard3D[] = [
+    {
+      id: "company-enquiries", label: "Corporate Enquiries", sublabel: "Partnership Expressions",
+      value: getKpiValue(["companyEnquiries", "enquiries", "totalEnquiries"], 14), category: "company", icon: Building2, accent: "#0284c7",
+      badge: "Corporate Desk", gradient: "from-blue-500 to-indigo-600",
+      bgTint: "from-white via-blue-50/30 to-slate-50/50", borderHover: "hover:border-blue-400/80 hover:shadow-blue-500/10",
+      badgeBg: "bg-blue-50/90 border-blue-200/80", badgeText: "text-blue-700",
+      iconBg: "bg-blue-100/70 border-blue-200/80", iconText: "text-blue-600", metricColor: "text-blue-950",
+    },
+    {
+      id: "company-interests", label: "Corporate Interests", sublabel: "Received Intent Forms",
+      value: getKpiValue(["companyInterests", "deptInterests"], 28), category: "company", icon: TrendingUp, accent: "#7c3aed",
+      badge: "Company Interest", gradient: "from-purple-500 to-indigo-600",
+      bgTint: "from-white via-purple-50/30 to-slate-50/50", borderHover: "hover:border-purple-400/80 hover:shadow-purple-500/10",
+      badgeBg: "bg-purple-50/90 border-purple-200/80", badgeText: "text-purple-700",
+      iconBg: "bg-purple-100/70 border-purple-200/80", iconText: "text-purple-600", metricColor: "text-purple-950",
+    },
+  ];
+  const adminRow1Right: KpiCard3D[] = [
+    {
+      id: "govt-pitches", label: "Government Pitches", sublabel: "Department Need Proposals",
+      value: getKpiValue(["deptPitches", "pitches", "totalPitches"], 9), category: "government", icon: Compass, accent: "#0284c7",
+      badge: "State Pitches", gradient: "from-sky-500 to-blue-600",
+      bgTint: "from-white via-sky-50/30 to-slate-50/50", borderHover: "hover:border-sky-400/80 hover:shadow-sky-500/10",
+      badgeBg: "bg-sky-50/90 border-sky-200/80", badgeText: "text-sky-700",
+      iconBg: "bg-sky-100/70 border-sky-200/80", iconText: "text-sky-600", metricColor: "text-sky-950",
+    },
+    {
+      id: "govt-orgs", label: "Government & Partner Orgs", sublabel: "Departments & Agencies",
+      value: getKpiValue(["totalOrgs"], 42), category: "government", icon: Landmark, accent: "#4f46e5",
+      badge: "Registered Orgs", gradient: "from-indigo-500 to-purple-600",
+      bgTint: "from-white via-indigo-50/30 to-slate-50/50", borderHover: "hover:border-indigo-400/80 hover:shadow-indigo-500/10",
+      badgeBg: "bg-indigo-50/90 border-indigo-200/80", badgeText: "text-indigo-700",
+      iconBg: "bg-indigo-100/70 border-indigo-200/80", iconText: "text-indigo-600", metricColor: "text-indigo-950",
+    },
+  ];
+  const adminRow2Left: KpiCard3D[] = [
+    {
+      id: "company-projects", label: "Convergence Projects", sublabel: "Active CSR Initiatives",
+      value: getKpiValue(["companyProjects", "totalProjects", "projects"], 38), category: "company", icon: ShieldCheck, accent: "#059669",
+      badge: "Funded Projects", gradient: "from-emerald-500 to-teal-600",
+      bgTint: "from-white via-emerald-50/30 to-slate-50/50", borderHover: "hover:border-emerald-400/80 hover:shadow-emerald-500/10",
+      badgeBg: "bg-emerald-50/90 border-emerald-200/80", badgeText: "text-emerald-700",
+      iconBg: "bg-emerald-100/70 border-emerald-200/80", iconText: "text-emerald-600", metricColor: "text-emerald-950",
+    },
+    {
+      id: "company-outlay", label: "Indicative CSR Outlay", sublabel: "Pledged Outlay Budget",
+      value: rawData?.corporateOutlay ? `\u20B9${rawData.corporateOutlay} Cr` : "\u20B9142.5 Cr", category: "company", icon: Coins, accent: "#d97706",
+      badge: "Outlay Pledged", gradient: "from-amber-500 to-orange-600",
+      bgTint: "from-white via-amber-50/30 to-slate-50/50", borderHover: "hover:border-amber-400/80 hover:shadow-amber-500/10",
+      badgeBg: "bg-amber-50/90 border-amber-200/80", badgeText: "text-amber-800",
+      iconBg: "bg-amber-100/70 border-amber-200/80", iconText: "text-amber-600", metricColor: "text-amber-950",
+    },
+  ];
+  const adminRow2Right: KpiCard3D[] = [
+    {
+      id: "govt-approvals", label: "Secretariat Approvals", sublabel: "Pending Verification Queue",
+      value: summary.pendingApprovals ?? 4, category: "government", icon: CheckCircle2, accent: "#0d9488",
+      badge: "Pending Review", gradient: "from-teal-500 to-emerald-600",
+      bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
+      badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
+      iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
+    },
+    {
+      id: "govt-escalations", label: "Active Escalations", sublabel: "SLA Monitored Queue",
+      value: summary.openEscalations ?? 2, category: "government", icon: ShieldAlert, accent: "#e11d48",
+      badge: "SLA Monitored", gradient: "from-rose-500 to-red-600",
+      bgTint: "from-white via-rose-50/30 to-slate-50/50", borderHover: "hover:border-rose-400/80 hover:shadow-rose-500/10",
+      badgeBg: "bg-rose-50/90 border-rose-200/80", badgeText: "text-rose-700",
+      iconBg: "bg-rose-100/70 border-rose-200/80", iconText: "text-rose-600", metricColor: "text-rose-950",
+    },
+  ];
+
+  // Choose the correct set based on role
+  let r1Left: KpiCard3D[], r1Right: KpiCard3D[], r2Left: KpiCard3D[], r2Right: KpiCard3D[];
+  let leftTitle: string, leftSubtitle: string, leftIcon: LucideIcon;
+  let rightTitle: string, rightSubtitle: string, rightIcon: LucideIcon;
+
+  if (isCorporate) {
+    r1Left = companyRow1Left; r1Right = companyRow1Right;
+    r2Left = companyRow2Left; r2Right = companyRow2Right;
+    leftTitle = `My Company \u2014 ${orgName}`;
+    leftSubtitle = "Your corporate enquiries, projects & CSR metrics";
+    leftIcon = Briefcase;
+    rightTitle = "Platform Overview";
+    rightSubtitle = "MahaCSR platform-wide statistics & marketplace";
+    rightIcon = Globe;
+  } else if (isGovernment) {
+    r1Left = govtRow1Left; r1Right = govtRow1Right;
+    r2Left = govtRow2Left; r2Right = govtRow2Right;
+    leftTitle = `My Department \u2014 ${orgName}`;
+    leftSubtitle = "Your department pitches, interests & project metrics";
+    leftIcon = Landmark;
+    rightTitle = "Platform Overview";
+    rightSubtitle = "MahaCSR platform-wide statistics & approvals";
+    rightIcon = Globe;
+  } else {
+    r1Left = adminRow1Left; r1Right = adminRow1Right;
+    r2Left = adminRow2Left; r2Right = adminRow2Right;
+    leftTitle = "Corporate & Company Desk";
+    leftSubtitle = "CSR enquiries, interest submissions & funding metrics";
+    leftIcon = Building2;
+    rightTitle = "Government & Department Desk";
+    rightSubtitle = "State pitches, approvals & escalations queue";
+    rightIcon = Landmark;
+  }
 
   if (isLoading && !summaryEnvelope) {
     return <DashboardSkeleton />;
   }
 
+  const renderCard = (card: KpiCard3D, delayIdx: number) => {
+    const Icon = card.icon;
+    return (
+      <motion.div
+        key={card.id}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ 
+          y: -4, rotateX: 3, rotateY: -3, scale: 1.018,
+          transition: { duration: 0.2, ease: "easeOut" } 
+        }}
+        transition={{ duration: 0.25, delay: delayIdx * 0.03 }}
+        className={`group relative rounded-xl border border-slate-200/90 bg-gradient-to-br ${card.bgTint} p-3.5 shadow-xs hover:shadow-lg ${card.borderHover} transition-all duration-200 cursor-pointer transform-gpu flex flex-col justify-between h-[105px] overflow-hidden`}
+        style={{ transformStyle: "preserve-3d", perspective: 1000 }}
+      >
+        <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient}`} />
+        <div className="flex items-center justify-between relative z-10 pt-0.5" style={{ transform: "translateZ(8px)" }}>
+          <div className="flex flex-col min-w-0 pr-2">
+            <span className="text-[11px] font-bold text-slate-800 group-hover:text-slate-950 transition-colors truncate">{card.label}</span>
+            <span className="text-[9px] text-slate-500 font-medium truncate">{card.sublabel}</span>
+          </div>
+          <div className={`w-7 h-7 rounded-lg border ${card.iconBg} ${card.iconText} shadow-2xs group-hover:scale-110 transition-all flex items-center justify-center shrink-0`} style={{ transform: "translateZ(14px)" }}>
+            <Icon size={14} />
+          </div>
+        </div>
+        <div className="flex items-baseline justify-between relative z-10 mt-1" style={{ transform: "translateZ(14px)" }}>
+          <div className={`text-2xl font-black tracking-tight ${card.metricColor} font-heading`}>
+            <AnimatedCounter value={card.value} />
+          </div>
+          <span className={`text-[9px] font-bold ${card.badgeText} ${card.badgeBg} shadow-2xs px-2 py-0.5 rounded-md font-mono transition-all`}>{card.badge}</span>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Onboarding Alert Banner */}
       {onboarding && onboarding.isPending && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-orange-50/80 to-amber-50/90 p-5 backdrop-blur-xl shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+          className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 backdrop-blur-xl shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
         >
-          <div className="flex items-start gap-3.5">
-            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 mt-0.5 shrink-0">
-              <AlertTriangle size={22} />
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-700 mt-0.5 shrink-0">
+              <AlertTriangle size={18} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="font-bold text-base text-amber-950">{onboarding.title}</h4>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase bg-white border border-amber-300 text-amber-800">
+                <h4 className="font-semibold text-sm text-amber-950">{onboarding.title}</h4>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-md uppercase bg-white border border-amber-300 text-amber-800">
                   {onboarding.status.replace(/_/g, " ")}
                 </span>
               </div>
-              <p className="text-xs text-amber-800 mt-1 leading-relaxed">{onboarding.message}</p>
+              <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">{onboarding.message}</p>
             </div>
           </div>
-
           <Link
             href={onboarding.actionUrl || "/organization/onboarding"}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-amber-700 text-white shadow-md hover:bg-amber-800 transition-all hover:scale-105 shrink-0"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-800 text-white shadow-2xs hover:bg-amber-900 transition-all shrink-0"
           >
             {onboarding.actionText || "View Status"}
-            <ArrowRight size={14} />
+            <ArrowRight size={13} />
           </Link>
         </motion.div>
       )}
 
       {/* Quick Action Shortcuts */}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mr-1">
-          <Sparkles size={14} className="text-blue-600 animate-pulse" /> Quick Actions:
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mr-1">
+          <Sparkles size={13} className="text-blue-600" /> Quick Actions:
         </span>
         {quickActions.map((action) => {
           const Icon = action.icon;
@@ -194,128 +555,147 @@ export default function DashboardEngine() {
             <Link
               key={action.key}
               href={action.href}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/90 backdrop-blur-md px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-blue-900 hover:border-blue-500/40 hover:bg-blue-50/50 shadow-sm hover:shadow-md transition-all duration-200 group"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-blue-900 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 shadow-2xs group"
             >
-              <Icon size={15} className="text-blue-600 group-hover:scale-110 transition-transform" />
+              <Icon size={13} className="text-slate-500 group-hover:text-blue-600 transition-colors" />
               <span>{action.label}</span>
             </Link>
           );
         })}
       </div>
 
-      {/* 3D Interactive KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {cardsToDisplay.map((card, idx) => {
-          const Icon = card.icon;
-          const kpi = kpiValues.get(card.key) || { value: 0 };
-          return (
-            <motion.div
-              key={card.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: idx * 0.05 }}
-              className="group relative rounded-2xl border border-white/60 bg-gradient-to-br from-white/90 via-white/80 to-slate-50/80 p-6 backdrop-blur-2xl shadow-glass hover:shadow-2xl transition-all duration-300 transform-gpu hover:-translate-y-2 hover:rotate-1 cursor-pointer overflow-hidden"
-            >
-              {/* Subtle background ambient glow */}
-              <div 
-                className="absolute -right-8 -bottom-8 w-28 h-28 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition-opacity pointer-events-none"
-                style={{ backgroundColor: card.accent }}
-              />
+      {/* 8 Enterprise KPI Cards Grid with Smooth Separation Line */}
+      <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 sm:p-5 space-y-4">
+        {/* Section Title Headers */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-5 items-center border-b border-slate-200/80 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/70 text-slate-700 font-bold text-xs">
+              {React.createElement(leftIcon, { size: 13 })}
+            </span>
+            <div>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{leftTitle}</h3>
+              <p className="text-[10px] text-slate-500 font-normal">{leftSubtitle}</p>
+            </div>
+          </div>
+          <div className="hidden lg:block w-px" />
+          <div className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/70 text-slate-700 font-bold text-xs">
+              {React.createElement(rightIcon, { size: 13 })}
+            </span>
+            <div>
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{rightTitle}</h3>
+              <p className="text-[10px] text-slate-500 font-normal">{rightSubtitle}</p>
+            </div>
+          </div>
+        </div>
 
-              <div className="flex items-center justify-between mb-3 relative z-10">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 group-hover:text-slate-900 transition-colors">
-                  {card.label}
-                </span>
-                <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center shadow-inner transition-transform duration-300 group-hover:scale-110"
-                  style={{ backgroundColor: `${card.accent}15`, color: card.accent }}
-                >
-                  <Icon size={20} />
-                </div>
-              </div>
+        {/* 8-Card Grid Layout with Smooth Vertical Divider */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
+          {/* LEFT SIDE: 4 Cards */}
+          <div className="space-y-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {renderCard(r1Left[0], 0)}
+              {renderCard(r1Left[1], 1)}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {renderCard(r2Left[0], 2)}
+              {renderCard(r2Left[1], 3)}
+            </div>
+          </div>
 
-              <div className="flex items-baseline justify-between relative z-10">
-                <div className="text-3xl font-extrabold tracking-tight text-slate-900 font-heading">
-                  {kpi.value}
-                </div>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                  Active
-                </span>
-              </div>
-            </motion.div>
-          );
-        })}
+          {/* SMOOTH VERTICAL DIVIDER */}
+          <div className="hidden lg:flex items-center justify-center relative mx-0.5">
+            <div className="w-0.5 h-full bg-gradient-to-b from-transparent via-slate-300 to-transparent rounded-full shadow-[0_0_8px_rgba(148,163,184,0.4)]" />
+          </div>
+
+          {/* RIGHT SIDE: 4 Cards */}
+          <div className="space-y-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {renderCard(r1Right[0], 4)}
+              {renderCard(r1Right[1], 5)}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {renderCard(r2Right[0], 6)}
+              {renderCard(r2Right[1], 7)}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* 3D Dashboard Sections: Pending Approvals & Activity Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Work Queue & Approvals */}
+      {/* Dashboard Bottom Panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Work Queue / Approvals */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -15 }}
           animate={{ opacity: 1, x: 0 }}
-          className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between"
+          className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur-xl p-5 shadow-xs flex flex-col justify-between"
         >
           <div>
-            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                  <ShieldCheck size={18} />
+                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <ShieldCheck size={16} />
                 </div>
-                <h3 className="font-bold text-sm text-slate-900">Pending Approvals & Verification</h3>
+                <h3 className="font-bold text-xs text-slate-900">
+                  {isCorporate ? "My Enquiry Status" : isGovernment ? "My Pitch Approvals" : "Pending Approvals & Verification"}
+                </h3>
               </div>
-              <span className="text-xs font-extrabold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full">
+              <span className="text-[10px] font-extrabold text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
                 {summary.pendingApprovals} Pending
               </span>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed mb-4">
-              Review organization applications and project proposals waiting for Secretariat sign-off.
+            <p className="text-xs text-slate-500 leading-relaxed mb-3">
+              {isCorporate
+                ? "Track the status of your corporate enquiries and project proposals submitted to the CSR Cell."
+                : isGovernment
+                ? "Track the approval status of your department pitches and development need proposals."
+                : "Review organization applications and project proposals waiting for Secretariat sign-off."}
             </p>
           </div>
-
           <Link
-            href="/organization/onboarding/status"
-            className="inline-flex items-center justify-between w-full p-3 rounded-xl bg-slate-50 hover:bg-blue-50/50 border border-slate-200/70 text-xs font-bold text-slate-700 hover:text-blue-900 transition-all group"
+            href={isCorporate ? "/enquiries" : isGovernment ? "/pitches" : "/organization/onboarding/status"}
+            className="inline-flex items-center justify-between w-full p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/50 border border-slate-200/70 text-xs font-bold text-slate-700 hover:text-blue-900 transition-all group"
           >
-            <span>Go to Approvals Queue</span>
+            <span>{isCorporate ? "View My Enquiries" : isGovernment ? "View My Pitches" : "Go to Approvals Queue"}</span>
             <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </motion.div>
 
-        {/* Audit Log / Recent Activity */}
+        {/* Activity Feed */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 15 }}
           animate={{ opacity: 1, x: 0 }}
-          className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between"
+          className="rounded-2xl border border-slate-200/80 bg-white/90 backdrop-blur-xl p-5 shadow-xs flex flex-col justify-between"
         >
           <div>
-            <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                  <Activity size={18} />
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                  <Activity size={16} />
                 </div>
-                <h3 className="font-bold text-sm text-slate-900">Recent Platform Activity</h3>
+                <h3 className="font-bold text-xs text-slate-900">
+                  {isCorporate || isGovernment ? "My Recent Activity" : "Recent Platform Activity"}
+                </h3>
               </div>
-              <span className="text-[11px] font-bold text-slate-400">Live Feed</span>
+              <span className="text-[10px] font-bold text-slate-400">Live Feed</span>
             </div>
-
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {(summary.recentActivity || []).slice(0, 3).map((act: any) => (
-                <div key={act.id} className="flex items-start gap-3 text-xs p-2 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-2 h-2 rounded-full bg-blue-600 mt-1.5 shrink-0" />
+                <div key={act.id} className="flex items-start gap-2.5 text-xs p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5 shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 truncate">{act.action}</p>
-                    <span className="text-[10px] text-slate-400 font-mono">{act.entityType} • {new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <p className="font-semibold text-slate-800 truncate text-xs">{act.action}</p>
+                    <span className="text-[9px] text-slate-400 font-mono">{act.entityType} &bull; {new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
           <Link
             href="/audit-logs"
-            className="inline-flex items-center justify-between w-full p-3 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/70 text-xs font-bold text-slate-700 hover:text-indigo-900 transition-all group mt-4"
+            className="inline-flex items-center justify-between w-full p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-200/70 text-xs font-bold text-slate-700 hover:text-indigo-900 transition-all group mt-3"
           >
-            <span>View Full Audit Log</span>
+            <span>View Full Activity Log</span>
             <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </motion.div>

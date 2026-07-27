@@ -5,6 +5,7 @@ import {
   ShieldAlert, Clock, AlertTriangle, CheckCircle2, Filter, Search, ArrowUpRight, UserCheck
 } from "lucide-react";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface EscalationItem {
   id: string;
@@ -85,38 +86,33 @@ export default function EscalationsPage() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-red-200/80 bg-red-50/50 p-5 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-red-600">Critical SLA Breaches</span>
-            <AlertTriangle className="text-red-500" size={20} />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-red-950">
-            {items.filter(i => i.severity === "CRITICAL" && i.status !== "RESOLVED").length}
-          </p>
-          <span className="text-[11px] text-red-600 font-medium">Requires Secretariat Action within 24h</span>
-        </div>
-
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-5 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Open Escalations</span>
-            <Clock className="text-amber-600" size={20} />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-amber-950">
-            {items.filter(i => i.status === "OPEN").length}
-          </p>
-          <span className="text-[11px] text-amber-700 font-medium">Active SLA monitoring</span>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-5 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Resolved Cases</span>
-            <CheckCircle2 className="text-emerald-600" size={20} />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-emerald-950">
-            {items.filter(i => i.status === "RESOLVED").length}
-          </p>
-          <span className="text-[11px] text-emerald-700 font-medium">Clear of SLA bottlenecks</span>
-        </div>
+        <StatCard 
+          label="Critical SLA Breaches" 
+          value={items.filter(i => i.severity === "CRITICAL" && i.status !== "RESOLVED").length} 
+          icon={AlertTriangle} 
+          index={0} 
+          colorTheme="rose" 
+          badge="Critical Queue" 
+          sublabel="Action within 24h"
+        />
+        <StatCard 
+          label="Open Escalations" 
+          value={items.filter(i => i.status === "OPEN").length} 
+          icon={Clock} 
+          index={1} 
+          colorTheme="amber" 
+          badge="Under Review" 
+          sublabel="Active SLA monitoring"
+        />
+        <StatCard 
+          label="Resolved Cases" 
+          value={items.filter(i => i.status === "RESOLVED").length} 
+          icon={CheckCircle2} 
+          index={2} 
+          colorTheme="emerald" 
+          badge="Clear Queue" 
+          sublabel="Resolved SLA cases"
+        />
       </div>
 
       {/* Filter and Table */}

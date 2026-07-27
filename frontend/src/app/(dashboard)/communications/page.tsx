@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MessageSquare, Phone, Mail, Calendar, Plus, Search, Building2, User } from "lucide-react";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface CommLog {
   id: string;
@@ -84,27 +85,33 @@ export default function CommunicationsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Total Interactions</span>
-          <p className="mt-2 text-3xl font-extrabold text-blue-950">{items.length}</p>
-          <span className="text-[11px] text-blue-700 font-medium">Logged stakeholder comms</span>
-        </div>
-
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Follow-Ups Pending</span>
-          <p className="mt-2 text-3xl font-extrabold text-amber-950">
-            {items.filter(i => i.followupRequired).length}
-          </p>
-          <span className="text-[11px] text-amber-700 font-medium">Action items assigned</span>
-        </div>
-
-        <div className="rounded-2xl border border-purple-200/80 bg-purple-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700">Meetings Conducted</span>
-          <p className="mt-2 text-3xl font-extrabold text-purple-950">
-            {items.filter(i => i.channel === "MEETING").length}
-          </p>
-          <span className="text-[11px] text-purple-700 font-medium">In-person & Virtual</span>
-        </div>
+        <StatCard 
+          label="Total Interactions" 
+          value={items.length} 
+          icon={MessageSquare} 
+          index={0} 
+          colorTheme="blue" 
+          badge="Logged Comms" 
+          sublabel="Logged stakeholder comms"
+        />
+        <StatCard 
+          label="Follow-Ups Pending" 
+          value={items.filter(i => i.followupRequired).length} 
+          icon={Calendar} 
+          index={1} 
+          colorTheme="amber" 
+          badge="Action Items" 
+          sublabel="Action items assigned"
+        />
+        <StatCard 
+          label="Meetings Conducted" 
+          value={items.filter(i => i.channel === "MEETING").length} 
+          icon={Building2} 
+          index={2} 
+          colorTheme="purple" 
+          badge="Meetings" 
+          sublabel="In-person & Virtual"
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Camera, MapPin, Calendar, CheckCircle2, Clock, Upload, Search, ShieldCheck } from "lucide-react";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface InspectionRecord {
   id: string;
@@ -72,29 +73,33 @@ export default function InspectionsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Verified Inspections</span>
-          <p className="mt-2 text-3xl font-extrabold text-emerald-950">
-            {items.filter(i => i.status === "VERIFIED").length}
-          </p>
-          <span className="text-[11px] text-emerald-700 font-medium">Site proof validated</span>
-        </div>
-
-        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Pending Field Reviews</span>
-          <p className="mt-2 text-3xl font-extrabold text-amber-950">
-            {items.filter(i => i.status === "PENDING_VERIFICATION").length}
-          </p>
-          <span className="text-[11px] text-amber-700 font-medium">Awaiting DNO verification</span>
-        </div>
-
-        <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-5 backdrop-blur-xl">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Geo-Tagged Evidence</span>
-          <p className="mt-2 text-3xl font-extrabold text-blue-950">
-            {items.reduce((acc, curr) => acc + curr.photosUploaded, 0)} Photos
-          </p>
-          <span className="text-[11px] text-blue-700 font-medium">Stored in audit vault</span>
-        </div>
+        <StatCard 
+          label="Verified Inspections" 
+          value={items.filter(i => i.status === "VERIFIED").length} 
+          icon={CheckCircle2} 
+          index={0} 
+          colorTheme="emerald" 
+          badge="Validated" 
+          sublabel="Site proof validated"
+        />
+        <StatCard 
+          label="Pending Field Reviews" 
+          value={items.filter(i => i.status === "PENDING_VERIFICATION").length} 
+          icon={Clock} 
+          index={1} 
+          colorTheme="amber" 
+          badge="Awaiting DNO" 
+          sublabel="Awaiting verification"
+        />
+        <StatCard 
+          label="Geo-Tagged Evidence" 
+          value={`${items.reduce((acc, curr) => acc + curr.photosUploaded, 0)} Photos`} 
+          icon={Camera} 
+          index={2} 
+          colorTheme="blue" 
+          badge="Audit Vault" 
+          sublabel="Stored in audit vault"
+        />
       </div>
 
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">

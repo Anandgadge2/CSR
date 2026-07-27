@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { 
   Sparkles, Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, FileText, Landmark
 } from "lucide-react";
@@ -100,45 +101,33 @@ export default function RequirementsPage() {
 
       {/* 3D Modern Metrics Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <motion.div 
-          whileHover={{ y: -4, rotate: 1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-blue-50/80 via-white to-blue-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Total Requirements</span>
-            <FileText size={20} className="text-blue-600" />
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-blue-950 font-heading">{reqsList.length}</p>
-          <span className="text-[11px] text-blue-700 font-semibold mt-1 block">Departmental CSR Needs</span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -4, rotate: -1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Total Funding Needed</span>
-            <Coins size={20} className="text-amber-600" />
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-amber-950 font-heading">
-            ₹{(reqsList.reduce((acc, curr) => acc + curr.estimatedCostLakhs, 0) / 100).toFixed(2)} Cr
-          </p>
-          <span className="text-[11px] text-amber-700 font-semibold mt-1 block">Gap funding requirement</span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -4, rotate: 1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Published Needs</span>
-            <CheckCircle2 size={20} className="text-emerald-600" />
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-emerald-950 font-heading">
-            {reqsList.filter(r => r.status === "PUBLISHED" || r.status === "APPROVED").length}
-          </p>
-          <span className="text-[11px] text-emerald-700 font-semibold mt-1 block">Open for CSR pledges</span>
-        </motion.div>
+        <StatCard 
+          label="Total Requirements" 
+          value={reqsList.length} 
+          icon={FileText} 
+          index={0} 
+          colorTheme="blue" 
+          badge="CSR Needs" 
+          sublabel="Departmental CSR Needs"
+        />
+        <StatCard 
+          label="Total Funding Needed" 
+          value={`₹${(reqsList.reduce((acc, curr) => acc + curr.estimatedCostLakhs, 0) / 100).toFixed(2)} Cr`} 
+          icon={Coins} 
+          index={1} 
+          colorTheme="amber" 
+          badge="Gap Funding" 
+          sublabel="Gap funding requirement"
+        />
+        <StatCard 
+          label="Published Needs" 
+          value={reqsList.filter(r => r.status === "PUBLISHED" || r.status === "APPROVED").length} 
+          icon={CheckCircle2} 
+          index={2} 
+          colorTheme="emerald" 
+          badge="Open Pledges" 
+          sublabel="Open for CSR pledges"
+        />
       </div>
 
       {/* Main Content Area */}

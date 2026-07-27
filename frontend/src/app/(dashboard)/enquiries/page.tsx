@@ -6,9 +6,12 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { 
   Building2, Search, Filter, Mail, Coins, ArrowUpRight, ShieldCheck, Clock, CheckCircle2, Plus, Landmark, AlertCircle, Loader2
 } from "lucide-react";
+
+import { useAuthStore } from "@/store/authStore";
 
 interface Enquiry {
   id: string;
@@ -23,6 +26,10 @@ interface Enquiry {
 export default function EnquiriesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const roles = useAuthStore((s) => s.roles);
+  const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
+  const isRM = activeRoles.some(r => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
 
   const { data: envelope, isLoading, error: fetchError } = useApiQuery<any>(
     ["corporate-enquiries"],
@@ -33,10 +40,10 @@ export default function EnquiriesPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
 
   useEffect(() => {
-    if (searchParams.get("action") === "create") {
+    if (searchParams.get("action") === "create" && !isRM) {
       router.replace("/enquiries/new");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, isRM]);
 
   const rawEnquiries = envelope?.data?.enquiries || envelope?.data || envelope?.enquiries || (Array.isArray(envelope) ? envelope : []);
 
@@ -65,59 +72,43 @@ export default function EnquiriesPage() {
         title="Corporate Enquiries & CSR Partnership Register"
         eyebrow="Corporate Desk"
         actions={
-          <Link
-            href="/enquiries/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
-          >
-            <Plus size={16} /> Submit Corporate Enquiry
-          </Link>
+          !isRM ? (
+            <Link
+              href="/enquiries/new"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
+            >
+              <Plus size={16} /> Submit Corporate Enquiry
+            </Link>
+          ) : null
         }
       />
 
       {/* 3D Compact Metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-xl shadow-glass flex items-center justify-between"
-        >
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">Total Enquiries</span>
-            <p className="mt-1 text-2xl font-extrabold text-blue-950 font-heading">{items.length}</p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-            <Building2 size={18} />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-xl shadow-glass flex items-center justify-between"
-        >
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700">Indicative Outlay</span>
-            <p className="mt-1 text-2xl font-extrabold text-purple-950 font-heading">
-              ₹{items.reduce((acc, curr) => acc + curr.indicativeBudgetCr, 0).toFixed(1)} Cr
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-            <Coins size={18} />
-          </div>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -2 }}
-          className="rounded-2xl border border-white/80 bg-white/90 p-4 backdrop-blur-xl shadow-glass flex items-center justify-between"
-        >
-          <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Under Review</span>
-            <p className="mt-1 text-2xl font-extrabold text-emerald-950 font-heading">
-              {items.filter(e => e.status === "UNDER_ASSESSMENT" || e.status === "SUBMITTED").length}
-            </p>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <Clock size={18} />
-          </div>
-        </motion.div>
+        <StatCard 
+          label="Total Enquiries" 
+          value={items.length} 
+          icon={Building2} 
+          index={0} 
+          badge="Corporate Desk" 
+          sublabel="Received submissions"
+        />
+        <StatCard 
+          label="Indicative Outlay" 
+          value={`₹${items.reduce((acc, curr) => acc + curr.indicativeBudgetCr, 0).toFixed(1)} Cr`} 
+          icon={Coins} 
+          index={1} 
+          badge="Pledged Budget" 
+          sublabel="Aggregated outlay"
+        />
+        <StatCard 
+          label="Under Review" 
+          value={items.filter(e => e.status === "UNDER_ASSESSMENT" || e.status === "SUBMITTED").length} 
+          icon={Clock} 
+          index={2} 
+          badge="Pending Review" 
+          sublabel="Active verification queue"
+        />
       </div>
 
       {/* Main Content Register */}

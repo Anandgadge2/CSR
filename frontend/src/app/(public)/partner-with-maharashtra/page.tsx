@@ -26,7 +26,17 @@ export default function PartnerWithMaharashtraPage() {
     }
 
     if (isLoggedIn) {
-      router.replace("/partner/enquiries/new");
+      let isRM = false;
+      try {
+        const u = JSON.parse(localStorage.getItem("user") || "{}");
+        const role = (u.role || "").toUpperCase();
+        isRM = role.includes("RELATIONSHIP_MANAGER") || role.includes("RELATIONSHIP MANAGER");
+      } catch {}
+      if (isRM) {
+        router.replace("/enquiries");
+      } else {
+        router.replace("/partner/enquiries/new");
+      }
     } else {
       router.replace("/login?next=/partner-with-maharashtra");
     }

@@ -215,6 +215,22 @@ export const getDashboardSummary = async (req: AuthenticatedRequest, res: Respon
       totalOrgs,
       totalUsers,
       onboardingStatus,
+      // Org-specific metrics for personalized dashboards
+      companyEnquiries,
+      companyProjects,
+      deptPitches,
+      deptInterests,
+      ngoProjects,
+      activeAssignments,
+      totalEnquiries,
+      totalPitches,
+      // Org metadata for personalized headers
+      orgName: orgResult?.name || null,
+      orgKind: orgResult?.kind || null,
+      orgStatus: orgResult?.status || null,
+      userRole,
+      isCompany,
+      isGovt,
     };
 
     return res.json({

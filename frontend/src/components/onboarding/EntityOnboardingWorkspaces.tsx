@@ -611,7 +611,7 @@ export function CompanyOnboardingStep() {
     }
   }, [organization, router]);
   const org = organization || ({} as Organization);
-  const data: Record<string, any> = { ...profile, ...org };
+  const data: Record<string, any> = { ...org, ...profile };
 
   const parseToArray = (val: any): string[] => {
     if (Array.isArray(val)) return val;
@@ -640,9 +640,7 @@ export function CompanyOnboardingStep() {
     : [];
 
   const setData = (key: string, value: any) => {
-    if (["legalName", "displayName", "cin", "llpin", "pan", "gstin", "officialEmail", "officialPhone", "website", "district", "address"].includes(key)) {
-      setOrganization((current) => current ? { ...current, [key]: value } : current);
-    }
+    setOrganization((current) => current ? { ...current, [key]: value } : current);
     setProfile((current) => ({ ...current, [key]: value }));
   };
 
@@ -1098,14 +1096,11 @@ export function DepartmentOnboardingStep() {
   }, [organization, router]);
 
   const org = organization || ({} as Organization);
-  const data: Record<string, any> = { ...profile, ...org };
+  const data: Record<string, any> = { ...org, ...profile };
 
   const setData = (key: string, value: any) => {
-    if (["name", "parentDepartment", "departmentCode", "officialEmail", "officialPhone", "website", "address", "district"].includes(key)) {
-      setOrganization((current) => current ? { ...current, [key]: value } : current);
-    } else {
-      setProfile((current) => ({ ...current, [key]: value }));
-    }
+    setOrganization((current) => current ? { ...current, [key]: value } : current);
+    setProfile((current) => ({ ...current, [key]: value }));
   };
 
   const save = async (event: FormEvent) => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard } from "@/components/ui/StatCard";
 import { 
   FileText, Download, Filter, Search, CheckCircle2, ShieldCheck, BarChart3, ArrowUpRight, Sparkles, TrendingUp, PieChart, Coins, Activity, Layers, Landmark
 } from "lucide-react";
@@ -150,61 +151,38 @@ export default function ReportsPage() {
 
       {/* 3D KPI Key Statistics Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <motion.div 
-          whileHover={{ y: -3, rotate: 1 }}
-          className="rounded-2xl border border-white/80 bg-gradient-to-br from-blue-50/90 via-white to-blue-50/40 p-5 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">Total CSR Committed</span>
-            <Coins size={20} className="text-blue-600" />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-blue-950 font-heading">₹141.1 Cr</p>
-          <span className="text-[11px] text-blue-700 font-semibold mt-1 flex items-center gap-1">
-            <TrendingUp size={12} /> +24% YoY Outlay Growth
-          </span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -3, rotate: -1 }}
-          className="rounded-2xl border border-white/80 bg-gradient-to-br from-purple-50/90 via-white to-purple-50/40 p-5 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-700">Utilization Rate</span>
-            <Activity size={20} className="text-purple-600" />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-purple-950 font-heading">91.4%</p>
-          <span className="text-[11px] text-purple-700 font-semibold mt-1 flex items-center gap-1">
-            <CheckCircle2 size={12} /> Verified Tranche Releases
-          </span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -3, rotate: 1 }}
-          className="rounded-2xl border border-white/80 bg-gradient-to-br from-emerald-50/90 via-white to-emerald-50/40 p-5 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Aspirational Priority</span>
-            <Landmark size={20} className="text-emerald-600" />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-emerald-950 font-heading">56%</p>
-          <span className="text-[11px] text-emerald-700 font-semibold mt-1 flex items-center gap-1">
-            <ShieldCheck size={12} /> Dedicated to Tribal Districts
-          </span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -3, rotate: -1 }}
-          className="rounded-2xl border border-white/80 bg-gradient-to-br from-amber-50/90 via-white to-amber-50/40 p-5 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800">MCA Compliance</span>
-            <Sparkles size={20} className="text-amber-600" />
-          </div>
-          <p className="mt-2 text-3xl font-extrabold text-amber-950 font-heading">100%</p>
-          <span className="text-[11px] text-amber-800 font-semibold mt-1 flex items-center gap-1">
-            <CheckCircle2 size={12} /> Section 135 Compliant
-          </span>
-        </motion.div>
+        <StatCard 
+          label="Total CSR Committed" 
+          value="₹141.1 Cr" 
+          icon={Coins} 
+          index={0} 
+          badge="+24% YoY" 
+          sublabel="Outlay Growth"
+        />
+        <StatCard 
+          label="Utilization Rate" 
+          value="91.4%" 
+          icon={Activity} 
+          index={1} 
+          badge="Verified" 
+          sublabel="Tranche Releases"
+        />
+        <StatCard 
+          label="Aspirational Priority" 
+          value="56%" 
+          icon={Landmark} 
+          index={2} 
+          badge="Tribal Focus" 
+          sublabel="Tribal Districts Outlay"
+        />
+        <StatCard 
+          label="MCA Compliance" 
+          value="100%" 
+          icon={Sparkles} 
+          index={3} 
+          badge="Sec 135 OK" 
+          sublabel="Section 135 Compliant"
+        />
       </div>
 
       {activeTab === "ANALYTICS" && (
