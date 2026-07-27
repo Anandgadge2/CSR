@@ -8,6 +8,26 @@ import { StatCard } from "@/components/ui/StatCard";
 import { 
   FileText, Download, Filter, Search, CheckCircle2, ShieldCheck, BarChart3, ArrowUpRight, Sparkles, TrendingUp, PieChart, Coins, Activity, Layers, Landmark
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart as RePieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+} from "recharts";
 
 interface ReportItem {
   id: string;
@@ -59,28 +79,44 @@ const defaultReports: ReportItem[] = [
 ];
 
 const sectorAnalytics = [
-  { sector: "Healthcare & Tele-ICU", allocatedCr: 42.5, utilizedPct: 88, projects: 28, color: "from-blue-600 to-indigo-600" },
-  { sector: "Education & Digital Labs", allocatedCr: 36.8, utilizedPct: 94, projects: 34, color: "from-purple-600 to-indigo-600" },
-  { sector: "Rural Water & Sanitation", allocatedCr: 28.2, utilizedPct: 91, projects: 19, color: "from-cyan-600 to-blue-600" },
-  { sector: "Agriculture & Solar Pumps", allocatedCr: 19.4, utilizedPct: 85, projects: 15, color: "from-emerald-600 to-teal-600" },
-  { sector: "Skill Development & Livelihood", allocatedCr: 14.2, utilizedPct: 90, projects: 12, color: "from-amber-600 to-orange-600" },
+  { sector: "Healthcare", allocatedCr: 42.5, utilizedPct: 88, projects: 28, fill: "#2563eb" },
+  { sector: "Education", allocatedCr: 36.8, utilizedPct: 94, projects: 34, fill: "#7c3aed" },
+  { sector: "Rural Water", allocatedCr: 28.2, utilizedPct: 91, projects: 19, fill: "#0891b2" },
+  { sector: "Agriculture", allocatedCr: 19.4, utilizedPct: 85, projects: 15, fill: "#059669" },
+  { sector: "Livelihoods", allocatedCr: 14.2, utilizedPct: 90, projects: 12, fill: "#d97706" },
 ];
 
 const districtDistribution = [
-  { district: "Gadchiroli", sharePct: 32, amountCr: 45.2, status: "Aspirational Focus" },
-  { district: "Nandurbar", sharePct: 24, amountCr: 33.9, status: "Tribal Priority" },
-  { district: "Solapur", sharePct: 18, amountCr: 25.4, status: "Drought Focus" },
-  { district: "Chandrapur", sharePct: 14, amountCr: 19.7, status: "Industrial Belt" },
-  { district: "Others (Statewide)", sharePct: 12, amountCr: 16.9, status: "General Projects" },
+  { name: "Gadchiroli", value: 45.2, sharePct: 32, fill: "#2563eb" },
+  { name: "Nandurbar", value: 33.9, sharePct: 24, fill: "#7c3aed" },
+  { name: "Solapur", value: 25.4, sharePct: 18, fill: "#0891b2" },
+  { name: "Chandrapur", value: 19.7, sharePct: 14, fill: "#059669" },
+  { name: "Statewide", value: 16.9, sharePct: 12, fill: "#d97706" },
 ];
 
 const monthlyTrend = [
-  { month: "Jan", amountCr: 12.4 },
-  { month: "Feb", amountCr: 16.8 },
-  { month: "Mar", amountCr: 24.5 },
-  { month: "Apr", amountCr: 21.0 },
-  { month: "May", amountCr: 28.6 },
-  { month: "Jun", amountCr: 37.8 },
+  { month: "Jan", committedCr: 12.4, escrowDisbursedCr: 11.2 },
+  { month: "Feb", committedCr: 16.8, escrowDisbursedCr: 15.0 },
+  { month: "Mar", committedCr: 24.5, escrowDisbursedCr: 22.8 },
+  { month: "Apr", committedCr: 21.0, escrowDisbursedCr: 19.5 },
+  { month: "May", committedCr: 28.6, escrowDisbursedCr: 26.2 },
+  { month: "Jun", committedCr: 37.8, escrowDisbursedCr: 35.4 },
+];
+
+const sdgAlignmentData = [
+  { name: "SDG 3 Health", value: 42.5, sharePct: 30, fill: "#ef4444", code: "SDG 3" },
+  { name: "SDG 4 Education", value: 36.8, sharePct: 26, fill: "#f59e0b", code: "SDG 4" },
+  { name: "SDG 6 Water", value: 28.2, sharePct: 20, fill: "#3b82f6", code: "SDG 6" },
+  { name: "SDG 7 Energy", value: 19.4, sharePct: 14, fill: "#eab308", code: "SDG 7" },
+  { name: "SDG 8 Growth", value: 14.2, sharePct: 10, fill: "#a855f7", code: "SDG 8" },
+];
+
+const esgRadarData = [
+  { subject: "Environmental", score: 94, fullMark: 100 },
+  { subject: "Social Impact", score: 98, fullMark: 100 },
+  { subject: "Governance", score: 100, fullMark: 100 },
+  { subject: "MCA Sec 135", score: 96, fullMark: 100 },
+  { subject: "Audit Ledger", score: 95, fullMark: 100 },
 ];
 
 export default function ReportsPage() {
@@ -187,124 +223,193 @@ export default function ReportsPage() {
 
       {activeTab === "ANALYTICS" && (
         <div className="flex flex-col gap-6">
-          {/* Top Charts Row: Sector Allocation & District Ring */}
+          {/* Top Charts Row: Sector Bar Chart & District Donut Chart */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 3D Sector Allocation Bar Graph */}
+            {/* Sector Allocation Recharts Horizontal Bar Chart */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               className="lg:col-span-2 rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-3">
                 <div>
                   <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
                     <BarChart3 size={18} className="text-blue-600" /> Sector-Wise CSR Capital Allocation & Utilization
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">Budget outlays (₹ Crores) vs verified project utilization rate</p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">Budget outlays (₹ Crores) & verified project utilization rate</p>
                 </div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full">
                   FY 2025-26
                 </span>
               </div>
 
-              <div className="flex flex-col gap-4">
-                {sectorAnalytics.map((item, idx) => (
-                  <div key={idx} className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="text-slate-800 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                        {item.sector}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-slate-500 font-normal">{item.projects} Projects</span>
-                        <span className="font-extrabold text-blue-950">₹{item.allocatedCr} Cr</span>
-                        <span className="text-[11px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                          {item.utilizedPct}% Utilized
-                        </span>
-                      </div>
-                    </div>
-                    {/* 3D Animated Bar */}
-                    <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden p-0.5 shadow-inner">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(item.allocatedCr / 45) * 100}%` }}
-                        transition={{ duration: 0.8, delay: idx * 0.1 }}
-                        className={`h-full rounded-full bg-gradient-to-r ${item.color} shadow-md`}
-                      />
-                    </div>
-                  </div>
-                ))}
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sectorAnalytics} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                    <XAxis type="number" fontSize={11} fontWeight="bold" unit=" Cr" />
+                    <YAxis dataKey="sector" type="category" fontSize={11} fontWeight="bold" width={90} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      formatter={(val: any) => [`₹${val} Cr`, "Allocated Budget"]}
+                      contentStyle={{ borderRadius: "12px", border: "1px solid #e2e8f0", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }}
+                    />
+                    <Bar dataKey="allocatedCr" radius={[0, 8, 8, 0]}>
+                      {sectorAnalytics.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </motion.div>
 
-            {/* 3D District Distribution Card */}
+            {/* District Distribution Interactive Recharts Donut */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
               className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between"
             >
-              <div className="border-b border-slate-100 pb-4 mb-4">
+              <div className="border-b border-slate-100 pb-4 mb-2">
                 <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
                   <PieChart size={18} className="text-purple-600" /> District Distribution
                 </h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">CSR allocation breakdown by district focus</p>
               </div>
 
-              <div className="flex flex-col gap-3">
-                {districtDistribution.map((dist, idx) => (
-                  <div key={idx} className="p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:shadow-md transition-all flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900">{dist.district}</h4>
-                      <span className="text-[10px] text-purple-700 font-semibold">{dist.status}</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-extrabold text-blue-950 font-heading">₹{dist.amountCr} Cr</p>
-                      <span className="text-[10px] font-extrabold text-slate-500">{dist.sharePct}% Share</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="h-[260px] w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RePieChart>
+                    <Pie
+                      data={districtDistribution}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={85}
+                      paddingAngle={4}
+                      dataKey="value"
+                      nameKey="name"
+                    >
+                      {districtDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(val: any) => [`₹${val} Cr`, "Outlay"]} />
+                    <Legend wrapperStyle={{ fontSize: 11, fontWeight: "bold" }} />
+                  </RePieChart>
+                </ResponsiveContainer>
               </div>
             </motion.div>
           </div>
 
-          {/* Bottom Graph: 6-Month Disbursement Velocity Trend */}
+          {/* Row 2: UN SDG Alignment Donut & ESG Radar Scorecard */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* UN SDG Target Alignment Bar & Donut Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="lg:col-span-2 rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-3">
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
+                    <Sparkles size={18} className="text-amber-500" /> UN Sustainable Development Goals (SDG) Capital Alignment
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">CSR allocation distribution aligned with NITI Aayog & UN SDG Frameworks</p>
+                </div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
+                  NITI Aayog Vetted
+                </span>
+              </div>
+
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={sdgAlignmentData} margin={{ top: 10, right: 30, left: 10, bottom: 25 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                    <XAxis dataKey="code" fontSize={11} fontWeight="bold" />
+                    <YAxis fontSize={11} fontWeight="bold" unit=" Cr" />
+                    <Tooltip formatter={(val: any) => [`₹${val} Cr`, "Allocated Capital"]} />
+                    <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                      {sdgAlignmentData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+
+            {/* ESG Health Recharts Radar Scorecard */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between"
+            >
+              <div className="border-b border-slate-100 pb-4 mb-2">
+                <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
+                  <ShieldCheck size={18} className="text-emerald-600" /> ESG Due Diligence Radar
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Environmental, Social & Governance compliance rating</p>
+              </div>
+
+              <div className="h-[260px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={esgRadarData}>
+                    <PolarGrid stroke="#e2e8f0" />
+                    <PolarAngleAxis dataKey="subject" fontSize={10} fontWeight="bold" />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} fontSize={9} />
+                    <Radar name="ESG Rating Score" dataKey="score" stroke="#059669" fill="#10b981" fillOpacity={0.4} />
+                    <Tooltip formatter={(val: any) => [`${val}/100`, "Score"]} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Bottom Graph: Recharts Spline Area Curve Chart for Escrow Velocity */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.25 }}
             className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col gap-4"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-base font-extrabold text-slate-900 font-heading flex items-center gap-2">
-                  <TrendingUp size={18} className="text-emerald-600" /> Monthly Escrow Fund Release Velocity (Jan - Jun 2026)
+                  <TrendingUp size={18} className="text-emerald-600" /> Monthly Escrow Fund Release Velocity & Tranches (Jan - Jun 2026)
                 </h3>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">Verified milestone tranche disbursement curve (₹ Crores per Month)</p>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">Smooth milestone tranche disbursement curve (₹ Crores per Month)</p>
               </div>
-              <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+              <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full">
                 +192% Growth Rate
               </span>
             </div>
 
-            {/* Visual SVG Trend Curve */}
-            <div className="relative pt-4 pb-2">
-              <div className="grid grid-cols-6 gap-2">
-                {monthlyTrend.map((t, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-2">
-                    <span className="text-xs font-extrabold text-blue-950 font-heading">₹{t.amountCr} Cr</span>
-                    <div className="h-28 w-full bg-slate-100 rounded-xl overflow-hidden flex items-end p-1">
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: `${(t.amountCr / 40) * 100}%` }}
-                        transition={{ duration: 0.6, delay: idx * 0.08 }}
-                        className="w-full rounded-lg bg-gradient-to-t from-blue-900 via-blue-700 to-indigo-600 shadow-md"
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-slate-600">{t.month}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Smooth Recharts Area Spline Curve Chart */}
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyTrend} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorCommitted" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0.05} />
+                    </linearGradient>
+                    <linearGradient id="colorEscrow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#059669" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" fontSize={11} fontWeight="bold" />
+                  <YAxis fontSize={11} fontWeight="bold" unit=" Cr" />
+                  <Tooltip formatter={(val: any) => [`₹${val} Cr`]} />
+                  <Legend wrapperStyle={{ fontSize: 11, fontWeight: "bold" }} />
+                  <Area type="monotone" dataKey="committedCr" name="Committed Budget" stroke="#1e3a8a" fillOpacity={1} fill="url(#colorCommitted)" strokeWidth={2.5} />
+                  <Area type="monotone" dataKey="escrowDisbursedCr" name="Escrow Disbursed" stroke="#059669" fillOpacity={1} fill="url(#colorEscrow)" strokeWidth={2.5} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </motion.div>
         </div>

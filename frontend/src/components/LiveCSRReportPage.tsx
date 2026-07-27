@@ -211,36 +211,41 @@ export default function LiveCSRReportPage({ title, description, endpoint }: Live
             </div>
           )}
 
-          <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            {Object.entries(report.kpis || {}).slice(0, 8).map(([label, value]) => (
-              <div key={label} className="border border-gov-line bg-white p-4 shadow-sm">
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-gov-muted">{label}</p>
-                <p className="mt-2 text-xl font-extrabold text-gov-navy">{typeof value === "number" ? value.toLocaleString() : value}</p>
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
+            {Object.entries(report.kpis || {}).slice(0, 8).map(([label, value], idx) => (
+              <div key={label} className="rounded-2xl border border-white/80 bg-white/90 backdrop-blur-xl p-5 shadow-glass flex flex-col justify-between hover:shadow-lg transition-all">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">{label.replace(/([A-Z])/g, " $1")}</p>
+                <p className="mt-3 text-2xl font-black tracking-tight text-blue-950 font-heading">
+                  {typeof value === "number" ? value.toLocaleString() : value}
+                </p>
+                <div className="mt-2 h-1 w-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-80" />
               </div>
             ))}
           </section>
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {chartGroups.length === 0 ? (
-              <div className="border border-gov-line bg-white p-8 text-center text-sm text-gov-muted">No chart data for the selected filters.</div>
+              <div className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-8 text-center text-sm font-medium text-slate-500 shadow-glass">No chart data for the selected filters.</div>
             ) : chartGroups.map(([name, points]) => {
               const isStatusChart = name.toLowerCase().includes("status");
               
               if (isStatusChart) {
-                // Render a beautiful donut/pie chart
+                // Render a beautiful 3D donut chart
                 return (
-                  <div key={name} className="border border-gov-line bg-white p-5 shadow-sm flex flex-col">
-                    <h2 className="text-sm font-extrabold uppercase tracking-wide text-gov-navy mb-4">{name.replace(/([A-Z])/g, " $1")}</h2>
-                    <div className="h-[250px] w-full flex-grow">
+                  <div key={name} className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between">
+                    <div className="border-b border-slate-100 pb-3 mb-4">
+                      <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 font-heading">{name.replace(/([A-Z])/g, " $1")}</h2>
+                    </div>
+                    <div className="h-[260px] w-full flex-grow">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={points}
                             cx="50%"
                             cy="50%"
-                            innerRadius={55}
-                            outerRadius={80}
-                            paddingAngle={3}
+                            innerRadius={60}
+                            outerRadius={85}
+                            paddingAngle={4}
                             dataKey="value"
                             nameKey="label"
                           >
@@ -249,7 +254,7 @@ export default function LiveCSRReportPage({ title, description, endpoint }: Live
                             ))}
                           </Pie>
                           <Tooltip formatter={(value) => [value, "Total"]} />
-                          <Legend formatter={(value) => value.replace(/_/g, " ")} wrapperStyle={{ fontSize: 10 }} />
+                          <Legend formatter={(value) => value.replace(/_/g, " ")} wrapperStyle={{ fontSize: 11, fontWeight: "bold" }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
@@ -259,16 +264,18 @@ export default function LiveCSRReportPage({ title, description, endpoint }: Live
 
               // Render a professional BarChart
               return (
-                <div key={name} className="border border-gov-line bg-white p-5 shadow-sm flex flex-col">
-                  <h2 className="text-sm font-extrabold uppercase tracking-wide text-gov-navy mb-4">{name.replace(/([A-Z])/g, " $1")}</h2>
-                  <div className="h-[250px] w-full flex-grow">
+                <div key={name} className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass flex flex-col justify-between">
+                  <div className="border-b border-slate-100 pb-3 mb-4">
+                    <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800 font-heading">{name.replace(/([A-Z])/g, " $1")}</h2>
+                  </div>
+                  <div className="h-[260px] w-full flex-grow">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={points} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="label" fontSize={10} tickLine={false} tickFormatter={(val) => val && val.length > 12 ? `${val.slice(0, 10)}..` : val} />
-                        <YAxis fontSize={10} tickLine={false} allowDecimals={false} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                        <XAxis dataKey="label" fontSize={11} fontWeight="bold" tickLine={false} tickFormatter={(val) => val && val.length > 12 ? `${val.slice(0, 10)}..` : val} />
+                        <YAxis fontSize={11} fontWeight="bold" tickLine={false} allowDecimals={false} />
                         <Tooltip formatter={(value) => [value, "Count"]} />
-                        <Bar dataKey="value" fill="#f7941d" radius={[4, 4, 0, 0]}>
+                        <Bar dataKey="value" fill="#1e3a8a" radius={[6, 6, 0, 0]}>
                           {points.map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
                           ))}
