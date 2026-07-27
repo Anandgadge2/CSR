@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Send, Paperclip, CheckCheck, Landmark, Building2, UserCheck, 
-  Search, Pin, Smile, Mic, Play, Pause, MoreVertical, Heart, ThumbsUp, AlertCircle,
-  FileText, ShieldCheck, Sparkles, PhoneCall, Plus, X, ArrowUpRight, Download, Check, Trash2
+  Search, Pin, Smile, Mic, MicOff, Play, Pause, MoreVertical, Heart, ThumbsUp, AlertCircle,
+  FileText, ShieldCheck, Sparkles, Phone, Plus, X, ArrowUpRight, Download, Check, Trash2
 } from "lucide-react";
-import { getStoredUser } from "@/lib/api";
+import { getStoredUser, API_BASE_URL } from "@/lib/api";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -38,6 +38,7 @@ interface ChatRoom {
   id: string;
   partnerName: string;
   partnerType: "NGO" | "COMPANY" | "GOVT";
+  phone?: string;
   lastMessage: string;
   updatedAt: string;
   unread: boolean;
@@ -52,6 +53,7 @@ const initialChats: ChatRoom[] = [
     id: "chat-1",
     partnerName: "Sahyadri Eco Foundation",
     partnerType: "NGO",
+    phone: "+91 98230 41102",
     lastMessage: "Please verify the S3 PDF links for Phase 1 check dam reports.",
     updatedAt: "14:22 PM",
     unread: true,
@@ -64,6 +66,7 @@ const initialChats: ChatRoom[] = [
     id: "chat-2",
     partnerName: "Sahyadri Technology Ventures Ltd",
     partnerType: "COMPANY",
+    phone: "+91 98221 04958",
     lastMessage: "Board approved the Pune Smart-Classroom budget tranche.",
     updatedAt: "Yesterday",
     unread: false,
@@ -76,6 +79,7 @@ const initialChats: ChatRoom[] = [
     id: "chat-3",
     partnerName: "State CSR Cell (Nodal Officer Desk)",
     partnerType: "GOVT",
+    phone: "+91 94220 18392",
     lastMessage: "Tripartite MoU agreement signed for Solapur solar water project.",
     updatedAt: "Jul 25",
     unread: false,
@@ -88,6 +92,7 @@ const initialChats: ChatRoom[] = [
     id: "chat-4",
     partnerName: "Vidarbha Rural Development Trust",
     partnerType: "NGO",
+    phone: "+91 97641 50284",
     lastMessage: "Telemedicine equipment delivered to Aheri primary health center.",
     updatedAt: "Jul 23",
     unread: false,
@@ -171,11 +176,27 @@ export default function ChatSystem() {
 
   const messages = messagesStore[activeChat.id] || [];
 
+  const prevChatIdRef = useRef(activeChat.id);
+  const prevMessageCountRef = useRef(messages.length);
+
+  // Smooth Auto Scroll ONLY when new message added or room changed (so user can scroll up freely)
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const isNewRoom = prevChatIdRef.current !== activeChat.id;
+      const isNewMessageAdded = messages.length > prevMessageCountRef.current;
+      
+      if (isNewRoom || isNewMessageAdded) {
+        setTimeout(() => {
+          if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          }
+        }, 30);
+      }
+      
+      prevChatIdRef.current = activeChat.id;
+      prevMessageCountRef.current = messages.length;
     }
-  }, [messages, isTyping]);
+  }, [messages.length, activeChat.id, isTyping]);
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -204,7 +225,7 @@ export default function ChatSystem() {
       try {
         const formData = new FormData();
         formData.append("file", selectedFile);
-        const res = await fetch("http://localhost:5000/api/uploads", {
+        const res = await fetch(`${API_BASE_URL}/uploads`, {
           method: "POST",
           body: formData,
           headers: {
@@ -582,13 +603,16 @@ export default function ChatSystem() {
                 <Search size={16} />
               </button>
 
-              <button 
-                onClick={() => alert(`Initiating secure audio session with ${activeChat.partnerName}...`)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs transition-all border border-blue-200"
+
+
+              <a 
+                href={`tel:${activeChat.phone || '+91 98230 41102'}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-xs hover:bg-slate-200 transition-colors shadow-2xs"
+                title="Contact Phone Number"
               >
-                <PhoneCall size={13} />
-                <span className="hidden sm:inline">Call Partner</span>
-              </button>
+                <Phone size={13} className="text-blue-600" />
+                <span>{activeChat.phone || "+91 98230 41102"}</span>
+              </a>
 
               <span className="hidden sm:flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full shadow-2xs">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
@@ -597,8 +621,12 @@ export default function ChatSystem() {
             </div>
           </div>
 
-          {/* Messages Stream Container */}
-          <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 bg-gradient-to-b from-slate-50/50 via-white/40 to-blue-50/20">
+          {/* Messages Stream Container (Fixed Height & Auto Scroll) */}
+          <div 
+            ref={scrollRef} 
+            style={{ height: 'calc(100% - 130px)' }}
+            className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 bg-gradient-to-b from-slate-50/50 via-white/40 to-blue-50/20 scroll-smooth shadow-inner"
+          >
             <AnimatePresence>
               {displayMessages.map((m) => {
                 const isMe = m.senderName === "You";
