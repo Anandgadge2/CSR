@@ -326,14 +326,28 @@ export const updateCompanyPreferences = async (req: AuthenticatedRequest, res: R
         preferredSectors: Array.isArray(body.preferredSectors) ? body.preferredSectors : [],
         preferredDivisions: Array.isArray(body.preferredDivisions) ? body.preferredDivisions : [],
         preferredCities: Array.isArray(body.preferredCities) ? body.preferredCities : [],
-        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : []
+        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : [],
+        preferredProjectSize: body.preferredProjectSize || null,
+        minFundingAmount: body.minFundingAmount ? parseFloat(body.minFundingAmount) : null,
+        maxFundingAmount: body.maxFundingAmount ? parseFloat(body.maxFundingAmount) : null,
+        fundingPreference: body.fundingPreference || null,
+        implementationPreference: body.implementationPreference || null,
+        preferredBeneficiaryGroups: body.preferredBeneficiaryGroups || null,
+        sdgFocusAreas: body.sdgFocusAreas || null
       },
       update: {
         preferredDistricts: Array.isArray(body.preferredDistricts) ? body.preferredDistricts : [],
         preferredSectors: Array.isArray(body.preferredSectors) ? body.preferredSectors : [],
         preferredDivisions: Array.isArray(body.preferredDivisions) ? body.preferredDivisions : [],
         preferredCities: Array.isArray(body.preferredCities) ? body.preferredCities : [],
-        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : []
+        preferredTalukas: Array.isArray(body.preferredTalukas) ? body.preferredTalukas : [],
+        preferredProjectSize: body.preferredProjectSize || null,
+        minFundingAmount: body.minFundingAmount ? parseFloat(body.minFundingAmount) : null,
+        maxFundingAmount: body.maxFundingAmount ? parseFloat(body.maxFundingAmount) : null,
+        fundingPreference: body.fundingPreference || null,
+        implementationPreference: body.implementationPreference || null,
+        preferredBeneficiaryGroups: body.preferredBeneficiaryGroups || null,
+        sdgFocusAreas: body.sdgFocusAreas || null
       }
     });
     return res.json(profile);

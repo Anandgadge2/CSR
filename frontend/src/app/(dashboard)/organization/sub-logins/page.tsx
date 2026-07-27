@@ -7,6 +7,7 @@ import {
   Copy, Check, AlertCircle, Sparkles, ShieldCheck, UserCheck, RefreshCw
 } from "lucide-react";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
+import { StatCard, StatCardGroup } from "@/components/ui/StatCard";
 
 interface AgencySubLogin {
   id: string;
@@ -135,53 +136,35 @@ export default function AgencySubLoginsPage() {
       />
 
       {/* 3D KPI Metrics Bar */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <motion.div 
-          whileHover={{ y: -4, rotate: 1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-blue-50/80 via-white to-blue-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-blue-700">Active Agency Sub-Logins</span>
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-bold">
-              <UserCheck size={20} />
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-blue-950 font-heading">
-            {items.filter(i => i.status === "ACTIVE").length}
-          </p>
-          <span className="text-[11px] text-blue-700 font-semibold mt-1 block">Active implementing partners</span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -4, rotate: -1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700">Pending Magic Invites</span>
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-              <Mail size={20} />
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-amber-950 font-heading">
-            {items.filter(i => i.status === "INVITE_SENT").length}
-          </p>
-          <span className="text-[11px] text-amber-700 font-semibold mt-1 block">Credentials dispatched to NGO</span>
-        </motion.div>
-
-        <motion.div 
-          whileHover={{ y: -4, rotate: 1 }}
-          className="rounded-2xl border border-white/60 bg-gradient-to-br from-purple-50/80 via-white to-purple-50/30 p-6 backdrop-blur-xl shadow-glass"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-purple-700">Assigned CSR Outlay</span>
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-bold">
-              <ShieldCheck size={20} />
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-extrabold text-purple-950 font-heading">3 Partner NGOs</p>
-          <span className="text-[11px] text-purple-700 font-semibold mt-1 block">Audited access control</span>
-        </motion.div>
-      </div>
+      <StatCardGroup columns={3}>
+        <StatCard
+          label="Active Agency Sub-Logins"
+          value={items.filter(i => i.status === "ACTIVE").length}
+          icon={UserCheck}
+          badge="Active Partners"
+          sublabel="Active implementing partners"
+          colorTheme="blue"
+          index={0}
+        />
+        <StatCard
+          label="Pending Magic Invites"
+          value={items.filter(i => i.status === "INVITE_SENT").length}
+          icon={Mail}
+          badge="Dispatched"
+          sublabel="Credentials dispatched to NGO"
+          colorTheme="amber"
+          index={1}
+        />
+        <StatCard
+          label="Total Implementing NGOs"
+          value={`${items.length} Partner NGOs`}
+          icon={Building2}
+          badge="Audited Access"
+          sublabel="Audited access control & authority"
+          colorTheme="purple"
+          index={2}
+        />
+      </StatCardGroup>
 
       {/* Main Table Container */}
       <div className="rounded-2xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass">

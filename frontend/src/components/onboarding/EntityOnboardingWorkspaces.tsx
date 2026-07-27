@@ -996,26 +996,67 @@ function DocumentsStep({
             <h3 className="text-sm font-bold text-slate-900">Required Verification Documents</h3>
             <p className="text-xs text-slate-500 mt-0.5">Please provide files for each document class below</p>
           </div>
-          <span className="text-xs font-extrabold bg-blue-50 text-blue-900 border border-blue-200 px-3.5 py-1.5 rounded-full">
+<span className="text-xs font-extrabold bg-blue-50 text-blue-900 border border-blue-200 px-3.5 py-1.5 rounded-full">
             {documents.length} of {documentTypes.length} Uploaded
           </span>
         </div>
 
+        {uploadingType && (
+          <div className="mx-6 mt-6 p-5 rounded-2xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-950 text-white shadow-2xl flex flex-col gap-3 border border-blue-500/40 relative overflow-hidden">
+            <div className="flex items-center justify-between z-10">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center shrink-0">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-300" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    Uploading Document
+                    <span className="text-[10px] bg-blue-500/30 text-blue-200 border border-blue-400/40 px-2 py-0.5 rounded-md font-bold font-mono">
+                      {uploadingType.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-blue-200 font-medium mt-0.5">Encrypting document and syncing verification ledger...</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-xs font-extrabold text-blue-200 tracking-wide">Processing Upload…</span>
+              </div>
+            </div>
+            {/* Animated Progress Bar */}
+            <div className="w-full bg-blue-900/60 rounded-full h-2 overflow-hidden border border-blue-700/50">
+              <div className="bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-400 h-full rounded-full animate-pulse w-full" />
+            </div>
+          </div>
+        )}
+
         <div className="divide-y divide-slate-100 bg-white">
           {documentTypes.map((type) => {
             const uploadedDoc = documents.find((doc) => doc.documentType === type);
+            const isUploading = uploadingType === type;
             return (
-              <div key={type} className="flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 gap-4 hover:bg-slate-50/50 transition-colors">
+              <div 
+                key={type} 
+                className={`flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 gap-4 transition-colors ${
+                  isUploading ? "bg-blue-50/60 border-l-4 border-l-blue-600" : "hover:bg-slate-50/50"
+                }`}
+              >
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 rounded-2xl border border-blue-100">
-                    <FileText className="w-5 h-5" />
+                  <div className={`w-10 h-10 flex items-center justify-center shrink-0 rounded-2xl border transition-colors ${
+                    isUploading ? "bg-blue-100 border-blue-300 text-blue-700" : "bg-blue-50 border-blue-100 text-blue-600"
+                  }`}>
+                    {isUploading ? <Loader2 className="w-5 h-5 animate-spin text-blue-600" /> : <FileText className="w-5 h-5" />}
                   </div>
                   <div className="flex flex-col">
                     <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       {type.replace(/_/g, " ")}
                       {isMandatoryDoc(type) && <span className="text-red-500 font-bold">*</span>}
                     </div>
-                    {uploadedDoc ? (
+                    {isUploading ? (
+                      <span className="text-[11px] text-blue-700 font-bold flex items-center gap-1.5 mt-0.5">
+                        <Loader2 size={12} className="animate-spin text-blue-600" /> Uploading & Encrypting...
+                      </span>
+                    ) : uploadedDoc ? (
                       <span className="text-[11px] text-blue-700 font-semibold max-w-[320px] truncate mt-0.5">
                         {uploadedDoc.fileName || "uploaded_file.pdf"}
                       </span>
@@ -1050,14 +1091,27 @@ function DocumentsStep({
                       </button>
                     </>
                   ) : (
-                    <label className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 text-xs font-bold text-white shadow-sm hover:shadow transition-all hover:scale-105 cursor-pointer">
-                      <Upload size={14} />
-                      {uploadingType === type ? "Uploading..." : "Upload File"}
+                    <label className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-bold text-white shadow-sm transition-all px-4 ${
+                      isUploading 
+                        ? "bg-blue-800 cursor-wait opacity-90 shadow-inner" 
+                        : "bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 hover:shadow hover:scale-105 cursor-pointer"
+                    }`}>
+                      {isUploading ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin text-blue-300" />
+                          <span>Uploading…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={14} />
+                          <span>Upload File</span>
+                        </>
+                      )}
                       <input
                         type="file"
                         accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
                         onChange={(e) => handleSpecificUpload(e, type)}
-                        disabled={uploadingType === type}
+                        disabled={isUploading}
                         className="hidden"
                       />
                     </label>

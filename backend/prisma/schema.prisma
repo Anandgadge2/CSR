@@ -376,6 +376,13 @@ model CSRCompanyProfile {
   preferredDivisions       String[]    @default([])
   preferredCities           String[]    @default([])
   preferredTalukas          String[]    @default([])
+  preferredProjectSize         String?
+  minFundingAmount             Decimal?     @db.Decimal(15, 2)
+  maxFundingAmount             Decimal?     @db.Decimal(15, 2)
+  fundingPreference            String?
+  implementationPreference     String?
+  preferredBeneficiaryGroups   String?
+  sdgFocusAreas                String?
   
   csrHeadName              String?
   csrHeadEmail             String?

@@ -564,11 +564,10 @@ export default function DashboardEngine() {
         })}
       </div>
 
-      {/* 8 Enterprise KPI Cards Grid with Smooth Separation Line */}
-      <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 sm:p-5 space-y-4">
-        {/* Section Title Headers */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-5 items-center border-b border-slate-200/80 pb-3">
-          <div className="flex items-center gap-2">
+      {/* KPI Cards Grid */}
+      {isCorporate || isGovernment ? (
+        <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 sm:p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
             <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/70 text-slate-700 font-bold text-xs">
               {React.createElement(leftIcon, { size: 13 })}
             </span>
@@ -577,50 +576,71 @@ export default function DashboardEngine() {
               <p className="text-[10px] text-slate-500 font-normal">{leftSubtitle}</p>
             </div>
           </div>
-          <div className="hidden lg:block w-px" />
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/70 text-slate-700 font-bold text-xs">
-              {React.createElement(rightIcon, { size: 13 })}
-            </span>
-            <div>
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{rightTitle}</h3>
-              <p className="text-[10px] text-slate-500 font-normal">{rightSubtitle}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {renderCard(r1Left[0], 0)}
+            {renderCard(r1Left[1], 1)}
+            {renderCard(r2Left[0], 2)}
+            {renderCard(r2Left[1], 3)}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-4 sm:p-5 space-y-4">
+          {/* Section Title Headers */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-5 items-center border-b border-slate-200/80 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/70 text-slate-700 font-bold text-xs">
+                {React.createElement(leftIcon, { size: 13 })}
+              </span>
+              <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{leftTitle}</h3>
+                <p className="text-[10px] text-slate-500 font-normal">{leftSubtitle}</p>
+              </div>
+            </div>
+            <div className="hidden lg:block w-px" />
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/70 text-slate-700 font-bold text-xs">
+                {React.createElement(rightIcon, { size: 13 })}
+              </span>
+              <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-800">{rightTitle}</h3>
+                <p className="text-[10px] text-slate-500 font-normal">{rightSubtitle}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 8-Card Grid Layout with Smooth Vertical Divider */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
+            {/* LEFT SIDE: 4 Cards */}
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {renderCard(r1Left[0], 0)}
+                {renderCard(r1Left[1], 1)}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {renderCard(r2Left[0], 2)}
+                {renderCard(r2Left[1], 3)}
+              </div>
+            </div>
+
+            {/* SMOOTH VERTICAL DIVIDER */}
+            <div className="hidden lg:flex items-center justify-center relative mx-0.5">
+              <div className="w-0.5 h-full bg-gradient-to-b from-transparent via-slate-300 to-transparent rounded-full shadow-[0_0_8px_rgba(148,163,184,0.4)]" />
+            </div>
+
+            {/* RIGHT SIDE: 4 Cards */}
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {renderCard(r1Right[0], 4)}
+                {renderCard(r1Right[1], 5)}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {renderCard(r2Right[0], 6)}
+                {renderCard(r2Right[1], 7)}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* 8-Card Grid Layout with Smooth Vertical Divider */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-5 items-stretch">
-          {/* LEFT SIDE: 4 Cards */}
-          <div className="space-y-3.5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {renderCard(r1Left[0], 0)}
-              {renderCard(r1Left[1], 1)}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {renderCard(r2Left[0], 2)}
-              {renderCard(r2Left[1], 3)}
-            </div>
-          </div>
-
-          {/* SMOOTH VERTICAL DIVIDER */}
-          <div className="hidden lg:flex items-center justify-center relative mx-0.5">
-            <div className="w-0.5 h-full bg-gradient-to-b from-transparent via-slate-300 to-transparent rounded-full shadow-[0_0_8px_rgba(148,163,184,0.4)]" />
-          </div>
-
-          {/* RIGHT SIDE: 4 Cards */}
-          <div className="space-y-3.5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {renderCard(r1Right[0], 4)}
-              {renderCard(r1Right[1], 5)}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {renderCard(r2Right[0], 6)}
-              {renderCard(r2Right[1], 7)}
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* Dashboard Bottom Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
