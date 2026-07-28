@@ -5,7 +5,12 @@ import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 export const listNotifications = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const notifications = await prisma.notification.findMany({
-      where: { userId: req.user!.id },
+      where: {
+        OR: [
+          { userId: req.user!.id },
+          { recipientId: req.user!.id }
+        ]
+      },
       orderBy: { createdAt: "desc" },
       take: 100
     });
@@ -19,7 +24,13 @@ export const listNotifications = async (req: AuthenticatedRequest, res: Response
 export const markNotificationRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const notification = await prisma.notification.updateMany({
-      where: { id: req.params.id, userId: req.user!.id },
+      where: {
+        id: req.params.id,
+        OR: [
+          { userId: req.user!.id },
+          { recipientId: req.user!.id }
+        ]
+      },
       data: { isRead: true }
     });
 
@@ -36,11 +47,52 @@ export const markNotificationRead = async (req: AuthenticatedRequest, res: Respo
 export const markAllNotificationsRead = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     await prisma.notification.updateMany({
-      where: { userId: req.user!.id, isRead: false },
+      where: {
+        isRead: false,
+        OR: [
+          { userId: req.user!.id },
+          { recipientId: req.user!.id }
+        ]
+      },
       data: { isRead: true }
     });
 
     return res.json({ message: "All notifications marked as read" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteNotification = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    await prisma.notification.deleteMany({
+      where: {
+        id: req.params.id,
+        OR: [
+          { userId: req.user!.id },
+          { recipientId: req.user!.id }
+        ]
+      }
+    });
+
+    return res.json({ message: "Notification deleted" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const clearAllNotifications = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    await prisma.notification.deleteMany({
+      where: {
+        OR: [
+          { userId: req.user!.id },
+          { recipientId: req.user!.id }
+        ]
+      }
+    });
+
+    return res.json({ message: "All notifications cleared" });
   } catch (error) {
     next(error);
   }

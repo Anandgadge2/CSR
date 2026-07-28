@@ -25,10 +25,18 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const defaultToastContext: ToastContextType = {
+  toasts: [],
+  addToast: (toast) => {
+    console.warn("addToast was called outside of ToastProvider. Make sure ToastProvider wraps your application.", toast);
+  },
+  removeToast: () => {},
+};
+
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error("useToast must be used within ToastProvider");
+    return defaultToastContext;
   }
   return context;
 }

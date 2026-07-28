@@ -319,6 +319,8 @@ model Organization {
   pincode            String?
 
   status             OrganizationStatus @default(REGISTERED)
+  clarificationRemarks String?
+  rejectionReason    String?
 
   // Specialized 1:1 Extension Profiles
   csrCompanyProfile  CSRCompanyProfile?
@@ -942,6 +944,7 @@ model Notification {
   title       String
   message     String   @db.Text
   type        String   @default("INFO")
+  actionUrl   String?
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
 

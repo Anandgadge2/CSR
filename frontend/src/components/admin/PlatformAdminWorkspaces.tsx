@@ -8,6 +8,8 @@ import { AlertCircle, AlertTriangle, ArrowRight, Building2, Check, CheckCircle2,
 import { apiFetch, API_BASE_URL } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
+import GovModal from "@/components/gov/GovModal";
+import { useToastActions } from "@/components/ui/Toast";
 
 type Tenant = {
   id: string;
@@ -2074,9 +2076,10 @@ export function OrganizationOnboardingWorkspace() {
 
   // Once submitted, onboarding details are read-only — redirect away from the edit form.
   useEffect(() => {
-    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "SUSPENDED"];
-    if (organization && locked.includes(organization.onboardingStatus)) {
-      router.push(organization.onboardingStatus === "APPROVED" ? "/organization/onboarding/details" : "/organization/onboarding/status");
+    const currentStatus = (organization?.onboardingStatus || organization?.status || "").toUpperCase();
+    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "ACTIVE", "SUSPENDED"];
+    if (organization && currentStatus && locked.includes(currentStatus)) {
+      router.replace(currentStatus === "APPROVED" || currentStatus === "ACTIVE" ? "/organization/onboarding/details" : "/organization/onboarding/status");
     }
   }, [organization, router]);
 
@@ -2236,9 +2239,11 @@ export function OrganizationOnboardingWorkspace() {
 }
 
 export function OrganizationOnboardingStatusWorkspace() {
+  const router = useRouter();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [reapplying, setReapplying] = useState(false);
 
   const fetchStatus = () => {
     setLoading(true);
@@ -2263,15 +2268,36 @@ export function OrganizationOnboardingStatusWorkspace() {
     fetchStatus();
   }, []);
 
+  const handleReapply = async () => {
+    setReapplying(true);
+    setError("");
+    try {
+      await apiFetch("/onboarding/reapply", { method: "POST" });
+      const targetRoute = organization?.organizationType === "GOVERNMENT_DEPARTMENT" || organization?.kind === "GOVERNMENT_DEPARTMENT"
+        ? "/organization/onboarding/department"
+        : "/organization/onboarding/company";
+      router.push(targetRoute);
+    } catch (err: any) {
+      setError(err.message || "Unable to reset application for re-application");
+      setReapplying(false);
+    }
+  };
+
   const onboardingStatus = (organization?.onboardingStatus || organization?.status || "REGISTERED").toUpperCase();
-  const isApproved = onboardingStatus === "APPROVED" || onboardingStatus === "VERIFIED";
-  const isRejected = onboardingStatus === "REJECTED" || onboardingStatus === "SUSPENDED";
+  const isApproved = onboardingStatus === "APPROVED" || onboardingStatus === "VERIFIED" || onboardingStatus === "ACTIVE";
+  const isClarification = onboardingStatus === "CLARIFICATION_REQUIRED";
+  const isRejected = onboardingStatus === "REJECTED";
+  const isSuspended = onboardingStatus === "SUSPENDED";
+
+  const editRoute = organization?.organizationType === "GOVERNMENT_DEPARTMENT" || organization?.kind === "GOVERNMENT_DEPARTMENT"
+    ? "/organization/onboarding/department"
+    : "/organization/onboarding/company";
 
   return (
     <WorkspaceShell
       eyebrow="Organization"
       title="Onboarding Status"
-      description="Operational transactions remain blocked until Portal Admin approval."
+      description="Track status updates, respond to admin clarification, or re-apply after application review."
     >
       {loading ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-12 shadow-sm text-center">
@@ -2311,9 +2337,13 @@ export function OrganizationOnboardingStatusWorkspace() {
             className={`rounded-2xl border p-5 shadow-sm transition-all ${
               isApproved
                 ? "border-emerald-200 bg-emerald-50/80 text-emerald-950"
+                : isClarification
+                ? "border-amber-200 bg-amber-50/90 text-amber-950"
                 : isRejected
                 ? "border-rose-200 bg-rose-50/80 text-rose-950"
-                : "border-amber-200 bg-amber-50/80 text-amber-950"
+                : isSuspended
+                ? "border-slate-300 bg-slate-100 text-slate-900"
+                : "border-sky-200 bg-sky-50/80 text-sky-950"
             }`}
           >
             <div className="flex items-start gap-3.5">
@@ -2321,12 +2351,20 @@ export function OrganizationOnboardingStatusWorkspace() {
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
+              ) : isClarification ? (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <AlertTriangle className="h-5 w-5 animate-bounce" />
+                </div>
               ) : isRejected ? (
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
-                  <AlertTriangle className="h-5 w-5" />
+                  <XCircle className="h-5 w-5" />
+                </div>
+              ) : isSuspended ? (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-slate-700">
+                  <ShieldAlert className="h-5 w-5" />
                 </div>
               ) : (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
                   <Clock className="h-5 w-5 animate-pulse" />
                 </div>
               )}
@@ -2334,17 +2372,48 @@ export function OrganizationOnboardingStatusWorkspace() {
                 <h3 className="text-sm font-extrabold uppercase tracking-wide">
                   {isApproved
                     ? "Onboarding Approved — Active"
+                    : isClarification
+                    ? "Action Required — Clarification Requested"
                     : isRejected
-                    ? "Onboarding Rejected — Action Required"
-                    : "Onboarding Pending Approval"}
+                    ? "Onboarding Rejected — Re-application Available"
+                    : isSuspended
+                    ? "Account Access Suspended"
+                    : "Onboarding Pending Verification"}
                 </h3>
                 <p className="mt-1 text-xs font-medium opacity-90 leading-relaxed">
                   {isApproved
                     ? "Your organization has been verified and approved by the Portal Admin. Full platform operations are active."
+                    : isClarification
+                    ? (organization as any)?.clarificationRemarks ? `Remarks from Admin: ${(organization as any).clarificationRemarks}` : "The Portal Admin requested additional clarification or updated document uploads. Click below to edit details."
                     : isRejected
-                    ? "Your organization onboarding application was not approved. Please review submitted documents or reach out to Portal Support."
-                    : "Your organization onboarding application has been submitted and is pending Portal Admin review. Access to operational features will open automatically upon approval."}
+                    ? (organization as any)?.rejectionReason ? `Reason: ${(organization as any).rejectionReason}` : "Your onboarding application was rejected. You may review your profile details and re-apply."
+                    : isSuspended
+                    ? "Your organization account is currently suspended. Please contact portal support at support.csr@maharashtra.gov.in for reinstatement."
+                    : "Your organization onboarding application is under review by Portal Admin."}
                 </p>
+
+                {isClarification && (
+                  <div className="mt-4">
+                    <Link
+                      href={editRoute}
+                      className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 text-xs font-bold shadow-sm transition-all cursor-pointer"
+                    >
+                      <FileText className="h-4 w-4" /> Respond to Clarification & Edit Details
+                    </Link>
+                  </div>
+                )}
+
+                {isRejected && (
+                  <div className="mt-4">
+                    <button
+                      onClick={handleReapply}
+                      disabled={reapplying}
+                      className="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-xs font-bold shadow-sm transition-all cursor-pointer"
+                    >
+                      {reapplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Re-apply & Modify Application
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2384,9 +2453,11 @@ export function OrganizationOnboardingStatusWorkspace() {
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${
                     isApproved
                       ? "bg-emerald-100 text-emerald-800"
+                      : isClarification
+                      ? "bg-amber-100 text-amber-800"
                       : isRejected
                       ? "bg-rose-100 text-rose-800"
-                      : "bg-amber-100 text-amber-800"
+                      : "bg-slate-100 text-slate-800"
                   }`}
                 >
                   {onboardingStatus.replace(/_/g, " ")}
@@ -2453,11 +2524,30 @@ export function OrganizationOnboardingStatusWorkspace() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            {isClarification && (
+              <Link
+                href={editRoute}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+              >
+                <FileText className="h-4 w-4" /> Respond to Clarification & Edit Details
+              </Link>
+            )}
+
+            {isRejected && (
+              <button
+                onClick={handleReapply}
+                disabled={reapplying}
+                className="inline-flex items-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+              >
+                {reapplying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Re-apply & Modify Application
+              </button>
+            )}
+
             <Link
               href="/organization/onboarding/details"
               className="inline-flex items-center gap-2 rounded-xl bg-[#14274e] px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0f1d3a] transition-all cursor-pointer"
             >
-              <FileText className="h-4 w-4" /> View Submitted Onboarding Details
+              <FileText className="h-4 w-4" /> View Saved Details
             </Link>
             <button
               onClick={fetchStatus}
@@ -2721,12 +2811,77 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
 
   useEffect(() => { load(); }, [organizationId]);
 
+  const toast = useToastActions();
   const [actionLoading, setActionLoading] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
 
-  const action = async (type: "approve" | "reject" | "request-clarification" | "suspend") => {
-    const remarks = type === "approve" ? undefined : window.prompt("Remarks or reason") || undefined;
-    if (type !== "approve" && !remarks) return;
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    type: "request-clarification" | "reject" | "suspend" | null;
+    title: string;
+    description: string;
+    remarks: string;
+    submitLabel: string;
+    isDanger: boolean;
+  }>({
+    open: false,
+    type: null,
+    title: "",
+    description: "",
+    remarks: "",
+    submitLabel: "",
+    isDanger: false,
+  });
+
+  const openActionModal = (type: "request-clarification" | "reject" | "suspend") => {
+    setError("");
+    if (type === "request-clarification") {
+      setActionModal({
+        open: true,
+        type,
+        title: "Request Clarification",
+        description: "Please specify the additional details or missing statutory documents required from the organization before proceeding.",
+        remarks: "",
+        submitLabel: "Send Clarification Request",
+        isDanger: false,
+      });
+    } else if (type === "reject") {
+      setActionModal({
+        open: true,
+        type,
+        title: "Reject Onboarding Application",
+        description: "Specify the formal reason for rejecting this organization's onboarding application. This will be recorded in the audit log.",
+        remarks: "",
+        submitLabel: "Confirm Rejection",
+        isDanger: true,
+      });
+    } else if (type === "suspend") {
+      setActionModal({
+        open: true,
+        type,
+        title: "Suspend Organization Access",
+        description: "Specify the reason for suspending access for this organization.",
+        remarks: "",
+        submitLabel: "Confirm Suspension",
+        isDanger: true,
+      });
+    }
+  };
+
+  const handleModalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!actionModal.type) return;
+    if (!actionModal.remarks.trim()) {
+      setError("Please enter remarks or reason before submitting.");
+      return;
+    }
+    const targetType = actionModal.type;
+    const remarksText = actionModal.remarks.trim();
+    setActionModal((prev) => ({ ...prev, open: false }));
+    await executeAction(targetType, remarksText);
+  };
+
+  const executeAction = async (type: "approve" | "reject" | "request-clarification" | "suspend", remarks?: string) => {
     setError("");
     setActionLoading(true);
     setActiveAction(type);
@@ -2736,9 +2891,14 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
         body: JSON.stringify(type === "reject" ? { rejectionReason: remarks } : { remarks })
       });
       await load();
-      alert(`Organization successfully ${type === "approve" ? "approved" : type === "reject" ? "rejected" : type === "request-clarification" ? "clarification requested" : "suspended"}!`);
+      toast.success(
+        "Action Completed",
+        `Organization successfully ${type === "approve" ? "approved & activated" : type === "reject" ? "rejected" : type === "request-clarification" ? "clarification requested" : "suspended"}.`
+      );
     } catch (err: any) {
-      setError(err.message || `Unable to ${type} organization`);
+      const msg = err.message || `Unable to ${type} organization`;
+      setError(msg);
+      toast.error("Action Failed", msg);
     } finally {
       setActionLoading(false);
       setActiveAction(null);
@@ -3108,45 +3268,76 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
             <div className="space-y-6">
               {/* Approval Decision Controls */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-4">
-                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
-                  Approval Decision Controls
+                <h3 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <span>Approval Decision Controls</span>
+                  {(org.onboardingStatus === "APPROVED" || org.status === "ACTIVE" || org.onboardingStatus === "ACTIVE") && (
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold border border-emerald-300">
+                      ✓ APPROVED
+                    </span>
+                  )}
                 </h3>
                 <div className="flex flex-col gap-2.5">
-                  <Button 
-                    onClick={() => action("approve")} 
-                    loading={actionLoading && activeAction === "approve"} 
-                    disabled={actionLoading || org.onboardingStatus === "APPROVED" || org.status === "ACTIVE"}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 shadow-2xs"
-                  >
-                    <CheckCircle2 size={16} className="mr-1.5" /> Approve & Activate
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    onClick={() => action("request-clarification")} 
-                    loading={actionLoading && activeAction === "request-clarification"} 
-                    disabled={actionLoading}
-                    className="w-full font-bold"
-                  >
-                    Request Clarification
-                  </Button>
-                  <Button 
-                    variant="danger" 
-                    onClick={() => action("reject")} 
-                    loading={actionLoading && activeAction === "reject"} 
-                    disabled={actionLoading || org.onboardingStatus === "REJECTED"}
-                    className="w-full font-bold"
-                  >
-                    Reject Application
-                  </Button>
-                  <Button 
-                    variant="secondary" 
-                    onClick={() => action("suspend")} 
-                    loading={actionLoading && activeAction === "suspend"} 
-                    disabled={actionLoading || org.onboardingStatus === "SUSPENDED"}
-                    className="w-full font-bold text-slate-600"
-                  >
-                    Suspend Organization
-                  </Button>
+                  {(org.onboardingStatus === "APPROVED" || org.status === "ACTIVE" || org.onboardingStatus === "ACTIVE") ? (
+                    <div className="w-full rounded-xl bg-emerald-50 border border-emerald-200/90 p-3.5 text-center text-xs font-extrabold text-emerald-800 flex items-center justify-center gap-2 shadow-2xs">
+                      <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                      Approved & Active
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={() => executeAction("approve")} 
+                      loading={actionLoading && activeAction === "approve"} 
+                      disabled={actionLoading}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 shadow-2xs cursor-pointer"
+                    >
+                      <CheckCircle2 size={16} className="mr-1.5" /> Approve & Activate
+                    </Button>
+                  )}
+
+                  {!(org.onboardingStatus === "APPROVED" || org.status === "ACTIVE" || org.onboardingStatus === "ACTIVE") && (
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => openActionModal("request-clarification")} 
+                      loading={actionLoading && activeAction === "request-clarification"} 
+                      disabled={actionLoading}
+                      className="w-full font-bold cursor-pointer"
+                    >
+                      Request Clarification
+                    </Button>
+                  )}
+
+                  {(org.onboardingStatus === "REJECTED" || org.status === "REJECTED") ? (
+                    <div className="w-full rounded-xl bg-rose-50 border border-rose-200 p-3.5 text-center text-xs font-extrabold text-rose-800 flex items-center justify-center gap-2">
+                      <XCircle size={16} className="text-rose-600 shrink-0" />
+                      Application Rejected
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="danger" 
+                      onClick={() => openActionModal("reject")} 
+                      loading={actionLoading && activeAction === "reject"} 
+                      disabled={actionLoading}
+                      className="w-full font-bold cursor-pointer"
+                    >
+                      Reject Application
+                    </Button>
+                  )}
+
+                  {(org.onboardingStatus === "SUSPENDED" || org.status === "SUSPENDED") ? (
+                    <div className="w-full rounded-xl bg-slate-100 border border-slate-300 p-3.5 text-center text-xs font-extrabold text-slate-700 flex items-center justify-center gap-2">
+                      <AlertCircle size={16} className="text-slate-500 shrink-0" />
+                      Organization Access Suspended
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => openActionModal("suspend")} 
+                      loading={actionLoading && activeAction === "suspend"} 
+                      disabled={actionLoading}
+                      className="w-full font-bold text-slate-600 cursor-pointer"
+                    >
+                      Suspend Organization
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -3202,6 +3393,38 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
           </div>
         </div>
       )}
+
+      {/* Interactive Action Remarks Modal */}
+      <GovModal open={actionModal.open} onClose={() => setActionModal(prev => ({ ...prev, open: false }))} title={actionModal.title} width={520}>
+        <form onSubmit={handleModalSubmit} className="space-y-4">
+          <p className="text-xs text-slate-600 leading-relaxed font-medium">
+            {actionModal.description}
+          </p>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold text-slate-900">
+              Remarks / Reason <span className="text-rose-500">*</span>
+            </label>
+            <textarea
+              required
+              rows={4}
+              value={actionModal.remarks}
+              onChange={(e) => setActionModal(prev => ({ ...prev, remarks: e.target.value }))}
+              placeholder="Enter remarks or reason for this decision..."
+              className="w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100 transition-all font-medium"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <Button type="button" variant="secondary" onClick={() => setActionModal(prev => ({ ...prev, open: false }))}>
+              Cancel
+            </Button>
+            <Button type="submit" variant={actionModal.isDanger ? "danger" : "primary"} loading={actionLoading}>
+              {actionModal.submitLabel}
+            </Button>
+          </div>
+        </form>
+      </GovModal>
     </WorkspaceShell>
   );
 }

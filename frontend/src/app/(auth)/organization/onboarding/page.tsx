@@ -36,9 +36,16 @@ export default function OrganizationOnboardingPage() {
 
     if (routeByType(storedOrganizationType)) return;
 
-    apiFetch<OrganizationStatus>("/onboarding/status")
-      .then((organization) => {
-        routeByType(organization?.organizationType);
+    apiFetch<any>("/onboarding/status")
+      .then((res) => {
+        const org = res?.data || res || {};
+        const currentStatus = (org.onboardingStatus || org.status || "").toUpperCase();
+        const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "ACTIVE", "SUSPENDED"];
+        if (currentStatus && locked.includes(currentStatus)) {
+          router.replace(currentStatus === "APPROVED" || currentStatus === "ACTIVE" ? "/organization/onboarding/details" : "/organization/onboarding/status");
+          return;
+        }
+        routeByType(org.organizationType);
       })
       .catch(() => {});
   }, [router]);

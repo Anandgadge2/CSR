@@ -42,8 +42,11 @@ async function processNotificationDirect(payload: NotificationJobPayload): Promi
     inAppRecord = await prisma.notification.create({
       data: {
         recipientId: payload.recipientId,
+        userId: payload.recipientId,
         title: payload.title,
-        message: payload.message
+        message: payload.message,
+        type: payload.notificationType || "INFO",
+        ...(payload.actionButtonUrl ? { actionUrl: payload.actionButtonUrl } as any : {})
       }
     });
   }
@@ -174,9 +177,13 @@ export async function queueNotification(payload: NotificationJobPayload): Promis
       });
       return;
     } catch (err) {
-      console.warn("Failed to push job to BullMQ, executing synchronously:", err);
+      console.warn("Failed to push job to BullMQ, executing in background:", err);
     }
   }
 
-  await processNotificationDirect(payload);
+  setImmediate(() => {
+    processNotificationDirect(payload).catch((err) => {
+      console.error("[NotificationWorker] Direct notification processing failed:", err);
+    });
+  });
 }

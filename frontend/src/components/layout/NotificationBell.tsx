@@ -5,22 +5,34 @@ import { io, Socket } from "socket.io-client";
 import { Bell, Check, Trash2, ShieldAlert } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface NotificationItem {
   id: string;
   title: string;
   message: string;
   isRead: boolean;
+  actionUrl?: string;
   createdAt: string;
 }
 
 export function NotificationBell() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleNotificationClick = async (n: NotificationItem) => {
+    if (!n.isRead) {
+      markAsRead(n.id);
+    }
+    setIsOpen(false);
+    const targetUrl = n.actionUrl || (n.title.toLowerCase().includes("onboarding") ? "/organization/onboarding/status" : "/notifications");
+    router.push(targetUrl);
+  };
 
   // Fetch initial notifications
   const fetchNotifications = async () => {
@@ -192,7 +204,8 @@ export function NotificationBell() {
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`p-4 transition-colors flex gap-3 ${
+                    onClick={() => handleNotificationClick(n)}
+                    className={`p-4 transition-colors flex gap-3 cursor-pointer hover:bg-slate-100/80 ${
                       n.isRead ? "bg-white" : "bg-orange-50/40 hover:bg-orange-50/70"
                     }`}
                   >

@@ -13,6 +13,7 @@ import {
   getOnboardingProfile,
   getOnboardingStatus,
   listOnboardingDocuments,
+  reapplyOnboarding,
   submitCompanyOnboarding,
   submitDepartmentOnboarding,
   submitOnboarding,
@@ -36,6 +37,7 @@ router.get("/draft", getOrCreateDraftApplication);
 router.post("/submit", submitApplication);
 router.get("/status", getApplicationStatus);
 router.post("/queries/:id/respond", respondToQuery);
+router.post("/reapply", reapplyOnboarding);
 
 router.get("/profile", getOnboardingProfile);
 router.patch("/profile", updateOnboardingProfile);

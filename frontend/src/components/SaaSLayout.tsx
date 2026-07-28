@@ -460,7 +460,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
       {isDashboard ? (
         <header
-          className="fixed top-1 left-0 right-0 h-[56px] z-50 bg-white/70 backdrop-blur-md border-b border-slate-200/40 flex justify-between items-center px-4 md:px-6 shadow-glass"
+          className="fixed top-1 left-0 right-0 h-[56px] z-50 bg-white/50 backdrop-blur-md border-b border-slate-200/40 flex justify-between items-center px-4 md:px-6 shadow-glass"
         >
           <div className="contents">
             {/* Brand Logo */}
@@ -525,36 +525,67 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 </button>
 
                 {notificationsOpen && (
-                  <div className="absolute right-0 mt-3 w-80 bg-white/90 backdrop-blur-xl border border-slate-200/50 rounded-2xl p-4 z-50 flex flex-col gap-3 shadow-lg">
+                  <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white backdrop-blur-xl border border-slate-200/80 rounded-2xl p-4 z-50 flex flex-col gap-3 shadow-xl">
                     <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-900">Notifications</span>
-                      <button
-                        onClick={() => {
-                          apiFetch("/notifications/read-all", { method: "PATCH" })
-                            .then(() => setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))))
-                            .catch(() => {});
-                        }}
-                        className="text-[10px] text-blue-600 font-semibold cursor-pointer hover:underline"
-                      >
-                        Clear all
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-extrabold text-slate-900">Notifications</span>
+                        {notifications.filter(n => !n.isRead).length > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-extrabold text-[10px]">
+                            {notifications.filter(n => !n.isRead).length} new
+                          </span>
+                        )}
+                      </div>
+                      {notifications.some(n => !n.isRead) && (
+                        <button
+                          onClick={() => {
+                            apiFetch("/notifications/read-all", { method: "PATCH" })
+                              .then(() => setNotifications((items) => items.map((item) => ({ ...item, isRead: true }))))
+                              .catch(() => {});
+                          }}
+                          className="text-[10px] text-blue-700 font-bold cursor-pointer hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      )}
                     </div>
-                    <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
+                    <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
                       {notifications.length === 0 ? (
-                        <div className="p-3 rounded-xl bg-slate-50/50 border border-slate-100 text-[11px] text-slate-500 text-center">
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 text-center font-medium">
                           No notifications yet.
                         </div>
-                      ) : notifications.slice(0, 8).map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-3 rounded-xl border flex flex-col gap-1 text-[11px] transition-colors ${
-                            notification.isRead ? "bg-slate-50/50 border-slate-100 text-slate-600" : "bg-blue-50/50 border-blue-100/50 text-slate-800"
-                          }`}
-                        >
-                          <span className="font-bold">{notification.title}</span>
-                          <span className="text-xs text-slate-500">{notification.message}</span>
-                        </div>
-                      ))}
+                      ) : (
+                        notifications.slice(0, 10).map((notification) => (
+                          <div
+                            key={notification.id}
+                            onClick={() => {
+                              if (!notification.isRead) {
+                                apiFetch(`/notifications/${notification.id}/read`, { method: "PATCH" }).catch(() => {});
+                              }
+                              setNotificationsOpen(false);
+                              const target = (notification as any).actionUrl || (notification.title.toLowerCase().includes("onboarding") ? "/organization/onboarding/status" : "/notifications");
+                              router.push(target);
+                            }}
+                            className={`p-3 rounded-xl border flex flex-col gap-1 text-[11px] transition-colors cursor-pointer hover:border-blue-300 ${
+                              notification.isRead ? "bg-slate-50/60 border-slate-200/60 text-slate-600" : "bg-orange-50/50 border-orange-200/80 text-slate-900 font-medium"
+                            }`}
+                          >
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="font-bold text-slate-900 text-xs">{notification.title}</span>
+                              {!notification.isRead && <span className="h-2 w-2 rounded-full bg-orange-500 shrink-0 animate-pulse" />}
+                            </div>
+                            <span className="text-xs text-slate-600 line-clamp-2">{notification.message}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="pt-2 border-t border-slate-100 text-center">
+                      <Link
+                        href="/notifications"
+                        onClick={() => setNotificationsOpen(false)}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 hover:underline"
+                      >
+                        Show all notifications →
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -572,7 +603,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                 </button>
 
                 {userDropdownOpen && (
-                  <div className="absolute right-0 mt-3 w-52 bg-white/90 backdrop-blur-xl border border-slate-200/50 rounded-2xl py-2 z-50 shadow-lg">
+                  <div className="absolute right-0 mt-3 w-52 bg-white backdrop-blur-xl border border-slate-200/50 rounded-2xl py-2 z-50 shadow-lg">
                     <div className="px-4 py-2.5 border-b border-slate-100 flex flex-col">
                       <span className="text-xs font-bold text-slate-900">User Account</span>
                       <span className="text-[10px] text-slate-400 truncate mt-0.5">{userEmail}</span>

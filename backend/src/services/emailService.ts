@@ -8,7 +8,10 @@ const transporter = nodemailer.createTransport({
   auth: process.env.SMTP_USER ? {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS || ""
-  } : undefined
+  } : undefined,
+  connectionTimeout: 5000,
+  greetingTimeout: 5000,
+  socketTimeout: 5000
 });
 
 interface EmailPayload {

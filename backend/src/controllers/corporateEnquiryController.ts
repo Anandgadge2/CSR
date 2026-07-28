@@ -53,7 +53,7 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       }
     });
 
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "New Corporate Enquiry Submitted",
       message: `Corporate enquiry ${enquiry.trackingId} submitted by "${enquiry.corporateName}".`,
       organizationId: enquiry.organizationId,
@@ -63,7 +63,7 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       includeRms: true,
       includeDistrictOfficers: true,
       actionButtonUrl: `/corporate-enquiry/${enquiry.trackingId}`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
 
     return res.status(201).json({
       ...enquiry,
@@ -106,14 +106,14 @@ export const assignRelationshipManager = async (req: AuthenticatedRequest, res: 
       data: { assignedRelationshipManagerId: req.body.relationshipManagerId }
     });
 
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "Relationship Manager Assigned",
       message: `Relationship Manager assigned to Corporate Enquiry ${updated.trackingId}.`,
       assignedRmId: req.body.relationshipManagerId,
       organizationId: updated.organizationId,
       includePortalAdmins: true,
       actionButtonUrl: `/corporate-enquiry/${updated.trackingId}`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
 
     return res.json(updated);
   } catch (error) {

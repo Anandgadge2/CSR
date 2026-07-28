@@ -114,12 +114,21 @@ export const submitApplication = async (req: AuthenticatedRequest, res: Response
     const orgId = req.user?.organizationId || req.user?.ngoId;
     if (!orgId) return res.status(400).json({ error: "Organization context is required" });
 
+    const existing = await prisma.organization.findUnique({ where: { id: orgId } });
+    if (existing) {
+      const LOCKED_STATUSES = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "ACTIVE", "SUSPENDED"];
+      const currentStatus = ((existing as any).onboardingStatus || existing.status || "").toUpperCase();
+      if (LOCKED_STATUSES.includes(currentStatus)) {
+        return res.status(400).json({ error: "Your organization onboarding application has already been submitted and cannot be edited." });
+      }
+    }
+
     const org = await prisma.organization.update({
       where: { id: orgId },
       data: { status: "UNDER_VERIFICATION" }
     });
 
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "New Organization Onboarding Submitted",
       message: `Organization "${org.name}" submitted profile for verification.`,
       organizationId: org.id,
@@ -127,7 +136,7 @@ export const submitApplication = async (req: AuthenticatedRequest, res: Response
       includeRms: true,
       includeStateOfficers: true,
       actionButtonUrl: `/admin/onboarding-approvals`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
 
     return res.json({ success: true, data: org });
   } catch (error) {

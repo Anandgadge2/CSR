@@ -8,6 +8,8 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovButton from "@/components/gov/GovButton";
 import GovInput from "@/components/gov/GovInput";
 import GovModal from "@/components/gov/GovModal";
+import { useToastActions } from "@/components/ui/Toast";
+import { Save, Check, Loader2 } from "lucide-react";
 import "@/styles/gov-theme.css";
 
 type Permission = {
@@ -156,6 +158,9 @@ export default function AdminRolesPermissionsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [justSaved, setJustSaved] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const toast = useToastActions();
 
   const [roleForm, setRoleForm] = useState({
     name: "",
@@ -201,6 +206,7 @@ export default function AdminRolesPermissionsPage() {
 
   const selectRole = (roleId: string) => {
     setSelectedRoleId(roleId);
+    setJustSaved(false);
     const role = dynamicRoles.find((r) => r.id === roleId);
     if (role) setSelectedRolePerms(role.permissions || []);
   };
@@ -221,7 +227,9 @@ export default function AdminRolesPermissionsPage() {
           permissions: newRolePerms,
         }),
       });
-      setSuccess(`Role '${roleForm.name}' created successfully with selected permissions.`);
+      const msg = `Role '${roleForm.name}' created successfully with selected permissions.`;
+      setSuccess(msg);
+      toast.success("Role Created", msg);
       setRoleModalOpen(false);
       setRoleForm({ name: "", description: "", scope: "GLOBAL", category: "General" });
       setNewRolePerms([]);
@@ -232,7 +240,9 @@ export default function AdminRolesPermissionsPage() {
         setSelectedRolePerms(newRolePerms);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create role");
+      const errMsg = err instanceof Error ? err.message : "Failed to create role";
+      setError(errMsg);
+      toast.error("Role Creation Failed", errMsg);
     } finally {
       setSaving(false);
     }
@@ -252,13 +262,16 @@ export default function AdminRolesPermissionsPage() {
         }),
       });
       setSuccess("Role cloned successfully.");
+      toast.success("Role Cloned", `Role '${cloneForm.name}' created as a clone.`);
       setCloneModalOpen(false);
       setCloneForm({ name: "", description: "" });
       fetchData(true);
       const cloned = clonedResponse?.data || clonedResponse;
       if (cloned?.id) setSelectedRoleId(cloned.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to clone role");
+      const errMsg = err instanceof Error ? err.message : "Failed to clone role";
+      setError(errMsg);
+      toast.error("Clone Failed", errMsg);
     } finally {
       setSaving(false);
     }
@@ -272,10 +285,14 @@ export default function AdminRolesPermissionsPage() {
         method: "PUT",
         body: JSON.stringify({ status: nextStatus }),
       });
-      setSuccess(`Role status updated to ${nextStatus}.`);
+      const msg = `Role status updated to ${nextStatus}.`;
+      setSuccess(msg);
+      toast.success("Status Updated", msg);
       fetchData(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role status");
+      const errMsg = err instanceof Error ? err.message : "Failed to update role status";
+      setError(errMsg);
+      toast.error("Update Failed", errMsg);
     }
   };
 
@@ -286,10 +303,13 @@ export default function AdminRolesPermissionsPage() {
     try {
       await apiFetch(`/roles/${roleId}`, { method: "DELETE" });
       setSuccess("Role deleted successfully.");
+      toast.success("Role Deleted", "Custom role deleted successfully.");
       setSelectedRoleId("");
       fetchData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete role");
+      const errMsg = err instanceof Error ? err.message : "Failed to delete role";
+      setError(errMsg);
+      toast.error("Delete Failed", errMsg);
     }
   };
 
@@ -297,6 +317,7 @@ export default function AdminRolesPermissionsPage() {
     if (!selectedRole) return;
     if (!renameForm.name.trim()) {
       setError("Role name cannot be empty.");
+      toast.error("Validation Error", "Role name cannot be empty.");
       return;
     }
     setSaving(true);
@@ -311,10 +332,13 @@ export default function AdminRolesPermissionsPage() {
         }),
       });
       setSuccess("Role details updated.");
+      toast.success("Role Updated", `Role renamed to '${renameForm.name.trim()}'.`);
       setRenameModalOpen(false);
       await fetchData(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to rename role");
+      const errMsg = err instanceof Error ? err.message : "Failed to rename role";
+      setError(errMsg);
+      toast.error("Rename Failed", errMsg);
     } finally {
       setSaving(false);
     }
@@ -329,6 +353,7 @@ export default function AdminRolesPermissionsPage() {
   };
 
   const handleSaveMatrix = async () => {
+    if (!selectedRoleId || !selectedRole) return;
     setSaving(true);
     setError("");
     setSuccess("");
@@ -337,12 +362,22 @@ export default function AdminRolesPermissionsPage() {
         method: "PUT",
         body: JSON.stringify({ permissions: selectedRolePerms }),
       });
-      setSuccess("Role permission matrix saved successfully.");
-      const rolesResponse = await apiFetch<any>("/roles?limit=200");
-      const rolesData = rolesResponse?.data || rolesResponse || {};
-      setDynamicRoles(rolesData?.roles || []);
+      const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      setLastSavedTime(now);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 4000);
+
+      const msg = `Matrix permissions updated for "${selectedRole.name}" (${selectedRolePerms.length} active permissions).`;
+      setSuccess(msg);
+      toast.success("Permission Matrix Saved", msg);
+
+      setDynamicRoles((prev) =>
+        prev.map((r) => (r.id === selectedRoleId ? { ...r, permissions: [...selectedRolePerms] } : r))
+      );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save permission matrix");
+      const errMsg = err instanceof Error ? err.message : "Failed to save permission matrix";
+      setError(errMsg);
+      toast.error("Save Failed", errMsg);
     } finally {
       setSaving(false);
     }
@@ -357,6 +392,13 @@ export default function AdminRolesPermissionsPage() {
   });
 
   const selectedRole = dynamicRoles.find((r) => r.id === selectedRoleId);
+
+  const isMatrixDirty = Boolean(
+    selectedRole &&
+      (selectedRolePerms.length !== (selectedRole.permissions || []).length ||
+        selectedRolePerms.some((p) => !(selectedRole.permissions || []).includes(p)) ||
+        (selectedRole.permissions || []).some((p) => !selectedRolePerms.includes(p)))
+  );
 
   // Filter permission groups based on search term
   const term = permissionSearchTerm.toLowerCase();
@@ -560,7 +602,58 @@ export default function AdminRolesPermissionsPage() {
                 <GovCardBody>
                   <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
                     <div>
-                      <h4 style={{ fontWeight: 600, color: "#1e293b", margin: 0 }}>Permissions Matrix Mapping</h4>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <h4 style={{ fontWeight: 600, color: "#1e293b", margin: 0 }}>Permissions Matrix Mapping</h4>
+                        {justSaved ? (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              backgroundColor: "#dcfce7",
+                              color: "#15803d",
+                              padding: "2px 10px",
+                              borderRadius: "12px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              border: "1px solid #86efac"
+                            }}
+                          >
+                            <Check size={12} /> Matrix Saved
+                          </span>
+                        ) : isMatrixDirty ? (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 700,
+                              backgroundColor: "#fef3c7",
+                              color: "#b45309",
+                              padding: "2px 10px",
+                              borderRadius: "12px",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              border: "1px solid #fcd34d"
+                            }}
+                          >
+                            ● Unsaved changes
+                          </span>
+                        ) : lastSavedTime ? (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              fontWeight: 500,
+                              backgroundColor: "#f1f5f9",
+                              color: "#64748b",
+                              padding: "2px 10px",
+                              borderRadius: "12px",
+                              border: "1px solid #e2e8f0"
+                            }}
+                          >
+                            Saved at {lastSavedTime}
+                          </span>
+                        ) : null}
+                      </div>
                       <span style={{ fontSize: "12px", color: "#64748b" }}>
                         Active permissions assigned: <strong>{selectedRolePerms.length}</strong>
                       </span>
@@ -575,7 +668,16 @@ export default function AdminRolesPermissionsPage() {
                     />
                   </div>
 
-                  <div className="gov-table-container" style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
+                  <div
+                    className="gov-table-container"
+                    style={{
+                      border: justSaved ? "2px solid #22c55e" : "1px solid #e2e8f0",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      boxShadow: justSaved ? "0 0 16px rgba(34, 197, 94, 0.25)" : "none",
+                      transition: "all 0.3s ease"
+                    }}
+                  >
                     <table className="gov-table" style={{ margin: 0 }}>
                       <thead style={{ backgroundColor: "#f8fafc" }}>
                         <tr>
@@ -757,10 +859,74 @@ export default function AdminRolesPermissionsPage() {
                   )}
 
                   {!selectedRole.isPermanent && (
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
-                      <GovButton variant="primary" onClick={handleSaveMatrix} disabled={saving}>
-                        {saving ? "Saving..." : "Save Permission Matrix"}
-                      </GovButton>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 24,
+                        paddingTop: 16,
+                        borderTop: "1px solid #e2e8f0",
+                        flexWrap: "wrap",
+                        gap: 12
+                      }}
+                    >
+                      <div style={{ fontSize: "13px" }}>
+                        {justSaved ? (
+                          <span style={{ color: "#16a34a", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <Check size={16} /> Matrix saved successfully!
+                          </span>
+                        ) : isMatrixDirty ? (
+                          <span style={{ color: "#d97706", fontWeight: 600 }}>
+                            You have unsaved changes on this permission matrix.
+                          </span>
+                        ) : (
+                          <span style={{ color: "#64748b", fontWeight: 400 }}>
+                            All permission changes are up to date.
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSaveMatrix}
+                        disabled={saving}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "10px 22px",
+                          borderRadius: "8px",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                          color: "#ffffff",
+                          backgroundColor: justSaved ? "#16a34a" : saving ? "#94a3b8" : isMatrixDirty ? "#1d4ed8" : "#2563eb",
+                          border: "none",
+                          cursor: saving ? "not-allowed" : "pointer",
+                          boxShadow: justSaved
+                            ? "0 4px 14px rgba(22, 163, 74, 0.4)"
+                            : isMatrixDirty
+                            ? "0 4px 14px rgba(29, 78, 216, 0.4)"
+                            : "0 2px 6px rgba(37, 99, 235, 0.2)",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Saving Matrix...
+                          </>
+                        ) : justSaved ? (
+                          <>
+                            <Check size={16} />
+                            Matrix Saved!
+                          </>
+                        ) : (
+                          <>
+                            <Save size={16} />
+                            Save Permission Matrix
+                          </>
+                        )}
+                      </button>
                     </div>
                   )}
                 </GovCardBody>

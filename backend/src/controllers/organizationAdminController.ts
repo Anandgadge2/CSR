@@ -4,7 +4,7 @@ import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { notifyHierarchy } from "../services/hierarchyNotificationService";
 
-export const getOwnedOrganization = async (req: AuthenticatedRequest, kind?: string) => {
+export const getOwnedOrganization = async (req: AuthenticatedRequest, kind?: string, allowLocked = false) => {
   let organizationId = req.user?.organizationId || req.user?.ngoId || req.user?.companyId;
 
   if (!organizationId && req.user?.id) {
@@ -29,6 +29,15 @@ export const getOwnedOrganization = async (req: AuthenticatedRequest, kind?: str
 
   if (!organization) throw new Error("Organization not found");
   if (kind && organization.kind !== kind) throw new Error("Wrong organization kind");
+
+  if (!allowLocked) {
+    const LOCKED_STATUSES = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "ACTIVE", "SUSPENDED"];
+    const currentStatus = ((organization as any).onboardingStatus || organization.status || "").toUpperCase();
+    if (LOCKED_STATUSES.includes(currentStatus)) {
+      throw new Error("Your organization onboarding application has already been submitted and cannot be edited.");
+    }
+  }
+
   return organization;
 };
 
@@ -121,7 +130,7 @@ export const approveOrganization = async (req: AuthenticatedRequest, res: Respon
       where: { id: req.params.id },
       data: { status: "ACTIVE" }
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "Organization Onboarding Approved",
       message: `Organization "${updated.name}" has been approved and activated.`,
       organizationId: updated.id,
@@ -129,7 +138,7 @@ export const approveOrganization = async (req: AuthenticatedRequest, res: Respon
       includeRms: true,
       includeStateOfficers: true,
       actionButtonUrl: `/organization/onboarding`
-    });
+    }).catch((err) => console.error("[NotifyHierarchy] Error sending approval notification:", err));
     return res.json(updated);
   } catch (error) {
     next(error);
@@ -138,18 +147,19 @@ export const approveOrganization = async (req: AuthenticatedRequest, res: Respon
 
 export const rejectOrganization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const reason = req.body.rejectionReason || req.body.remarks || "No reason specified";
     const updated = await prisma.organization.update({
       where: { id: req.params.id },
-      data: { status: "REJECTED" }
+      data: { status: "REJECTED", rejectionReason: reason } as any
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "Organization Onboarding Rejected",
-      message: `Organization "${updated.name}" onboarding request has been rejected.`,
+      message: `Organization "${updated.name}" onboarding request has been rejected. Reason: ${reason}`,
       organizationId: updated.id,
       includePortalAdmins: true,
       includeRms: true,
       actionButtonUrl: `/organization/onboarding`
-    });
+    }).catch((err) => console.error("[NotifyHierarchy] Error sending rejection notification:", err));
     return res.json(updated);
   } catch (error) {
     next(error);
@@ -158,18 +168,19 @@ export const rejectOrganization = async (req: AuthenticatedRequest, res: Respons
 
 export const suspendOrganization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const reason = req.body.remarks || req.body.rejectionReason || "No reason specified";
     const updated = await prisma.organization.update({
       where: { id: req.params.id },
-      data: { status: "SUSPENDED" }
+      data: { status: "SUSPENDED", rejectionReason: reason } as any
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "Organization Account Suspended",
-      message: `Organization "${updated.name}" status has been updated to suspended.`,
+      message: `Organization "${updated.name}" status has been updated to suspended. Reason: ${reason}`,
       organizationId: updated.id,
       includePortalAdmins: true,
       includeRms: true,
       actionButtonUrl: `/organization/onboarding`
-    });
+    }).catch((err) => console.error("[NotifyHierarchy] Error sending suspension notification:", err));
     return res.json(updated);
   } catch (error) {
     next(error);
@@ -178,18 +189,19 @@ export const suspendOrganization = async (req: AuthenticatedRequest, res: Respon
 
 export const requestClarification = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const remarks = req.body.remarks || req.body.rejectionReason || "Please update requested profile documents";
     const updated = await prisma.organization.update({
       where: { id: req.params.id },
-      data: { status: "CLARIFICATION_REQUIRED" }
+      data: { status: "CLARIFICATION_REQUIRED", clarificationRemarks: remarks } as any
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "Clarification Required for Onboarding",
-      message: `Clarification requested for organization "${updated.name}". Please update requested profile documents.`,
+      message: `Clarification requested for organization "${updated.name}". Remarks: ${remarks}`,
       organizationId: updated.id,
       includePortalAdmins: true,
       includeRms: true,
       actionButtonUrl: `/organization/onboarding`
-    });
+    }).catch((err) => console.error("[NotifyHierarchy] Error sending clarification notification:", err));
     return res.json(updated);
   } catch (error) {
     next(error);
@@ -198,7 +210,7 @@ export const requestClarification = async (req: AuthenticatedRequest, res: Respo
 
 export const getOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const org = await getOwnedOrganization(req);
+    const org = await getOwnedOrganization(req, undefined, true);
     return res.json(org);
   } catch (error: any) {
     return res.json({
@@ -254,7 +266,7 @@ export const uploadOnboardingDocument = async (req: AuthenticatedRequest, res: R
 
 export const listOnboardingDocuments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const org = await getOwnedOrganization(req);
+    const org = await getOwnedOrganization(req, undefined, true);
     const docs = await prisma.document.findMany({ where: { organizationId: org.id } });
     return res.json(docs);
   } catch (error: any) {
@@ -264,10 +276,11 @@ export const listOnboardingDocuments = async (req: AuthenticatedRequest, res: Re
 
 export const deleteOnboardingDocument = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    await prisma.document.delete({ where: { id: req.params.id } });
+    const org = await getOwnedOrganization(req);
+    await prisma.document.deleteMany({ where: { id: req.params.id, organizationId: org.id } });
     return res.json({ message: "Document deleted" });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
   }
 };
 
@@ -278,7 +291,7 @@ export const submitOnboarding = async (req: AuthenticatedRequest, res: Response,
       where: { id: org.id },
       data: { status: "UNDER_VERIFICATION" }
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "New Organization Onboarding Submitted",
       message: `Organization "${updated.name}" submitted profile for verification.`,
       organizationId: updated.id,
@@ -286,8 +299,25 @@ export const submitOnboarding = async (req: AuthenticatedRequest, res: Response,
       includeRms: true,
       includeStateOfficers: true,
       actionButtonUrl: `/admin/onboarding-approvals`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
     return res.json(updated);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
+  }
+};
+
+export const reapplyOnboarding = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const org = await getOwnedOrganization(req, undefined, true);
+    const status = ((org as any).onboardingStatus || org.status || "").toUpperCase();
+    if (!["REJECTED", "CLARIFICATION_REQUIRED", "SUSPENDED"].includes(status)) {
+      return res.status(400).json({ error: "Re-application is only permitted for rejected, clarification required, or suspended applications." });
+    }
+    const updated = await prisma.organization.update({
+      where: { id: org.id },
+      data: { status: "REGISTERED" as any }
+    });
+    return res.json({ message: "Application status reset for modifications.", organization: updated });
   } catch (error: any) {
     return res.status(400).json({ error: error.message });
   }
@@ -295,7 +325,7 @@ export const submitOnboarding = async (req: AuthenticatedRequest, res: Response,
 
 export const getCompanyOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const org = await getOwnedOrganization(req, "CSR_COMPANY");
+    const org = await getOwnedOrganization(req, "CSR_COMPANY", true);
     return res.json({ organization: org, profile: org.csrCompanyProfile });
   } catch (error: any) {
     return res.json({
@@ -552,7 +582,7 @@ export const submitCompanyOnboarding = async (req: AuthenticatedRequest, res: Re
       where: { id: org.id },
       data: { status: "UNDER_VERIFICATION" }
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "New CSR Company Onboarding Submitted",
       message: `CSR Company "${updated.name}" submitted onboarding application for verification.`,
       organizationId: updated.id,
@@ -560,7 +590,7 @@ export const submitCompanyOnboarding = async (req: AuthenticatedRequest, res: Re
       includeRms: true,
       includeStateOfficers: true,
       actionButtonUrl: `/admin/onboarding-approvals`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
     return res.json(updated);
   } catch (error: any) {
     return res.status(400).json({ error: error.message });
@@ -569,7 +599,7 @@ export const submitCompanyOnboarding = async (req: AuthenticatedRequest, res: Re
 
 export const getDepartmentOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const org = await getOwnedOrganization(req, "GOVERNMENT_DEPARTMENT");
+    const org = await getOwnedOrganization(req, "GOVERNMENT_DEPARTMENT", true);
     return res.json({ organization: org, profile: org.govDeptProfile });
   } catch (error: any) {
     return res.json({
@@ -662,7 +692,7 @@ export const submitDepartmentOnboarding = async (req: AuthenticatedRequest, res:
       where: { id: org.id },
       data: { status: "UNDER_VERIFICATION" }
     });
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "New Government Department Onboarding Submitted",
       message: `Government Department "${updated.name}" submitted onboarding application for verification.`,
       organizationId: updated.id,
@@ -670,7 +700,7 @@ export const submitDepartmentOnboarding = async (req: AuthenticatedRequest, res:
       includeRms: true,
       includeStateOfficers: true,
       actionButtonUrl: `/admin/onboarding-approvals`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
     return res.json(updated);
   } catch (error: any) {
     return res.status(400).json({ error: error.message });

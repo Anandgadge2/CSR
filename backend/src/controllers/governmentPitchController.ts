@@ -45,7 +45,7 @@ export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
       }
     });
 
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "New Government Pitch Submitted",
       message: `Government pitch ${pitch.pitchReferenceId} ("${pitch.title}") submitted for review.`,
       organizationId: pitch.departmentId,
@@ -56,7 +56,7 @@ export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
       includeDistrictOfficers: true,
       includeStateOfficers: true,
       actionButtonUrl: `/government-pitch/${pitch.pitchReferenceId}`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
 
     return res.status(201).json(pitch);
   } catch (error) {
@@ -105,14 +105,14 @@ export const assignPitchRelationshipManager = async (req: AuthenticatedRequest, 
       data: { assignedRelationshipManagerId: req.body.relationshipManagerId }
     });
 
-    await notifyHierarchy({
+    notifyHierarchy({
       title: "Relationship Manager Assigned to Pitch",
       message: `Relationship Manager assigned to Government Pitch ${updated.pitchReferenceId}.`,
       assignedRmId: req.body.relationshipManagerId,
       organizationId: updated.departmentId,
       includePortalAdmins: true,
       actionButtonUrl: `/government-pitch/${updated.pitchReferenceId}`
-    });
+    }).catch(err => console.error("Notification dispatch failed:", err));
 
     return res.json(updated);
   } catch (error) {

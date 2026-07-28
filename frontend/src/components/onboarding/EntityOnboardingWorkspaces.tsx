@@ -605,9 +605,10 @@ export function CompanyOnboardingStep() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
-    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "SUSPENDED"];
-    if (organization && locked.includes(organization.onboardingStatus)) {
-      router.push(organization.onboardingStatus === "APPROVED" ? "/organization/onboarding/details" : "/organization/onboarding/status");
+    const currentStatus = (organization?.onboardingStatus || organization?.status || "").toUpperCase();
+    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "ACTIVE", "SUSPENDED"];
+    if (organization && currentStatus && locked.includes(currentStatus)) {
+      router.replace(currentStatus === "APPROVED" || currentStatus === "ACTIVE" ? "/organization/onboarding/details" : "/organization/onboarding/status");
     }
   }, [organization, router]);
   const org = organization || ({} as Organization);
@@ -1143,9 +1144,10 @@ export function DepartmentOnboardingStep() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "SUSPENDED"];
-    if (organization && locked.includes(organization.onboardingStatus)) {
-      router.push(organization.onboardingStatus === "APPROVED" ? "/organization/onboarding/details" : "/organization/onboarding/status");
+    const currentStatus = (organization?.onboardingStatus || organization?.status || "").toUpperCase();
+    const locked = ["SUBMITTED_FOR_REVIEW", "UNDER_VERIFICATION", "APPROVED", "ACTIVE", "SUSPENDED"];
+    if (organization && currentStatus && locked.includes(currentStatus)) {
+      router.replace(currentStatus === "APPROVED" || currentStatus === "ACTIVE" ? "/organization/onboarding/details" : "/organization/onboarding/status");
     }
   }, [organization, router]);
 
