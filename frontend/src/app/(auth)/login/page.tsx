@@ -149,21 +149,21 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#060d19] via-[#09152b] to-[#0f2142] px-4 py-10 relative overflow-hidden text-slate-100 font-sans">
+    <div className="min-h-screen flex items-center justify-center pt-28 sm:pt-32 pb-16 px-4 bg-gradient-to-br from-[#050c18] via-[#09162e] to-[#0d1d3a] relative overflow-hidden text-slate-100 font-sans">
       {loading && loginSuccess && <Loader label="Initializing workspace & permissions..." fullscreen />}
 
       {/* Radiant 3D ambient glows */}
-      <div className="absolute top-[-10%] left-[-10%] w-[35rem] h-[35rem] bg-gradient-to-br from-amber-500/20 via-orange-600/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-gradient-to-tl from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[38rem] h-[38rem] bg-gradient-to-br from-amber-500/15 via-orange-600/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[42rem] h-[42rem] bg-gradient-to-tl from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-10">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center z-10">
         
-        {/* Left Side: Brand Showcase & 3D Emblem */}
+        {/* Left Side: Brand Showcase & Emblem */}
         <motion.div
-          initial={{ opacity: 0, x: -30 }}
+          initial={{ opacity: 0, x: -25 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="lg:col-span-6 flex flex-col gap-6 text-white pr-0 lg:pr-6"
+          className="lg:col-span-6 flex flex-col gap-6 text-white pr-0 lg:pr-4"
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-bold text-amber-400 backdrop-blur-xl w-fit shadow-glass">
             <Sparkles size={14} className="animate-pulse text-amber-400" />
@@ -177,8 +177,8 @@ function LoginForm() {
               </div>
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-white font-heading">
-                MahaCSR Setu
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white font-heading">
+                Maha<span className="text-blue-400">CSR</span> Setu
               </h1>
               <p className="text-xs text-amber-300/90 font-bold tracking-widest uppercase mt-0.5">
                 State CSR Convergence & Impact Platform
@@ -191,7 +191,7 @@ function LoginForm() {
           </p>
 
           <div className="grid grid-cols-2 gap-3.5 pt-2">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-glass">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-glass hover:bg-white/10 transition-colors">
               <ShieldCheck className="text-amber-400 shrink-0" size={24} />
               <div>
                 <p className="text-xs font-extrabold text-white">API Setu Verified</p>
@@ -199,7 +199,7 @@ function LoginForm() {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-glass">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl flex items-center gap-3.5 shadow-glass hover:bg-white/10 transition-colors">
               <Award className="text-emerald-400 shrink-0" size={24} />
               <div>
                 <p className="text-xs font-extrabold text-white">SLA Engine</p>
@@ -209,24 +209,24 @@ function LoginForm() {
           </div>
         </motion.div>
 
-        {/* Right Side: 3D Glassmorphism Login Container */}
+        {/* Right Side: Sleek Glassmorphism Login Card */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-          className="lg:col-span-6 bg-white/95 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/60 shadow-2xl shadow-black/50 text-slate-900"
+          className="lg:col-span-6 bg-white/95 backdrop-blur-3xl p-7 sm:p-9 rounded-[2.25rem] border border-white/60 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6)] text-slate-900"
         >
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight font-heading">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight font-heading">
               Sign In to Your Workspace
             </h2>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+            <p className="text-xs text-slate-500 font-semibold mt-1">
               Enter your official credentials to access your persona dashboard
             </p>
           </div>
 
           {/* Quick Demo Role Selector Pills */}
-          <div className="mb-5">
+          <div className="mb-5 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/60">
             <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
               Quick Role Switcher (Demo Review):
             </label>
@@ -236,10 +236,10 @@ function LoginForm() {
                   key={demo.email}
                   type="button"
                   onClick={() => handleQuickLogin(demo.email)}
-                  className={`text-[11px] px-3 py-1.5 rounded-xl border font-bold transition-all duration-200 ${
+                  className={`text-[11px] px-3 py-1.5 rounded-xl border font-bold transition-all duration-200 cursor-pointer ${
                     email === demo.email
-                      ? "bg-blue-950 text-white border-blue-950 shadow-md scale-105"
-                      : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80"
+                      ? "bg-blue-900 text-white border-blue-900 shadow-md scale-[1.02]"
+                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs"
                   }`}
                 >
                   {demo.label}
@@ -252,7 +252,7 @@ function LoginForm() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mb-5 bg-red-50 border border-red-200 p-3.5 rounded-2xl text-red-700 text-xs flex items-center gap-3 font-semibold shadow-sm"
+              className="mb-5 bg-red-50 border border-red-200 p-3.5 rounded-2xl text-red-700 text-xs flex items-center gap-3 font-bold shadow-2xs"
             >
               <AlertCircle size={18} className="text-red-500 shrink-0" />
               <span>{error}</span>
@@ -272,7 +272,7 @@ function LoginForm() {
                   placeholder="e.g. admin@mahacsr.gov.in"
                   disabled={loading}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-50 shadow-sm"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50/80 border border-slate-200/90 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-700 focus:bg-white transition-all disabled:opacity-50 shadow-2xs"
                 />
                 <Mail size={17} className="absolute left-3.5 top-3.5 text-slate-400" />
               </div>
@@ -292,13 +292,13 @@ function LoginForm() {
                   placeholder="••••••••••••"
                   disabled={loading}
                   required
-                  className="w-full pl-10 pr-10 py-3 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 focus:bg-white transition-all disabled:opacity-50 shadow-sm"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50/80 border border-slate-200/90 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-700 focus:bg-white transition-all disabled:opacity-50 shadow-2xs"
                 />
                 <Lock size={17} className="absolute left-3.5 top-3.5 text-slate-400" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                 </button>
@@ -308,7 +308,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 hover:from-blue-900 hover:to-blue-950 text-white font-extrabold text-xs shadow-lg shadow-blue-950/20 hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-50 hover:scale-[1.01]"
+              className="mt-2 w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0f2142] via-[#14274e] to-[#1e3a8a] hover:from-[#0a162d] hover:to-[#172e6b] text-white font-extrabold text-xs shadow-lg shadow-blue-950/20 hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-50 hover:scale-[1.01] cursor-pointer"
             >
               {loading ? (
                 <span>Signing in to Workspace...</span>

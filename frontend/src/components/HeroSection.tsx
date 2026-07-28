@@ -298,7 +298,7 @@ export default function HeroSection() {
       />
 
       {/* Content */}
-      <div className="relative z-30 mx-auto max-w-[1370px] w-full px-4 pt-8 pb-10 sm:pt-12 sm:pb-16 sm:px-6 md:px-8 flex flex-col justify-center items-center min-h-[520px] sm:min-h-[580px] md:min-h-[660px]">
+      <div className="relative z-30 mx-auto max-w-[1370px] w-full px-4 pt-24 pb-10 sm:pt-28 sm:pb-16 md:pt-32 sm:px-6 md:px-8 flex flex-col justify-center items-center min-h-[560px] sm:min-h-[620px] md:min-h-[700px]">
         
         {/* Centered Title & Subtitle */}
         <div className="flex flex-col items-center text-center pointer-events-none max-w-4xl px-2 sm:px-0">

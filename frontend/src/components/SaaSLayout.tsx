@@ -717,7 +717,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                            animate={{ opacity: 1, y: 0, scale: 1 }}
                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                           className="absolute left-0 top-full mt-1 z-[70] w-[250px] border border-white/40 bg-white/90 backdrop-blur-2xl p-2 rounded-2xl shadow-[0_12px_40px_-8px_rgba(15,23,42,0.15)]"
+                           className="absolute left-0 top-full mt-1 z-[70] w-[250px] border border-white/40 bg-white backdrop-blur-2xl p-2 rounded-2xl shadow-[0_12px_40px_-8px_rgba(15,23,42,0.15)]"
                         >
                           {group.links.map((link) => (
                             <Link
@@ -772,7 +772,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       )}
 
       {/* Main Workspace */}
-      <div className={isDashboard ? "flex flex-1 pt-[60px]" : "flex flex-1 pt-20 sm:pt-24"}>
+      <div className={isDashboard ? "flex flex-1 pt-[60px]" : (pathname === "/" || pathname === "/login" || pathname === "/register") ? "flex flex-1 pt-0" : "flex flex-1 pt-20 sm:pt-24"}>
         
         {/* Desktop Sidebar */}
         {isDashboard && (

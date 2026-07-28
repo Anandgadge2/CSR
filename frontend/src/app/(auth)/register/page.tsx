@@ -275,12 +275,12 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#060d19] via-[#09152b] to-[#0f2142] px-4 py-10 text-slate-900 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center pt-28 sm:pt-32 pb-16 px-4 bg-gradient-to-br from-[#050c18] via-[#09162e] to-[#0d1d3a] text-slate-900 relative overflow-hidden font-sans">
       {/* Decorative background glows */}
-      <div className="absolute top-0 right-0 w-[35rem] h-[35rem] bg-gradient-to-br from-amber-500/20 via-orange-600/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[35rem] h-[35rem] bg-gradient-to-tr from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[38rem] h-[38rem] bg-gradient-to-br from-amber-500/15 via-orange-600/10 to-transparent rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-gradient-to-tr from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="w-full max-w-3xl bg-white/95 backdrop-blur-3xl p-8 rounded-[2.5rem] border border-white/60 shadow-2xl shadow-black/50 relative z-10 flex flex-col gap-6">
+      <div className="w-full max-w-3xl bg-white/95 backdrop-blur-3xl p-7 sm:p-9 rounded-[2.25rem] border border-white/60 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6)] relative z-10 flex flex-col gap-6">
         
         {/* Header Branding */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-5">
