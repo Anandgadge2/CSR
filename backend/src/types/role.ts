@@ -85,6 +85,10 @@ export const Role = {
   GOV_ENTITY: 7,
   GOVERNMENT_ENTITY: 7,
   GOVERNMENT: 7,
+  GOVERNMENT_ORG_ADMIN: 7,
+  DESIGNATED_NODAL_OFFICER: 10,
+  "government-org-admin": 7,
+  "designated-nodal-officer": 10,
   12: 7,
 } as const;
 
