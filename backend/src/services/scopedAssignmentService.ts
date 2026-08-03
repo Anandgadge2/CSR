@@ -110,6 +110,7 @@ export class ScopedAssignmentService {
       include: {
         role: true,
         officerProfile: true,
+        organization: true,
         userRoles: { include: { role: true } },
       },
     });

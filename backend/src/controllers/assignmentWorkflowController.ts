@@ -11,14 +11,14 @@ export const getDncQueue = async (req: AuthenticatedRequest, res: Response, next
     const isSuper = req.user?.role === 1 || req.user?.role === "SUPER_ADMIN" || req.user?.roleId === "1";
 
     // Find DNC's assigned district
-    let targetDistrict: string | null = req.query.district as string | undefined ?? null;
+    let targetDistrict: string | null = (req.query.district as string | undefined) ?? null;
 
     if (!targetDistrict && !isSuper) {
       const dncAssignment = await prisma.districtDncAssignment.findFirst({
         where: { dncUserId: userId, isActive: true },
         select: { district: true },
       });
-      targetDistrict = dncAssignment?.district ?? req.user?.district ?? null;
+      targetDistrict = dncAssignment?.district ?? req.user?.assignedDistrict ?? null;
     }
 
     if (!targetDistrict && !isSuper) {
@@ -29,22 +29,31 @@ export const getDncQueue = async (req: AuthenticatedRequest, res: Response, next
 
     const projects = await prisma.project.findMany({
       where,
-      include: {
-        districtDncAssignments: { where: { status: "ACTIVE" } },
-        roleAssignments: {
-          where: { entityType: "PROJECT" },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        },
-      },
       orderBy: { createdAt: "desc" },
+    });
+
+    const projectIds = projects.map((p) => p.id);
+    const assignments = await prisma.projectAssignment.findMany({
+      where: {
+        entityId: { in: projectIds },
+        entityType: "PROJECT",
+      },
+      orderBy: { assignedAt: "desc" },
+    });
+
+    const assignmentMap = new Map<string, typeof assignments>();
+    assignments.forEach((a) => {
+      const list = assignmentMap.get(a.entityId) || [];
+      list.push(a);
+      assignmentMap.set(a.entityId, list);
     });
 
     return res.json({
       district: targetDistrict,
       total: projects.length,
       data: projects.map((p) => {
-        const activeDnoDelegation = p.roleAssignments.find(
+        const pAssignments = assignmentMap.get(p.id) || [];
+        const activeDnoDelegation = pAssignments.find(
           (a) => a.assignmentType === "DISTRICT_DNO_DELEGATION" && a.status === "ACTIVE"
         );
         return {
@@ -52,7 +61,7 @@ export const getDncQueue = async (req: AuthenticatedRequest, res: Response, next
           currentOwner: activeDnoDelegation ? activeDnoDelegation.assignedToId : p.nodalOfficerUserId,
           delegationStatus: activeDnoDelegation ? "DELEGATED" : "PENDING_DELEGATION",
           activeDnoAssignment: activeDnoDelegation || null,
-          history: p.roleAssignments,
+          history: pAssignments,
         };
       }),
     });
@@ -150,21 +159,31 @@ export const getGovAdminQueue = async (req: AuthenticatedRequest, res: Response,
 
     const projects = await prisma.project.findMany({
       where,
-      include: {
-        roleAssignments: {
-          where: { entityType: "PROJECT" },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        },
-      },
       orderBy: { createdAt: "desc" },
+    });
+
+    const projectIds = projects.map((p) => p.id);
+    const assignments = await prisma.projectAssignment.findMany({
+      where: {
+        entityId: { in: projectIds },
+        entityType: "PROJECT",
+      },
+      orderBy: { assignedAt: "desc" },
+    });
+
+    const assignmentMap = new Map<string, typeof assignments>();
+    assignments.forEach((a) => {
+      const list = assignmentMap.get(a.entityId) || [];
+      list.push(a);
+      assignmentMap.set(a.entityId, list);
     });
 
     return res.json({
       organizationId: targetOrgId,
       total: projects.length,
       data: projects.map((p) => {
-        const activeOfficerDelegation = p.roleAssignments.find(
+        const pAssignments = assignmentMap.get(p.id) || [];
+        const activeOfficerDelegation = pAssignments.find(
           (a) => a.assignmentType === "GOV_DEPT_OFFICER_DELEGATION" && a.status === "ACTIVE"
         );
         return {
@@ -172,7 +191,7 @@ export const getGovAdminQueue = async (req: AuthenticatedRequest, res: Response,
           currentOwner: activeOfficerDelegation ? activeOfficerDelegation.assignedToId : null,
           delegationStatus: activeOfficerDelegation ? "DELEGATED" : "PENDING_DELEGATION",
           activeOfficerAssignment: activeOfficerDelegation || null,
-          history: p.roleAssignments,
+          history: pAssignments,
         };
       }),
     });

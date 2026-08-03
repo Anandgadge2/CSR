@@ -27,8 +27,8 @@ export class RmAssignmentService {
     sector?: string | null;
     entityType?: "ENQUIRY" | "PITCH";
     entityId?: string;
-  }): Promise<string | null> {
-    const { district, sector } = params;
+  } = {}): Promise<string | null> {
+    const { district, sector } = params || {};
 
     return await prisma.$transaction(async (tx) => {
       // Find all active Relationship Managers (Role ID 6 or code RELATIONSHIP_MANAGER)
@@ -221,4 +221,5 @@ export class RmAssignmentService {
 }
 
 export const autoAssignRelationshipManager = RmAssignmentService.autoAssignRm;
-export const selectLeastLoadedRm = RmAssignmentService.autoAssignRm;
+export const selectLeastLoadedRm = (preferredDistrict?: string | null) =>
+  RmAssignmentService.autoAssignRm(typeof preferredDistrict === "string" ? { district: preferredDistrict } : (preferredDistrict || {}));
