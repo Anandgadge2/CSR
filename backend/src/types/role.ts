@@ -19,6 +19,30 @@ export const SYSTEM_ROLES = {
   NGO_ADMIN: { id: 9, name: "NGO / Implementing Agency Admin" },
 } as const;
 
+export interface UserPermissionPayload {
+  permissions: string[];
+  roles: string[];
+  roleDetails: {
+    id: number;
+    numericId: number;
+    name: string;
+    isSystemRole: boolean;
+  }[];
+  isAdmin: boolean;
+}
+
+export const SYSTEM_ROLE_TEMPLATE_MAP: Record<number, { code: string; displayName: string; defaultScope: "GLOBAL" | "ORGANIZATION" | "DISTRICT" | "PROJECT" }> = {
+  1: { code: "SUPER_ADMIN", displayName: "Super Administrator", defaultScope: "GLOBAL" },
+  2: { code: "PLANNING_SECRETARY", displayName: "Planning Secretary", defaultScope: "GLOBAL" },
+  3: { code: "JOINT_SECRETARY", displayName: "Joint Secretary", defaultScope: "GLOBAL" },
+  4: { code: "DISTRICT_NODAL_OFFICER", displayName: "District Nodal Officer", defaultScope: "DISTRICT" },
+  5: { code: "DISTRICT_NODAL_CONSULTANT", displayName: "District Nodal Consultant", defaultScope: "DISTRICT" },
+  6: { code: "RELATIONSHIP_MANAGER", displayName: "CSR Relationship Manager", defaultScope: "GLOBAL" },
+  7: { code: "GOVERNMENT_OFFICER", displayName: "Government Department Officer", defaultScope: "ORGANIZATION" },
+  8: { code: "COMPANY_ADMIN", displayName: "Corporate Admin", defaultScope: "ORGANIZATION" },
+  9: { code: "NGO_ADMIN", displayName: "NGO / Implementing Agency Admin", defaultScope: "ORGANIZATION" },
+};
+
 export const Role = {
   SUPER_ADMIN: 1,
   PLANNING_SECRETARY: 2,
