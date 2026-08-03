@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { Role } from "../types/role";
 import { userHasAnyRole } from "../services/roleResolver";
 import { getJwtSecret } from "../config/env";
+import prisma from "../config/db";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -30,12 +31,47 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     return res.status(401).json({ error: "Access token required" });
   }
 
-  jwt.verify(token, getJwtSecret(), (err, decoded) => {
+  jwt.verify(token, getJwtSecret(), async (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: "Invalid or expired access token" });
     }
-    req.user = decoded as AuthenticatedRequest["user"];
-    next();
+    const payload = decoded as any;
+    if (!payload?.id) {
+      return res.status(401).json({ error: "Invalid token payload" });
+    }
+
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: payload.id },
+        select: {
+          id: true,
+          email: true,
+          roleId: true,
+          organizationId: true,
+          accountStatus: true,
+          isVerified: true,
+          deletedAt: true,
+          officerProfile: { select: { district: true } }
+        }
+      });
+
+      if (!dbUser || dbUser.deletedAt || dbUser.accountStatus === "SUSPENDED" || dbUser.accountStatus === "DELETED") {
+        return res.status(401).json({ error: "Account is inactive, suspended, or deleted" });
+      }
+
+      req.user = {
+        id: dbUser.id,
+        email: dbUser.email,
+        role: dbUser.roleId,
+        roleId: dbUser.roleId ? String(dbUser.roleId) : null,
+        organizationId: dbUser.organizationId,
+        accountStatus: dbUser.accountStatus,
+        assignedDistrict: dbUser.officerProfile?.district || null,
+      };
+      next();
+    } catch (dbErr) {
+      return res.status(500).json({ error: "Internal authentication error" });
+    }
   });
 };
 

@@ -138,7 +138,7 @@ const generateTokens = (user: {
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, password, firstName, lastName, designation, role: rawRole, profile } = req.body;
+    const { email, password, firstName, lastName, designation, role: rawRole, accountType: rawAccountType, entityType: rawEntityType, profile } = req.body;
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
@@ -148,40 +148,33 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const userDesignation = (designation || profile?.designation || profile?.cin || "").trim() || null;
 
     const normalizedEmail = email.trim().toLowerCase();
-    let effectiveRoleId = getRoleId(rawRole) ?? 7;
-    if (effectiveRoleId > 9 || effectiveRoleId < 1) {
-      effectiveRoleId = 7;
+
+    // Map account/entity type or role string to allowed public system role ID
+    const accountInput = String(rawAccountType || rawEntityType || rawRole || "").trim().toUpperCase();
+
+    const accountTypeRoleMap: Record<string, number> = {
+      CSR_COMPANY: 8,
+      COMPANY_ADMIN: 8,
+      CORPORATE: 8,
+      GOVERNMENT_DEPARTMENT: 7,
+      GOVERNMENT_OFFICER: 7,
+      GOVERNMENT: 7,
+      NGO: 9,
+      NGO_ADMIN: 9,
+    };
+
+    const effectiveRoleId = accountTypeRoleMap[accountInput];
+
+    if (!effectiveRoleId) {
+      return res.status(400).json({
+        error: "Invalid or missing account type. Public registration accepts only CSR_COMPANY, GOVERNMENT_DEPARTMENT, or NGO."
+      });
     }
 
-    // 1. Ensure target Role exists in DB
-    let existingRole = await prisma.role.findUnique({ where: { id: effectiveRoleId } });
+    // 1. Ensure target Role exists in DB (never create system roles during public registration)
+    const existingRole = await prisma.role.findUnique({ where: { id: effectiveRoleId } });
     if (!existingRole) {
-      const systemRolesMap: Record<number, { name: string; description: string }> = {
-        1: { name: "SUPER_ADMIN", description: "Super Administrator" },
-        2: { name: "PLANNING_SECRETARY", description: "Planning Secretary" },
-        3: { name: "JOINT_SECRETARY", description: "Joint Secretary" },
-        4: { name: "DISTRICT_NODAL_OFFICER", description: "District Nodal Officer" },
-        5: { name: "DISTRICT_NODAL_CONSULTANT", description: "District Nodal Consultant" },
-        6: { name: "RELATIONSHIP_MANAGER", description: "CSR Relationship Manager" },
-        7: { name: "GOVERNMENT_OFFICER", description: "Government Department Officer" },
-        8: { name: "COMPANY_ADMIN", description: "Corporate Admin" },
-        9: { name: "NGO_ADMIN", description: "NGO / Implementing Agency Admin" },
-      };
-
-      const sysRole = systemRolesMap[effectiveRoleId] || { name: `ROLE_${effectiveRoleId}`, description: "System Role" };
-      try {
-        await prisma.role.create({
-          data: {
-            id: effectiveRoleId,
-            name: sysRole.name,
-            description: sysRole.description,
-            isSystemRole: true,
-            isProtected: true,
-          }
-        });
-      } catch {
-        /* ignore if created concurrently */
-      }
+      return res.status(400).json({ error: "System role for selected account type is not initialized." });
     }
 
     const cleanPan = profile?.pan && profile.pan.trim().length > 0 ? profile.pan.trim().toUpperCase() : null;
@@ -338,6 +331,7 @@ export const verifyOtp = async (req: Request, res: Response, next: NextFunction)
   try {
     const { email, otp, otpCode } = req.body;
     const code = otp || otpCode;
+    if (!email) return res.status(400).json({ error: "Email is required" });
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!code) {
@@ -398,25 +392,6 @@ export const resendOtp = async (req: Request, res: Response, next: NextFunction)
     if (!email) return res.status(400).json({ error: "Email is required" });
 
     const normalizedEmail = email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    if (user.isVerified) {
-      return res.status(400).json({ error: "Email is already verified" });
-    }
-
-    // Rate limit: max 5 OTP sends per hour
-    const recentCount = await prisma.otpVerification.count({
-      where: {
-        identifier: normalizedEmail,
-        createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
-      },
-    });
-
-    if (recentCount >= 5) {
-      return res.status(429).json({ error: "Too many OTP requests. Please try again later." });
-    }
-
     await createAndSendOtp(normalizedEmail);
 
     return res.json({ message: "A new OTP has been sent to your email." });
@@ -428,17 +403,34 @@ export const resendOtp = async (req: Request, res: Response, next: NextFunction)
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
     const userRecord = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { organization: true, role: true }
     });
 
-    if (!userRecord) return res.status(401).json({ error: "Invalid email or password" });
+    if (!userRecord || userRecord.deletedAt) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    if (!userRecord.isVerified) {
+      return res.status(401).json({ error: "Email address is not verified. Please verify your email before logging in." });
+    }
+
+    if (userRecord.accountStatus !== "ACTIVE") {
+      return res.status(401).json({ error: "Your account is not active. Please contact administrator." });
+    }
 
     const validPassword = await bcrypt.compare(password, userRecord.passwordHash);
-    if (!validPassword) return res.status(401).json({ error: "Invalid email or password" });
+    if (!validPassword) {
+      return res.status(401).json({ error: "Invalid email or password" });
+    }
 
-    const roleName = userRecord.role?.name || "SUPER_ADMIN";
+    const roleName = userRecord.role?.name || "GUEST";
     const roleSlug = roleName.toLowerCase().replace(/_/g, "-");
 
     const user = {
@@ -483,7 +475,10 @@ export const me = async (req: any, res: Response, next: NextFunction) => {
       include: { organization: true, role: true }
     });
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user || user.deletedAt || user.accountStatus !== "ACTIVE" || !user.isVerified) {
+      return res.status(401).json({ error: "User inactive or disabled" });
+    }
+
     return res.json({ user });
   } catch (error) {
     next(error);
@@ -496,8 +491,12 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
     if (!token) return res.status(400).json({ error: "Refresh token is required" });
 
     const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as any;
+    if (!decoded?.id) return res.status(401).json({ error: "Invalid token payload" });
+
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-    if (!user) return res.status(401).json({ error: "Invalid token" });
+    if (!user || user.deletedAt || !user.isVerified || user.accountStatus !== "ACTIVE") {
+      return res.status(401).json({ error: "Account is inactive, unverified, suspended, or deleted" });
+    }
 
     const tokens = generateTokens(user);
     return res.json(tokens);

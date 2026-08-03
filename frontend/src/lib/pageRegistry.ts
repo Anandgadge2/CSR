@@ -142,8 +142,7 @@ export function isNavItemVisible(
     return true;
   }
 
-  // Default to true so role nav menu items defined in navRegistry stay visible
-  return true;
+  return false;
 }
 
 /** Slug of the page that owns a pathname, or null when unguarded. */

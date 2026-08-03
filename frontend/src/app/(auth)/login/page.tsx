@@ -226,28 +226,30 @@ function LoginForm() {
             </p>
           </div>
 
-          {/* Quick Demo Role Selector Pills */}
-          <div className="mb-5 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/60">
-            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
-              Quick Role Switcher (Demo Review):
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {DEMO_LOGINS.map((demo) => (
-                <button
-                  key={demo.email}
-                  type="button"
-                  onClick={() => handleQuickLogin(demo.email)}
-                  className={`text-[11px] px-3 py-1.5 rounded-xl border font-bold transition-all duration-200 cursor-pointer ${
-                    email === demo.email
-                      ? "bg-blue-900 text-white border-blue-900 shadow-md scale-[1.02]"
-                      : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs"
-                  }`}
-                >
-                  {demo.label}
-                </button>
-              ))}
+          {/* Quick Demo Role Selector Pills (development / staging mode only) */}
+          {process.env.NODE_ENV !== "production" && (
+            <div className="mb-5 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/60">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block mb-2">
+                Quick Role Switcher (Demo Review):
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {DEMO_LOGINS.map((demo) => (
+                  <button
+                    key={demo.email}
+                    type="button"
+                    onClick={() => handleQuickLogin(demo.email)}
+                    className={`text-[11px] px-3 py-1.5 rounded-xl border font-bold transition-all duration-200 cursor-pointer ${
+                      email === demo.email
+                        ? "bg-blue-900 text-white border-blue-900 shadow-md scale-[1.02]"
+                        : "bg-white hover:bg-slate-100 text-slate-700 border-slate-200/90 shadow-2xs"
+                    }`}
+                  >
+                    {demo.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {error && (
             <motion.div

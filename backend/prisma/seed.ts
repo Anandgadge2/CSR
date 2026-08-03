@@ -2,16 +2,31 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { computeBlindHash, encryptField } from "../src/utils/fieldCrypto";
+import { PERMISSIONS, PAGE_PERMISSIONS, resolveSeedRolePermissionKeys } from "../src/config/platformAccess";
 
 const prisma = new PrismaClient();
 
-const DEFAULT_PASSWORD = "111111";
+const DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || "MahaCSR@SecureSeed2026!";
 
 async function main() {
   console.log("Starting database seed...");
-  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+  if (process.env.NODE_ENV === "production" && !process.env.SEED_DEFAULT_PASSWORD) {
+    throw new Error("SEED_DEFAULT_PASSWORD environment variable must be set in production.");
+  }
+  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
 
-  // 1. Seed System Roles (IDs 1 - 9)
+  // 1. Seed System Roles & Permissions Matrix
+  console.log("Seeding permissions matrix...");
+  const allDefs = [
+    ...PERMISSIONS.map(([key, description, module]) => ({ key, description, module })),
+    ...PAGE_PERMISSIONS.map(([key, description, module]) => ({ key, description, module }))
+  ];
+
+  await prisma.permission.createMany({
+    data: allDefs,
+    skipDuplicates: true,
+  });
+
   console.log("Seeding system roles 1 to 9...");
   const roles = [
     { id: 1, name: "SUPER_ADMIN", description: "Super Administrator", isSystemRole: true, isProtected: true },
@@ -26,13 +41,31 @@ async function main() {
   ];
 
   for (const role of roles) {
-    await prisma.role.upsert({
+    const roleRecord = await prisma.role.upsert({
       where: { id: role.id },
       create: role,
       update: { name: role.name, description: role.description }
     });
+
+    const rolePermKeys = resolveSeedRolePermissionKeys(role.name);
+    if (rolePermKeys.length > 0) {
+      const permsInDb = await prisma.permission.findMany({
+        where: { key: { in: rolePermKeys as string[] } },
+        select: { id: true }
+      });
+
+      if (permsInDb.length > 0) {
+        await prisma.rolePermission.createMany({
+          data: permsInDb.map((p) => ({
+            roleId: roleRecord.id,
+            permissionId: p.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
   }
-  console.log("✓ System roles seeded (1 to 9).");
+  console.log("✓ System roles & permissions seeded (1 to 9).");
 
   // 2. Create Default System Organization
   console.log("Seeding system organization...");
@@ -70,18 +103,21 @@ async function main() {
     update: {}
   });
 
-  // 3. Seed Demo Users
-  console.log("Seeding demo accounts...");
-  const demoUsers = [
-    { email: "admin@mahacsr.gov.in", firstName: "Super", lastName: "Admin", roleId: 1, orgId: mainOrg.id },
-    { email: "js@mahacsr.gov.in", firstName: "Joint", lastName: "Secretary", roleId: 3, orgId: mainOrg.id },
-    { email: "nodal@mahacsr.gov.in", firstName: "Nodal", lastName: "Officer", roleId: 4, orgId: mainOrg.id },
-    { email: "rm@mahacsr.gov.in", firstName: "Relationship", lastName: "Manager", roleId: 6, orgId: mainOrg.id },
-    { email: "company.admin@mahacsr.gov.in", firstName: "Company", lastName: "Admin", roleId: 8, orgId: companyOrg.id },
-    { email: "ngo.admin@mahacsr.gov.in", firstName: "NGO", lastName: "Admin", roleId: 9, orgId: mainOrg.id }
-  ];
+  // 3. Seed Demo Users (skipped in production)
+  if (process.env.NODE_ENV === "production") {
+    console.log("Skipping demo user accounts in production environment.");
+  } else {
+    console.log("Seeding demo accounts for development...");
+    const demoUsers = [
+      { email: "admin@mahacsr.gov.in", firstName: "Super", lastName: "Admin", roleId: 1, orgId: mainOrg.id },
+      { email: "js@mahacsr.gov.in", firstName: "Joint", lastName: "Secretary", roleId: 3, orgId: mainOrg.id },
+      { email: "nodal@mahacsr.gov.in", firstName: "Nodal", lastName: "Officer", roleId: 4, orgId: mainOrg.id },
+      { email: "rm@mahacsr.gov.in", firstName: "Relationship", lastName: "Manager", roleId: 6, orgId: mainOrg.id },
+      { email: "company.admin@mahacsr.gov.in", firstName: "Company", lastName: "Admin", roleId: 8, orgId: companyOrg.id },
+      { email: "ngo.admin@mahacsr.gov.in", firstName: "NGO", lastName: "Admin", roleId: 9, orgId: mainOrg.id }
+    ];
 
-  for (const user of demoUsers) {
+    for (const user of demoUsers) {
     const createdUser = await prisma.user.upsert({
       where: { email: user.email },
       create: {
@@ -118,6 +154,7 @@ async function main() {
       }
     });
     console.log(`✓ User created/updated: ${user.email} (Role ID: ${user.roleId})`);
+    }
   }
 
   // 4. Seed Default Platform Settings

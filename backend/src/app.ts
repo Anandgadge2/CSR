@@ -18,9 +18,12 @@ import { registerNotificationSocket } from "./websocket/notificationSocket";
 import { startSlaScheduler } from "./services/slaSchedulerService";
 import { generalRateLimiter } from "./middlewares/rateLimitMiddleware";
 
+import { runStartupSecurityCheck } from "./utils/securityCheck";
+
 // Configurations
 dotenv.config();
 assertProductionEnv();
+runStartupSecurityCheck();
 
 const app = express();
 const server = http.createServer(app);
