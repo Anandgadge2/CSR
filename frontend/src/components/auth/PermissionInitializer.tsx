@@ -2,117 +2,37 @@
 
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { fetchUserPermissions } from "@/lib/api";
 
-/**
- * Component that initializes the permission system on app load
- * Should be placed at the root layout or app wrapper
- * 
- * @example
- * ```tsx
- * // In layout.tsx or app wrapper
- * export default function RootLayout({ children }) {
- *   return (
- *     <PermissionInitializer>
- *       {children}
- *     </PermissionInitializer>
- *   );
- * }
- * ```
- */
 export function PermissionInitializer({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, setPermissions, setLoadingPermissions, permissions = [] } = useAuthStore();
-  const permissionsCount = permissions?.length || 0;
+  const { isAuthenticated, fetchEffectivePermissions, user } = useAuthStore();
+  const userId = user?.id;
 
   useEffect(() => {
-    // Load permissions if authenticated and not already loaded
-    if (isAuthenticated && permissionsCount === 0) {
-      let isMounted = true;
-      const timeoutId = setTimeout(() => {
-        if (isMounted) {
-          console.warn("[PermissionInitializer] Permission loading timed out. Unblocking UI.");
-          setLoadingPermissions(false);
-        }
-      }, 5000);
-
-      const loadPermissions = async () => {
-        setLoadingPermissions(true);
-        try {
-          const data = await fetchUserPermissions();
-          if (isMounted) {
-            setPermissions(data);
-          }
-        } catch (error) {
-          console.error("Failed to load permissions:", error);
-        } finally {
-          if (isMounted) {
-            clearTimeout(timeoutId);
-            setLoadingPermissions(false);
-          }
-        }
-      };
-
-      loadPermissions();
-
-      return () => {
-        isMounted = false;
-        clearTimeout(timeoutId);
-      };
+    if (isAuthenticated && userId) {
+      fetchEffectivePermissions();
     }
-  }, [isAuthenticated, permissionsCount, setPermissions, setLoadingPermissions]);
+  }, [isAuthenticated, userId, fetchEffectivePermissions]);
 
   return <>{children}</>;
 }
 
-/**
- * Hook to initialize permissions (alternative to component)
- */
 export function useInitializePermissions() {
-  const { isAuthenticated, setPermissions, setLoadingPermissions, permissions = [] } = useAuthStore();
-  const permissionsCount = permissions?.length || 0;
+  const { isAuthenticated, fetchEffectivePermissions, user } = useAuthStore();
+  const userId = user?.id;
 
   useEffect(() => {
-    if (isAuthenticated && permissionsCount === 0) {
-      const loadPermissions = async () => {
-        setLoadingPermissions(true);
-        try {
-          const data = await fetchUserPermissions();
-          setPermissions(data);
-        } catch (error) {
-          console.error("Failed to load permissions:", error);
-        } finally {
-          setLoadingPermissions(false);
-        }
-      };
-
-      loadPermissions();
+    if (isAuthenticated && userId) {
+      fetchEffectivePermissions();
     }
-  }, [isAuthenticated, permissionsCount, setPermissions, setLoadingPermissions]);
+  }, [isAuthenticated, userId, fetchEffectivePermissions]);
 }
 
-/**
- * Permission refresh trigger component
- * Use this after role/permission changes to refresh permissions
- */
 export function PermissionRefreshTrigger({ onRefresh }: { onRefresh?: () => void }) {
-  const { setPermissions, setLoadingPermissions } = useAuthStore();
+  const { fetchEffectivePermissions } = useAuthStore();
 
   useEffect(() => {
-    const refresh = async () => {
-      setLoadingPermissions(true);
-      try {
-        const data = await fetchUserPermissions();
-        setPermissions(data);
-        onRefresh?.();
-      } catch (error) {
-        console.error("Failed to refresh permissions:", error);
-      } finally {
-        setLoadingPermissions(false);
-      }
-    };
-
-    refresh();
-  }, [setPermissions, setLoadingPermissions, onRefresh]);
+    fetchEffectivePermissions().then(() => onRefresh?.());
+  }, [fetchEffectivePermissions, onRefresh]);
 
   return null;
 }

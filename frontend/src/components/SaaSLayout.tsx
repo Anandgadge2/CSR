@@ -409,16 +409,18 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const storedRole = activeRoles.find(r => r !== "GOVERNMENT_OFFICER" && r !== "CORPORATE_USER") || activeRoles[0];
   const storedOrganizationType = storedUser?.organization?.organizationType as string | undefined;
 
-  const getSidebarItems = (): NavItem[] =>
-    resolveNavItems({ role: storedRole, pathname, organizationType: storedOrganizationType });
+  const rawSidebarItems = resolveNavItems({
+    role: storedRole,
+    pathname,
+    hasPermission,
+    isSuperAdmin: storeIsAdmin
+  });
 
-  const rawSidebarItems = getSidebarItems();
   const filteredNavItems = rawSidebarItems
-    .filter((item) => !("featureKey" in item) || !item.featureKey || tenantFeatures[item.featureKey] !== false)
-    .filter((item) => !("requiredPermission" in item) || !item.requiredPermission || hasPermission(item.requiredPermission))
+    .filter((item) => !item.featureKey || tenantFeatures[item.featureKey] !== false)
     .filter((item) => isNavItemVisible(item.href, hasPermission));
 
-  const dashboardNavigationItems = filteredNavItems.length > 0 ? filteredNavItems : rawSidebarItems;
+  const dashboardNavigationItems = filteredNavItems;
   const routeFeatureKey =
     pathname.includes("/requirements") ? "enableRequirementCreation" :
     pathname.includes("/marketplace") ? "enableCSRMarketplace" :
