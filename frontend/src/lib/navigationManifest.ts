@@ -342,6 +342,26 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
     breadcrumbMetadata: { title: "Access Control Audit", parentRoute: "/admin/access-control" }
   },
   {
+    id: "dnc-queue",
+    label: "DNC Delegation Queue",
+    route: "/assignments/dnc",
+    iconName: "ShieldCheck",
+    section: "Administration",
+    requiredAnyPermissions: ["project:view", "project:assign"],
+    ordering: 25,
+    breadcrumbMetadata: { title: "DNC Delegation Queue", parentRoute: "/dashboard" }
+  },
+  {
+    id: "gov-admin-queue",
+    label: "Dept Officer Queue",
+    route: "/assignments/gov-admin",
+    iconName: "Building2",
+    section: "Administration",
+    requiredAnyPermissions: ["project:view", "project:assign"],
+    ordering: 26,
+    breadcrumbMetadata: { title: "Department Officer Queue", parentRoute: "/dashboard" }
+  },
+  {
     id: "onboarding-approvals",
     label: "Onboarding Approvals",
     route: "/admin/onboarding-approvals",
