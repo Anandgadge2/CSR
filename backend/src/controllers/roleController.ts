@@ -115,6 +115,7 @@ export const getRoles = async (
     const limitNumber = Number(limit);
     const skip = (pageNumber - 1) * limitNumber;
 
+    const isSuper = req.user?.role === 1 || req.user?.role === "SUPER_ADMIN" || req.user?.roleId === "1";
     const where: any = {};
 
     if (search) {
@@ -126,7 +127,17 @@ export const getRoles = async (
     if (isSystemRole !== undefined) {
       where.isSystemRole = isSystemRole === "true";
     }
-    if (organizationId) {
+
+    if (!isSuper) {
+      const userOrgId = req.user?.organizationId;
+      if (!userOrgId) {
+        where.isSystemRole = true;
+      } else {
+        where.AND = [
+          { OR: [{ organizationId: userOrgId }, { isSystemRole: true }] }
+        ];
+      }
+    } else if (organizationId) {
       where.organizationId = String(organizationId);
     }
 
@@ -198,6 +209,11 @@ export const getRoleById = async (
 
     if (!roleData) {
       return notFoundResponse(res, "Role not found");
+    }
+
+    const isSuper = req.user?.role === 1 || req.user?.role === "SUPER_ADMIN" || req.user?.roleId === "1";
+    if (!isSuper && roleData.organizationId && roleData.organizationId !== req.user?.organizationId) {
+      return res.status(403).json({ error: "Forbidden: access restricted to your organization's roles" });
     }
 
     const role = {
@@ -290,13 +306,22 @@ export const createRole = async (
 ) => {
   try {
     const { name, description, organizationId, permissions = [] } = req.body;
-
     if (!name) {
       return validationErrorResponse(res, "Role name is required");
     }
 
+    const isSuper = req.user?.role === 1 || req.user?.role === "SUPER_ADMIN" || req.user?.roleId === "1";
+    if (!isSuper && !req.user?.organizationId) {
+      return res.status(403).json({ error: "Forbidden: user must belong to an organization to create custom roles" });
+    }
+    if (!isSuper && organizationId && String(organizationId) !== String(req.user?.organizationId)) {
+      return res.status(403).json({ error: "Forbidden: cannot create roles for another organization" });
+    }
+
+    const targetOrgId = isSuper ? (organizationId || null) : (req.user?.organizationId || null);
+
     const existingRole = await prisma.role.findFirst({
-      where: { name, organizationId: organizationId || null }
+      where: { name, organizationId: targetOrgId }
     });
 
     if (existingRole) {
@@ -370,6 +395,14 @@ export const updateRole = async (
     const existingRole = await prisma.role.findUnique({ where: { id: roleId } });
     if (!existingRole) {
       return notFoundResponse(res, "Role not found");
+    }
+
+    const isSuper = req.user?.role === 1 || req.user?.role === "SUPER_ADMIN" || req.user?.roleId === "1";
+    if (!isSuper && (existingRole.isSystemRole || existingRole.isProtected)) {
+      return res.status(403).json({ error: "Forbidden: system roles can only be modified by Super Admin" });
+    }
+    if (!isSuper && existingRole.organizationId && existingRole.organizationId !== req.user?.organizationId) {
+      return res.status(403).json({ error: "Forbidden: access restricted to your organization's roles" });
     }
 
     const isSuperAdminRole = existingRole.name === "SUPER_ADMIN" || existingRole.id === 1;
@@ -503,6 +536,11 @@ export const deleteRole = async (
     if (!role) return notFoundResponse(res, "Role not found");
     if (role.isProtected || role.isSystemRole) {
       return validationErrorResponse(res, "System roles cannot be deleted");
+    }
+
+    const isSuper = req.user?.role === 1 || req.user?.role === "SUPER_ADMIN" || req.user?.roleId === "1";
+    if (!isSuper && role.organizationId && role.organizationId !== req.user?.organizationId) {
+      return res.status(403).json({ error: "Forbidden: access restricted to your organization's roles" });
     }
 
     await prisma.$transaction(async (tx) => {

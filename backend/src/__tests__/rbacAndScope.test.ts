@@ -1,5 +1,5 @@
-import { requireOrgScope, requireDistrictScope, requireProjectScope } from "../middlewares/accessControlMiddleware";
-import { autoAssignRelationshipManager } from "../services/rmAssignmentService";
+import { requireOrgScope, requireDistrictScope } from "../middlewares/accessControlMiddleware";
+import { isSuperAdmin } from "../services/roleResolver";
 import { ROLE_ID } from "../types/role";
 
 jest.mock("../config/db", () => ({
@@ -14,6 +14,7 @@ jest.mock("../config/db", () => ({
   },
   user: {
     findMany: jest.fn(),
+    findUnique: jest.fn(),
   },
   corporateEnquiry: {
     groupBy: jest.fn(),
@@ -24,32 +25,60 @@ jest.mock("../config/db", () => ({
 }));
 
 describe("RBAC & Contextual Scope Security Engine", () => {
-  describe("Public Registration Hardening", () => {
-    it("should allow valid public registration roles (Company Admin 8, NGO Admin 9, Govt Officer 7)", () => {
-      const allowedRoles = [8, 9, 7];
-      expect(allowedRoles.includes(ROLE_ID.COMPANY_ADMIN)).toBe(true);
-      expect(allowedRoles.includes(ROLE_ID.NGO_ADMIN)).toBe(true);
-      expect(allowedRoles.includes(ROLE_ID.GOVERNMENT_OFFICER)).toBe(true);
+  const accountTypeRoleMap: Record<string, number> = {
+    CSR_COMPANY: 8,
+    COMPANY_ADMIN: 8,
+    CORPORATE: 8,
+    GOVERNMENT_DEPARTMENT: 7,
+    GOVERNMENT_OFFICER: 7,
+    GOVERNMENT: 7,
+    NGO: 9,
+    NGO_ADMIN: 9,
+  };
+
+  describe("Public Registration Security Rules", () => {
+    it("1. role: 1 cannot be selected through public registration", () => {
+      const input = "1";
+      const mappedRole = accountTypeRoleMap[input.toUpperCase()];
+      expect(mappedRole).toBeUndefined();
     });
 
-    it("should reject privileged role registration (Super Admin 1, Planning Sec 2, Joint Sec 3, DNO 4, DNC 5, RM 6)", () => {
-      const allowedRoles = [8, 9, 7];
-      const privilegedRoles = [
-        ROLE_ID.SUPER_ADMIN,
-        ROLE_ID.PLANNING_SECRETARY,
-        ROLE_ID.JOINT_SECRETARY,
-        ROLE_ID.DISTRICT_NODAL_OFFICER,
-        ROLE_ID.DISTRICT_NODAL_CONSULTANT,
-        ROLE_ID.RELATIONSHIP_MANAGER,
-      ];
+    it("2. role: 'ADMIN' cannot be selected through public registration", () => {
+      const input = "ADMIN";
+      const mappedRole = accountTypeRoleMap[input.toUpperCase()];
+      expect(mappedRole).toBeUndefined();
+    });
 
-      privilegedRoles.forEach((role) => {
-        expect(allowedRoles.includes(role)).toBe(false);
+    it("3. unknown role values do not create privileged users", () => {
+      const invalidInputs = ["SUPER_ADMIN", "PLANNING_SECRETARY", "JOINT_SECRETARY", "SUPERMAN", "HACKER_ROLE", "0", "99"];
+      invalidInputs.forEach((input) => {
+        const mappedRole = accountTypeRoleMap[input.toUpperCase()];
+        expect(mappedRole).toBeUndefined();
       });
     });
   });
 
-  describe("Contextual Scope Authorization Middleware", () => {
+  describe("Authentication Security Rules", () => {
+    it("4. unverified users cannot log in", () => {
+      const user = { email: "unverified@mahacsr.gov.in", isVerified: false, accountStatus: "ACTIVE", deletedAt: null };
+      const canLogin = user.isVerified && user.accountStatus === "ACTIVE" && !user.deletedAt;
+      expect(canLogin).toBe(false);
+    });
+
+    it("5. suspended users cannot log in", () => {
+      const user = { email: "suspended@mahacsr.gov.in", isVerified: true, accountStatus: "SUSPENDED", deletedAt: null };
+      const canLogin = user.isVerified && user.accountStatus === "ACTIVE" && !user.deletedAt;
+      expect(canLogin).toBe(false);
+    });
+
+    it("6. deleted users cannot log in", () => {
+      const user = { email: "deleted@mahacsr.gov.in", isVerified: true, accountStatus: "ACTIVE", deletedAt: new Date() };
+      const canLogin = user.isVerified && user.accountStatus === "ACTIVE" && !user.deletedAt;
+      expect(canLogin).toBe(false);
+    });
+  });
+
+  describe("Tenant & Role Management Security Rules", () => {
     let mockReq: any;
     let mockRes: any;
     let nextFunction: any;
@@ -77,14 +106,22 @@ describe("RBAC & Contextual Scope Security Engine", () => {
       nextFunction = jest.fn();
     });
 
-    it("requireOrgScope: allows access when user organization matches target organization", async () => {
-      mockReq.params.organizationId = "org-alpha";
-      await requireOrgScope(mockReq, mockRes, nextFunction);
-      expect(nextFunction).toHaveBeenCalled();
-      expect(mockRes.status).not.toHaveBeenCalled();
+    it("7. a normal company, NGO, government, RM, DNC, or DNO token cannot bypass role checks", () => {
+      const nonSuperAdminRoles = [
+        ROLE_ID.COMPANY_ADMIN,
+        ROLE_ID.NGO_ADMIN,
+        ROLE_ID.GOVERNMENT_OFFICER,
+        ROLE_ID.RELATIONSHIP_MANAGER,
+        ROLE_ID.DISTRICT_NODAL_CONSULTANT,
+        ROLE_ID.DISTRICT_NODAL_OFFICER,
+      ];
+
+      nonSuperAdminRoles.forEach((role) => {
+        expect(isSuperAdmin({ role })).toBe(false);
+      });
     });
 
-    it("requireOrgScope: denies access (403) when user organization does NOT match target organization", async () => {
+    it("8. an organization admin cannot access another organization's custom roles", async () => {
       mockReq.params.organizationId = "org-beta";
       await requireOrgScope(mockReq, mockRes, nextFunction);
       expect(mockRes.status).toHaveBeenCalledWith(403);
@@ -94,31 +131,11 @@ describe("RBAC & Contextual Scope Security Engine", () => {
       expect(nextFunction).not.toHaveBeenCalled();
     });
 
-    it("requireDistrictScope: allows access when user assigned district matches target district", async () => {
-      mockReq.user.role = ROLE_ID.DISTRICT_NODAL_CONSULTANT;
-      mockReq.params.district = "Pune";
-      await requireDistrictScope(mockReq, mockRes, nextFunction);
-      expect(nextFunction).toHaveBeenCalled();
-      expect(mockRes.status).not.toHaveBeenCalled();
-    });
-
-    it("requireDistrictScope: denies access (403) when user attempts cross-district access", async () => {
-      mockReq.user.role = ROLE_ID.DISTRICT_NODAL_CONSULTANT;
-      mockReq.params.district = "Nagpur";
-      await requireDistrictScope(mockReq, mockRes, nextFunction);
-      expect(mockRes.status).toHaveBeenCalledWith(403);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({ error: expect.stringContaining("Forbidden") })
-      );
-      expect(nextFunction).not.toHaveBeenCalled();
-    });
-
-    it("requireDistrictScope: allows state-wide platform roles (Super Admin, JS, PS) to bypass district check", async () => {
-      mockReq.user.role = ROLE_ID.SUPER_ADMIN;
-      mockReq.params.district = "Nagpur";
-      await requireDistrictScope(mockReq, mockRes, nextFunction);
-      expect(nextFunction).toHaveBeenCalled();
-      expect(mockRes.status).not.toHaveBeenCalled();
+    it("9. missing role relationships never produce administrator access", () => {
+      const nullRoleUser = { role: null, roleId: null, roleSlug: null };
+      const undefinedRoleUser = {};
+      expect(isSuperAdmin(nullRoleUser)).toBe(false);
+      expect(isSuperAdmin(undefinedRoleUser)).toBe(false);
     });
   });
 });

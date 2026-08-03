@@ -103,18 +103,21 @@ async function main() {
     update: {}
   });
 
-  // 3. Seed Demo Users
-  console.log("Seeding demo accounts...");
-  const demoUsers = [
-    { email: "admin@mahacsr.gov.in", firstName: "Super", lastName: "Admin", roleId: 1, orgId: mainOrg.id },
-    { email: "js@mahacsr.gov.in", firstName: "Joint", lastName: "Secretary", roleId: 3, orgId: mainOrg.id },
-    { email: "nodal@mahacsr.gov.in", firstName: "Nodal", lastName: "Officer", roleId: 4, orgId: mainOrg.id },
-    { email: "rm@mahacsr.gov.in", firstName: "Relationship", lastName: "Manager", roleId: 6, orgId: mainOrg.id },
-    { email: "company.admin@mahacsr.gov.in", firstName: "Company", lastName: "Admin", roleId: 8, orgId: companyOrg.id },
-    { email: "ngo.admin@mahacsr.gov.in", firstName: "NGO", lastName: "Admin", roleId: 9, orgId: mainOrg.id }
-  ];
+  // 3. Seed Demo Users (skipped in production)
+  if (process.env.NODE_ENV === "production") {
+    console.log("Skipping demo user accounts in production environment.");
+  } else {
+    console.log("Seeding demo accounts for development...");
+    const demoUsers = [
+      { email: "admin@mahacsr.gov.in", firstName: "Super", lastName: "Admin", roleId: 1, orgId: mainOrg.id },
+      { email: "js@mahacsr.gov.in", firstName: "Joint", lastName: "Secretary", roleId: 3, orgId: mainOrg.id },
+      { email: "nodal@mahacsr.gov.in", firstName: "Nodal", lastName: "Officer", roleId: 4, orgId: mainOrg.id },
+      { email: "rm@mahacsr.gov.in", firstName: "Relationship", lastName: "Manager", roleId: 6, orgId: mainOrg.id },
+      { email: "company.admin@mahacsr.gov.in", firstName: "Company", lastName: "Admin", roleId: 8, orgId: companyOrg.id },
+      { email: "ngo.admin@mahacsr.gov.in", firstName: "NGO", lastName: "Admin", roleId: 9, orgId: mainOrg.id }
+    ];
 
-  for (const user of demoUsers) {
+    for (const user of demoUsers) {
     const createdUser = await prisma.user.upsert({
       where: { email: user.email },
       create: {
@@ -151,6 +154,7 @@ async function main() {
       }
     });
     console.log(`✓ User created/updated: ${user.email} (Role ID: ${user.roleId})`);
+    }
   }
 
   // 4. Seed Default Platform Settings
