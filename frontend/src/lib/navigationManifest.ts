@@ -292,14 +292,54 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
     breadcrumbMetadata: { title: "User Management", parentRoute: "/dashboard" }
   },
   {
-    id: "roles-permissions",
-    label: "Roles & Permissions",
-    route: "/admin/roles-permissions",
+    id: "access-control",
+    label: "Access Control",
+    route: "/admin/access-control",
+    iconName: "Shield",
+    section: "Administration",
+    requiredAnyPermissions: ["role:view", "role:create", "role:configure", "user:view", "user:assign-role"],
+    ordering: 20,
+    breadcrumbMetadata: { title: "Access Control Overview", parentRoute: "/dashboard" }
+  },
+  {
+    id: "access-control-roles",
+    label: "Roles",
+    route: "/admin/access-control/roles",
     iconName: "ShieldCheck",
     section: "Administration",
     requiredAnyPermissions: ["role:view", "role:create", "role:configure"],
-    ordering: 20,
-    breadcrumbMetadata: { title: "Roles & Permissions", parentRoute: "/admin/user-management" }
+    ordering: 21,
+    breadcrumbMetadata: { title: "Role Management", parentRoute: "/admin/access-control" }
+  },
+  {
+    id: "access-control-permissions",
+    label: "Permissions Catalog",
+    route: "/admin/access-control/permissions",
+    iconName: "Key",
+    section: "Administration",
+    requiredAnyPermissions: ["role:view"],
+    ordering: 22,
+    breadcrumbMetadata: { title: "Permissions Catalog", parentRoute: "/admin/access-control" }
+  },
+  {
+    id: "access-control-assignments",
+    label: "Role Assignments",
+    route: "/admin/access-control/assignments",
+    iconName: "Users",
+    section: "Administration",
+    requiredAnyPermissions: ["user:view", "user:assign-role"],
+    ordering: 23,
+    breadcrumbMetadata: { title: "Role Assignments", parentRoute: "/admin/access-control" }
+  },
+  {
+    id: "access-control-audit",
+    label: "Access Audit Log",
+    route: "/admin/access-control/audit",
+    iconName: "Activity",
+    section: "Administration",
+    requiredAnyPermissions: ["user:view", "role:view"],
+    ordering: 24,
+    breadcrumbMetadata: { title: "Access Control Audit", parentRoute: "/admin/access-control" }
   },
   {
     id: "onboarding-approvals",
