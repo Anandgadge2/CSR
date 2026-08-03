@@ -9,7 +9,8 @@ import {
   approveOrganization,
   rejectOrganization,
   suspendOrganization,
-  requestClarification
+  requestClarification,
+  createAdminOrganization
 } from "../controllers/organizationAdminController";
 import { Role } from "../types/role";
 import { getSlaConfiguration, saveSlaConfiguration } from "../controllers/slaAdminController";
@@ -33,6 +34,7 @@ router.put("/sla/config", saveSlaConfiguration);
 
 // Organization management endpoints
 router.get("/organizations", listOrganizations);
+router.post("/organizations", createAdminOrganization);
 router.get("/organizations/pending", listPendingOrganizations);
 router.get("/organizations/:id", getOrganizationById);
 router.post("/organizations/:id/approve", approveOrganization);

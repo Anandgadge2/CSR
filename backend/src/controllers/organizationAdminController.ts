@@ -715,3 +715,32 @@ export const listPermissions = async (_req: AuthenticatedRequest, res: Response,
     next(error);
   }
 };
+
+export const createAdminOrganization = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { name, kind = "GOVERNMENT_DEPARTMENT", district, email, phone, address } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: "Department / Organization name is required." });
+
+    const org = await prisma.organization.create({
+      data: {
+        name: name.trim(),
+        kind: kind as any,
+        district: district ? String(district).trim() : null,
+        officialEmail: email ? String(email).trim().toLowerCase() : null,
+        status: "ACTIVE",
+        ...(kind === "GOVERNMENT_DEPARTMENT" || kind === "GOVT_DEPT" ? {
+          govDeptProfile: {
+            create: {
+              departmentType: "STATE_GOVT",
+              nodalOfficerName: "Department Nodal Officer"
+            }
+          }
+        } : {})
+      }
+    });
+
+    return res.status(201).json({ success: true, organization: org });
+  } catch (error) {
+    next(error);
+  }
+};

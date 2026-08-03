@@ -2718,15 +2718,26 @@ export function AdminOrganizationsWorkspace() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [deptForm, setDeptForm] = useState({ name: "", email: "", district: "" });
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
       const orgs = await apiFetch<Organization[]>("/admin/organizations");
-      // This workspace lists government departments only — companies and
-      // implementing agencies have their own dedicated admin pages.
-      setItems(orgs.filter((org) => org.organizationType === "GOVERNMENT_DEPARTMENT"));
+      const rawOrgs = Array.isArray(orgs) ? orgs : (orgs as any)?.data || [];
+      const depts = rawOrgs.filter((org: any) => {
+        const type = String(org.organizationType || org.kind || "").toUpperCase();
+        return (
+          type === "GOVERNMENT_DEPARTMENT" ||
+          type === "GOVT_DEPT" ||
+          type === "PORTAL_ADMIN_ORG" ||
+          Boolean(org.govDeptProfile)
+        );
+      });
+      setItems(depts.length > 0 ? depts : rawOrgs);
     } catch (err: any) {
       setError(err.message || "Unable to load organizations");
     } finally {
@@ -2746,10 +2757,47 @@ export function AdminOrganizationsWorkspace() {
     await load();
   };
 
-  const filtered = items.filter((item) => `${item.name} ${item.organizationType} ${item.district || ""} ${item.onboardingStatus}`.toLowerCase().includes(search.toLowerCase()));
+  const handleCreateDept = async (e: FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    setError("");
+    try {
+      await apiFetch("/admin/organizations", {
+        method: "POST",
+        body: JSON.stringify({
+          name: deptForm.name.trim(),
+          email: deptForm.email.trim() || undefined,
+          district: deptForm.district || undefined,
+          kind: "GOVERNMENT_DEPARTMENT"
+        })
+      });
+      setCreateModalOpen(false);
+      setDeptForm({ name: "", email: "", district: "" });
+      await load();
+    } catch (err: any) {
+      setError(err.message || "Failed to create government department");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const filtered = items.filter((item) => {
+    const typeStr = String(item.organizationType || item.kind || "");
+    const statusStr = String(item.onboardingStatus || item.status || "");
+    return `${item.name} ${typeStr} ${item.district || ""} ${statusStr}`.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
-    <WorkspaceShell eyebrow="Portal Admin" title="Government Departments" description="Review government department organizations in this portal instance and manage onboarding status.">
+    <WorkspaceShell
+      eyebrow="Portal Admin"
+      title="Government Departments"
+      description="Review government department organizations in this portal instance and manage onboarding status."
+      actions={
+        <Button onClick={() => setCreateModalOpen(true)}>
+          <Plus size={16} className="mr-1.5 inline" /> Add Department
+        </Button>
+      }
+    >
       <ErrorBox error={error} />
       <section className="border border-slate-200/60 bg-white/70 backdrop-blur-xl rounded-2xl shadow-glass overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-gov-line p-4 md:flex-row md:items-center md:justify-between">
@@ -2775,10 +2823,12 @@ export function AdminOrganizationsWorkspace() {
                     <Link href={`/admin/organizations/${item.id}`} className="text-gov-blue hover:underline">{item.name}</Link>
                     <div className="text-xs font-medium text-gov-muted">{item.email || "-"}</div>
                   </td>
-                  <td className="px-5 py-4 text-gov-muted">{item.organizationType.replace(/_/g, " ")}</td>
+                  <td className="px-5 py-4 text-gov-muted">
+                    {String(item.organizationType || item.kind || "GOVERNMENT_DEPARTMENT").replace(/_/g, " ")}
+                  </td>
                   <td className="px-5 py-4 text-gov-muted">{item.district || "-"}</td>
-                  <td className="px-5 py-4"><Badge>{item.onboardingStatus}</Badge></td>
-                  <td className="px-5 py-4"><Badge>{item.status}</Badge></td>
+                  <td className="px-5 py-4"><Badge>{item.onboardingStatus || item.status || "ACTIVE"}</Badge></td>
+                  <td className="px-5 py-4"><Badge>{item.status || "ACTIVE"}</Badge></td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-2">
                       <Button size="sm" onClick={() => action(item.id, "approve")}>Approve</Button>
@@ -2792,6 +2842,47 @@ export function AdminOrganizationsWorkspace() {
           </table>
         </div>
       </section>
+
+      {/* CREATE DEPARTMENT MODAL */}
+      <GovModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Add Government Department" width={560}>
+        <form onSubmit={handleCreateDept} className="flex flex-col gap-4">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+            Department Name *
+            <input
+              type="text"
+              required
+              value={deptForm.name}
+              onChange={(e) => setDeptForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g. Planning Department Maharashtra"
+              className="border border-slate-200 rounded-lg p-2.5 text-sm font-medium outline-none focus:border-blue-600"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+            Official Email
+            <input
+              type="email"
+              value={deptForm.email}
+              onChange={(e) => setDeptForm((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="e.g. planning@mahacsr.gov.in"
+              className="border border-slate-200 rounded-lg p-2.5 text-sm font-medium outline-none focus:border-blue-600"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-slate-700">
+            District
+            <input
+              type="text"
+              value={deptForm.district}
+              onChange={(e) => setDeptForm((prev) => ({ ...prev, district: e.target.value }))}
+              placeholder="e.g. Mumbai / All Districts"
+              className="border border-slate-200 rounded-lg p-2.5 text-sm font-medium outline-none focus:border-blue-600"
+            />
+          </label>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button type="button" variant="secondary" onClick={() => setCreateModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={creating}>{creating ? "Creating..." : "Create Department"}</Button>
+          </div>
+        </form>
+      </GovModal>
     </WorkspaceShell>
   );
 }
