@@ -1,0 +1,115 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MahaCSR Access Control API",
+    "description": "Production-grade Access Control, RBAC, and Contextual Scope Management API for the Government of Maharashtra CSR Platform",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/api/access-control", "description": "Access Control API Base Server" }
+  ],
+  "paths": {
+    "/overview": {
+      "get": {
+        "summary": "Get system access control overview & statistics",
+        "responses": { "200": { "description": "Overview metrics retrieved" } }
+      }
+    },
+    "/roles": {
+      "get": {
+        "summary": "List roles within caller tenant scope",
+        "responses": { "200": { "description": "Roles retrieved" } }
+      },
+      "post": {
+        "summary": "Create new custom role",
+        "responses": { "201": { "description": "Role created" }, "400": { "description": "Validation error" }, "403": { "description": "Delegation ceiling error" } }
+      }
+    },
+    "/roles/{id}": {
+      "get": {
+        "summary": "Get role details by ID",
+        "responses": { "200": { "description": "Role details" }, "404": { "description": "Not found" } }
+      },
+      "patch": {
+        "summary": "Patch role metadata (optimistic locking required via version)",
+        "responses": { "200": { "description": "Role patched" }, "409": { "description": "Optimistic locking conflict" } }
+      },
+      "delete": {
+        "summary": "Delete custom role (requires 0 active assignments)",
+        "responses": { "200": { "description": "Role deleted" }, "422": { "description": "Active assignments present" } }
+      }
+    },
+    "/roles/{id}/clone": {
+      "post": {
+        "summary": "Clone existing role template into caller organization",
+        "responses": { "201": { "description": "Role cloned" } }
+      }
+    },
+    "/roles/{id}/activate": {
+      "post": {
+        "summary": "Activate role status",
+        "responses": { "200": { "description": "Role activated" } }
+      }
+    },
+    "/roles/{id}/deactivate": {
+      "post": {
+        "summary": "Deactivate role status",
+        "responses": { "200": { "description": "Role deactivated" } }
+      }
+    },
+    "/permissions": {
+      "get": {
+        "summary": "List authoritative permission catalog",
+        "responses": { "200": { "description": "Catalog returned" } }
+      }
+    },
+    "/roles/{id}/permissions": {
+      "get": {
+        "summary": "Get permissions assigned to role",
+        "responses": { "200": { "description": "Permissions returned" } }
+      },
+      "put": {
+        "summary": "Bulk replace role permissions (optimistic locking required)",
+        "responses": { "200": { "description": "Permissions replaced" }, "409": { "description": "Optimistic lock failure" } }
+      }
+    },
+    "/roles/{id}/impact-preview": {
+      "post": {
+        "summary": "Compute impact preview before permission changes",
+        "responses": { "200": { "description": "Impact preview payload" } }
+      }
+    },
+    "/assignments": {
+      "get": {
+        "summary": "List canonical role assignments in caller scope",
+        "responses": { "200": { "description": "Assignments list" } }
+      },
+      "post": {
+        "summary": "Create new role assignment",
+        "responses": { "201": { "description": "Assignment created" }, "422": { "description": "Inactive role assignment attempted" } }
+      }
+    },
+    "/assignments/{id}": {
+      "patch": {
+        "summary": "Patch assignment status or validity date",
+        "responses": { "200": { "description": "Assignment updated" } }
+      },
+      "delete": {
+        "summary": "Revoke role assignment and invalidate user token version",
+        "responses": { "200": { "description": "Assignment revoked" } }
+      }
+    },
+    "/users/{id}/effective-access": {
+      "get": {
+        "summary": "Get user effective permissions and contextual scopes",
+        "responses": { "200": { "description": "Effective access payload" } }
+      }
+    },
+    "/audit": {
+      "get": {
+        "summary": "Get structured audit logs",
+        "responses": { "200": { "description": "Audit logs returned" } }
+      }
+    }
+  }
+}
