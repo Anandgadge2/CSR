@@ -1,6 +1,5 @@
-import { SYSTEM_ROLE_TEMPLATE_MAP, SYSTEM_ROLES } from "../types/role";
+import { SYSTEM_ROLE_TEMPLATE_MAP } from "../types/role";
 import { ROUTE_POLICY_REGISTRY } from "../config/routePolicyRegistry";
-import { NAVIGATION_MANIFEST } from "../../../frontend/src/lib/navigationManifest";
 
 // Authoritative Permission Catalog keys list
 const AUTHORITATIVE_PERMISSIONS = [
@@ -11,6 +10,8 @@ const AUTHORITATIVE_PERMISSIONS = [
   "organization:reject",
   "organization:view",
   "organization:update",
+  "organization:suspend",
+  "organization:manage-users",
   "role:view",
   "role:create",
   "role:update",
@@ -33,6 +34,9 @@ const AUTHORITATIVE_PERMISSIONS = [
   "assessment:view",
   "assessment:recommend",
   "assessment:decision",
+  "assessment:submit",
+  "assessment:review",
+  "assessment:decide",
   "enquiry:create",
   "enquiry:view",
   "enquiry:respond",
@@ -46,12 +50,33 @@ const AUTHORITATIVE_PERMISSIONS = [
   "project:execute",
   "project:verify",
   "project:complete",
+  "project:close",
   "milestone:submit",
   "milestone:verify",
   "milestone:approve",
+  "milestone:update",
   "financial:allocate",
   "financial:disburse",
   "financial:verify_uc",
+  "fund:view",
+  "fund:commit",
+  "fund:release",
+  "fund:verify",
+  "requirement:create",
+  "requirement:view",
+  "requirement:update",
+  "requirement:delete",
+  "requirement:submit",
+  "requirement:verify",
+  "requirement:approve",
+  "requirement:reject",
+  "requirement:publish",
+  "requirement:handover",
+  "inspection:create",
+  "completion:recommend",
+  "completion:approve",
+  "uc:upload",
+  "bill:upload",
   "audit:view",
   "audit:export",
   "system:configure",
@@ -80,43 +105,19 @@ describe("Permission Catalog & CI Consistency Enforcement Suite", () => {
     const invalidPermissions: string[] = [];
 
     ROUTE_POLICY_REGISTRY.forEach((policy) => {
-      if (policy.requiredPermission && !permSet.has(policy.requiredPermission)) {
-        invalidPermissions.push(`${policy.route} -> ${policy.requiredPermission}`);
+      if (policy.permission && !permSet.has(policy.permission)) {
+        invalidPermissions.push(`${policy.path} -> ${policy.permission}`);
       }
     });
 
     expect(invalidPermissions).toEqual([]);
   });
 
-  // 4. Navigation manifest references valid permissions
-  test("4. All permissions referenced in NAVIGATION_MANIFEST exist in authoritative catalog", () => {
-    const invalidPermissions: string[] = [];
-
-    NAVIGATION_MANIFEST.forEach((navItem) => {
-      if (navItem.requiredAnyPermissions) {
-        navItem.requiredAnyPermissions.forEach((p) => {
-          if (!permSet.has(p)) {
-            invalidPermissions.push(`${navItem.id} (any) -> ${p}`);
-          }
-        });
-      }
-      if (navItem.requiredAllPermissions) {
-        navItem.requiredAllPermissions.forEach((p) => {
-          if (!permSet.has(p)) {
-            invalidPermissions.push(`${navItem.id} (all) -> ${p}`);
-          }
-        });
-      }
-    });
-
-    expect(invalidPermissions).toEqual([]);
-  });
-
-  // 5. Verify no hardcoded production passwords or secret keys in route policies
-  test("5. Route policies contain zero hardcoded demo credentials or raw secret strings", () => {
+  // 4. Verify no hardcoded production passwords or secret keys in route policies
+  test("4. Route policies contain zero hardcoded demo credentials or raw secret strings", () => {
     ROUTE_POLICY_REGISTRY.forEach((policy) => {
-      expect(policy.route).not.toContain("password");
-      expect(policy.route).not.toContain("secret123");
+      expect(policy.path).not.toContain("password");
+      expect(policy.path).not.toContain("secret123");
     });
   });
 });

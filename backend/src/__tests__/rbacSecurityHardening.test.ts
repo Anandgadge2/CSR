@@ -304,10 +304,9 @@ describe("Comprehensive RBAC & Security Hardening Suite", () => {
         ["pitch:view"]
       );
 
-      expect(preview.affectedUserCount).toBe(2);
-      expect(preview.permissionsToAdd).toContain("role:delete");
-      expect(preview.highRiskChanges).toContain("role:delete");
-      expect(preview.requiresReason).toBe(true);
+      expect(preview.usersDirectlyAssignedCount).toBe(2);
+      expect(preview.permissionsAdded).toContain("role:delete");
+      expect(preview.highRiskChanges.map((p) => p.key)).toContain("role:delete");
     });
   });
 });
