@@ -4,6 +4,8 @@ import { Role } from "../types/role";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "./authMiddleware";
 import { resolveUserPermission } from "../services/permissionService";
+import { EffectivePermissionService } from "../services/effectivePermissionService";
+import { WorkflowTransitionService } from "../services/workflowTransitionService";
 
 const auditBlockedAccess = async (req: AuthenticatedRequest, action: string, details: Record<string, unknown>) => {
   await prisma.auditLog.create({
@@ -317,5 +319,92 @@ export const requireProjectScope = async (req: AuthenticatedRequest, res: Respon
   } catch (error) {
     return next(error);
   }
+};
+
+/**
+ * Pipeline Step 2: Load current user's effective access payload & scopes.
+ */
+export const loadCurrentPrincipal = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user?.id) return res.status(401).json({ error: "Authentication required" });
+  try {
+    const payload = await EffectivePermissionService.getEffectiveAccessPayload(req.user.id);
+    (req as any).principal = payload;
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Pipeline Step 3: Enforce active account status gate.
+ */
+export const requireActiveAccount = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) return res.status(401).json({ error: "Authentication required" });
+  if (req.user.accountStatus !== "ACTIVE") {
+    return res.status(403).json({ error: "Forbidden: account status must be ACTIVE to perform this action" });
+  }
+  return next();
+};
+
+/**
+ * Pipeline Step 4: Enforce explicit DB permission key requirement.
+ */
+export const requirePermission = (permissionKey: string) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Authentication required" });
+      const hasPerm = await EffectivePermissionService.hasPermission(req.user.id, permissionKey);
+      if (!hasPerm) {
+        await auditBlockedAccess(req, "PERMISSION_ACCESS_BLOCKED", { permissionKey, path: req.originalUrl });
+        return res.status(403).json({ error: `Forbidden: missing required permission '${permissionKey}'` });
+      }
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  };
+};
+
+/**
+ * Pipeline Step 5: Enforce contextual resource scope isolation.
+ */
+export const requireResourceScope = (scopeType: "GLOBAL" | "ORGANIZATION" | "DISTRICT" | "PROJECT") => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (scopeType === "ORGANIZATION") return requireOrgScope(req, res, next);
+    if (scopeType === "DISTRICT") return requireDistrictScope(req, res, next);
+    if (scopeType === "PROJECT") return requireProjectScope(req, res, next);
+    return next();
+  };
+};
+
+/**
+ * Pipeline Step 6: Enforce state machine transition rules & audit logging.
+ */
+export const requireAllowedTransition = (entityType: "PITCH" | "REQUIREMENT" | "PROJECT" | "ASSESSMENT", requiredPermission: string) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    try {
+      const { fromState, toState, reason } = req.body;
+      const entityId = req.params.id || req.body.entityId;
+
+      if (!fromState || !toState) {
+        return next();
+      }
+
+      await WorkflowTransitionService.executeTransition({
+        entityType,
+        entityId,
+        actorUserId: req.user!.id,
+        fromState,
+        toState,
+        requiredPermission,
+        reason,
+        ipAddress: req.ip
+      });
+
+      return next();
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || "Workflow transition failed" });
+    }
+  };
 };
 

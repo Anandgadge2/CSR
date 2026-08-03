@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
 import { ROLE_ID } from "../types/role";
-import { requireApprovedOrganization, requireVerifiedActiveUser } from "../middlewares/accessControlMiddleware";
+import { requireApprovedOrganization, requireVerifiedActiveUser, requirePermission } from "../middlewares/accessControlMiddleware";
 import {
   submitPitch,
   listGovernmentPitches,
@@ -18,16 +18,16 @@ import {
 
 const router = Router();
 
-router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOrganization("GOVERNMENT_DEPARTMENT"), submitPitch);
-router.get("/", authenticateToken, listGovernmentPitches);
+router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOrganization("GOVERNMENT_DEPARTMENT"), requirePermission("pitch:create"), submitPitch);
+router.get("/", authenticateToken, requirePermission("pitch:view"), listGovernmentPitches);
 router.get("/public", getPublicPitches);
-router.get("/my", authenticateToken, getMyPitches);
-router.get("/:id", authenticateToken, getPitchById);
-router.post("/:id/interest", authenticateToken, submitInterest);
-router.post("/:id/verify", authenticateToken, verifyPitch);
-router.post("/:id/approve", authenticateToken, authorizeRoles([ROLE_ID.JOINT_SECRETARY]), approvePitch);
-router.post("/:id/assign-rm", authenticateToken, authorizeRoles([ROLE_ID.JOINT_SECRETARY]), assignPitchRelationshipManager);
-router.post("/:id/record-contact", authenticateToken, recordPitchRmContact);
-router.post("/:id/convert", authenticateToken, convertPitchToProject);
+router.get("/my", authenticateToken, requirePermission("pitch:view"), getMyPitches);
+router.get("/:id", authenticateToken, requirePermission("pitch:view"), getPitchById);
+router.post("/:id/interest", authenticateToken, requirePermission("pitch:view"), submitInterest);
+router.post("/:id/verify", authenticateToken, requirePermission("pitch:verify"), verifyPitch);
+router.post("/:id/approve", authenticateToken, requirePermission("pitch:approve"), approvePitch);
+router.post("/:id/assign-rm", authenticateToken, requirePermission("pitch:assign"), assignPitchRelationshipManager);
+router.post("/:id/record-contact", authenticateToken, requirePermission("pitch:view"), recordPitchRmContact);
+router.post("/:id/convert", authenticateToken, requirePermission("pitch:convert"), convertPitchToProject);
 
 export default router;
