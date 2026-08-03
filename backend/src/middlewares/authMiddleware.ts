@@ -51,12 +51,17 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
           accountStatus: true,
           isVerified: true,
           deletedAt: true,
+          tokenVersion: true,
           officerProfile: { select: { district: true } }
         }
       });
 
       if (!dbUser || dbUser.deletedAt || dbUser.accountStatus === "SUSPENDED" || dbUser.accountStatus === "DELETED") {
         return res.status(401).json({ error: "Account is inactive, suspended, or deleted" });
+      }
+
+      if (payload.tokenVersion && dbUser.tokenVersion !== payload.tokenVersion) {
+        return res.status(401).json({ error: "Session invalidated due to permission/role update. Please sign in again." });
       }
 
       req.user = {

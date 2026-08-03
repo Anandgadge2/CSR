@@ -118,16 +118,16 @@ async function createAndSendOtp(email: string): Promise<void> {
 const generateTokens = (user: {
   id: string;
   email: string;
-  roleId: number | null;
+  roleId?: number | null;
   organizationId?: string | null;
-  accountStatus?: string | null;
+  tokenVersion?: number | null;
 }) => {
   const payload = {
+    sub: user.id,
     id: user.id,
     email: user.email,
-    roleId: user.roleId,
-    organizationId: user.organizationId,
-    accountStatus: user.accountStatus
+    tokenVersion: user.tokenVersion || 1,
+    organizationId: user.organizationId || null
   };
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });

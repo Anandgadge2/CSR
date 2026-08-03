@@ -119,6 +119,39 @@ enum ChecklistAnswer {
   NA
 }
 
+enum RoleType {
+  SYSTEM
+  CUSTOM
+}
+
+enum RoleScope {
+  GLOBAL
+  ORGANIZATION
+  DISTRICT
+  PROJECT
+  ASSIGNED_RESOURCE
+}
+
+enum RoleStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  REVOKED
+}
+
 // =============================================================================
 // USER, ROLE & ACCESS CONTROL ENGINE
 // =============================================================================
@@ -129,6 +162,7 @@ model User {
   passwordHash      String
   accountStatus     UserAccountStatus @default(PENDING_ACTIVATION)
   isVerified        Boolean           @default(false)
+  tokenVersion      Int               @default(1)
   
   // Basic Metadata
   firstName         String?
@@ -158,6 +192,8 @@ model User {
 
   // System Relations
   userRoles         UserOrganizationRole[]
+  roleAssignments   UserRoleAssignment[] @relation("UserRoleAssignments")
+  givenRoleAssignments UserRoleAssignment[] @relation("AssignedByRoleAssignments")
   officerProfile    UserOfficerProfile?
   districtMappings  DistrictNodalMapping[] @relation("NodalUser")
   assignedByMappings DistrictNodalMapping[] @relation("AssignedByNodalUser")
@@ -186,13 +222,19 @@ model User {
   @@index([createdAt])
 }
 
-// Role Entity using Strict Integer IDs (1-9 System Roles, 10+ Dynamic Custom Roles, NO SLUG)
+// Role Entity using Strict Integer IDs + Immutable Role Code
 model Role {
   id             Int                    @id @default(autoincrement())
+  code           String?                @unique
   name           String
+  displayName    String?
   description    String?
+  type           RoleType               @default(CUSTOM)
+  defaultScope   RoleScope              @default(ORGANIZATION)
+  status         RoleStatus             @default(ACTIVE)
   isSystemRole   Boolean                @default(false)
   isProtected    Boolean                @default(false)
+  version        Int                    @default(1)
   
   organizationId String?
   organization   Organization?          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -200,6 +242,7 @@ model Role {
   // Relations
   users          User[]                 @relation("UserPrimaryRole")
   userRoles      UserOrganizationRole[]
+  roleAssignments UserRoleAssignment[]
   rolePermissions RolePermission[]
   parentRoles    RoleHierarchy[]        @relation("ParentRoleHierarchy")
   childRoles     RoleHierarchy[]        @relation("ChildRoleHierarchy")
@@ -211,6 +254,7 @@ model Role {
   @@unique([organizationId, name])
   @@index([organizationId])
   @@index([isSystemRole])
+  @@index([code])
 }
 
 model Permission {
@@ -218,6 +262,9 @@ model Permission {
   key             String           @unique
   description     String?
   module          String
+  riskLevel       RiskLevel        @default(LOW)
+  isDelegable     Boolean          @default(false)
+  dependencies    String[]         @default([])
   createdAt       DateTime         @default(now())
 
   rolePermissions RolePermission[]
@@ -234,6 +281,7 @@ model RolePermission {
   @@index([permissionId])
 }
 
+// RoleHierarchy model is preserved for schema compatibility but explicitly disabled in application code
 model RoleHierarchy {
   id           String   @id @default(uuid())
   parentRoleId Int
@@ -262,6 +310,32 @@ model UserOrganizationRole {
   @@index([userId])
   @@index([roleId])
   @@index([organizationId])
+}
+
+model UserRoleAssignment {
+  id             String           @id @default(uuid())
+  userId         String
+  user           User             @relation("UserRoleAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  roleId         Int
+  role           Role             @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization?    @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  districtCode   String?
+  projectId      String?
+  project        Project?         @relation("ProjectRoleAssignments", fields: [projectId], references: [id], onDelete: SetNull)
+  status         AssignmentStatus @default(ACTIVE)
+  validFrom      DateTime         @default(now())
+  validUntil     DateTime?
+  assignedById   String?
+  assignedBy     User?            @relation("AssignedByRoleAssignments", fields: [assignedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([userId, status])
+  @@index([roleId])
+  @@index([organizationId])
+  @@index([districtCode])
+  @@index([projectId])
 }
 
 model UserOfficerProfile {
@@ -336,6 +410,7 @@ model Organization {
   bankAccounts       BankAccount[]
   roles              Role[]
   userRoles          UserOrganizationRole[]
+  roleAssignments    UserRoleAssignment[]
   agencySubLogins    AgencySubLogin[]   @relation("OrganizationSubLogins")
 
   // Soft Delete & Timestamps
@@ -509,6 +584,7 @@ model Project {
   agreements               Agreement[]
   agencySubLogins          AgencySubLogin[]   @relation("ProjectAgencySubLogins")
   districtDncAssignments   ProjectDistrictDncAssignment[]
+  roleAssignments          UserRoleAssignment[] @relation("ProjectRoleAssignments")
 
   @@index([district, sector])
   @@index([status])
