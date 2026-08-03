@@ -148,9 +148,10 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const userDesignation = (designation || profile?.designation || profile?.cin || "").trim() || null;
 
     const normalizedEmail = email.trim().toLowerCase();
-    let effectiveRoleId = getRoleId(rawRole) ?? 7;
-    if (effectiveRoleId > 9 || effectiveRoleId < 1) {
-      effectiveRoleId = 7;
+    let effectiveRoleId = getRoleId(rawRole) ?? 8;
+    const allowedPublicRoles = [8, 9, 7]; // COMPANY_ADMIN, NGO_ADMIN, GOVERNMENT_OFFICER
+    if (!allowedPublicRoles.includes(effectiveRoleId)) {
+      return res.status(400).json({ error: "Selected role cannot be chosen via public registration. Internal/privileged roles must be assigned by Super Admin." });
     }
 
     // 1. Ensure target Role exists in DB

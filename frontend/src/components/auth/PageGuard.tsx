@@ -90,12 +90,6 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
       return { allowed: true as const, slug };
     }
 
-    // 3. Role menu mapping check: if the user is authenticated with a valid role, allow access to their pages
-    const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
-    if (activeRoles.length > 0) {
-      return { allowed: true as const, slug };
-    }
-
     return { allowed: false as const, slug };
   }, [pathname, isAdmin, permissions, roles, user, isLoadingPermissions]);
 

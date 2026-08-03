@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import { CacheService } from "../services/cacheService";
 import {
   successResponse,
   errorResponse,
@@ -101,7 +102,6 @@ export const getRoles = async (
   next: NextFunction
 ) => {
   try {
-    await ensurePermissionsSeeded();
 
     const {
       search,
@@ -178,8 +178,6 @@ export const getRoleById = async (
   next: NextFunction
 ) => {
   try {
-    await ensurePermissionsSeeded();
-
     const { id } = req.params;
     const roleId = parseInt(id, 10);
     if (isNaN(roleId)) {
@@ -224,7 +222,6 @@ export const getPermissionGroups = async (
   next: NextFunction
 ) => {
   try {
-    await ensurePermissionsSeeded();
 
     const permissions = await prisma.permission.findMany({
       orderBy: { module: "asc" }
@@ -283,6 +280,9 @@ export const getPages = async (
 /**
  * Create custom dynamic role
  */
+/**
+ * Create custom dynamic role
+ */
 export const createRole = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -303,29 +303,46 @@ export const createRole = async (
       return validationErrorResponse(res, "Role name already exists");
     }
 
-    const role = await prisma.role.create({
-      data: {
-        name,
-        description: description || null,
-        organizationId: organizationId || null,
-        isSystemRole: false,
-        isProtected: false
+    const role = await prisma.$transaction(async (tx) => {
+      const createdRole = await tx.role.create({
+        data: {
+          name,
+          description: description || null,
+          organizationId: organizationId || null,
+          isSystemRole: false,
+          isProtected: false
+        }
+      });
+
+      if (Array.isArray(permissions) && permissions.length > 0) {
+        const permsInDb = await tx.permission.findMany({
+          where: { key: { in: permissions } },
+          select: { id: true }
+        });
+
+        await tx.rolePermission.createMany({
+          data: permsInDb.map(p => ({
+            roleId: createdRole.id,
+            permissionId: p.id
+          }))
+        });
       }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: req.user?.id || null,
+          action: "ROLE_CREATED",
+          entityType: "ROLE",
+          entityId: String(createdRole.id),
+          details: { roleName: name, permissionCount: permissions.length },
+          ipAddress: req.ip
+        }
+      });
+
+      return createdRole;
     });
 
-    if (Array.isArray(permissions) && permissions.length > 0) {
-      const permsInDb = await prisma.permission.findMany({
-        where: { key: { in: permissions } },
-        select: { id: true }
-      });
-
-      await prisma.rolePermission.createMany({
-        data: permsInDb.map(p => ({
-          roleId: role.id,
-          permissionId: p.id
-        }))
-      });
-    }
+    await CacheService.invalidateAll();
 
     return successResponse(res, role, "Role created successfully", 201);
   } catch (error) {
@@ -357,29 +374,46 @@ export const updateRole = async (
 
     const isSuperAdminRole = existingRole.name === "SUPER_ADMIN" || existingRole.id === 1;
 
-    const updatedRole = await prisma.role.update({
-      where: { id: roleId },
-      data: {
-        ...(name && !existingRole.isSystemRole && !existingRole.isProtected ? { name } : {}),
-        ...(description !== undefined ? { description } : {})
+    const updatedRole = await prisma.$transaction(async (tx) => {
+      const updated = await tx.role.update({
+        where: { id: roleId },
+        data: {
+          ...(name && !existingRole.isSystemRole && !existingRole.isProtected ? { name } : {}),
+          ...(description !== undefined ? { description } : {})
+        }
+      });
+
+      if (Array.isArray(permissions) && !isSuperAdminRole) {
+        await tx.rolePermission.deleteMany({ where: { roleId } });
+        const permsInDb = await tx.permission.findMany({
+          where: { key: { in: permissions } },
+          select: { id: true }
+        });
+        if (permsInDb.length > 0) {
+          await tx.rolePermission.createMany({
+            data: permsInDb.map(p => ({
+              roleId,
+              permissionId: p.id
+            }))
+          });
+        }
       }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: req.user?.id || null,
+          action: "ROLE_UPDATED",
+          entityType: "ROLE",
+          entityId: String(roleId),
+          details: { roleName: existingRole.name, isSystemRole: existingRole.isSystemRole },
+          ipAddress: req.ip
+        }
+      });
+
+      return updated;
     });
 
-    if (Array.isArray(permissions) && !isSuperAdminRole) {
-      await prisma.rolePermission.deleteMany({ where: { roleId } });
-      const permsInDb = await prisma.permission.findMany({
-        where: { key: { in: permissions } },
-        select: { id: true }
-      });
-      if (permsInDb.length > 0) {
-        await prisma.rolePermission.createMany({
-          data: permsInDb.map(p => ({
-            roleId,
-            permissionId: p.id
-          }))
-        });
-      }
-    }
+    await CacheService.invalidateAll();
 
     return successResponse(res, updatedRole, "Role updated successfully");
   } catch (error) {
@@ -410,24 +444,41 @@ export const cloneRole = async (
 
     if (!sourceRole) return notFoundResponse(res, "Source role not found");
 
-    const cloned = await prisma.role.create({
-      data: {
-        name: newName,
-        description: newDescription || sourceRole.description,
-        isSystemRole: false,
-        isProtected: false
+    const cloned = await prisma.$transaction(async (tx) => {
+      const clonedRole = await tx.role.create({
+        data: {
+          name: newName,
+          description: newDescription || sourceRole.description,
+          isSystemRole: false,
+          isProtected: false
+        }
+      });
+
+      const permIds = sourceRole.rolePermissions.map(rp => rp.permissionId);
+      if (permIds.length > 0) {
+        await tx.rolePermission.createMany({
+          data: permIds.map(permissionId => ({
+            roleId: clonedRole.id,
+            permissionId
+          }))
+        });
       }
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: req.user?.id || null,
+          action: "ROLE_CLONED",
+          entityType: "ROLE",
+          entityId: String(clonedRole.id),
+          details: { sourceRoleId: roleId, newRoleName: newName },
+          ipAddress: req.ip
+        }
+      });
+
+      return clonedRole;
     });
 
-    const permIds = sourceRole.rolePermissions.map(rp => rp.permissionId);
-    if (permIds.length > 0) {
-      await prisma.rolePermission.createMany({
-        data: permIds.map(permissionId => ({
-          roleId: cloned.id,
-          permissionId
-        }))
-      });
-    }
+    await CacheService.invalidateAll();
 
     return successResponse(res, cloned, "Role cloned successfully", 201);
   } catch (error) {
@@ -454,8 +505,23 @@ export const deleteRole = async (
       return validationErrorResponse(res, "System roles cannot be deleted");
     }
 
-    await prisma.rolePermission.deleteMany({ where: { roleId } });
-    await prisma.role.delete({ where: { id: roleId } });
+    await prisma.$transaction(async (tx) => {
+      await tx.rolePermission.deleteMany({ where: { roleId } });
+      await tx.role.delete({ where: { id: roleId } });
+
+      await tx.auditLog.create({
+        data: {
+          actorUserId: req.user?.id || null,
+          action: "ROLE_DELETED",
+          entityType: "ROLE",
+          entityId: String(roleId),
+          details: { roleName: role.name },
+          ipAddress: req.ip
+        }
+      });
+    });
+
+    await CacheService.invalidateAll();
 
     return successResponse(res, null, "Role deleted successfully");
   } catch (error) {

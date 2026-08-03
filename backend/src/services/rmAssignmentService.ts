@@ -1,87 +1,77 @@
 import prisma from "../config/db";
 import { ROLE_ID } from "../types/role";
 
-export interface RmCandidate {
-  id: string;
-  email: string;
-  assignedDistrict: string | null;
-  activeCount: number;
-}
-
-function randomIndex(n: number): number {
-  return Math.floor(Math.random() * n);
-}
-
-export async function getRmWorkloads(): Promise<RmCandidate[]> {
+/**
+ * Assigns an active Relationship Manager (Role ID 6) to a corporate enquiry or government pitch
+ * based on minimum active workload (least assigned active items).
+ */
+export async function autoAssignRelationshipManager(preferredDistrict?: string | null): Promise<string | null> {
+  // Find all active Relationship Managers
   const rms = await prisma.user.findMany({
     where: {
       roleId: ROLE_ID.RELATIONSHIP_MANAGER,
       accountStatus: "ACTIVE",
+      deletedAt: null,
     },
-    select: { id: true, email: true },
+    select: {
+      id: true,
+    },
   });
 
-  if (rms.length === 0) return [];
+  if (rms.length === 0) {
+    console.warn("[RM Assignment] No active Relationship Managers found in system");
+    return null;
+  }
 
   const rmIds = rms.map((r) => r.id);
 
-  const [enquiryCounts, pitchCounts] = await Promise.all([
-    prisma.corporateEnquiry.groupBy({
-      by: ["assignedRelationshipManagerId"],
-      where: {
-        assignedRelationshipManagerId: { in: rmIds },
-        // Completed/rejected work must not permanently inflate an RM's load.
-        status: { in: ["SUBMITTED", "UNDER_ASSESSMENT", "ASSESSMENT_SUBMITTED_TO_JS"] }
-      },
-      _count: { _all: true },
-    }),
-    prisma.governmentPitch.groupBy({
-      by: ["assignedRelationshipManagerId"],
-      where: {
-        assignedRelationshipManagerId: { in: rmIds },
-        status: { in: ["SUBMITTED", "PENDING", "VERIFIED", "JS_APPROVAL_PENDING"] }
-      },
-      _count: { _all: true },
-    }),
-  ]);
+  // Count active assigned enquiries per RM
+  const enquiryCounts = await prisma.corporateEnquiry.groupBy({
+    by: ["assignedRelationshipManagerId"],
+    where: {
+      assignedRelationshipManagerId: { in: rmIds },
+      status: { notIn: ["RESOLVED", "REJECTED", "CLOSED"] },
+    },
+    _count: { id: true },
+  });
 
-  const countByRm = new Map<string, number>();
-  for (const row of enquiryCounts) {
-    if (row.assignedRelationshipManagerId) {
-      countByRm.set(row.assignedRelationshipManagerId, row._count?._all ?? 0);
-    }
-  }
-  for (const row of pitchCounts) {
-    if (row.assignedRelationshipManagerId) {
-      const prev = countByRm.get(row.assignedRelationshipManagerId) || 0;
-      countByRm.set(row.assignedRelationshipManagerId, prev + (row._count?._all ?? 0));
-    }
-  }
+  // Count active assigned pitches per RM
+  const pitchCounts = await prisma.governmentPitch.groupBy({
+    by: ["assignedRelationshipManagerId"],
+    where: {
+      assignedRelationshipManagerId: { in: rmIds },
+      status: { notIn: ["APPROVED", "REJECTED", "CANCELLED"] },
+    },
+    _count: { id: true },
+  });
 
-  return rms.map((r) => ({
-    id: r.id,
-    email: r.email,
-    assignedDistrict: null,
-    activeCount: countByRm.get(r.id) || 0,
-  }));
+  const workloadMap = new Map<string, number>();
+  rmIds.forEach((id) => workloadMap.set(id, 0));
+
+  enquiryCounts.forEach((c) => {
+    if (c.assignedRelationshipManagerId) {
+      workloadMap.set(c.assignedRelationshipManagerId, (workloadMap.get(c.assignedRelationshipManagerId) || 0) + c._count.id);
+    }
+  });
+
+  pitchCounts.forEach((c) => {
+    if (c.assignedRelationshipManagerId) {
+      workloadMap.set(c.assignedRelationshipManagerId, (workloadMap.get(c.assignedRelationshipManagerId) || 0) + c._count.id);
+    }
+  });
+
+  // Find RM with minimum total workload
+  let bestRmId: string | null = null;
+  let minWorkload = Infinity;
+
+  workloadMap.forEach((workload, rmId) => {
+    if (workload < minWorkload) {
+      minWorkload = workload;
+      bestRmId = rmId;
+    }
+  });
+
+  return bestRmId;
 }
 
-export async function selectLeastLoadedRm(preferDistrict?: string | null): Promise<string | null> {
-  const candidates = await getRmWorkloads();
-  if (candidates.length === 0) return null;
-
-  let minCount = Infinity;
-  for (const c of candidates) {
-    if (c.activeCount < minCount) minCount = c.activeCount;
-  }
-
-  const leastLoaded = candidates.filter((c) => c.activeCount === minCount);
-  if (leastLoaded.length === 1) return leastLoaded[0].id;
-
-  const districtMatches = leastLoaded.filter((c) => c.assignedDistrict && c.assignedDistrict === preferDistrict);
-  if (districtMatches.length > 0) {
-    return districtMatches[randomIndex(districtMatches.length)].id;
-  }
-
-  return leastLoaded[randomIndex(leastLoaded.length)].id;
-}
+export const selectLeastLoadedRm = autoAssignRelationshipManager;

@@ -160,3 +160,162 @@ export const requireVerifiedActiveUser = async (req: AuthenticatedRequest, res: 
     return next(error);
   }
 };
+
+/**
+ * Require contextual Organization Scope match.
+ * Prevents tenant isolation leaks. SUPER_ADMIN, PLANNING_SECRETARY, JOINT_SECRETARY bypass.
+ * Otherwise, the requested organizationId must match req.user.organizationId.
+ */
+export const requireOrgScope = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Authentication required" });
+    const userRole = Number(req.user.role);
+    if (userRole === Role.SUPER_ADMIN || userRole === Role.PLANNING_SECRETARY || userRole === Role.JOINT_SECRETARY) {
+      return next();
+    }
+
+    const targetOrgId = req.params.organizationId || req.body.organizationId || req.query.organizationId;
+    if (!req.user.organizationId) {
+      await auditBlockedAccess(req, "ORG_SCOPE_BLOCKED", { reason: "MISSING_USER_ORGANIZATION", path: req.originalUrl });
+      return res.status(403).json({ error: "Forbidden: user does not belong to any organization" });
+    }
+
+    if (targetOrgId && String(targetOrgId) !== String(req.user.organizationId)) {
+      await auditBlockedAccess(req, "ORG_SCOPE_BLOCKED", {
+        reason: "ORGANIZATION_MISMATCH",
+        userOrgId: req.user.organizationId,
+        targetOrgId,
+        path: req.originalUrl
+      });
+      return res.status(403).json({ error: "Forbidden: access restricted to your organization" });
+    }
+
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Require District Scope isolation.
+ * For District Nodal Consultants (DNC) & District Nodal Officers (DNO), operations must match assigned district.
+ * Platform roles (SUPER_ADMIN, PLANNING_SECRETARY, JOINT_SECRETARY, RELATIONSHIP_MANAGER) are state-wide.
+ */
+export const requireDistrictScope = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Authentication required" });
+    const userRole = Number(req.user.role);
+    if (
+      userRole === Role.SUPER_ADMIN ||
+      userRole === Role.PLANNING_SECRETARY ||
+      userRole === Role.JOINT_SECRETARY ||
+      userRole === Role.RELATIONSHIP_MANAGER
+    ) {
+      return next();
+    }
+
+    const targetDistrict = req.params.district || req.body.district || req.query.district;
+    if (!targetDistrict) {
+      await auditBlockedAccess(req, "DISTRICT_SCOPE_BLOCKED", { reason: "MISSING_TARGET_DISTRICT", path: req.originalUrl });
+      return res.status(400).json({ error: "District parameter is required for scope verification" });
+    }
+
+    const userDistrict = req.user.assignedDistrict;
+    if (!userDistrict || String(userDistrict).trim().toLowerCase() !== String(targetDistrict).trim().toLowerCase()) {
+      await auditBlockedAccess(req, "DISTRICT_SCOPE_BLOCKED", {
+        reason: "DISTRICT_MISMATCH",
+        userDistrict,
+        targetDistrict,
+        path: req.originalUrl
+      });
+      return res.status(403).json({ error: "Forbidden: access restricted to your assigned district" });
+    }
+
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+/**
+ * Require explicit Project Assignment or ownership scope.
+ * Validates that user has access to a given projectId (via org, assigned district, or explicit ProjectAssignment).
+ */
+export const requireProjectScope = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Authentication required" });
+    const userRole = Number(req.user.role);
+    if (
+      userRole === Role.SUPER_ADMIN ||
+      userRole === Role.PLANNING_SECRETARY ||
+      userRole === Role.JOINT_SECRETARY ||
+      userRole === Role.RELATIONSHIP_MANAGER
+    ) {
+      return next();
+    }
+
+    const projectId = req.params.projectId || req.params.id || req.body.projectId;
+    if (!projectId) {
+      return next();
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: String(projectId) },
+      select: {
+        id: true,
+        organizationId: true,
+        corporatePartnerId: true,
+        implementingAgencyId: true,
+        ngoId: true,
+        nodalOfficerUserId: true,
+        district: true
+      }
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    if (
+      req.user.organizationId &&
+      (project.organizationId === req.user.organizationId ||
+       project.corporatePartnerId === req.user.organizationId ||
+       project.implementingAgencyId === req.user.organizationId ||
+       project.ngoId === req.user.organizationId)
+    ) {
+      return next();
+    }
+
+    if (project.nodalOfficerUserId === req.user.id) {
+      return next();
+    }
+
+    if (req.user.assignedDistrict && project.district.toLowerCase() === req.user.assignedDistrict.toLowerCase()) {
+      return next();
+    }
+
+    const explicitAssignment = await prisma.projectAssignment.findFirst({
+      where: {
+        entityId: project.id,
+        assignedToId: req.user.id,
+        status: "ACTIVE"
+      }
+    });
+
+    if (explicitAssignment) {
+      return next();
+    }
+
+    await auditBlockedAccess(req, "PROJECT_SCOPE_BLOCKED", {
+      reason: "UNAUTHORIZED_PROJECT_ACCESS",
+      projectId,
+      userId: req.user.id,
+      path: req.originalUrl
+    });
+
+    return res.status(403).json({ error: "Forbidden: you do not have explicit access to this project" });
+  } catch (error) {
+    return next(error);
+  }
+};
+

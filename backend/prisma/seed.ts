@@ -2,16 +2,31 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { computeBlindHash, encryptField } from "../src/utils/fieldCrypto";
+import { PERMISSIONS, PAGE_PERMISSIONS, resolveSeedRolePermissionKeys } from "../src/config/platformAccess";
 
 const prisma = new PrismaClient();
 
-const DEFAULT_PASSWORD = "111111";
+const DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || "MahaCSR@SecureSeed2026!";
 
 async function main() {
   console.log("Starting database seed...");
-  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
+  if (process.env.NODE_ENV === "production" && !process.env.SEED_DEFAULT_PASSWORD) {
+    throw new Error("SEED_DEFAULT_PASSWORD environment variable must be set in production.");
+  }
+  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
 
-  // 1. Seed System Roles (IDs 1 - 9)
+  // 1. Seed System Roles & Permissions Matrix
+  console.log("Seeding permissions matrix...");
+  const allDefs = [
+    ...PERMISSIONS.map(([key, description, module]) => ({ key, description, module })),
+    ...PAGE_PERMISSIONS.map(([key, description, module]) => ({ key, description, module }))
+  ];
+
+  await prisma.permission.createMany({
+    data: allDefs,
+    skipDuplicates: true,
+  });
+
   console.log("Seeding system roles 1 to 9...");
   const roles = [
     { id: 1, name: "SUPER_ADMIN", description: "Super Administrator", isSystemRole: true, isProtected: true },
@@ -26,13 +41,31 @@ async function main() {
   ];
 
   for (const role of roles) {
-    await prisma.role.upsert({
+    const roleRecord = await prisma.role.upsert({
       where: { id: role.id },
       create: role,
       update: { name: role.name, description: role.description }
     });
+
+    const rolePermKeys = resolveSeedRolePermissionKeys(role.name);
+    if (rolePermKeys.length > 0) {
+      const permsInDb = await prisma.permission.findMany({
+        where: { key: { in: rolePermKeys as string[] } },
+        select: { id: true }
+      });
+
+      if (permsInDb.length > 0) {
+        await prisma.rolePermission.createMany({
+          data: permsInDb.map((p) => ({
+            roleId: roleRecord.id,
+            permissionId: p.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
   }
-  console.log("✓ System roles seeded (1 to 9).");
+  console.log("✓ System roles & permissions seeded (1 to 9).");
 
   // 2. Create Default System Organization
   console.log("Seeding system organization...");

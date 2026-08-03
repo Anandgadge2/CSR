@@ -205,6 +205,36 @@ export const createAdminUser = async (req: AuthenticatedRequest, res: Response, 
       }
     });
 
+    // Enforce 1 DNC per district & sync district mappings
+    const cleanDistrict = district ? String(district).trim() : null;
+    if (cleanDistrict) {
+      if (roleId === ROLE_ID.DISTRICT_NODAL_CONSULTANT) {
+        await prisma.districtDncAssignment.upsert({
+          where: { district: cleanDistrict },
+          create: {
+            district: cleanDistrict,
+            dncUserId: user.id,
+            assignedById: req.user!.id,
+            isActive: true
+          },
+          update: {
+            dncUserId: user.id,
+            assignedById: req.user!.id,
+            isActive: true
+          }
+        }).catch((err) => console.error("Error upserting DistrictDncAssignment:", err));
+      } else if (roleId === ROLE_ID.DISTRICT_NODAL_OFFICER) {
+        await prisma.districtNodalMapping.create({
+          data: {
+            district: cleanDistrict,
+            userId: user.id,
+            assignedById: req.user!.id,
+            isActive: true
+          }
+        }).catch((err) => console.error("Error creating DistrictNodalMapping:", err));
+      }
+    }
+
     let invitationEmailSent = false;
     let resetUrl = "";
 
