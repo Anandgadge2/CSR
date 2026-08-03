@@ -66,7 +66,8 @@ export const checkPermission = (permissionKey: string) => {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized access" });
-      if (req.user.role === Role.SUPER_ADMIN) return next();
+      const isSuperAdmin = Number(req.user.role) === Role.SUPER_ADMIN || req.user.role === "SUPER_ADMIN" || req.user.roleId === "1";
+      if (isSuperAdmin) return next();
 
       const hasPermission = await resolveUserPermission(req.user.id, permissionKey, {
         role: req.user.role,

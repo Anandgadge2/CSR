@@ -56,8 +56,9 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
         }
       });
 
-      if (!dbUser || dbUser.deletedAt || dbUser.accountStatus === "SUSPENDED" || dbUser.accountStatus === "DELETED") {
-        return res.status(401).json({ error: "Account is inactive, suspended, or deleted" });
+      // Strict Invariant #2: No inactive, suspended, deleted, or unverified user can authenticate
+      if (!dbUser || dbUser.deletedAt || dbUser.accountStatus !== "ACTIVE" || !dbUser.isVerified) {
+        return res.status(401).json({ error: "Account is inactive, unverified, suspended, or deleted" });
       }
 
       if (payload.tokenVersion && dbUser.tokenVersion !== payload.tokenVersion) {
@@ -88,9 +89,38 @@ export const optionalAuthenticateToken = (req: AuthenticatedRequest, res: Respon
     return next();
   }
 
-  jwt.verify(token, getJwtSecret(), (err, decoded) => {
-    if (!err) {
-      req.user = decoded as AuthenticatedRequest["user"];
+  jwt.verify(token, getJwtSecret(), async (err, decoded) => {
+    if (!err && decoded && (decoded as any).id) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: (decoded as any).id },
+          select: {
+            id: true,
+            email: true,
+            roleId: true,
+            organizationId: true,
+            accountStatus: true,
+            isVerified: true,
+            deletedAt: true,
+            tokenVersion: true,
+            officerProfile: { select: { district: true } }
+          }
+        });
+        if (dbUser && !dbUser.deletedAt && dbUser.accountStatus === "ACTIVE" && dbUser.isVerified) {
+          const payload = decoded as any;
+          if (!payload.tokenVersion || payload.tokenVersion === dbUser.tokenVersion) {
+            req.user = {
+              id: dbUser.id,
+              email: dbUser.email,
+              role: dbUser.roleId,
+              roleId: dbUser.roleId ? String(dbUser.roleId) : null,
+              organizationId: dbUser.organizationId,
+              accountStatus: dbUser.accountStatus,
+              assignedDistrict: dbUser.officerProfile?.district || null,
+            };
+          }
+        }
+      } catch (_) {}
     }
     return next();
   });
@@ -98,11 +128,7 @@ export const optionalAuthenticateToken = (req: AuthenticatedRequest, res: Respon
 
 /**
  * Legacy role-gate. Checks the principal against the allowed identities on BOTH
- * axes (base enum bucket + dynamic role slug), so a Joint Secretary — who is
- * `GOVERNMENT_OFFICER` at the enum level with slug "joint-secretary" — still
- * matches `authorizeRoles([Role.JOINT_SECRETARY])`.
- *
- * Prefer `checkPermission(...)` for new routes; this remains for existing gates.
+ * axes (base enum bucket + dynamic role slug).
  */
 export const authorizeRoles = (allowedRoles: Role[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
