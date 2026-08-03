@@ -116,8 +116,32 @@ startSlaScheduler();
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+
+server.on("error", (err: any) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`[Server Error] Port ${PORT} is already in use (EADDRINUSE). Closing hanging process...`);
+    process.exit(1);
+  } else {
+    console.error("[Server Error]", err);
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`MahaCSR Server is running on port ${PORT}`);
 });
+
+// Graceful shutdown handling for ts-node-dev / nodemon hot-reloads
+const gracefulShutdown = (signal: string) => {
+  console.log(`[Server Shutdown] Signal ${signal} received. Closing HTTP server & freeing port ${PORT}...`);
+  server.close(() => {
+    console.log("[Server Shutdown] Port freed cleanly.");
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(0), 1000).unref();
+};
+
+process.once("SIGINT", () => gracefulShutdown("SIGINT"));
+process.once("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.once("SIGUSR2", () => gracefulShutdown("SIGUSR2"));
 
 export default app;

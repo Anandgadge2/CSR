@@ -74,6 +74,7 @@ export function Sidebar({
             <div key={item.label}>
               <Link
                 href={item.href}
+                prefetch={true}
                 onClick={(e) => {
                   if (hasChildren) {
                     e.preventDefault();

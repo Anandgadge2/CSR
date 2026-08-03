@@ -30,9 +30,9 @@ export default function PitchesPage() {
   const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
   const isRM = activeRoles.some(r => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
 
-  const { data: envelope, isLoading } = useApiQuery<any>(
-    ["government-pitches"],
-    "/government-pitches"
+  const { data: envelope, isLoading, error: fetchError } = useApiQuery<any>(
+    [isRM ? "rm-pitches" : "government-pitches"],
+    isRM ? "/rm/pitches" : "/government-pitches"
   );
 
   const [search, setSearch] = useState("");
@@ -51,10 +51,10 @@ export default function PitchesPage() {
   const pitchesList: Pitch[] = rawPitches.map((p: any) => ({
     id: p.id,
     refNo: p.pitchReferenceId || p.refNo || `PITCH-${p.id ? p.id.slice(0, 6) : "2026"}`,
-    title: p.title || p.projectName || "Government Pitch Proposal",
-    department: p.department || "Government Department",
-    district: p.district || "Maharashtra",
-    outlayLakhs: p.estimatedOutlay ? Math.round(Number(p.estimatedOutlay) / 100000) : 0,
+    title: p.title || p.projectName || "Untitled pitch",
+    department: p.department || "Not specified",
+    district: Array.isArray(p.districts) && p.districts.length ? p.districts.join(", ") : p.district || "Not specified",
+    outlayLakhs: p.estimatedOutlay ? Math.round(Number(p.estimatedOutlay) / 100000) : Number(p.budget || p.estimatedCost || 0) / 100000,
     status: p.status || "SUBMITTED",
     submittedDate: p.createdAt ? new Date(p.createdAt).toISOString().split("T")[0] : "",
   }));
@@ -70,12 +70,13 @@ export default function PitchesPage() {
 
   return (
     <GovPortalLayout>
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-5 px-4 py-6 md:px-8">
+      <div className="mx-auto flex min-h-screen max-w-screen-2xl flex-col gap-4 px-4 py-4 md:px-6">
         <GovPageHeader
           title="Government Development Pitches & Proposals"
           eyebrow="Department Pitches"
           description="Statewide directory of departmental proposals seeking corporate partner empanelement and CSR funding."
           actions={
+            !isRM &&
             <Link
               href="/pitches/create"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
@@ -117,7 +118,7 @@ export default function PitchesPage() {
         </div>
 
         {/* Content Box */}
-        <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4 md:p-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="relative max-w-md w-full">
               <Search className="absolute left-3.5 top-3 text-slate-400" size={15} />
@@ -146,18 +147,22 @@ export default function PitchesPage() {
                 </select>
               </div>
 
-              <Link
+              {!isRM && <Link
                 href="/pitches/create"
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
               >
                 <Plus size={16} /> Create Pitch Proposal
-              </Link>
+              </Link>}
             </div>
           </div>
 
           {isLoading ? (
             <div className="py-12 flex justify-center">
               <Loader label="Loading Government Pitches from Database..." />
+            </div>
+          ) : fetchError ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center text-sm font-semibold text-rose-800">
+              Unable to load government pitches. Please refresh or try again shortly.
             </div>
           ) : pitchesList.length === 0 ? (
             <div className="rounded-2xl border border-slate-200/90 bg-white p-12 text-center shadow-xs">
@@ -204,10 +209,10 @@ export default function PitchesPage() {
                       <p className="text-sm font-extrabold text-blue-950 font-heading">₹{item.outlayLakhs} Lakhs</p>
                     </div>
                     <Link
-                      href={isRM ? "/rm/matching" : `/pitches/${item.id}`}
+                      href={`/pitches/${item.id}`}
                       className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 transition-colors"
                     >
-                      {isRM ? "Match Corporate" : "View Pitch"} <ArrowUpRight size={14} />
+                      {isRM ? "Review Pitch" : "View Pitch"} <ArrowUpRight size={14} />
                     </Link>
                   </div>
                 </motion.div>

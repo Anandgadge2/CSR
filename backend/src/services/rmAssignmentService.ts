@@ -30,6 +30,8 @@ export async function getRmWorkloads(): Promise<RmCandidate[]> {
       by: ["assignedRelationshipManagerId"],
       where: {
         assignedRelationshipManagerId: { in: rmIds },
+        // Completed/rejected work must not permanently inflate an RM's load.
+        status: { in: ["SUBMITTED", "UNDER_ASSESSMENT", "ASSESSMENT_SUBMITTED_TO_JS"] }
       },
       _count: { _all: true },
     }),
@@ -37,6 +39,7 @@ export async function getRmWorkloads(): Promise<RmCandidate[]> {
       by: ["assignedRelationshipManagerId"],
       where: {
         assignedRelationshipManagerId: { in: rmIds },
+        status: { in: ["SUBMITTED", "PENDING", "VERIFIED", "JS_APPROVAL_PENDING"] }
       },
       _count: { _all: true },
     }),

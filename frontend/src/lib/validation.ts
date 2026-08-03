@@ -18,8 +18,13 @@ export type FieldFormat =
 /** Transform raw input per field type — strips disallowed chars, uppercases codes. */
 export function sanitizeField(format: FieldFormat, value: string): string {
   switch (format) {
-    case "phone":
-      return value.replace(/\D/g, "").slice(0, 10);
+    case "phone": {
+      let digits = value.replace(/\D/g, "");
+      if (digits.length === 12 && digits.startsWith("91")) {
+        digits = digits.slice(2);
+      }
+      return digits.slice(0, 10);
+    }
     case "aadhaar":
       return value.replace(/\D/g, "").slice(0, 12);
     case "pincode":

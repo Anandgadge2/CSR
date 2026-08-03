@@ -20,6 +20,9 @@ interface Milestone {
   id: string;
   name: string;
   description: string | null;
+  completionCriteria?: string | null;
+  targetAmount?: number | string;
+  dueDate?: string | null;
   workType: string;
   status: string;
   fundsUtilized: number | string;
@@ -102,7 +105,34 @@ export default function ConvergenceProjectDetailPage() {
     setError("");
     try {
       const res = await apiFetch<{ success: boolean; data: ProjectDetail }>(`/convergence-projects/${id}`);
-      setProject(res?.data || null);
+      const raw: any = res?.data || res;
+      const milestones = Array.isArray(raw?.milestones) ? raw.milestones : [];
+      const approvedBudget = Number(raw?.approvedBudget || 0);
+      const utilizedAmount = Number(raw?.utilizedAmount || milestones.reduce((sum: number, milestone: any) => sum + Number(milestone.utilizedAmount || 0), 0));
+      const verified = milestones.filter((milestone: any) => milestone.status === "APPROVED").length;
+      setProject(raw ? {
+        ...raw,
+        projectId: raw.projectCode || raw.projectId,
+        location: raw.village || [raw.taluka, raw.district].filter(Boolean).join(", "),
+        corporateName: raw.mou?.corporateName || "Corporate partner pending MoU",
+        physicalProgressPercent: milestones.length ? Math.round((verified / milestones.length) * 100) : 0,
+        financialProgressPercent: approvedBudget ? Math.round((utilizedAmount / approvedBudget) * 100) : 0,
+        utilizedAmount,
+        mou: raw.mou ? {
+          ...raw.mou,
+          governmentParty: raw.mou.districtDepartmentName || raw.organization?.name || "Government Department",
+          corporateParty: raw.mou.corporateName || "Corporate partner",
+          implementingAgency: raw.mou.implementingAgencyName || "To be assigned"
+        } : undefined,
+        milestones: milestones.map((milestone: any) => ({
+          ...milestone,
+          workType: milestone.workType || "Project deliverable",
+          fundsUtilized: milestone.utilizedAmount,
+          verifiedByNodalOfficerId: milestone.verifiedByUserId,
+          status: milestone.status === "APPROVED" ? "COMPLETED" : milestone.status
+        })),
+        utilizationCertificates: (Array.isArray(raw.utilizationCertificates) ? raw.utilizationCertificates : []).map((certificate: any) => ({ ...certificate, certificateDocumentUrl: certificate.certificateUrl }))
+      } : null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load project");
     } finally {
@@ -345,9 +375,12 @@ export default function ConvergenceProjectDetailPage() {
                       {m.description && <p className="text-xs text-slate-500 mt-1">{m.description}</p>}
                       <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600 mt-2">
                         <span>Work Type: {m.workType}</span>
+                        <span>Tranche: {fmtCurrency(m.targetAmount || 0)} ({project.approvedBudget ? `${((Number(m.targetAmount || 0) / Number(project.approvedBudget)) * 100).toFixed(1)}%` : "—"})</span>
                         <span>Funds Utilised: {fmtCurrency(m.fundsUtilized)}</span>
+                        <span>Timeline: {fmtDate(m.dueDate || null)}</span>
                         <span>Verification: {m.verifiedAt ? "✓ Verified" : "Pending"}</span>
                       </div>
+                      {m.completionCriteria && <p className="mt-2 text-xs text-slate-700"><strong>Completion criteria:</strong> {m.completionCriteria}</p>}
                     </div>
 
                     <Link

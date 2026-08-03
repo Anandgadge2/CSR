@@ -137,7 +137,7 @@ export const approveOrganization = async (req: AuthenticatedRequest, res: Respon
       includePortalAdmins: true,
       includeRms: true,
       includeStateOfficers: true,
-      actionButtonUrl: `/organization/onboarding`
+      actionButtonUrl: `/admin/onboarding-approvals`
     }).catch((err) => console.error("[NotifyHierarchy] Error sending approval notification:", err));
     return res.json(updated);
   } catch (error) {
@@ -158,7 +158,7 @@ export const rejectOrganization = async (req: AuthenticatedRequest, res: Respons
       organizationId: updated.id,
       includePortalAdmins: true,
       includeRms: true,
-      actionButtonUrl: `/organization/onboarding`
+      actionButtonUrl: `/admin/onboarding-approvals`
     }).catch((err) => console.error("[NotifyHierarchy] Error sending rejection notification:", err));
     return res.json(updated);
   } catch (error) {
@@ -179,7 +179,7 @@ export const suspendOrganization = async (req: AuthenticatedRequest, res: Respon
       organizationId: updated.id,
       includePortalAdmins: true,
       includeRms: true,
-      actionButtonUrl: `/organization/onboarding`
+      actionButtonUrl: `/admin/onboarding-approvals`
     }).catch((err) => console.error("[NotifyHierarchy] Error sending suspension notification:", err));
     return res.json(updated);
   } catch (error) {
@@ -200,7 +200,7 @@ export const requestClarification = async (req: AuthenticatedRequest, res: Respo
       organizationId: updated.id,
       includePortalAdmins: true,
       includeRms: true,
-      actionButtonUrl: `/organization/onboarding`
+      actionButtonUrl: `/admin/onboarding-approvals`
     }).catch((err) => console.error("[NotifyHierarchy] Error sending clarification notification:", err));
     return res.json(updated);
   } catch (error) {

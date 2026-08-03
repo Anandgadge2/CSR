@@ -20,6 +20,9 @@ export function buildActivationUrl(rawToken: string): string {
 export interface CreateInvitationInput {
   email: string;
   roleId?: number;
+  organizationId?: string | null;
+  parentUserId?: string | null;
+  agencySubLoginId?: string | null;
 }
 
 export async function createInvitation(input: CreateInvitationInput) {
@@ -41,7 +44,10 @@ export async function createInvitation(input: CreateInvitationInput) {
       email: input.email.toLowerCase(),
       token,
       status: "PENDING",
-      roleId: input.roleId || null
+      roleId: input.roleId || null,
+      organizationId: input.organizationId || null,
+      parentUserId: input.parentUserId || null,
+      agencySubLoginId: input.agencySubLoginId || null
     }
   });
 
@@ -85,9 +91,15 @@ export async function acceptInvitation(input: { token: string; password: string 
         passwordHash,
         accountStatus: "ACTIVE",
         isVerified: true,
-        roleId: invitation.roleId
+        roleId: invitation.roleId,
+        organizationId: invitation.organizationId,
+        parentUserId: invitation.parentUserId
       }
     });
+
+    if (invitation.agencySubLoginId) {
+      await tx.agencySubLogin.update({ where: { id: invitation.agencySubLoginId }, data: { userId: createdUser.id, status: "ACTIVE" } });
+    }
 
     return createdUser;
   });

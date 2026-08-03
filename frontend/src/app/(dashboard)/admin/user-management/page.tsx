@@ -197,6 +197,7 @@ export default function AdminUserManagementPage() {
   };
 
   const openEditModal = (user: UserRow) => {
+    setError("");
     setEditForm({
       userId: user.id,
       email: user.email,
@@ -294,7 +295,9 @@ export default function AdminUserManagementPage() {
       />
 
       <div className="gov-container">
-        {error && <div className="gov-alert gov-alert-danger gov-mb-4">{error}</div>}
+        {!createModalOpen && !editModalOpen && !deleteTarget && error && (
+          <div className="gov-alert gov-alert-danger gov-mb-4">{error}</div>
+        )}
         {success && <div className="gov-alert gov-alert-success gov-mb-4">{success}</div>}
 
         <GovCard>
@@ -510,8 +513,9 @@ export default function AdminUserManagementPage() {
       </div>
 
       {/* CREATE USER MODAL */}
-      <GovModal open={createModalOpen} onClose={() => setCreateModalOpen(false)} title="Create Platform User" width={640}>
+      <GovModal open={createModalOpen} onClose={() => { setError(""); setCreateModalOpen(false); }} title="Create Platform User" width={640}>
         <form onSubmit={handleCreateUser}>
+          {error && <div className="gov-alert gov-alert-danger gov-mb-4">{error}</div>}
           <div className="gov-alert gov-alert-info gov-mb-4" style={{ fontSize: 13 }}>
             The user receives a secure, single-use activation link by email and sets their
             own password. Passwords are never generated or sent by email.
@@ -559,8 +563,9 @@ export default function AdminUserManagementPage() {
       </GovModal>
 
       {/* EDIT USER MODAL */}
-      <GovModal open={editModalOpen} onClose={() => setEditModalOpen(false)} title={`Edit User: ${editForm.email}`} width={640}>
+      <GovModal open={editModalOpen} onClose={() => { setError(""); setEditModalOpen(false); }} title={`Edit User: ${editForm.email}`} width={640}>
         <form onSubmit={handleSaveEdit}>
+          {error && <div className="gov-alert gov-alert-danger gov-mb-4">{error}</div>}
           <div className="gov-grid gov-grid-cols-2 gov-gap-4">
             <GovSelect
               label="Role"
@@ -656,7 +661,8 @@ export default function AdminUserManagementPage() {
       </GovModal>
 
       {/* DELETE CONFIRMATION MODAL */}
-      <GovModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete User" width={460}>
+      <GovModal open={!!deleteTarget} onClose={() => { setError(""); setDeleteTarget(null); }} title="Delete User" width={460}>
+        {error && <div className="gov-alert gov-alert-danger gov-mb-4">{error}</div>}
         <p style={{ fontSize: 14, color: "#475569", marginBottom: 8 }}>
           Are you sure you want to delete <strong>{deleteTarget?.email}</strong>?
         </p>

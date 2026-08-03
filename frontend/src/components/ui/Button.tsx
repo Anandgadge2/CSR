@@ -13,6 +13,7 @@ interface ButtonProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
+  loadingText?: string;
   fullWidth?: boolean;
   disabled?: boolean;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -45,6 +46,7 @@ export function Button({
   variant = "primary",
   size = "md",
   loading = false,
+  loadingText,
   fullWidth = false,
   disabled,
   onClick,
@@ -66,7 +68,7 @@ export function Button({
         "inline-flex items-center justify-center font-semibold",
         "transition-all duration-200 ease-out",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
+        "disabled:opacity-60 disabled:cursor-not-allowed disabled:pointer-events-none select-none",
         "active:scale-[0.97]",
         variants[variant],
         sizes[size],
@@ -74,9 +76,17 @@ export function Button({
         className
       )}
     >
-      {loading && <Loader2 size={16} className="animate-spin" />}
-      {!loading && Icon && <Icon size={size === "sm" ? 14 : 16} />}
-      {children}
+      {loading ? (
+        <>
+          <Loader2 size={size === "sm" ? 14 : 16} className="animate-spin text-current shrink-0" />
+          <span>{loadingText || children}</span>
+        </>
+      ) : (
+        <>
+          {Icon && <Icon size={size === "sm" ? 14 : 16} className="shrink-0" />}
+          <span>{children}</span>
+        </>
+      )}
     </button>
   );
 }

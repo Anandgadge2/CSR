@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Sparkles,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  Loader2
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import { locationData, allStatesList } from "@/lib/locationData";
@@ -681,7 +682,14 @@ export default function RegisterPage() {
                   disabled={loading}
                   className="w-2/3 py-3 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01]"
                 >
-                  {loading ? "Registering..." : "Submit & Send OTP"}
+                  {loading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin text-white shrink-0" />
+                      <span>Registering...</span>
+                    </>
+                  ) : (
+                    "Submit & Send OTP"
+                  )}
                 </button>
               </div>
             </motion.form>
@@ -695,7 +703,7 @@ export default function RegisterPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               onSubmit={handleVerifyOtp}
-              className="flex flex-col gap-6 items-center text-center py-4"
+              className="flex flex-col items-center gap-6 text-center py-4"
             >
               <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shadow-inner">
                 <KeyRound size={28} />
@@ -728,7 +736,14 @@ export default function RegisterPage() {
                 disabled={loading}
                 className="w-full max-w-xs py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-950 via-blue-900 to-indigo-900 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01]"
               >
-                {loading ? "Verifying OTP..." : "Complete Verification"}
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-white shrink-0" />
+                    <span>Verifying OTP...</span>
+                  </>
+                ) : (
+                  "Complete Verification"
+                )}
               </button>
             </motion.form>
           )}

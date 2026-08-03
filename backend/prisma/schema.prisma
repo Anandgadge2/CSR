@@ -167,6 +167,8 @@ model User {
   // Workflow Relations
   assignedProjects  ProjectAssignment[] @relation("AssignedToUser")
   givenAssignments  ProjectAssignment[] @relation("AssignedByUser")
+  dncDistrict       DistrictDncAssignment? @relation("DistrictDncUser")
+  assignedDncDistricts DistrictDncAssignment[] @relation("DistrictDncAssignedBy")
   grievancesRaised  Grievance[]         @relation("GrievancesRaised")
   grievanceLogs     GrievanceActionLog[] @relation("GrievanceActor")
   inspections       ProjectInspection[] @relation("InspectorUser")
@@ -482,6 +484,8 @@ model Project {
   implementingAgencyId     String?
   ngoId                    String?
   nodalOfficerUserId       String?
+  approvalSourceEnquiryId  String?            @unique
+  approvalSourcePitchId    String?            @unique
 
   // Lifecycle Dates
   startDate                DateTime?
@@ -504,6 +508,7 @@ model Project {
   mou                      StandardMou?
   agreements               Agreement[]
   agencySubLogins          AgencySubLogin[]   @relation("ProjectAgencySubLogins")
+  districtDncAssignments   ProjectDistrictDncAssignment[]
 
   @@index([district, sector])
   @@index([status])
@@ -529,6 +534,11 @@ model ProjectMilestone {
   dueDate              DateTime?
   status               MilestoneStatus         @default(NOT_STARTED)
   geoTaggedPhotoUrls   String[]
+  completionCriteria   String?                 @db.Text
+  progressRemarks      String?                 @db.Text
+  submittedAt          DateTime?
+  verifiedAt           DateTime?
+  verifiedByUserId     String?
 
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
@@ -866,6 +876,53 @@ model DistrictNodalMapping {
   @@index([assignedById])
 }
 
+// Exactly one active District Nodal Consultant (DNC) is configured for each
+// Maharashtra district. DNO mappings remain many-to-one in DistrictNodalMapping.
+model DistrictDncAssignment {
+  id               String   @id @default(uuid())
+  district         String   @unique
+  dncUserId        String   @unique
+  dncUser          User     @relation("DistrictDncUser", fields: [dncUserId], references: [id], onDelete: Restrict)
+  assignedById     String
+  assignedBy       User     @relation("DistrictDncAssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([district, isActive])
+}
+
+// One project can target several districts, with the respective district DNC
+// notified and assigned for each target district after JS approval.
+model ProjectDistrictDncAssignment {
+  id               String   @id @default(uuid())
+  projectId        String
+  project          Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  district         String
+  dncUserId        String
+  assignedById     String
+  status           String   @default("ACTIVE")
+  assignedAt       DateTime @default(now())
+
+  @@unique([projectId, district])
+  @@index([dncUserId, status])
+}
+
+// Immutable workflow notes for both corporate enquiries and government pitches.
+model ApplicationInteraction {
+  id               String   @id @default(uuid())
+  entityType       String
+  entityId         String
+  actorUserId      String
+  channel          String   @default("PORTAL")
+  note             String   @db.Text
+  occurredAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([entityType, entityId, occurredAt])
+  @@index([actorUserId])
+}
+
 model HelpdeskQuery {
   id               String    @id @default(uuid())
   trackingId       String    @unique
@@ -1091,9 +1148,23 @@ model CorporateEnquiry {
   organizationId                String?
   corporateName                 String
   contactEmail                  String
+  mca21CIN                      String?
+  sector                        String?
+  indicativeBudget              Decimal? @db.Decimal(15, 2)
+  preferredDivisions            String[] @default([])
+  preferredDistricts            String[] @default([])
+  preferredCities               String[] @default([])
+  preferredTalukas              String[] @default([])
+  contactPersonName             String?
+  mobile                        String?
+  proposedCSRWork               String?  @db.Text
+  documents                     String[] @default([])
+  submittedByUserId             String?
   status                        String   @default("PENDING")
   assignedRelationshipManagerId String?
+  firstContactedAt              DateTime?
   createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
 
   @@index([organizationId])
   @@index([assignedRelationshipManagerId])
@@ -1107,14 +1178,59 @@ model GovernmentPitch {
   departmentId                  String?
   title                         String
   budget                        Decimal  @db.Decimal(15, 2)
+  officialName                  String?
+  designation                   String?
+  department                    String?
+  officeName                    String?
+  serviceClass                  String?
+  mobile                        String?
+  email                         String?
+  divisions                     String[] @default([])
+  districts                     String[] @default([])
+  cities                        String[] @default([])
+  talukas                       String[] @default([])
+  exactLocation                 String?
+  csrRequirement                String?  @db.Text
+  estimatedCost                 Decimal? @db.Decimal(15, 2)
+  govtFundDeclaration           Boolean?
+  certificationType             String?
+  hodCertificationDocument      String?
+  supportingDocuments           String[] @default([])
+  geoTaggedPhotos               String[] @default([])
+  submittedByUserId             String?
   status                        String   @default("PENDING")
   assignedRelationshipManagerId String?
   createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
 
   @@index([departmentId])
   @@index([assignedRelationshipManagerId])
   @@index([status])
   @@index([createdAt])
+}
+
+model FeasibilityAssessment {
+  id                    String   @id @default(uuid())
+  enquiryId             String   @unique
+  checklist             Json
+  recommendation        String
+  executiveSummary      String?  @db.Text
+  targetDistricts       String[] @default([])
+  targetDepartmentId    String?
+  conditions            Json?
+  assessedByUserId      String
+  submittedAt           DateTime @default(now())
+  status                String   @default("SUBMITTED_TO_JS")
+  jsDecision            String?
+  jsDecisionReason      String?  @db.Text
+  jsDecidedByUserId     String?
+  jsDecidedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([status])
+  @@index([assessedByUserId])
+  @@index([submittedAt])
 }
 
 model CorporatePitchInterest {
@@ -1146,6 +1262,9 @@ model UserInvitation {
   token     String   @unique
   status    String   @default("PENDING")
   roleId    Int?
+  organizationId String?
+  parentUserId   String?
+  agencySubLoginId String?
   createdAt DateTime @default(now())
 
   @@index([email])
@@ -1210,6 +1329,9 @@ model AgencySubLogin {
   organization      Organization @relation("OrganizationSubLogins", fields: [organizationId], references: [id], onDelete: Cascade)
   
   ngoName           String
+  agencyOrganizationId String?
+  userId            String?      @unique
+  createdByUserId   String?
   darpanId          String?
   email             String       @unique
   contactPerson     String?

@@ -69,8 +69,7 @@ function interpolate(text: string, variables: Record<string, any>): string {
 
 /**
  * Centralized notification dispatch. Loads a NotificationTemplate by name,
- * interpolates {{variables}}, and enqueues delivery through the BullMQ
- * notification queue (Redis-backed with direct-processing fallback).
+ * interpolates {{variables}}, and enqueues delivery via direct in-process background task.
  * All channels — dashboard (IN_APP + SOCKET), EMAIL, SMS (stub provider),
  * PUSH (future) — flow through this single path.
  */

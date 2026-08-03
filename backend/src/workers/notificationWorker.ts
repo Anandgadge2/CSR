@@ -1,20 +1,8 @@
-import { Worker, Queue, Job } from "bullmq";
 import prisma from "../config/db";
 import { sendTemplateEmail } from "../services/emailService";
 import { sendSMS } from "../services/smsService";
 import { emitNotificationToUser } from "../websocket/notificationSocket";
 import os from "os";
-import IORedis from "ioredis";
-
-const REDIS_URL = process.env.REDIS_URL?.trim();
-const REDIS_HOST = process.env.REDIS_HOST || "localhost";
-const REDIS_PORT = parseInt(process.env.REDIS_PORT || "6379", 10);
-
-function createRedisConnection(options: Record<string, any>): IORedis {
-  return REDIS_URL
-    ? new IORedis(REDIS_URL, options)
-    : new IORedis({ host: REDIS_HOST, port: REDIS_PORT, ...options });
-}
 
 export interface NotificationJobPayload {
   recipientId: string;
@@ -31,10 +19,6 @@ export interface NotificationJobPayload {
   correlationId?: string;
   notificationType?: string;
 }
-
-let notificationQueueInstance: Queue | null = null;
-let notificationWorkerInstance: Worker | null = null;
-let bullmqReady = false;
 
 async function processNotificationDirect(payload: NotificationJobPayload): Promise<void> {
   let inAppRecord: any = null;
@@ -137,50 +121,7 @@ async function processNotificationDirect(payload: NotificationJobPayload): Promi
   }
 }
 
-async function initBullMQ(): Promise<void> {
-  try {
-    const connection = createRedisConnection({
-      maxRetriesPerRequest: null,
-      connectTimeout: 2000,
-      enableOfflineQueue: false
-    });
-
-    connection.on("error", () => {});
-    await connection.ping();
-
-    notificationQueueInstance = new Queue("notifications", {
-      connection: createRedisConnection({ maxRetriesPerRequest: null })
-    });
-
-    notificationWorkerInstance = new Worker(
-      "notifications",
-      async (job: Job<NotificationJobPayload>) => {
-        await processNotificationDirect(job.data);
-      },
-      { connection: createRedisConnection({ maxRetriesPerRequest: null }) }
-    );
-
-    bullmqReady = true;
-  } catch (err) {
-    bullmqReady = false;
-  }
-}
-
-initBullMQ().catch(() => {});
-
 export async function queueNotification(payload: NotificationJobPayload): Promise<void> {
-  if (bullmqReady && notificationQueueInstance) {
-    try {
-      await notificationQueueInstance.add("send-notification", payload, {
-        attempts: 3,
-        backoff: { type: "exponential", delay: 2000 }
-      });
-      return;
-    } catch (err) {
-      console.warn("Failed to push job to BullMQ, executing in background:", err);
-    }
-  }
-
   setImmediate(() => {
     processNotificationDirect(payload).catch((err) => {
       console.error("[NotificationWorker] Direct notification processing failed:", err);

@@ -1,77 +1,32 @@
 "use client";
 
-import { useApiQuery } from "@/lib/apiHooks";
+import { useState } from "react";
+import { CheckCircle2, FileCheck2, Loader2, XCircle } from "lucide-react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
-import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
-import GovStatusBadge from "@/components/gov/GovStatusBadge";
-import { Loader } from "@/components/ui/Loader";
+import { useApiQuery } from "@/lib/apiHooks";
+import { apiFetch } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AssessmentsPage() {
-  const { data: envelope, isLoading } = useApiQuery<any>(
-    ["feasibility-assessments"],
-    "/feasibility"
-  );
-
-  const assessments = envelope?.data?.assessments || envelope?.data || envelope?.assessments || (Array.isArray(envelope) ? envelope : []);
-
-  return (
-    <GovPortalLayout>
-      <GovPageHeader
-        breadcrumb="Home / Feasibility Assessments"
-        title="Feasibility Reports & Assessments"
-        description="Technical assessment, financial viability evaluation, and risk reports compiled by Relationship Managers and Officers."
-      />
-
-      {isLoading ? (
-        <div className="py-12 flex justify-center">
-          <Loader label="Loading Assessments from Database..." />
-        </div>
-      ) : (
-        <GovCard>
-          <GovCardHeader>
-            <GovCardTitle>Feasibility Reports Register ({assessments.length})</GovCardTitle>
-          </GovCardHeader>
-          <GovCardBody>
-            <div className="overflow-x-auto">
-              <table className="gov-table w-full">
-                <thead>
-                  <tr>
-                    <th>Assessment Ref</th>
-                    <th>Proposal / Project</th>
-                    <th>Evaluator</th>
-                    <th>Viability Score</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assessments.length > 0 ? (
-                    assessments.map((a: any) => (
-                      <tr key={a.id}>
-                        <td className="font-mono text-xs font-bold text-blue-900">{a.id.slice(0, 8)}</td>
-                        <td className="font-semibold">{a.projectTitle || a.proposalTitle || "Assessment Report"}</td>
-                        <td>{a.evaluatorName || a.evaluatorRole || "Relationship Manager"}</td>
-                        <td className="font-bold">{a.score ? `${a.score}/100` : "Verified"}</td>
-                        <td>
-                          <GovStatusBadge variant={a.status === "APPROVED" ? "success" : "warning"}>
-                            {a.status || "COMPLETED"}
-                          </GovStatusBadge>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="text-center py-8 text-slate-500 font-medium">
-                        No feasibility assessment reports in database
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </GovCardBody>
-        </GovCard>
-      )}
-    </GovPortalLayout>
-  );
+  const user = useAuthStore((state) => state.user);
+  const roles = useAuthStore((state) => state.roles);
+  const roleNames = roles?.length ? roles : user?.role ? [user.role] : [];
+  const isJs = roleNames.some((role) => /JOINT[ _-]?SECRETARY/i.test(role));
+  const { data: response, isLoading, refetch } = useApiQuery<any>([isJs ? "js-pending-assessments" : "feasibility-assessments"], isJs ? "/js/assessments/pending" : "/feasibility");
+  const assessments = Array.isArray(response?.data) ? response.data : Array.isArray(response?.data?.assessments) ? response.data.assessments : Array.isArray(response) ? response : [];
+  return <GovPortalLayout><main className="mx-auto min-h-screen max-w-screen-xl space-y-4 px-4 py-4 md:px-6"><GovPageHeader eyebrow={isJs ? "Joint Secretary workspace" : "Assessment register"} title={isJs ? "Feasibility Decisions" : "Feasibility Reports & Assessments"} description={isJs ? "Review the complete RM assessment, its conditional gaps and its district routing before deciding." : "Technical, financial and execution assessments compiled by Relationship Managers."} />
+    {isLoading ? <div className="flex justify-center py-14"><Loader2 className="animate-spin text-blue-900" /></div> : assessments.length === 0 ? <section className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-sm font-semibold text-slate-500">No assessments are awaiting review.</section> : <div className="space-y-4">{assessments.map((assessment: any) => isJs ? <JsAssessmentCard key={assessment.id} assessment={assessment} onCompleted={refetch} /> : <section key={assessment.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="font-mono text-xs font-bold text-blue-900">{assessment.id.slice(0, 8)}</p><h2 className="mt-1 text-sm font-extrabold text-slate-900">Assessment report</h2><p className="mt-2 text-xs text-slate-600">{assessment.executiveSummary || "No executive summary recorded."}</p><span className="mt-3 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-blue-800">{assessment.status}</span></section>)}</div>}</main></GovPortalLayout>;
 }
+
+function JsAssessmentCard({ assessment, onCompleted }: { assessment: any; onCompleted: () => void }) {
+  const [reason, setReason] = useState("");
+  const [working, setWorking] = useState("");
+  const [message, setMessage] = useState("");
+  const checklist = Array.isArray(assessment.checklist) ? assessment.checklist : [];
+  const conditions = Array.isArray(assessment.conditions) ? assessment.conditions : [];
+  const decide = async (decision: "PROCEED" | "PROCEED_WITH_CONDITIONS" | "DO_NOT_PROCEED") => { setWorking(decision); setMessage(""); try { const result = await apiFetch<any>(`/js/assessments/${assessment.id}/decision`, { method: "POST", body: JSON.stringify({ decision, reason }) }); setMessage(result?.message || "Decision recorded."); onCompleted(); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to record decision."); } finally { setWorking(""); } };
+  return <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="flex flex-col gap-3 border-b border-blue-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 lg:flex-row lg:items-start lg:justify-between"><div><p className="font-mono text-xs font-extrabold text-blue-900">Assessment {assessment.id.slice(0, 8)}</p><h2 className="mt-1 text-base font-extrabold text-slate-900">Corporate enquiry {assessment.enquiryId}</h2><p className="mt-1 text-xs text-slate-600">RM recommendation: <strong>{assessment.recommendation?.replaceAll("_", " ")}</strong></p></div><span className="w-fit rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-extrabold text-amber-900">Awaiting JS decision</span></div><div className="space-y-4 p-5"><div className="grid gap-3 md:grid-cols-2"><Info label="Target department" value={assessment.targetDepartmentId || "Not selected"} /><Info label="Target districts" value={assessment.targetDistricts?.join(", ") || "Not selected"} /></div><div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-extrabold text-slate-900">RM executive summary</p><p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-700">{assessment.executiveSummary || "No summary supplied."}</p></div><div className="grid gap-2 md:grid-cols-2">{checklist.map((item: any) => <div key={item.itemNumber} className="rounded-lg border border-slate-200 p-3 text-xs"><div className="flex items-center justify-between gap-3"><p className="font-bold text-slate-900">{item.itemNumber}. {item.dimension}</p><span className={`rounded px-2 py-0.5 text-[10px] font-extrabold ${item.answer === "YES" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}`}>{item.answer}</span></div><p className="mt-1 text-slate-600">{item.checkText}</p>{item.note && <p className="mt-2 border-t border-slate-100 pt-2 text-slate-700">{item.note}</p>}</div>)}</div>{conditions.length > 0 && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-extrabold text-amber-950">Conditions that must be carried into execution</p><div className="mt-2 space-y-2">{conditions.map((condition: any) => <p key={condition.itemNumber} className="rounded-lg bg-white p-2 text-xs text-slate-700"><strong>Check {condition.itemNumber}:</strong> {condition.remediation} — Owner: {condition.owner}; target: {condition.targetDate}</p>)}</div></div>}<textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={2} placeholder="Decision note (required for a decision not to proceed; recommended for all decisions)" className="w-full rounded-xl border border-slate-200 p-3 text-xs outline-none focus:border-blue-600" /><div className="flex flex-wrap gap-2"><button disabled={Boolean(working)} onClick={() => decide("PROCEED")} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"><CheckCircle2 size={15} /> Approve & route project</button><button disabled={Boolean(working)} onClick={() => decide("PROCEED_WITH_CONDITIONS")} className="inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-60"><FileCheck2 size={15} /> Approve with conditions</button><button disabled={Boolean(working)} onClick={() => decide("DO_NOT_PROCEED")} className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-800 disabled:opacity-60"><XCircle size={15} /> Do not proceed</button></div>{working && <p className="text-xs font-semibold text-blue-800">Recording decision…</p>}{message && <p className="text-xs font-semibold text-slate-700">{message}</p>}</div></section>;
+}
+
+function Info({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-slate-200 p-3"><p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-800">{label}</p><p className="mt-1 break-words text-xs font-semibold text-slate-800">{value}</p></div>; }

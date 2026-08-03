@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
   outputFileTracing: true,
   images: {
     remotePatterns: [
@@ -17,7 +19,7 @@ const nextConfig = {
     optimizeCss: false,
     // Tree-shake big icon/chart libs to only the imports actually used —
     // dramatically shrinks per-page JS and speeds up client navigation.
-    optimizePackageImports: ["lucide-react", "recharts"],
+    optimizePackageImports: ["lucide-react", "recharts", "framer-motion", "@tanstack/react-query", "axios"],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

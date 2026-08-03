@@ -229,7 +229,7 @@ function TrackContent() {
           companyName: isPitch ? enquiry.department : enquiry.companyName,
           sector: isPitch ? enquiry.officeName : enquiry.sector,
           district: isPitch 
-            ? enquiry.district 
+            ? (enquiry.districts?.join(", ") || enquiry.district)
             : isInterest 
             ? enquiry.governmentPitch?.district 
             : enquiry.preferredDistricts?.join(", "),
@@ -242,7 +242,7 @@ function TrackContent() {
             ? enquiry.governmentPitch?.csrRequirement 
             : enquiry.proposedCsrWork,
           estimatedCost: isPitch 
-            ? (enquiry.estimatedCost ? Number(enquiry.estimatedCost) : undefined)
+            ? (enquiry.estimatedCost ? Number(enquiry.estimatedCost) : enquiry.budget ? Number(enquiry.budget) : undefined)
             : isInterest
             ? (enquiry.governmentPitch?.estimatedCost ? Number(enquiry.governmentPitch?.estimatedCost) : undefined)
             : (enquiry.indicativeBudget ? Number(enquiry.indicativeBudget) : undefined),

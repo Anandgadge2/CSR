@@ -452,7 +452,7 @@ export default function CreatePitchDashboardPage() {
       });
 
       const data = response?.data || response;
-      setReferenceId(data?.trackingId || data?.id || `PITCH-${Date.now().toString().slice(-5)}`);
+      setReferenceId(data?.pitchReferenceId || data?.trackingId || data?.id || `GP-MH-${new Date().getFullYear()}-PENDING`);
       setSubmitted(true);
     } catch (err) {
       setErrors({ submit: err instanceof Error ? err.message : "Failed to submit government pitch" });
@@ -908,14 +908,8 @@ export default function CreatePitchDashboardPage() {
             >
               Cancel
             </button>
-            <GovButton type="submit" variant="primary" disabled={loading} className="px-7 py-3 rounded-xl font-bold shadow-md">
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin" /> Submitting Pitch…
-                </span>
-              ) : (
-                "Submit Pitch to State Secretariat"
-              )}
+            <GovButton type="submit" variant="primary" loading={loading} loadingText="Submitting Pitch..." className="px-7 py-3 rounded-xl font-bold shadow-md">
+              Submit Pitch to State Secretariat
             </GovButton>
           </div>
         </form>

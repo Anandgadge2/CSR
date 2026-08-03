@@ -43,11 +43,11 @@ export default function AccessDenied({ requiredRoles }: AccessDeniedProps) {
               </p>
             )}
             <a
-              href="/login"
+              href={typeof window !== "undefined" && localStorage.getItem("accessToken") ? "/dashboard" : "/login"}
               className="gov-btn gov-btn-primary"
               style={{ textDecoration: "none" }}
             >
-              Go to Login
+              {typeof window !== "undefined" && localStorage.getItem("accessToken") ? "Back to Dashboard" : "Go to Login"}
             </a>
           </div>
         </div>

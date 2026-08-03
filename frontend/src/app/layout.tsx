@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   description: "Government of Maharashtra CSR facilitation and monitoring portal for NGO verification, project management and compliance.",
 };
 
+import { Suspense } from "react";
+import TopProgressBar from "@/components/ui/TopProgressBar";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,6 +33,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased min-h-screen bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-900">
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
         <QueryProvider>
           <ToastProvider>
             <SmoothScrollProvider>

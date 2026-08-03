@@ -264,23 +264,108 @@ export default function CreateCorporateEnquiryPage() {
 
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Prepopulate from user session
+  // Auto-fetch and prepopulate company credentials and contact details from user session and verified onboarding profile
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = localStorage.getItem("user");
-    if (!raw) return;
-    try {
-      const u = JSON.parse(raw);
+    let isMounted = true;
+
+    const applyUserData = (u: any) => {
+      if (!u) return;
+      const org = u.organization || u.company || {};
+      const profile = u.csrCompanyProfile || org.csrCompanyProfile || {};
+
+      const companyName = org.name || org.legalName || org.displayName || u.companyName || u.legalName || "";
+      const cin = org.cin || org.companyCin || org.cinNumber || profile.companyCin || profile.cinNumber || u.cin || u.mca21CIN || u.mca21Cin || u.registrationNumber || "";
+      const contactPersonName = profile.nodalPersonName || u.contactPersonName || u.contactPerson || org.contactPerson || u.name || (u.firstName ? `${u.firstName} ${u.lastName || ""}`.trim() : "");
+      const email = u.email || org.officialEmail || profile.nodalPersonEmail || "";
+      const mobile = u.mobile || u.phone || org.officialPhone || profile.nodalPersonMobile || "";
+
       setForm((prev) => ({
         ...prev,
-        companyName: u.organization?.name || u.companyName || prev.companyName,
-        contactPersonName: u.name || prev.contactPersonName,
-        email: u.email || prev.email,
-        mobile: u.mobile || prev.mobile,
+        companyName: companyName || prev.companyName,
+        mca21CIN: cin || prev.mca21CIN,
+        contactPersonName: contactPersonName || prev.contactPersonName,
+        email: email || prev.email,
+        mobile: mobile || prev.mobile,
       }));
-    } catch {
-      /* ignore */
+    };
+
+    // 1. Immediate sync prepopulate from localStorage session
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem("user");
+        if (raw) {
+          applyUserData(JSON.parse(raw));
+        }
+      } catch {
+        /* ignore */
+      }
     }
+
+    // 2. Async fetch verified onboarding profile from backend to ensure CIN & verified contact credentials are autocompleted
+    const loadCompanyProfile = async () => {
+      try {
+        const res = await apiFetch<any>("/onboarding/company");
+        if (!isMounted) return;
+        const org = res?.organization || res?.data?.organization || res;
+        const profile = res?.profile || res?.data?.profile || org?.csrCompanyProfile;
+
+        if (org || profile) {
+          const companyName = org?.name || org?.legalName || org?.displayName || "";
+          const cin = org?.cin || org?.companyCin || profile?.companyCin || profile?.cinNumber || "";
+          const contactPersonName = profile?.nodalPersonName || org?.contactPerson || "";
+          const email = org?.officialEmail || profile?.nodalPersonEmail || "";
+          const mobile = org?.officialPhone || profile?.nodalPersonMobile || "";
+
+          setForm((prev) => ({
+            ...prev,
+            companyName: companyName || prev.companyName,
+            mca21CIN: cin || prev.mca21CIN,
+            contactPersonName: contactPersonName || prev.contactPersonName,
+            email: email || prev.email,
+            mobile: mobile || prev.mobile,
+          }));
+
+          // Sync back to local user store for consistency
+          try {
+            const rawUser = localStorage.getItem("user");
+            if (rawUser) {
+              const u = JSON.parse(rawUser);
+              u.organization = { ...u.organization, ...org, cin: cin || u.organization?.cin };
+              if (cin) u.cin = cin;
+              localStorage.setItem("user", JSON.stringify(u));
+            }
+          } catch {}
+        }
+      } catch {
+        // Fallback endpoint check
+        try {
+          const org = await apiFetch<any>("/onboarding/profile");
+          if (!isMounted || !org) return;
+          const companyName = org.name || org.legalName || org.displayName || "";
+          const cin = org.cin || org.companyCin || org.csrCompanyProfile?.companyCin || "";
+          const contactPersonName = org.contactPerson || org.csrCompanyProfile?.nodalPersonName || "";
+          const email = org.officialEmail || org.csrCompanyProfile?.nodalPersonEmail || "";
+          const mobile = org.officialPhone || org.csrCompanyProfile?.nodalPersonMobile || "";
+
+          setForm((prev) => ({
+            ...prev,
+            companyName: companyName || prev.companyName,
+            mca21CIN: cin || prev.mca21CIN,
+            contactPersonName: contactPersonName || prev.contactPersonName,
+            email: email || prev.email,
+            mobile: mobile || prev.mobile,
+          }));
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+
+    loadCompanyProfile();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const maharashtraState = locationData.find(s => s.name === "Maharashtra");
@@ -823,14 +908,8 @@ export default function CreateCorporateEnquiryPage() {
             >
               Cancel
             </button>
-            <GovButton type="submit" variant="primary" disabled={loading} className="px-7 py-3 rounded-xl font-bold shadow-md">
-              {loading ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin" /> Submitting Enquiry…
-                </span>
-              ) : (
-                "Submit Corporate Enquiry"
-              )}
+            <GovButton type="submit" variant="primary" loading={loading} loadingText="Submitting Enquiry..." className="px-7 py-3 rounded-xl font-bold shadow-md">
+              Submit Corporate Enquiry
             </GovButton>
           </div>
         </form>

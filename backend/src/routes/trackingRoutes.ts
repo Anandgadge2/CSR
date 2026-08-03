@@ -6,14 +6,28 @@ const router = Router();
 router.get("/:trackingId", async (req, res) => {
   const trackingId = req.params.trackingId.toUpperCase();
 
-  if (trackingId.startsWith("CSR-")) {
-    const enquiry = await prisma.corporateEnquiry.findUnique({ where: { trackingId } });
+  if (trackingId.startsWith("CSR-") || trackingId.startsWith("CE-")) {
+    const enquiry = await prisma.corporateEnquiry.findUnique({
+      where: { trackingId },
+      // Tracking is intentionally public, so only return the application fields
+      // needed to show progress—not contact details, CIN, or attachments.
+      select: {
+        trackingId: true, indicativeBudget: true, preferredDistricts: true,
+        preferredCities: true, preferredTalukas: true, status: true, createdAt: true
+      }
+    });
     if (!enquiry) return res.status(404).json({ error: "Tracking ID not found" });
     return res.json({ type: "ENQUIRY", trackingId, status: enquiry.status, submittedAt: enquiry.createdAt, details: enquiry });
   }
 
   if (trackingId.startsWith("GP-")) {
-    const pitch = await prisma.governmentPitch.findUnique({ where: { pitchReferenceId: trackingId } });
+    const pitch = await prisma.governmentPitch.findUnique({
+      where: { pitchReferenceId: trackingId },
+      select: {
+        pitchReferenceId: true, districts: true, cities: true, talukas: true,
+        exactLocation: true, estimatedCost: true, budget: true, status: true, createdAt: true
+      }
+    });
     if (!pitch) return res.status(404).json({ error: "Tracking ID not found" });
     return res.json({ type: "PITCH", trackingId, status: pitch.status, submittedAt: pitch.createdAt, details: pitch });
   }
@@ -31,7 +45,7 @@ router.get("/:trackingId", async (req, res) => {
   }
 
   if (trackingId.startsWith("PRJ-")) {
-    const project = await prisma.project.findUnique({ where: { projectCode: trackingId }, include: { milestones: true } });
+    const project = await prisma.project.findUnique({ where: { projectCode: trackingId }, select: { projectCode: true, status: true, createdAt: true, district: true, taluka: true, village: true, approvedBudget: true } });
     if (!project) return res.status(404).json({ error: "Tracking ID not found" });
     return res.json({ type: "PROJECT", trackingId, status: project.status, submittedAt: project.createdAt, details: project });
   }

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
-import { createAdminUser, getAdminOverview, listUsers, deleteUser, updateUser } from "../controllers/adminController";
+import { createAdminUser, getAdminOverview, listUsers, deleteUser, updateUser, importAdminUsers } from "../controllers/adminController";
 import { getConvergenceOverview, listPitchInterests } from "../controllers/adminConvergenceController";
 import {
   listOrganizations,
@@ -12,6 +12,7 @@ import {
   requestClarification
 } from "../controllers/organizationAdminController";
 import { Role } from "../types/role";
+import { getSlaConfiguration, saveSlaConfiguration } from "../controllers/slaAdminController";
 
 const router = Router();
 
@@ -24,8 +25,11 @@ router.get("/convergence/overview", getConvergenceOverview);
 router.get("/pitch-interests", listPitchInterests);
 router.get("/users", listUsers);
 router.post("/users", createAdminUser);
+router.post("/users/import", importAdminUsers);
 router.patch("/users/:id", updateUser);
 router.delete("/users/:id", deleteUser);
+router.get("/sla/config", getSlaConfiguration);
+router.put("/sla/config", saveSlaConfiguration);
 
 // Organization management endpoints
 router.get("/organizations", listOrganizations);

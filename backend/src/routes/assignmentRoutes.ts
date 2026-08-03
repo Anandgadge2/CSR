@@ -8,7 +8,9 @@ import {
   getAssignableRolesHandler,
   assignExistingOfficerHandler,
   createAndAssignOfficerHandler,
-  getDistrictsHandler
+  getDistrictsHandler,
+  configureDistrictDnc,
+  assignDnosToProject
 } from "../controllers/assignmentController";
 
 const router = Router();
@@ -25,5 +27,7 @@ router.post("/district-nodal-mappings", checkPermission("district_mapping:manage
 router.get("/districts", checkPermission("project:assign"), asyncHandler(getDistrictsHandler));
 router.get("/nodal-consultants", checkPermission("project:assign"), asyncHandler(searchOfficersHandler));
 router.post("/appoint-nodal-consultant", checkPermission("project:assign"), asyncHandler(assignExistingOfficerHandler));
+router.post("/district-dncs", asyncHandler(configureDistrictDnc));
+router.post("/projects/:projectId/dnos", asyncHandler(assignDnosToProject));
 
 export default router;

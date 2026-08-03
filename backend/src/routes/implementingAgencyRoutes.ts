@@ -5,7 +5,8 @@ import {
   listMySubLogins,
   assignAgencyToProject,
   listPendingApprovals,
-  decideSubLogin
+  decideSubLogin,
+  listEligibleNgos
 } from "../controllers/implementingAgencyController";
 
 const router = Router();
@@ -13,6 +14,7 @@ router.use(authenticateToken);
 
 router.post("/sub-logins", createSubLogin);
 router.get("/sub-logins", listMySubLogins);
+router.get("/eligible-ngos", listEligibleNgos);
 router.post("/assign", assignAgencyToProject);
 router.get("/pending-approvals", listPendingApprovals);
 router.get("/approvals/pending", listPendingApprovals);

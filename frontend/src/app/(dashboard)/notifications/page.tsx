@@ -8,6 +8,9 @@ import { apiFetch } from "@/lib/api";
 import { useToastActions } from "@/components/ui/Toast";
 import "@/styles/gov-theme.css";
 
+import { useAuthStore } from "@/store/authStore";
+import { resolveNotificationUrl } from "@/lib/notificationUtils";
+
 interface NotificationItem {
   id: string;
   title: string;
@@ -21,6 +24,7 @@ interface NotificationItem {
 export default function NotificationsPage() {
   const router = useRouter();
   const toast = useToastActions();
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -87,7 +91,7 @@ export default function NotificationsPage() {
 
   const handleCardClick = (n: NotificationItem) => {
     if (!n.isRead) markRead(n.id);
-    const targetUrl = n.actionUrl || (n.title.toLowerCase().includes("onboarding") ? "/organization/onboarding/status" : undefined);
+    const targetUrl = resolveNotificationUrl(n, isAdmin);
     if (targetUrl) {
       router.push(targetUrl);
     }

@@ -18,6 +18,7 @@ import PageGuard from "@/components/auth/PageGuard";
 import { isNavItemVisible } from "@/lib/pageRegistry";
 import { resolveNavItems, normalizeRole, type NavItem } from "@/lib/navRegistry";
 import { resolveDashboardPath } from "@/lib/roleRouting";
+import { resolveNotificationUrl } from "@/lib/notificationUtils";
 
 interface SaaSLayoutProps {
   children: React.ReactNode;
@@ -562,7 +563,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                                 apiFetch(`/notifications/${notification.id}/read`, { method: "PATCH" }).catch(() => {});
                               }
                               setNotificationsOpen(false);
-                              const target = (notification as any).actionUrl || (notification.title.toLowerCase().includes("onboarding") ? "/organization/onboarding/status" : "/notifications");
+                              const target = resolveNotificationUrl(notification as any, storeIsAdmin);
                               router.push(target);
                             }}
                             className={`p-3 rounded-xl border flex flex-col gap-1 text-[11px] transition-colors cursor-pointer hover:border-blue-300 ${
@@ -582,7 +583,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       <Link
                         href="/notifications"
                         onClick={() => setNotificationsOpen(false)}
-                        className="text-xs font-bold text-blue-700 hover:text-blue-900 hover:underline"
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 hover:underline block w-full py-1 cursor-pointer"
                       >
                         Show all notifications →
                       </Link>

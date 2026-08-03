@@ -11,7 +11,7 @@ import { apiFetch } from "@/lib/api";
 import { isAdmin } from "@/lib/roleAccess";
 
 type SlaValues = Record<string, number>;
-type SlaResponse = { config: SlaValues; defaults: SlaValues };
+type SlaResponse = { config: SlaValues; defaults: SlaValues; holidays?: string[] };
 
 const labels: Record<string, string> = {
   RM_RESPONSE: "RM first response",
@@ -29,12 +29,14 @@ export default function SlaConfigurationPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [holidayText, setHolidayText] = useState("");
 
   useEffect(() => {
     apiFetch<SlaResponse>("/admin/sla/config")
       .then((response) => {
         setValues(response.config || {});
         setDefaults(response.defaults || {});
+        setHolidayText((response.holidays || []).join(", "));
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : "Unable to load SLA configuration"))
       .finally(() => setLoading(false));
@@ -52,7 +54,7 @@ export default function SlaConfigurationPage() {
     try {
       const response = await apiFetch<{ config: SlaValues }>("/admin/sla/config", {
         method: "PUT",
-        body: JSON.stringify({ updates: values }),
+        body: JSON.stringify({ updates: values, holidays: holidayText.split(",").map((date) => date.trim()).filter(Boolean) }),
       });
       setValues(response.config || values);
       setMessage("SLA configuration saved successfully.");
@@ -91,6 +93,12 @@ export default function SlaConfigurationPage() {
                   />
                 ))}
               </div>
+              <GovInput
+                label="Maharashtra public holidays"
+                help="Comma-separated YYYY-MM-DD dates. Saturdays, Sundays and these dates do not consume SLA days."
+                value={holidayText}
+                onChange={(event) => setHolidayText(event.target.value)}
+              />
               {error && <p className="gov-error-text" role="alert">{error}</p>}
               {message && <p className="gov-help" role="status">{message}</p>}
               <div className="flex gap-3 mt-6">

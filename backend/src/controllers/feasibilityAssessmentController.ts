@@ -2,6 +2,8 @@ import { Response, NextFunction } from "express";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { ROLE_ID } from "../types/role";
+import { routeApprovedCorporateEnquiry } from "../services/approvedProjectRoutingService";
+import { dispatchToContact } from "../services/notificationOrchestrator";
 
 export const createAssessment = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -18,7 +20,9 @@ export const createAssessment = async (req: AuthenticatedRequest, res: Response,
 
 export const getAssessmentByPitchId = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    return res.json({ success: true, data: {} });
+    const assessment = await prisma.feasibilityAssessment.findUnique({ where: { id: req.params.id } });
+    if (!assessment) return res.status(404).json({ error: "Assessment not found" });
+    return res.json({ success: true, data: assessment });
   } catch (error) {
     next(error);
   }
@@ -28,11 +32,11 @@ export const getAssessmentById = getAssessmentByPitchId;
 
 export const getPendingAssessments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const enquiries = await prisma.corporateEnquiry.findMany({
-      where: { status: "SUBMITTED" },
-      orderBy: { createdAt: "desc" }
+    const assessments = await prisma.feasibilityAssessment.findMany({
+      where: { status: "SUBMITTED_TO_JS" },
+      orderBy: { submittedAt: "desc" }
     });
-    return res.json(enquiries);
+    return res.json({ success: true, data: assessments });
   } catch (error) {
     next(error);
   }
@@ -44,95 +48,56 @@ export const getPendingAssessments = async (req: AuthenticatedRequest, res: Resp
  */
 export const submitJSDecision = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params; // enquiry or pitch or project ID
-    const { decision, reason, targetDistrict, departmentId } = req.body;
-
-    if (decision === "PROCEED" || decision === "PROCEED_WITH_CONDITIONS") {
-      const district = targetDistrict || "Mumbai";
-
-      // 1. Auto-assign District Nodal Consultant (DNC) of that district
-      const dncUser = await prisma.user.findFirst({
-        where: {
-          roleId: ROLE_ID.DISTRICT_NODAL_CONSULTANT,
-          accountStatus: "ACTIVE"
-        }
-      });
-
-      // 2. Auto-assign Government Department Admin
-      const deptAdminUser = await prisma.user.findFirst({
-        where: {
-          roleId: ROLE_ID.GOVERNMENT_OFFICER,
-          organizationId: departmentId || undefined,
-          accountStatus: "ACTIVE"
-        }
-      });
-
-      const org = await prisma.organization.findFirst({ where: { status: "ACTIVE" } });
-      if (!org) return res.status(400).json({ error: "No active organization available" });
-
-      // Find or create project
-      let project = await prisma.project.findFirst({ where: { id } });
-      if (!project) {
-        project = await prisma.project.create({
-          data: {
-            projectCode: `PRJ-${Date.now()}`,
-            title: `CSR Convergence Project (${district})`,
-            description: reason || "JS Approved CSR Convergence Project",
-            sector: "General",
-            district,
-            taluka: "Haveli",
-            approvedBudget: 100000,
-            organizationId: org.id,
-            status: "APPROVED"
-          }
-        });
-      }
-
-      const actorId = req.user?.id || dncUser?.id || deptAdminUser?.id;
-      if (!actorId) return res.status(400).json({ error: "Actor user required for assignment" });
-
-      // Create ProjectAssignments for DNC & Dept Admin
-      const assignments = [];
-      if (dncUser) {
-        assignments.push({
-          entityType: "PROJECT",
-          entityId: project.id,
-          assignmentType: "DISTRICT_NODAL_CONSULTANT",
-          assignedById: actorId,
-          assignedToId: dncUser.id,
-          assignedRoleId: ROLE_ID.DISTRICT_NODAL_CONSULTANT,
-          status: "ACTIVE"
-        });
-      }
-      if (deptAdminUser) {
-        assignments.push({
-          entityType: "PROJECT",
-          entityId: project.id,
-          assignmentType: "GOVERNMENT_OFFICER",
-          assignedById: actorId,
-          assignedToId: deptAdminUser.id,
-          assignedRoleId: ROLE_ID.GOVERNMENT_OFFICER,
-          status: "ACTIVE"
-        });
-      }
-
-      if (assignments.length > 0) {
-        await prisma.projectAssignment.createMany({
-          data: assignments
-        });
-      }
-
-      return res.json({
-        success: true,
-        message: "JS Decision recorded: Auto-assigned to District Nodal Consultant (DNC) & Department Admin",
-        decision,
-        project,
-        assignedDncId: dncUser?.id || null,
-        assignedDeptAdminId: deptAdminUser?.id || null
-      });
+    const { id } = req.params;
+    const { decision, reason } = req.body;
+    if (!["PROCEED", "PROCEED_WITH_CONDITIONS", "DO_NOT_PROCEED"].includes(decision)) {
+      return res.status(400).json({ error: "Decision must be PROCEED, PROCEED_WITH_CONDITIONS, or DO_NOT_PROCEED." });
+    }
+    if (decision === "DO_NOT_PROCEED" && (typeof reason !== "string" || reason.trim().length < 5)) {
+      return res.status(400).json({ error: "Record a clear reason when deciding not to proceed." });
     }
 
-    return res.json({ success: true, message: `JS Decision recorded: ${decision}`, reason });
+    const assessment = await prisma.feasibilityAssessment.findUnique({ where: { id } });
+    if (!assessment) return res.status(404).json({ error: "Feasibility assessment not found" });
+    if (assessment.status !== "SUBMITTED_TO_JS") return res.status(409).json({ error: "A Joint Secretary decision has already been recorded for this assessment." });
+
+    const isApproved = decision === "PROCEED" || decision === "PROCEED_WITH_CONDITIONS";
+    try {
+      const routing = isApproved ? await routeApprovedCorporateEnquiry({ assessmentId: assessment.id, actorUserId: req.user!.id }) : null;
+      await prisma.$transaction([
+        prisma.feasibilityAssessment.update({
+          where: { id },
+          data: {
+            status: isApproved ? "JS_APPROVED" : "JS_REJECTED",
+            jsDecision: decision,
+            jsDecisionReason: reason || null,
+            jsDecidedByUserId: req.user?.id || null,
+            jsDecidedAt: new Date()
+          }
+        }),
+        ...(isApproved ? [] : [prisma.corporateEnquiry.update({ where: { id: assessment.enquiryId }, data: { status: "JS_REJECTED" } })]),
+        prisma.sLAEscalation.updateMany({
+          where: { entityType: "CORPORATE_ENQUIRY", entityId: assessment.enquiryId, stage: "JS_DECISION", isResolved: false },
+          data: { isResolved: true, resolvedAt: new Date() }
+        })
+      ]);
+      const enquiry = await prisma.corporateEnquiry.findUnique({ where: { id: assessment.enquiryId }, select: { id: true, trackingId: true, contactEmail: true, mobile: true } });
+      if (enquiry) await dispatchToContact({
+        referenceId: enquiry.trackingId || enquiry.id,
+        email: enquiry.contactEmail,
+        phone: enquiry.mobile,
+        title: "Joint Secretary decision recorded",
+        message: isApproved ? `Your application ${enquiry.trackingId || enquiry.id} has been approved.` : `A decision has been recorded for application ${enquiry.trackingId || enquiry.id}.`,
+        trackingId: enquiry.trackingId || undefined,
+        currentStatus: isApproved ? "JS_APPROVED" : "JS_REJECTED",
+        actionButtonUrl: `/track?trackingId=${encodeURIComponent(enquiry.trackingId || enquiry.id)}`,
+        correlationId: assessment.id,
+        notificationType: "JS_DECISION"
+      });
+      return res.json({ success: true, message: isApproved ? "Joint Secretary decision recorded and project routed to DNC(s) and Department Admin." : "Joint Secretary decision recorded.", data: { assessmentId: id, decision, project: routing?.project || null, dncAssignments: routing?.dncAssignments || [] } });
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || "Unable to record Joint Secretary decision." });
+    }
   } catch (error) {
     next(error);
   }
@@ -147,6 +112,12 @@ export const appointNodalOfficer = async (req: AuthenticatedRequest, res: Respon
     const actorId = req.user?.id;
     if (!actorId) return res.status(401).json({ error: "Unauthorized" });
 
+    const actor = await prisma.user.findUnique({ where: { id: actorId }, select: { organizationId: true, roleId: true, accountStatus: true, isVerified: true } });
+    const project = await prisma.project.findUnique({ where: { id: projectId }, select: { organizationId: true, district: true } });
+    const dno = await prisma.user.findFirst({ where: { id: nodalOfficerId, roleId: ROLE_ID.DISTRICT_NODAL_OFFICER, accountStatus: "ACTIVE", isVerified: true } });
+    if (!project || !dno || !actor || actor.roleId !== ROLE_ID.GOVERNMENT_OFFICER || actor.organizationId !== project.organizationId || !actor.isVerified || actor.accountStatus !== "ACTIVE") {
+      return res.status(403).json({ error: "Only the assigned Government Department Admin can assign active DNOs for this project." });
+    }
     const assignment = await prisma.projectAssignment.create({
       data: {
         entityType: "PROJECT",

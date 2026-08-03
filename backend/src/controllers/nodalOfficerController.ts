@@ -57,11 +57,26 @@ export const updateProjectStatus = async (req: AuthenticatedRequest, res: Respon
 };
 
 export const verifyMilestone = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  return res.json({ success: true, message: "Milestone verified" });
+  try {
+    const milestone = await prisma.projectMilestone.findUnique({ where: { id: req.params.id } });
+    if (!milestone) return notFoundResponse(res, "Milestone not found");
+    const assignment = await prisma.projectAssignment.findFirst({ where: { entityType: "PROJECT", entityId: milestone.projectId, assignmentType: "DISTRICT_NODAL_OFFICER", assignedToId: req.user!.id, status: "ACTIVE" } });
+    if (!assignment) return res.status(403).json({ error: "Only an assigned DNO can verify this milestone." });
+    if (milestone.status !== "SUBMITTED_FOR_VERIFICATION") return res.status(409).json({ error: "The milestone must first be submitted for verification." });
+    const updated = await prisma.projectMilestone.update({ where: { id: milestone.id }, data: { status: "APPROVED", verifiedAt: new Date(), verifiedByUserId: req.user!.id } });
+    return res.json({ success: true, message: "Milestone verified and marked complete.", data: updated });
+  } catch (error) { next(error); }
 };
 
 export const verifyUC = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  return res.json({ success: true, message: "UC verified" });
+  try {
+    const uc = await prisma.utilizationCertificate.findUnique({ where: { id: req.params.id } });
+    if (!uc) return notFoundResponse(res, "Utilisation Certificate not found");
+    const assignment = await prisma.projectAssignment.findFirst({ where: { entityType: "PROJECT", entityId: uc.projectId, assignmentType: "DISTRICT_NODAL_OFFICER", assignedToId: req.user!.id, status: "ACTIVE" } });
+    if (!assignment) return res.status(403).json({ error: "Only an assigned DNO can verify this Utilisation Certificate." });
+    const updated = await prisma.utilizationCertificate.update({ where: { id: uc.id }, data: { verificationStatus: "VERIFIED", verifiedByUserId: req.user!.id, verifiedAt: new Date() } });
+    return res.json({ success: true, message: "Utilisation Certificate verified.", data: updated });
+  } catch (error) { next(error); }
 };
 
 export const resolveGrievance = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

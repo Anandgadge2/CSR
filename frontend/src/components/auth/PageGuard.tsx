@@ -100,15 +100,6 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
   // Not a governed page — pass through untouched.
   if (!decision.slug) return <>{children}</>;
 
-  // Wait for permissions to hydrate before deciding, but only when authenticated
-  if (isAuthenticated && !isAdmin && permissions.length === 0 && isLoadingPermissions) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader label="Verifying permissions..." />
-      </div>
-    );
-  }
-
   if (decision.allowed) return <>{children}</>;
 
   const page = findPageByPath(pathname || "");

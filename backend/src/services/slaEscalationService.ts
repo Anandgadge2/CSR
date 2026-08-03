@@ -18,8 +18,9 @@
  */
 
 import prisma from "../config/db";
+import { calculateSlaDueDate } from "./slaConfigService";
 export type SLAStage = string;
-import { notify } from "./notificationService";
+import { dispatchNotification } from "./notificationOrchestrator";
 
 /**
  * SLA Timeline Constants (in days)
@@ -403,14 +404,11 @@ export async function escalateToNextLevel(
 
     // Calculate new due date. Escalated JS response uses the shorter 3-day
     // window from the PDF SLA table, not the standard 5-day JS_DECISION.
-    const newDueAt =
-      nextStage === "JS_DECISION" && currentEscalation.stage === "RM_RESPONSE"
-        ? (() => {
-            const d = new Date();
-            d.setDate(d.getDate() + SLA_TIMELINES.JS_ESCALATED_RESPONSE);
-            return d;
-          })()
-        : calculateDueDate(nextStage);
+    // Every workflow calculation uses the Super-Admin configuration and
+    // Maharashtra business-day calendar, including automatic escalation.
+    const newDueAt = await calculateSlaDueDate(
+      (nextStage === "JS_DECISION" && currentEscalation.stage === "RM_RESPONSE" ? "JS_ESCALATED_RESPONSE" : nextStage) as SLATimelineKey
+    );
 
     // Create new escalation record
     const newEscalation = await prisma.sLAEscalation.create({
@@ -432,11 +430,19 @@ export async function escalateToNextLevel(
       },
     });
 
-    await notify(
-      escalatedToUserId,
-      "SLA escalation alert",
-      `A ${currentEscalation.entityType} has been escalated to you. Stage: ${nextStage}. Due: ${newDueAt.toLocaleDateString()}.`
-    );
+    await dispatchNotification({
+      recipientId: escalatedToUserId,
+      templateName: "SLA_BREACH_ESCALATION",
+      channels: ["IN_APP", "SOCKET", "EMAIL", "SMS"],
+      variables: {
+        title: "SLA escalation alert",
+        message: `A ${currentEscalation.entityType} has been escalated to you. Stage: ${nextStage}. Due: ${newDueAt.toLocaleDateString("en-IN")}.`,
+        currentStatus: nextStage
+      },
+      actionButtonUrl: "/escalations",
+      correlationId: currentEscalation.entityId,
+      notificationType: "SLA_BREACH_ESCALATION"
+    });
 
     return {
       success: true,

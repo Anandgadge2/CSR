@@ -141,3 +141,22 @@ export const requireApprovedOrganization = (requiredKind: OrganizationKind) => {
     }
   };
 };
+
+/** Submission requires a currently active, OTP/identity-verified account. */
+export const requireVerifiedActiveUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Authentication required" });
+    if (req.user.role === Role.SUPER_ADMIN) return next();
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { isVerified: true, accountStatus: true }
+    });
+    if (!user || !user.isVerified || user.accountStatus !== "ACTIVE") {
+      await auditBlockedAccess(req, "SUBMISSION_BLOCKED", { reason: "USER_NOT_VERIFIED_OR_ACTIVE", path: req.originalUrl });
+      return res.status(403).json({ error: "Verify your email/mobile and activate your account before submitting." });
+    }
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};

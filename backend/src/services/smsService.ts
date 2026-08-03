@@ -196,6 +196,9 @@ function getProvider(): SmsProvider {
     if (!msg91Provider) msg91Provider = new Msg91SmsProvider();
     return msg91Provider;
   }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SMS_PROVIDER must be set to a configured DLT-compliant provider in production; stub delivery is not permitted.");
+  }
   return stubProvider;
 }
 

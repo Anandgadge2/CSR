@@ -18,7 +18,8 @@ import {
   ArrowRight,
   Landmark,
   CheckCircle2,
-  Check
+  Check,
+  Loader2
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { resolveDashboardPath } from "@/lib/roleRouting";
@@ -311,7 +312,10 @@ function LoginForm() {
               className="mt-2 w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0f2142] via-[#14274e] to-[#1e3a8a] hover:from-[#0a162d] hover:to-[#172e6b] text-white font-extrabold text-xs shadow-lg shadow-blue-950/20 hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-50 hover:scale-[1.01] cursor-pointer"
             >
               {loading ? (
-                <span>Signing in to Workspace...</span>
+                <>
+                  <Loader2 size={16} className="animate-spin text-white shrink-0" />
+                  <span>Signing in to Workspace...</span>
+                </>
               ) : (
                 <>
                   <span>Sign In to Workspace</span>

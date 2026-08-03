@@ -1,0 +1,36 @@
+-- Preserve every field supplied by the corporate-enquiry and government-pitch forms.
+ALTER TABLE "CorporateEnquiry"
+  ADD COLUMN "mca21CIN" TEXT,
+  ADD COLUMN "sector" TEXT,
+  ADD COLUMN "indicativeBudget" DECIMAL(15,2),
+  ADD COLUMN "preferredDivisions" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "preferredDistricts" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "preferredCities" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "preferredTalukas" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "contactPersonName" TEXT,
+  ADD COLUMN "mobile" TEXT,
+  ADD COLUMN "proposedCSRWork" TEXT,
+  ADD COLUMN "documents" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "submittedByUserId" TEXT;
+
+ALTER TABLE "GovernmentPitch"
+  ADD COLUMN "officialName" TEXT,
+  ADD COLUMN "designation" TEXT,
+  ADD COLUMN "department" TEXT,
+  ADD COLUMN "officeName" TEXT,
+  ADD COLUMN "serviceClass" TEXT,
+  ADD COLUMN "mobile" TEXT,
+  ADD COLUMN "email" TEXT,
+  ADD COLUMN "divisions" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "districts" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "cities" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "talukas" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "exactLocation" TEXT,
+  ADD COLUMN "csrRequirement" TEXT,
+  ADD COLUMN "estimatedCost" DECIMAL(15,2),
+  ADD COLUMN "govtFundDeclaration" BOOLEAN,
+  ADD COLUMN "certificationType" TEXT,
+  ADD COLUMN "hodCertificationDocument" TEXT,
+  ADD COLUMN "supportingDocuments" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "geoTaggedPhotos" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "submittedByUserId" TEXT;

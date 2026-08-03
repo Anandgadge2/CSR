@@ -141,6 +141,7 @@ export interface KpiCard3D {
   iconBg: string;
   iconText: string;
   metricColor: string;
+  href?: string;
 }
 
 export default function DashboardEngine() {
@@ -346,6 +347,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-blue-50/30 to-slate-50/50", borderHover: "hover:border-blue-400/80 hover:shadow-blue-500/10",
       badgeBg: "bg-blue-50/90 border-blue-200/80", badgeText: "text-blue-700",
       iconBg: "bg-blue-100/70 border-blue-200/80", iconText: "text-blue-600", metricColor: "text-blue-950",
+      href: "/admin/onboarding-approvals",
     },
     {
       id: "dept-onboarding", label: "Profile Status", sublabel: "Department Verification",
@@ -427,6 +429,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
       badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
       iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
+      href: "/admin/onboarding-approvals",
     },
     {
       id: "govt-escalations", label: "Active Escalations", sublabel: "SLA Monitored Queue",
@@ -478,7 +481,7 @@ export default function DashboardEngine() {
 
   const renderCard = (card: KpiCard3D, delayIdx: number) => {
     const Icon = card.icon;
-    return (
+    const CardComponent = (
       <motion.div
         key={card.id}
         initial={{ opacity: 0, y: 12 }}
@@ -509,6 +512,15 @@ export default function DashboardEngine() {
         </div>
       </motion.div>
     );
+
+    if (card.href) {
+      return (
+        <Link key={card.id} href={card.href} className="block">
+          {CardComponent}
+        </Link>
+      );
+    }
+    return CardComponent;
   };
 
   return (
@@ -673,7 +685,7 @@ export default function DashboardEngine() {
             </p>
           </div>
           <Link
-            href={isCorporate ? "/enquiries" : isGovernment ? "/pitches" : "/organization/onboarding/status"}
+            href={isCorporate ? "/enquiries" : isGovernment ? "/pitches" : "/admin/onboarding-approvals"}
             className="inline-flex items-center justify-between w-full p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/50 border border-slate-200/70 text-xs font-bold text-slate-700 hover:text-blue-900 transition-all group"
           >
             <span>{isCorporate ? "View My Enquiries" : isGovernment ? "View My Pitches" : "Go to Approvals Queue"}</span>

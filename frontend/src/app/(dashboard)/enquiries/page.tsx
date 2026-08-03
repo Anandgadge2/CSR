@@ -18,7 +18,7 @@ interface Enquiry {
   trackingId: string;
   companyName: string;
   sector: string;
-  indicativeBudgetCr: number;
+  indicativeBudgetCr: number | null;
   status: "SUBMITTED" | "UNDER_ASSESSMENT" | "APPROVED" | "ASSIGNED";
   submittedDate: string;
 }
@@ -32,8 +32,8 @@ export default function EnquiriesPage() {
   const isRM = activeRoles.some(r => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
 
   const { data: envelope, isLoading, error: fetchError } = useApiQuery<any>(
-    ["corporate-enquiries"],
-    "/corporate-enquiries"
+    [isRM ? "rm-enquiries" : "corporate-enquiries"],
+    isRM ? "/rm/enquiries" : "/corporate-enquiries"
   );
 
   const [search, setSearch] = useState("");
@@ -45,14 +45,22 @@ export default function EnquiriesPage() {
     }
   }, [searchParams, router, isRM]);
 
-  const rawEnquiries = envelope?.data?.enquiries || envelope?.data || envelope?.enquiries || (Array.isArray(envelope) ? envelope : []);
+  const rawEnquiries = Array.isArray(envelope?.data?.enquiries)
+    ? envelope.data.enquiries
+    : Array.isArray(envelope?.data)
+    ? envelope.data
+    : Array.isArray(envelope?.enquiries)
+    ? envelope.enquiries
+    : Array.isArray(envelope)
+    ? envelope
+    : [];
 
   const items: Enquiry[] = rawEnquiries.map((e: any) => ({
     id: e.id || e.trackingId,
     trackingId: e.trackingId || `ENQ-${e.id?.slice(0, 6) || "2026"}`,
     companyName: e.corporateName || e.companyName || e.company?.name || "Corporate Partner",
-    sector: e.sector || "General CSR",
-    indicativeBudgetCr: e.indicativeBudget ? Number(e.indicativeBudget) / 10000000 : (e.budget ? Number(e.budget) : 0),
+    sector: e.sector || "Not specified",
+    indicativeBudgetCr: e.indicativeBudget != null ? Number(e.indicativeBudget) / 10000000 : (e.budget != null ? Number(e.budget) : null),
     status: e.status || "SUBMITTED",
     submittedDate: e.createdAt ? new Date(e.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
   }));
@@ -66,7 +74,7 @@ export default function EnquiriesPage() {
   });
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-5 px-4 py-6 md:px-8">
+    <div className="mx-auto flex min-h-screen max-w-screen-2xl flex-col gap-4 px-4 py-4 md:px-6">
       {/* Header */}
       <GovPageHeader
         title="Corporate Enquiries & CSR Partnership Register"
@@ -95,7 +103,7 @@ export default function EnquiriesPage() {
         />
         <StatCard 
           label="Indicative Outlay" 
-          value={`₹${items.reduce((acc, curr) => acc + curr.indicativeBudgetCr, 0).toFixed(1)} Cr`} 
+          value={`₹${items.reduce((acc, curr) => acc + (curr.indicativeBudgetCr || 0), 0).toFixed(1)} Cr`}
           icon={Coins} 
           index={1} 
           badge="Pledged Budget" 
@@ -112,7 +120,7 @@ export default function EnquiriesPage() {
       </div>
 
       {/* Main Content Register */}
-      <div className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-6 shadow-glass">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
           <div className="relative flex-1 max-w-md">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -175,7 +183,7 @@ export default function EnquiriesPage() {
                     <td className="px-4 py-3.5 font-mono font-bold text-blue-950">{item.trackingId}</td>
                     <td className="px-4 py-3.5 font-bold text-slate-900">{item.companyName}</td>
                     <td className="px-4 py-3.5 text-slate-600">{item.sector}</td>
-                    <td className="px-4 py-3.5 font-mono font-bold text-slate-900">₹{item.indicativeBudgetCr} Cr</td>
+                    <td className="px-4 py-3.5 font-mono font-bold text-slate-900">{item.indicativeBudgetCr == null ? "—" : `₹${item.indicativeBudgetCr} Cr`}</td>
                     <td className="px-4 py-3.5">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                         item.status === "APPROVED" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" :

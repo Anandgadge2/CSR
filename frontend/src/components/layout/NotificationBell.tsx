@@ -7,6 +7,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { useAuthStore } from "@/store/authStore";
+import { resolveNotificationUrl } from "@/lib/notificationUtils";
+
 interface NotificationItem {
   id: string;
   title: string;
@@ -18,6 +21,7 @@ interface NotificationItem {
 
 export function NotificationBell() {
   const router = useRouter();
+  const isAdmin = useAuthStore((s) => s.isAdmin);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,7 +34,7 @@ export function NotificationBell() {
       markAsRead(n.id);
     }
     setIsOpen(false);
-    const targetUrl = n.actionUrl || (n.title.toLowerCase().includes("onboarding") ? "/organization/onboarding/status" : "/notifications");
+    const targetUrl = resolveNotificationUrl(n, isAdmin);
     router.push(targetUrl);
   };
 
@@ -194,7 +198,7 @@ export function NotificationBell() {
             </div>
 
             {/* List */}
-            <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+            <div className="max-h-80 overflow-y-auto divide-y divide-gray-100" data-lenis-prevent style={{ overscrollBehavior: "contain" }}>
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 text-sm">
                   <Bell className="mx-auto mb-2 text-gray-300" size={32} />
@@ -216,7 +220,7 @@ export function NotificationBell() {
                         </p>
                         {!n.isRead && (
                           <button
-                            onClick={() => markAsRead(n.id)}
+                            onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
                             className="text-xs text-primary-500 hover:text-primary-600 focus:outline-none"
                             title="Mark as read"
                           >
@@ -239,9 +243,9 @@ export function NotificationBell() {
               <Link
                 href="/notifications"
                 onClick={() => setIsOpen(false)}
-                className="text-xs text-gray-500 hover:text-gray-700 font-medium inline-block"
+                className="text-xs text-blue-700 hover:text-blue-900 font-extrabold block w-full py-1 cursor-pointer"
               >
-                View all notifications
+                View all notifications →
               </Link>
             </div>
           </motion.div>

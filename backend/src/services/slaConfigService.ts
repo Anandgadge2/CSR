@@ -1,7 +1,10 @@
 import prisma from "../config/db";
-import { SLA_TIMELINES, SLATimelineKey } from "./slaEscalationService";
+import { SLA_TIMELINES } from "./slaTimelineDefaults";
+
+export type SLATimelineKey = keyof typeof SLA_TIMELINES;
 
 export const SLA_CONFIG_KEY = "sla_timelines_days";
+export const MAHARASHTRA_HOLIDAYS_KEY = "maharashtra_business_holidays";
 
 let cache: { value: Record<string, number>; at: number } | null = null;
 const CACHE_TTL_MS = 30_000;
@@ -79,9 +82,28 @@ export async function updateSlaConfig(
   return { ...SLA_TIMELINES, ...merged } as SlaConfig;
 }
 
+async function getConfiguredHolidays(): Promise<Set<string>> {
+  const setting = await prisma.platformSetting.findUnique({ where: { key: MAHARASHTRA_HOLIDAYS_KEY } }).catch(() => null);
+  if (!setting) return new Set();
+  const raw = typeof setting.value === "string" ? JSON.parse(setting.value) : setting.value;
+  const dates = Array.isArray(raw) ? raw : (raw as any)?.dates;
+  return new Set(Array.isArray(dates) ? dates.filter((date) => typeof date === "string") : []);
+}
+
+const localDateKey = (date: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(date);
+
+/** SLA periods are measured in Maharashtra working days (weekends and configured
+ * state holidays do not consume the period). Holidays are safely configurable by
+ * Super Admin alongside SLA day values. */
 export async function calculateSlaDueDate(stageName: SLATimelineKey, fromDate = new Date()): Promise<Date> {
-  const days = await getSlaDays(stageName);
+  const [days, holidays] = await Promise.all([getSlaDays(stageName), getConfiguredHolidays()]);
   const due = new Date(fromDate.getTime());
-  due.setDate(due.getDate() + days);
+  let remaining = days;
+  while (remaining > 0) {
+    due.setUTCDate(due.getUTCDate() + 1);
+    const weekday = due.getUTCDay();
+    if (weekday === 0 || weekday === 6 || holidays.has(localDateKey(due))) continue;
+    remaining -= 1;
+  }
   return due;
 }

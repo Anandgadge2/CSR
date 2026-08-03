@@ -1,5 +1,7 @@
 import { Router } from "express";
-import { authenticateToken } from "../middlewares/authMiddleware";
+import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { ROLE_ID } from "../types/role";
+import { requireApprovedOrganization, requireVerifiedActiveUser } from "../middlewares/accessControlMiddleware";
 import {
   submitCorporateEnquiry,
   getEnquiryByTrackingId,
@@ -12,10 +14,10 @@ import {
 
 const router = Router();
 
-router.post("/", submitCorporateEnquiry);
+router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOrganization("CSR_COMPANY"), submitCorporateEnquiry);
 router.get("/tracking/:trackingId", getEnquiryByTrackingId);
 router.get("/", authenticateToken, listCorporateEnquiries);
-router.post("/:id/assign-rm", authenticateToken, assignRelationshipManager);
+router.post("/:id/assign-rm", authenticateToken, authorizeRoles([ROLE_ID.JOINT_SECRETARY]), assignRelationshipManager);
 router.post("/:id/record-contact", authenticateToken, recordRmContact);
 router.post("/:id/convert", authenticateToken, convertToConvergenceProject);
 router.get("/:id", authenticateToken, getEnquiryById);

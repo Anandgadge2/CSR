@@ -216,7 +216,7 @@ export default function MaharashtraCsrMap() {
     <div className="w-full overflow-hidden rounded-3xl border border-slate-200/60 bg-white text-[#10244a] shadow-sm">
       <div className={cn("grid gap-5 p-4 lg:p-5", selected ? "lg:grid-cols-[1fr_340px]" : "lg:grid-cols-1")}>
         {/* ------------------------------ Map panel ------------------------------ */}
-        <div className="flex min-w-0 flex-col rounded-2xl bg-slate-50/50 p-4">
+        <div className="flex min-w-0 flex-col rounded-2xl  p-4">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <h3 className="font-heading text-base font-extrabold text-[#102c60]">Geographical Distribution</h3>
