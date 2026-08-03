@@ -40,11 +40,14 @@ import helpdeskRoutes from "./helpdeskRoutes";
 import secretaryRoutes from "./secretaryRoutes";
 import assignmentRoutes from "./assignmentRoutes";
 
+import accessControlRoutes from "./accessControlRoutes";
+
 // Verification Module
 import verificationRoutes from "../modules/verification";
 
 const router = Router();
 
+router.use("/access-control", accessControlRoutes);
 router.use("/auth", authRoutes);
 router.use("/companies", companyRoutes);
 router.use("/analytics", analyticsRoutes);
