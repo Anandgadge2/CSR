@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticateToken, authorizeRoles } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/accessControlMiddleware";
 import { createAdminUser, getAdminOverview, listUsers, deleteUser, updateUser, importAdminUsers } from "../controllers/adminController";
 import { getConvergenceOverview, listPitchInterests } from "../controllers/adminConvergenceController";
 import {
@@ -17,29 +18,27 @@ import { getSlaConfiguration, saveSlaConfiguration } from "../controllers/slaAdm
 
 const router = Router();
 
-const requireAdmin = [authenticateToken, authorizeRoles([Role.SUPER_ADMIN])];
+router.use(authenticateToken);
 
-router.use(requireAdmin);
-
-router.get("/overview", getAdminOverview);
-router.get("/convergence/overview", getConvergenceOverview);
-router.get("/pitch-interests", listPitchInterests);
-router.get("/users", listUsers);
-router.post("/users", createAdminUser);
-router.post("/users/import", importAdminUsers);
-router.patch("/users/:id", updateUser);
-router.delete("/users/:id", deleteUser);
-router.get("/sla/config", getSlaConfiguration);
-router.put("/sla/config", saveSlaConfiguration);
+router.get("/overview", authorizeRoles([Role.SUPER_ADMIN]), getAdminOverview);
+router.get("/convergence/overview", authorizeRoles([Role.SUPER_ADMIN]), getConvergenceOverview);
+router.get("/pitch-interests", requirePermission("pitch:view"), listPitchInterests);
+router.get("/users", requirePermission("user:view"), listUsers);
+router.post("/users", requirePermission("user:create"), createAdminUser);
+router.post("/users/import", requirePermission("user:create"), importAdminUsers);
+router.patch("/users/:id", requirePermission("user:update"), updateUser);
+router.delete("/users/:id", requirePermission("user:suspend"), deleteUser);
+router.get("/sla/config", authorizeRoles([Role.SUPER_ADMIN]), getSlaConfiguration);
+router.put("/sla/config", authorizeRoles([Role.SUPER_ADMIN]), saveSlaConfiguration);
 
 // Organization management endpoints
-router.get("/organizations", listOrganizations);
-router.post("/organizations", createAdminOrganization);
-router.get("/organizations/pending", listPendingOrganizations);
-router.get("/organizations/:id", getOrganizationById);
-router.post("/organizations/:id/approve", approveOrganization);
-router.post("/organizations/:id/reject", rejectOrganization);
-router.post("/organizations/:id/suspend", suspendOrganization);
-router.post("/organizations/:id/request-clarification", requestClarification);
+router.get("/organizations", requirePermission("organization:view"), listOrganizations);
+router.post("/organizations", requirePermission("organization:manage-users"), createAdminOrganization);
+router.get("/organizations/pending", requirePermission("organization:view"), listPendingOrganizations);
+router.get("/organizations/:id", requirePermission("organization:view"), getOrganizationById);
+router.post("/organizations/:id/approve", requirePermission("organization:approve"), approveOrganization);
+router.post("/organizations/:id/reject", requirePermission("organization:reject"), rejectOrganization);
+router.post("/organizations/:id/suspend", requirePermission("organization:suspend"), suspendOrganization);
+router.post("/organizations/:id/request-clarification", requirePermission("organization:update"), requestClarification);
 
 export default router;

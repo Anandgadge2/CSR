@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/accessControlMiddleware";
 import {
   createRequirement,
   getRequirements,
@@ -22,21 +23,21 @@ import {
 const router = Router();
 router.use(authenticateToken);
 
-router.post("/", createRequirement);
-router.get("/", getRequirements);
-router.get("/:id", getRequirementById);
-router.put("/:id", updateRequirement);
-router.delete("/:id", deleteRequirement);
-router.post("/:id/verify", verifyRequirement);
-router.post("/:id/submit", submitRequirement);
-router.post("/:id/approve", approveRequirement);
-router.post("/:id/reject", rejectRequirement);
-router.post("/:id/clarification", requestRequirementClarification);
-router.post("/:id/publish", publishRequirement);
-router.put("/beneficiary-profile", upsertBeneficiaryProfile);
-router.get("/beneficiary-profile/me", getMyBeneficiaryProfile);
-router.post("/:id/documents", addRequirementDocument);
-router.post("/:id/handover", confirmProjectHandover);
-router.get("/:id/company-interests", getDepartmentCompanyInterests);
+router.post("/", requirePermission("requirement:create"), createRequirement);
+router.get("/", requirePermission("requirement:view"), getRequirements);
+router.get("/:id", requirePermission("requirement:view"), getRequirementById);
+router.put("/:id", requirePermission("requirement:update"), updateRequirement);
+router.delete("/:id", requirePermission("requirement:delete"), deleteRequirement);
+router.post("/:id/verify", requirePermission("requirement:verify"), verifyRequirement);
+router.post("/:id/submit", requirePermission("requirement:submit"), submitRequirement);
+router.post("/:id/approve", requirePermission("requirement:approve"), approveRequirement);
+router.post("/:id/reject", requirePermission("requirement:reject"), rejectRequirement);
+router.post("/:id/clarification", requirePermission("requirement:update"), requestRequirementClarification);
+router.post("/:id/publish", requirePermission("requirement:publish"), publishRequirement);
+router.put("/beneficiary-profile", requirePermission("requirement:update"), upsertBeneficiaryProfile);
+router.get("/beneficiary-profile/me", requirePermission("requirement:view"), getMyBeneficiaryProfile);
+router.post("/:id/documents", requirePermission("requirement:update"), addRequirementDocument);
+router.post("/:id/handover", requirePermission("requirement:handover"), confirmProjectHandover);
+router.get("/:id/company-interests", requirePermission("requirement:view"), getDepartmentCompanyInterests);
 
 export default router;

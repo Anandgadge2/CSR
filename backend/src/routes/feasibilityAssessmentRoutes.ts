@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/authMiddleware";
+import { requirePermission } from "../middlewares/accessControlMiddleware";
 import {
   createAssessment,
   getPendingAssessments,
@@ -13,12 +14,12 @@ import {
 const router = Router();
 router.use(authenticateToken);
 
-router.post("/", createAssessment);
-router.get("/pending", getPendingAssessments);
-router.get("/:id", getAssessmentById);
-router.post("/:id/decision", submitJSDecision);
-router.post("/:id/appoint-nodal", appointNodalOfficer);
-router.post("/:id/onboard", onboardAssessmentProject);
-router.put("/:id/checklist", updateChecklistItems);
+router.post("/", requirePermission("assessment:create"), createAssessment);
+router.get("/pending", requirePermission("assessment:view"), getPendingAssessments);
+router.get("/:id", requirePermission("assessment:view"), getAssessmentById);
+router.post("/:id/decision", requirePermission("assessment:decide"), submitJSDecision);
+router.post("/:id/appoint-nodal", requirePermission("assessment:review"), appointNodalOfficer);
+router.post("/:id/onboard", requirePermission("assessment:submit"), onboardAssessmentProject);
+router.put("/:id/checklist", requirePermission("assessment:review"), updateChecklistItems);
 
 export default router;
