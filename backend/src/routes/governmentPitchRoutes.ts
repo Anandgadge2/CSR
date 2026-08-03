@@ -4,6 +4,7 @@ import { ROLE_ID } from "../types/role";
 import { requireApprovedOrganization, requireVerifiedActiveUser } from "../middlewares/accessControlMiddleware";
 import {
   submitPitch,
+  listGovernmentPitches,
   getPublicPitches,
   getPitchById,
   submitInterest,
@@ -18,6 +19,7 @@ import {
 const router = Router();
 
 router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOrganization("GOVERNMENT_DEPARTMENT"), submitPitch);
+router.get("/", authenticateToken, listGovernmentPitches);
 router.get("/public", getPublicPitches);
 router.get("/my", authenticateToken, getMyPitches);
 router.get("/:id", authenticateToken, getPitchById);

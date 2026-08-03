@@ -11,6 +11,8 @@ import { successResponse } from "../utils/apiResponse";
  * (the same logic the login handler folds into its response to save a
  * round-trip).
  */
+import { CacheService } from "../services/cacheService";
+
 export const getCurrentUserPermissions = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -21,12 +23,19 @@ export const getCurrentUserPermissions = async (
       return res.status(401).json({ error: "Unauthorized" });
     }
 
+    const cachedPayload = await CacheService.getPermissions(req.user.id);
+    if (cachedPayload) {
+      return successResponse(res, cachedPayload);
+    }
+
     const payload = await computeUserPermissions({
       userId: req.user.id,
       role: req.user.role,
       roleId: req.user.roleId,
       organizationId: req.user.organizationId,
     });
+
+    await CacheService.setPermissions(req.user.id, payload);
 
     return successResponse(res, payload);
   } catch (error) {

@@ -1,10 +1,11 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import prisma from "../config/db";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { ROLE_ID, getRoleId } from "../types/role";
 import { createInvitation } from "../services/invitationService";
+import { sendUserInvitationEmail } from "../services/emailService";
 
 export const getAdminOverview = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -39,7 +40,12 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response, next: 
 
     const where: any = { deletedAt: null };
     if (search) {
-      where.email = { contains: search, mode: "insensitive" };
+      where.OR = [
+        { email: { contains: search, mode: "insensitive" } },
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { designation: { contains: search, mode: "insensitive" } }
+      ];
     }
     if (status) {
       where.accountStatus = status;
@@ -90,18 +96,35 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response, next: 
 
 export const createAdminUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const { email, password, roleId: inputRoleId, role: inputRole, accountStatus = "ACTIVE", organizationId, firstName: rawFirstName, lastName: rawLastName, fullName, mobile: rawMobile, designation: rawDesignation, department: rawDepartment, district, taluka } = req.body;
+    const {
+      email,
+      password: inputPassword,
+      sendInvitation: inputSendInvitation,
+      roleId: inputRoleId,
+      role: inputRole,
+      accountStatus = "ACTIVE",
+      organizationId,
+      firstName: rawFirstName,
+      lastName: rawLastName,
+      fullName,
+      mobile: rawMobile,
+      designation: rawDesignation,
+      department: rawDepartment,
+      district,
+      taluka
+    } = req.body;
+
     const firstName = String(rawFirstName || (fullName ? String(fullName).trim().split(/\s+/)[0] : "")).trim();
     const lastName = String(rawLastName || (fullName ? String(fullName).trim().split(/\s+/).slice(1).join(" ") : "")).trim();
     const mobile = String(rawMobile || "").trim();
     const designation = String(rawDesignation || "").trim();
-    const department = String(rawDepartment || "").trim();
+    const department = String(rawDepartment || "MahaCSR Portal").trim();
     const normalizedEmail = String(email || "").trim().toLowerCase();
+
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return res.status(400).json({ error: "A valid official email is required." });
     if (!firstName || !lastName) return res.status(400).json({ error: "First name and last name are required." });
     if (!designation) return res.status(400).json({ error: "Designation is required." });
-    if (!department) return res.status(400).json({ error: "Department / organisation is required." });
-    if (!/^\+?[1-9]\d{9,14}$/.test(mobile)) return res.status(400).json({ error: "A valid mobile number is required." });
+    if (!/^\+?[1-9]\d{9,14}$/.test(mobile)) return res.status(400).json({ error: "A valid mobile number (10-15 digits) is required." });
 
     const requestedRole = inputRoleId ?? inputRole;
     let roleId = getRoleId(requestedRole);
@@ -110,50 +133,39 @@ export const createAdminUser = async (req: AuthenticatedRequest, res: Response, 
       roleId = dynamicRole?.id ?? null;
     }
     if (!roleId || !Number.isInteger(roleId)) return res.status(400).json({ error: "A valid platform role is required." });
+
     const roleRecord = await prisma.role.findUnique({ where: { id: roleId }, select: { id: true, name: true } });
     if (!roleRecord) return res.status(400).json({ error: "Selected role does not exist." });
+
     if ((roleId === ROLE_ID.DISTRICT_NODAL_OFFICER || roleId === ROLE_ID.DISTRICT_NODAL_CONSULTANT) && !String(district || "").trim()) {
       return res.status(400).json({ error: "A district is required for district nodal officers and consultants." });
     }
 
     // Check active non-deleted user with this email
     const activeUser = await prisma.user.findFirst({ where: { email: normalizedEmail, deletedAt: null } });
-    if (activeUser) return res.status(409).json({ error: "Email already registered" });
-
-    // Release legacy soft-deleted user record occupying exact email if present
-    const legacyDeletedUser = await prisma.user.findFirst({ where: { email: normalizedEmail, NOT: { deletedAt: null } } });
-    if (legacyDeletedUser) {
-      await prisma.user.update({
-        where: { id: legacyDeletedUser.id },
-        data: {
-          email: `${normalizedEmail}.deleted.${legacyDeletedUser.id.slice(0, 8)}_${Date.now()}`,
-          mobile: legacyDeletedUser.mobile ? `${legacyDeletedUser.mobile}_del_${Date.now()}` : null
-        }
-      });
-    }
+    if (activeUser) return res.status(409).json({ error: "Email already registered." });
 
     if (mobile) {
       const activeMobile = await prisma.user.findFirst({ where: { mobile, deletedAt: null } });
       if (activeMobile) return res.status(409).json({ error: "Mobile number is already registered." });
-
-      const legacyDeletedMobileUser = await prisma.user.findFirst({ where: { mobile, NOT: { deletedAt: null } } });
-      if (legacyDeletedMobileUser) {
-        await prisma.user.update({
-          where: { id: legacyDeletedMobileUser.id },
-          data: { mobile: `${mobile}_del_${Date.now()}` }
-        });
-      }
     }
+
     if (organizationId) {
       const organization = await prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true } });
       if (!organization) return res.status(400).json({ error: "Selected organization does not exist." });
     }
 
-    const useInvitation = !password;
-    const passwordHash = await bcrypt.hash(
-      useInvitation ? crypto.randomBytes(32).toString("hex") : password,
-      10
-    );
+    // Determine password and email invitation rules
+    const isPasswordBlank = !inputPassword || !String(inputPassword).trim();
+    const finalPassword = isPasswordBlank
+      ? `MahaCSR@${crypto.randomInt(100000, 999999)}`
+      : String(inputPassword).trim();
+
+    // If password left blank -> send invitation is COMPULSORY (true)
+    // If password set manually -> send invitation is OPTIONAL (boolean passed or true by default)
+    const sendInvitation = isPasswordBlank ? true : (inputSendInvitation === undefined ? true : Boolean(inputSendInvitation));
+
+    const passwordHash = await bcrypt.hash(finalPassword, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -161,24 +173,22 @@ export const createAdminUser = async (req: AuthenticatedRequest, res: Response, 
         passwordHash,
         roleId,
         organizationId: organizationId || null,
-        firstName: firstName || null,
-        lastName: lastName || null,
-        mobile: mobile || null,
+        firstName,
+        lastName,
+        mobile,
         designation,
-        accountStatus: useInvitation ? "PENDING_ACTIVATION" : (accountStatus as any),
-        isVerified: !useInvitation,
-        ...(district || taluka || designation || firstName || lastName ? {
-          officerProfile: {
-            create: {
-              fullName: [firstName, lastName].filter(Boolean).join(" "),
-              designation,
-              department,
-              district: district || null,
-              taluka: taluka || null,
-              mobile: mobile || null
-            }
+        accountStatus: "ACTIVE",
+        isVerified: true,
+        officerProfile: {
+          create: {
+            fullName: `${firstName} ${lastName}`.trim(),
+            designation,
+            department,
+            district: district ? String(district).trim() : null,
+            taluka: taluka ? String(taluka).trim() : null,
+            mobile
           }
-        } : {})
+        }
       },
       select: {
         id: true,
@@ -195,15 +205,52 @@ export const createAdminUser = async (req: AuthenticatedRequest, res: Response, 
       }
     });
 
-    return res.status(201).json({ success: true, user });
+    let invitationEmailSent = false;
+    let resetUrl = "";
+
+    if (sendInvitation) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      await prisma.userInvitation.create({
+        data: {
+          email: normalizedEmail,
+          token: rawToken,
+          status: "PENDING",
+          roleId
+        }
+      }).catch(() => null);
+
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const loginUrl = `${frontendUrl}/login`;
+      resetUrl = `${frontendUrl}/activate?token=${rawToken}`;
+
+      try {
+        await sendUserInvitationEmail({
+          to: normalizedEmail,
+          applicantName: `${firstName} ${lastName}`.trim(),
+          roleName: roleRecord.name,
+          password: finalPassword,
+          loginUrl,
+          resetUrl,
+          isAutogenerated: isPasswordBlank
+        });
+        invitationEmailSent = true;
+      } catch (emailErr) {
+        console.error("Failed to send invitation email:", emailErr);
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      user,
+      invitationSent: invitationEmailSent,
+      isPasswordAutoGenerated: isPasswordBlank,
+      autogeneratedPassword: isPasswordBlank ? finalPassword : undefined
+    });
   } catch (error) {
     next(error);
   }
 };
 
-/** Bulk import creates invitation-backed accounts; credentials are never
- * generated or returned in plaintext. Relationship Managers join the eligible
- * assignment pool only after accepting and verifying their account. */
 export const importAdminUsers = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const rows: unknown[] = Array.isArray(req.body?.users) ? req.body.users : [];
@@ -227,19 +274,42 @@ export const importAdminUsers = async (req: AuthenticatedRequest, res: Response,
 export const updateUser = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { accountStatus, roleId: inputRoleId, role: inputRole, firstName: rawFirstName, lastName: rawLastName, mobile: rawMobile, designation: rawDesignation, department: rawDepartment, district, taluka } = req.body;
+    const {
+      email: rawEmail,
+      password: rawPassword,
+      accountStatus,
+      roleId: inputRoleId,
+      role: inputRole,
+      firstName: rawFirstName,
+      lastName: rawLastName,
+      mobile: rawMobile,
+      designation: rawDesignation,
+      department: rawDepartment,
+      district,
+      taluka
+    } = req.body;
+
+    const email = rawEmail === undefined ? undefined : String(rawEmail).trim().toLowerCase();
     const firstName = rawFirstName === undefined ? undefined : String(rawFirstName).trim();
     const lastName = rawLastName === undefined ? undefined : String(rawLastName).trim();
     const mobile = rawMobile === undefined ? undefined : String(rawMobile).trim();
     const designation = rawDesignation === undefined ? undefined : String(rawDesignation).trim();
     const department = rawDepartment === undefined ? undefined : String(rawDepartment).trim();
-    if (mobile !== undefined && !/^\+?[1-9]\d{9,14}$/.test(mobile)) return res.status(400).json({ error: "A valid mobile number is required." });
+    const password = rawPassword === undefined ? undefined : String(rawPassword).trim();
+
+    if (email !== undefined && !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: "A valid official email is required." });
+    if (mobile !== undefined && !/^\+?[1-9]\d{9,14}$/.test(mobile)) return res.status(400).json({ error: "A valid mobile number (10-15 digits) is required." });
     if (firstName !== undefined && !firstName) return res.status(400).json({ error: "First name is required." });
     if (lastName !== undefined && !lastName) return res.status(400).json({ error: "Last name is required." });
     if (designation !== undefined && !designation) return res.status(400).json({ error: "Designation is required." });
-    if (department !== undefined && !department) return res.status(400).json({ error: "Department / organisation is required." });
+
+    if (email !== undefined) {
+      const duplicateEmail = await prisma.user.findFirst({ where: { email, NOT: { id }, deletedAt: null }, select: { id: true } });
+      if (duplicateEmail) return res.status(409).json({ error: "Email already registered." });
+    }
+
     if (mobile !== undefined) {
-      const duplicateMobile = await prisma.user.findFirst({ where: { mobile, NOT: { id } }, select: { id: true } });
+      const duplicateMobile = await prisma.user.findFirst({ where: { mobile, NOT: { id }, deletedAt: null }, select: { id: true } });
       if (duplicateMobile) return res.status(409).json({ error: "Mobile number is already registered." });
     }
 
@@ -256,16 +326,45 @@ export const updateUser = async (req: AuthenticatedRequest, res: Response, next:
       return res.status(400).json({ error: "A district is required for district nodal officers and consultants." });
     }
 
+    let passwordHashToSet: string | undefined = undefined;
+    if (password && password.length >= 6) {
+      passwordHashToSet = await bcrypt.hash(password, 10);
+    }
+
+    const updatedData: any = {};
+    if (email !== undefined) updatedData.email = email;
+    if (passwordHashToSet) updatedData.passwordHash = passwordHashToSet;
+    if (accountStatus) updatedData.accountStatus = accountStatus;
+    if (resolvedRoleId) updatedData.roleId = resolvedRoleId;
+    if (firstName !== undefined) updatedData.firstName = firstName;
+    if (lastName !== undefined) updatedData.lastName = lastName;
+    if (mobile !== undefined) updatedData.mobile = mobile;
+    if (designation !== undefined) updatedData.designation = designation;
+
     const user = await prisma.user.update({
       where: { id },
       data: {
-        ...(accountStatus ? { accountStatus } : {}),
-        ...(resolvedRoleId ? { roleId: resolvedRoleId } : {}),
-        ...(firstName !== undefined ? { firstName } : {}),
-        ...(lastName !== undefined ? { lastName } : {}),
-        ...(mobile !== undefined ? { mobile } : {}),
-        ...(designation !== undefined ? { designation } : {}),
-        ...(district !== undefined ? { officerProfile: { upsert: { create: { fullName: [firstName, lastName].filter(Boolean).join(" ") || "Official User", designation: designation || null, department: department || null, district: String(district || "").trim() || null, taluka: String(taluka || "").trim() || null, mobile: mobile || null }, update: { ...(firstName !== undefined || lastName !== undefined ? { fullName: [firstName, lastName].filter(Boolean).join(" ") || "Official User" } : {}), ...(designation !== undefined ? { designation } : {}), ...(department !== undefined ? { department } : {}), district: String(district || "").trim() || null, taluka: String(taluka || "").trim() || null, ...(mobile !== undefined ? { mobile } : {}) } } } } : (designation !== undefined || department !== undefined || mobile !== undefined || firstName !== undefined || lastName !== undefined ? { officerProfile: { upsert: { create: { fullName: [firstName, lastName].filter(Boolean).join(" ") || "Official User", designation: designation || null, department: department || null, mobile: mobile || null }, update: { ...(firstName !== undefined || lastName !== undefined ? { fullName: [firstName, lastName].filter(Boolean).join(" ") || "Official User" } : {}), ...(designation !== undefined ? { designation } : {}), ...(department !== undefined ? { department } : {}), ...(mobile !== undefined ? { mobile } : {}) } } } } : {}))
+        ...updatedData,
+        officerProfile: {
+          upsert: {
+            create: {
+              fullName: [firstName, lastName].filter(Boolean).join(" ") || "Official User",
+              designation: designation || null,
+              department: department || "MahaCSR Portal",
+              district: district ? String(district).trim() : null,
+              taluka: taluka ? String(taluka).trim() : null,
+              mobile: mobile || null
+            },
+            update: {
+              ...(firstName !== undefined || lastName !== undefined ? { fullName: [firstName, lastName].filter(Boolean).join(" ") || "Official User" } : {}),
+              ...(designation !== undefined ? { designation } : {}),
+              ...(department !== undefined ? { department } : {}),
+              ...(district !== undefined ? { district: String(district || "").trim() || null } : {}),
+              ...(taluka !== undefined ? { taluka: String(taluka || "").trim() || null } : {}),
+              ...(mobile !== undefined ? { mobile } : {})
+            }
+          }
+        }
       },
       select: {
         id: true,

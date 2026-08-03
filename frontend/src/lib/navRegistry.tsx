@@ -256,7 +256,7 @@ export const ROLE_NAV: Record<string, NavItem[]> = {
 
 const GENERIC_DASHBOARD_PREFIXES = [
   "/dashboard", "/onboarding", "/queries", "/csr-projects", "/payments",
-  "/fund-releases", "/reports", "/audit-logs", "/profile", "/settings",
+  "/fund-releases", "/reports", "/audit-logs", "/profile", "/settings", "/notifications",
 ];
 
 export function normalizeRole(role: string): string {

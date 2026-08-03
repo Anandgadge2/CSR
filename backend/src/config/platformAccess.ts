@@ -3,6 +3,7 @@ export const PAGE_REGISTRY = [
   ["dashboard", "Dashboard", "/dashboard", "General"],
   ["profile", "Profile", "/profile", "General"],
   ["settings", "Settings", "/settings", "General"],
+  ["notifications", "Notifications", "/notifications", "General"],
   ["reports", "Reports", "/reports", "General"],
   ["audit-trail", "Audit Trail", "/audit-logs", "General"],
 

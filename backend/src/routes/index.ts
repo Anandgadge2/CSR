@@ -74,6 +74,7 @@ router.use("/corporate-enquiries", corporateEnquiryRoutes);
 router.use("/rm", relationshipManagerRoutes);
 router.use("/feasibility", feasibilityAssessmentRoutes);
 router.use("/government-pitches", governmentPitchRoutes);
+router.use("/pitches", governmentPitchRoutes);
 router.use("/nodal", nodalOfficerRoutes);
 router.use("/convergence-projects", convergenceProjectRoutes);
 router.use("/grievances", grievanceRoutes);

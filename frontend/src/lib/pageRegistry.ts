@@ -25,6 +25,7 @@ export const PAGE_REGISTRY: PageDef[] = [
   { slug: "dashboard", label: "Dashboard", route: "/dashboard", group: "General" },
   { slug: "profile", label: "Profile", route: "/profile", group: "General" },
   { slug: "settings", label: "Settings", route: "/settings", group: "General" },
+  { slug: "notifications", label: "Notifications", route: "/notifications", group: "General" },
   { slug: "reports", label: "Reports", route: "/reports", group: "General" },
   { slug: "audit-trail", label: "Audit Trail", route: "/audit-logs", group: "General" },
 

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { httpCache } from "../middlewares/cacheMiddleware";
 import {
   getCompletedProjectsGallery,
   getCompletedProjectDetail,
@@ -10,11 +11,11 @@ import {
 
 const router = Router();
 
-router.get("/completed-projects", getCompletedProjectsGallery);
-router.get("/completed-projects/:id", getCompletedProjectDetail);
-router.get("/success-stories", getSuccessStories);
-router.get("/directory", getPublicDirectory);
-router.get("/portal-stats", getPublicPortalStats);
-router.get("/requirements", getPublicRequirements);
+router.get("/completed-projects", httpCache({ ttlSeconds: 300, keyPrefix: "public_projects" }), getCompletedProjectsGallery);
+router.get("/completed-projects/:id", httpCache({ ttlSeconds: 300, keyPrefix: "public_project_detail" }), getCompletedProjectDetail);
+router.get("/success-stories", httpCache({ ttlSeconds: 300, keyPrefix: "success_stories" }), getSuccessStories);
+router.get("/directory", httpCache({ ttlSeconds: 300, keyPrefix: "public_directory" }), getPublicDirectory);
+router.get("/portal-stats", httpCache({ ttlSeconds: 300, keyPrefix: "portal_stats" }), getPublicPortalStats);
+router.get("/requirements", httpCache({ ttlSeconds: 300, keyPrefix: "public_reqs" }), getPublicRequirements);
 
 export default router;

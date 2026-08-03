@@ -63,8 +63,10 @@ router.post("/logout", asyncHandler(logout));
 router.get("/invitations/:token", strictRateLimiter, asyncHandler(getInvitation));
 router.post("/invitations/:token/activate", strictRateLimiter, asyncHandler(acceptInvitation));
 
+import { httpCache } from "../middlewares/cacheMiddleware";
+
 // Dynamic permission routes
-router.get("/permissions", authenticateToken, asyncHandler(getCurrentUserPermissions));
+router.get("/permissions", authenticateToken, httpCache({ ttlSeconds: 300, userScoped: true, keyPrefix: "user_permissions" }), asyncHandler(getCurrentUserPermissions));
 router.get("/permissions/:module", authenticateToken, asyncHandler(getModulePermissions));
 router.post("/check-permission", authenticateToken, asyncHandler(checkUserPermission));
 

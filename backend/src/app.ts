@@ -97,8 +97,21 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to MahaCSR API Platform Gateway" });
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "UP", timestamp: new Date().toISOString() });
+import redis from "./config/redis";
+
+app.get("/health", async (req, res) => {
+  let redisStatus = "CONNECTING";
+  try {
+    const pingResult = await Promise.race([
+      redis.ping(),
+      new Promise<string>((resolve) => setTimeout(() => resolve("TIMEOUT"), 200))
+    ]);
+    if (pingResult === "PONG") redisStatus = "HEALTHY";
+    else if (pingResult === "TIMEOUT") redisStatus = "LATENCY_HIGH";
+  } catch {
+    redisStatus = "UNAVAILABLE";
+  }
+  res.json({ status: "UP", redis: redisStatus, timestamp: new Date().toISOString() });
 });
 
 // WebSocket Registration

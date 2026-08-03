@@ -345,6 +345,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         pathname.startsWith("/inspections") ||
         pathname.startsWith("/handover") ||
         pathname.startsWith("/communications") ||
+        pathname.startsWith("/notifications") ||
         pathname.startsWith("/helpdesk") ||
         pathname.startsWith("/track");
 
@@ -549,7 +550,12 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                         </button>
                       )}
                     </div>
-                    <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+                    <div
+                      className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 select-none"
+                      data-lenis-prevent="true"
+                      style={{ overscrollBehavior: "contain", touchAction: "pan-y" }}
+                      onWheel={(e) => e.stopPropagation()}
+                    >
                       {notifications.length === 0 ? (
                         <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-500 text-center font-medium">
                           No notifications yet.
@@ -580,13 +586,18 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       )}
                     </div>
                     <div className="pt-2 border-t border-slate-100 text-center">
-                      <Link
-                        href="/notifications"
-                        onClick={() => setNotificationsOpen(false)}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setNotificationsOpen(false);
+                          router.push("/notifications");
+                        }}
                         className="text-xs font-bold text-blue-700 hover:text-blue-900 hover:underline block w-full py-1 cursor-pointer"
                       >
                         Show all notifications →
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 )}

@@ -35,8 +35,9 @@ export default function NotificationsPage() {
     setLoading(true);
     setError("");
     try {
-      const data = await apiFetch<NotificationItem[]>("/notifications");
-      setNotifications(Array.isArray(data) ? data : []);
+      const data = await apiFetch<any>("/notifications");
+      const list = Array.isArray(data) ? data : data?.notifications || data?.data || [];
+      setNotifications(list);
     } catch (err: any) {
       setError(err.message || "Unable to fetch notifications");
     } finally {

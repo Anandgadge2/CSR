@@ -81,17 +81,19 @@ export function NotificationBell() {
       console.log("[Notification Socket] Connected to Live Feed");
     });
 
-    socket.on("notification", (newNotification: NotificationItem) => {
+    const handleIncomingNotification = (newNotification: NotificationItem) => {
       console.log("[Notification Socket] Received Live Alert:", newNotification);
       setNotifications((prev) => [newNotification, ...prev]);
 
-      // Trigger standard browser alert sound or desktop notice if allowed
       if (Notification.permission === "granted") {
         new Notification(newNotification.title, {
           body: newNotification.message,
         });
       }
-    });
+    };
+
+    socket.on("notification", handleIncomingNotification);
+    socket.on("notification:new", handleIncomingNotification);
 
     // Request browser notification permissions
     if (typeof window !== "undefined" && "Notification" in window) {
@@ -198,7 +200,12 @@ export function NotificationBell() {
             </div>
 
             {/* List */}
-            <div className="max-h-80 overflow-y-auto divide-y divide-gray-100" data-lenis-prevent style={{ overscrollBehavior: "contain" }}>
+            <div
+              className="max-h-80 overflow-y-auto divide-y divide-gray-100"
+              data-lenis-prevent="true"
+              style={{ overscrollBehavior: "contain", touchAction: "pan-y" }}
+              onWheel={(e) => e.stopPropagation()}
+            >
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 text-sm">
                   <Bell className="mx-auto mb-2 text-gray-300" size={32} />
@@ -240,13 +247,18 @@ export function NotificationBell() {
 
             {/* Footer */}
             <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-center">
-              <Link
-                href="/notifications"
-                onClick={() => setIsOpen(false)}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  router.push("/notifications");
+                }}
                 className="text-xs text-blue-700 hover:text-blue-900 font-extrabold block w-full py-1 cursor-pointer"
               >
                 View all notifications →
-              </Link>
+              </button>
             </div>
           </motion.div>
         )}

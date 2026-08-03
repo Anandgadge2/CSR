@@ -1,20 +1,20 @@
 "use client";
 
-import { useMemo } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ShieldAlert } from "lucide-react";
+import { useMemo, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { pageSlugForPath, pageViewKey, findPageByPath } from "@/lib/pageRegistry";
-import { Loader } from "@/components/ui/Loader";
+import { useToastActions } from "@/components/ui/Toast";
 
 /**
  * PageGuard — Resilient Role & Permission Page Gate.
  *
- * Ensures all authenticated users can access their role's assigned workspace pages
- * without being blocked by false "Access restricted" screens.
+ * Intercepts unauthorized navigation, shows a toast notification,
+ * and seamlessly redirects unauthorized users back to /dashboard.
  */
 export default function PageGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const toast = useToastActions();
   const pathname = usePathname();
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const permissions = useAuthStore((s) => s.permissions);
@@ -36,9 +36,11 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
       slug === "dashboard" ||
       slug === "profile" ||
       slug === "settings" ||
+      slug === "notifications" ||
       cleanPath === "/dashboard" ||
       cleanPath === "/profile" ||
-      cleanPath === "/settings"
+      cleanPath === "/settings" ||
+      cleanPath === "/notifications"
     ) {
       return { allowed: true as const, slug };
     }
@@ -97,30 +99,20 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     return { allowed: false as const, slug };
   }, [pathname, isAdmin, permissions, roles, user, isLoadingPermissions]);
 
-  // Not a governed page — pass through untouched.
-  if (!decision.slug) return <>{children}</>;
+  useEffect(() => {
+    if (!decision.allowed && decision.slug && !isLoadingPermissions) {
+      const page = findPageByPath(pathname || "");
+      toast.error(
+        "Access Restricted",
+        `You do not have permission to view the ${page ? page.label : "requested"} page.`
+      );
+      router.replace("/dashboard");
+    }
+  }, [decision.allowed, decision.slug, isLoadingPermissions, pathname, router, toast]);
 
-  if (decision.allowed) return <>{children}</>;
+  // Not a governed page or allowed → pass through untouched.
+  if (!decision.slug || decision.allowed) return <>{children}</>;
 
-  const page = findPageByPath(pathname || "");
-
-  return (
-    <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-600">
-        <ShieldAlert size={32} />
-      </div>
-      <h1 className="mt-6 text-2xl font-bold text-gray-900">Access restricted</h1>
-      <p className="mt-2 text-sm leading-6 text-gray-600">
-        You don&apos;t have permission to view
-        {page ? ` the ${page.label} page` : " this page"}. If you believe this
-        is a mistake, ask your administrator to enable it for your role.
-      </p>
-      <Link
-        href="/dashboard"
-        className="mt-6 rounded-lg bg-blue-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-800"
-      >
-        Back to dashboard
-      </Link>
-    </div>
-  );
+  // Returning null prevents rendering the "Access restricted" error box on screen
+  return null;
 }

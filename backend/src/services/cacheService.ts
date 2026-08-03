@@ -1,55 +1,42 @@
-// Local in-memory cache for permissions
-interface CacheEntry {
-  permissions: string[];
-  expiresAt: number;
-}
-const memoryCache = new Map<string, CacheEntry>();
+import { getCache, setCache, delCache, clearCachePattern } from "../config/redis";
+
 const DEFAULT_TTL_SECONDS = 300; // 5 minutes
 
 export class CacheService {
   /**
-   * Get cached permissions for a user
+   * Get cached permissions / user payload from Redis
    */
-  static async getPermissions(userId: string): Promise<string[] | null> {
-    const entry = memoryCache.get(userId);
-    if (entry) {
-      if (Date.now() < entry.expiresAt) {
-        return entry.permissions;
-      }
-      // Evict expired entry
-      memoryCache.delete(userId);
-    }
-
-    return null;
+  static async getPermissions(userId: string): Promise<any | null> {
+    const key = `permissions:${userId}`;
+    return await getCache<any>(key);
   }
 
   /**
-   * Set cached permissions for a user
+   * Set cached permissions / user payload in Redis
    */
   static async setPermissions(
     userId: string,
-    permissions: string[],
+    permissions: any,
     ttlSeconds = DEFAULT_TTL_SECONDS
   ): Promise<void> {
-    memoryCache.set(userId, {
-      permissions,
-      expiresAt: Date.now() + ttlSeconds * 1000
-    });
+    const key = `permissions:${userId}`;
+    await setCache(key, permissions, ttlSeconds);
   }
 
   /**
-   * Invalidate cached permissions for a user
+   * Invalidate cached permissions for a user in Redis
    */
   static async invalidatePermissions(userId: string): Promise<void> {
-    memoryCache.delete(userId);
-    console.log(`[CacheService] Invalidated permissions cache for user: ${userId}`);
+    const key = `permissions:${userId}`;
+    await delCache(key);
+    console.log(`[CacheService] Invalidated permissions Redis cache for user: ${userId}`);
   }
 
   /**
-   * Invalidate all users' permission cache (useful during global role updates)
+   * Invalidate all permissions cache in Redis (during global role/permission updates)
    */
   static async invalidateAll(): Promise<void> {
-    memoryCache.clear();
-    console.log("[CacheService] Invalidated all permissions cache");
+    await clearCachePattern("permissions:*");
+    console.log("[CacheService] Invalidated all permissions Redis cache");
   }
 }

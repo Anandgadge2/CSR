@@ -73,34 +73,36 @@ function MouseTrailCanvas() {
 
     canvas.addEventListener("mousemove", handleMouseMove);
 
+    let isVisible = true;
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+    }, { threshold: 0.1 });
+    observer.observe(canvas);
+
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particlesRef.current = particlesRef.current.filter((p) => p.life > 0.01);
+      if (isVisible && particlesRef.current.length > 0) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particlesRef.current = particlesRef.current.filter((p) => p.life > 0.01);
 
-      for (const p of particlesRef.current) {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life *= 0.96;
-        p.size *= 0.98;
+        for (const p of particlesRef.current) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life *= 0.96;
+          p.size *= 0.98;
 
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.life * 0.6})`;
-        ctx.fill();
-
-        // Glow effect
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.life * 0.15})`;
-        ctx.fill();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${p.life * 0.6})`;
+          ctx.fill();
+        }
       }
-
       animFrameRef.current = requestAnimationFrame(animate);
     };
 
     animate();
 
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", resize);
       canvas.removeEventListener("mousemove", handleMouseMove);
       cancelAnimationFrame(animFrameRef.current);

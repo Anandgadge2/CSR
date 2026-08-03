@@ -7,6 +7,7 @@ import prisma from "../config/db";
 import { getJwtRefreshSecret, getJwtSecret } from "../config/env";
 import { getRoleId } from "../types/role";
 import { computeUserPermissions } from "../services/permissionService";
+import { CacheService } from "../services/cacheService";
 
 const JWT_SECRET = getJwtSecret();
 const JWT_REFRESH_SECRET = getJwtRefreshSecret();
@@ -455,6 +456,8 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       roleId: userRecord.roleId,
       organizationId: userRecord.organizationId
     });
+
+    CacheService.setPermissions(userRecord.id, permissionData).catch(() => {});
 
     return res.json({
       message: "Login successful",
