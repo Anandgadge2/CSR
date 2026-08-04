@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, useMemo, type ReactNode } from "react";
 import {
   ArrowLeft, BadgeIndianRupee, Building2, Calendar, CheckCircle2, FileText,
   Loader2, Send, MapPin, Layers, FileCode, ShieldCheck, AlertCircle
@@ -14,12 +14,45 @@ import { useApiQuery } from "@/lib/apiHooks";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
+function extractRoleTokens(user: any, roles: any[], roleDetails: any[]): string[] {
+  const tokens = new Set<string>();
+  if (user?.role) tokens.add(String(user.role));
+  if (user?.roleSlug) tokens.add(String(user.roleSlug));
+  if (user?.roleNumericId) tokens.add(String(user.roleNumericId));
+
+  (roles || []).forEach((r) => {
+    if (typeof r === "string") tokens.add(r);
+    else if (typeof r === "number") tokens.add(String(r));
+    else if (r && typeof r === "object") {
+      if (r.slug) tokens.add(String(r.slug));
+      if (r.name) tokens.add(String(r.name));
+      if (r.role) tokens.add(String(r.role));
+    }
+  });
+
+  (roleDetails || []).forEach((rd) => {
+    if (rd?.slug) tokens.add(String(rd.slug));
+    if (rd?.name) tokens.add(String(rd.name));
+  });
+
+  return Array.from(tokens);
+}
+
 export default function PitchDetailPage() {
   const params = useParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
   const roles = useAuthStore((state) => state.roles);
-  const activeRoles = roles?.length ? roles : user?.role ? [user.role] : [];
-  const isRM = activeRoles.some((role) => /RELATIONSHIP[ _-]?MANAGER/i.test(role));
+  const roleDetails = useAuthStore((state) => state.roleDetails);
+  const isAdmin = useAuthStore((state) => state.isAdmin);
+
+  const isRM = useMemo(() => {
+    if (isAdmin) return true;
+    const tokens = extractRoleTokens(user, roles, roleDetails);
+    return tokens.some((t) => {
+      const u = t.toUpperCase();
+      return u.includes("RELATIONSHIP") || u.includes("RM") || u === "6";
+    });
+  }, [user, roles, roleDetails, isAdmin]);
 
   const { data: response, isLoading, error, refetch } = useApiQuery<any>(
     ["pitch", params.id, isRM ? "rm" : "standard"],
