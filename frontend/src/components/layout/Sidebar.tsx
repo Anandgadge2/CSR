@@ -72,6 +72,8 @@ export function getActiveNavContext(pathname: string) {
 interface SidebarProps {
   collapsed?: boolean;
   onCollapseToggle?: () => void;
+  hovered?: boolean;
+  onHoverChange?: (hovered: boolean) => void;
   className?: string;
   tenantFeatures?: Record<string, boolean>;
 }
@@ -79,14 +81,27 @@ interface SidebarProps {
 export function Sidebar({
   collapsed = false,
   onCollapseToggle,
+  hovered = false,
+  onHoverChange,
   className,
   tenantFeatures
 }: SidebarProps) {
   const pathname = usePathname() || "";
   const { hasPermission, isAdmin, isLoadingPermissions, fetchStatus } = useAuthStore();
 
-  const [isHovered, setIsHovered] = useState(false);
+  const [internalHovered, setInternalHovered] = useState(false);
+  const isHovered = hovered || internalHovered;
   const isEffectiveExpanded = !collapsed || isHovered;
+
+  const handleMouseEnter = () => {
+    setInternalHovered(true);
+    if (onHoverChange) onHoverChange(true);
+  };
+
+  const handleMouseLeave = () => {
+    setInternalHovered(false);
+    if (onHoverChange) onHoverChange(false);
+  };
 
   const { activeItemId, activeGroupId } = useMemo(() => getActiveNavContext(pathname), [pathname]);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(activeGroupId);
@@ -141,11 +156,11 @@ export function Sidebar({
     <aside
       role="navigation"
       aria-label="Main Sidebar Navigation"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
         "hidden lg:flex flex-col border-r border-slate-200/80 bg-slate-50/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out fixed left-0 top-[56px] h-[calc(100vh-56px)] z-40 justify-between py-3 select-none",
-        isEffectiveExpanded ? "w-64 shadow-xl border-slate-300/80 bg-white/95" : "w-[68px] shadow-xs bg-slate-50/80",
+        isEffectiveExpanded ? "w-64 border-slate-300/80 bg-white/95" : "w-[68px] shadow-xs bg-slate-50/80",
         className
       )}
     >

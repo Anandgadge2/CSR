@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -23,13 +23,89 @@ interface Enquiry {
   submittedDate: string;
 }
 
+function extractRoleTokens(
+  user: any,
+  roles: any[],
+  roleDetails: any[]
+): string[] {
+  const tokens = new Set<string>();
+
+  if (user?.role) tokens.add(String(user.role));
+  if (user?.roleSlug) tokens.add(String(user.roleSlug));
+  if (user?.roleNumericId) tokens.add(String(user.roleNumericId));
+
+  (roles || []).forEach((r) => {
+    if (typeof r === "string") tokens.add(r);
+    else if (typeof r === "number") tokens.add(String(r));
+    else if (r && typeof r === "object") {
+      if (r.slug) tokens.add(String(r.slug));
+      if (r.name) tokens.add(String(r.name));
+      if (r.role) tokens.add(String(r.role));
+    }
+  });
+
+  (roleDetails || []).forEach((rd) => {
+    if (rd?.slug) tokens.add(String(rd.slug));
+    if (rd?.name) tokens.add(String(rd.name));
+  });
+
+  return Array.from(tokens);
+}
+
 export default function EnquiriesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const roles = useAuthStore((s) => s.roles);
-  const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
-  const isRM = activeRoles.some(r => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
+  const roleDetails = useAuthStore((s) => s.roleDetails);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+
+  const tokens = useMemo(
+    () => extractRoleTokens(user, roles, roleDetails),
+    [user, roles, roleDetails]
+  );
+
+  const isRM = useMemo(() => {
+    return tokens.some((t: string) => {
+      const upper = t.toUpperCase();
+      return (
+        upper.includes("RELATIONSHIP") ||
+        upper.includes("RM") ||
+        upper === "6"
+      );
+    });
+  }, [tokens]);
+
+  const isGovOrAdmin = useMemo(() => {
+    return (
+      isAdmin ||
+      isRM ||
+      tokens.some((t: string) => {
+        const upper = t.toUpperCase();
+        return (
+          upper.includes("GOVERNMENT") ||
+          upper.includes("GOV") ||
+          upper.includes("OFFICER") ||
+          upper.includes("JOINT") ||
+          upper.includes("SECRETARY") ||
+          upper.includes("ADMIN") ||
+          upper.includes("SUPER")
+        );
+      })
+    );
+  }, [isAdmin, isRM, tokens]);
+
+  const canSubmitEnquiry = useMemo(() => {
+    if (isGovOrAdmin) return false;
+    return (
+      hasPermission("enquiry:create") ||
+      tokens.some((t: string) => {
+        const upper = t.toUpperCase();
+        return upper.includes("CORPORATE") || upper.includes("COMPANY");
+      })
+    );
+  }, [isGovOrAdmin, hasPermission, tokens]);
 
   const { data: envelope, isLoading, error: fetchError } = useApiQuery<any>(
     [isRM ? "rm-enquiries" : "corporate-enquiries"],
@@ -40,10 +116,12 @@ export default function EnquiriesPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
 
   useEffect(() => {
-    if (searchParams.get("action") === "create" && !isRM) {
+    if (searchParams.get("action") === "create" && !canSubmitEnquiry) {
+      router.replace("/enquiries");
+    } else if (searchParams.get("action") === "create" && canSubmitEnquiry) {
       router.replace("/enquiries/new");
     }
-  }, [searchParams, router, isRM]);
+  }, [searchParams, router, canSubmitEnquiry]);
 
   const rawEnquiries = Array.isArray(envelope?.data?.enquiries)
     ? envelope.data.enquiries
@@ -80,7 +158,7 @@ export default function EnquiriesPage() {
         title="Corporate Enquiries & CSR Partnership Register"
         eyebrow="Corporate Desk"
         actions={
-          !isRM ? (
+          canSubmitEnquiry ? (
             <Link
               href="/enquiries/new"
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"

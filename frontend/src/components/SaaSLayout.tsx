@@ -828,6 +828,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
           <Sidebar
             collapsed={sidebarCollapsed}
             onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            hovered={sidebarHovered}
+            onHoverChange={setSidebarHovered}
             tenantFeatures={tenantFeatures}
           />
         )}
@@ -1095,7 +1097,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         </AnimatePresence>
 
         {/* Main Content */}
-        <div className={`flex-grow flex flex-col min-w-0 transition-all duration-300 ${isDashboard ? (isExpanded ? "lg:ml-64" : "lg:ml-[72px]") : ""}`}>
+        <div className={`flex-grow flex flex-col min-w-0 transition-all duration-300 ease-in-out ${isDashboard ? (isExpanded ? "lg:ml-64" : "lg:ml-[68px]") : ""}`}>
           <main id="main-content" className={`flex-grow ${isDashboard ? "px-4 py-4 md:px-6 md:py-5" : ""}`}>
             {dashboardContent}
           </main>

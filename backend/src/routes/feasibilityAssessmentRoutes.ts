@@ -4,6 +4,7 @@ import { requirePermission } from "../middlewares/accessControlMiddleware";
 import {
   createAssessment,
   getPendingAssessments,
+  getAllAssessments,
   getAssessmentById,
   submitJSDecision,
   appointNodalOfficer,
@@ -15,6 +16,7 @@ const router = Router();
 router.use(authenticateToken);
 
 router.post("/", requirePermission("assessment:create"), createAssessment);
+router.get("/", requirePermission("assessment:view"), getAllAssessments);
 router.get("/pending", requirePermission("assessment:view"), getPendingAssessments);
 router.get("/:id", requirePermission("assessment:view"), getAssessmentById);
 router.post("/:id/decision", requirePermission("assessment:decide"), submitJSDecision);

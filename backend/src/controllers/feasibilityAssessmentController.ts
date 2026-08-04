@@ -42,6 +42,17 @@ export const getPendingAssessments = async (req: AuthenticatedRequest, res: Resp
   }
 };
 
+export const getAllAssessments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const assessments = await prisma.feasibilityAssessment.findMany({
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({ success: true, data: assessments });
+  } catch (error) {
+    next(error);
+  }
+};
+
 /**
  * JS Decision Submission — Upon JS Approval ("PROCEED" / "PROCEED_WITH_CONDITIONS"):
  * Auto-assigns to District Nodal Consultant (DNC) for the district AND Government Department Admin.
