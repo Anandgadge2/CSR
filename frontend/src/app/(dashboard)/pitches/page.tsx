@@ -8,6 +8,7 @@ import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import { Loader } from "@/components/ui/Loader";
+import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { 
   Compass, Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, Clock, FileText
 } from "lucide-react";
@@ -27,8 +28,33 @@ interface Pitch {
 export default function PitchesPage() {
   const user = useAuthStore((s) => s.user);
   const roles = useAuthStore((s) => s.roles);
+  const storeIsAdmin = useAuthStore((s) => s.isAdmin);
   const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
-  const isRM = activeRoles.some(r => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
+  
+  const isRM = activeRoles.some(r => {
+    const s = String(r).toUpperCase();
+    return s.includes("RELATIONSHIP_MANAGER") || s.includes("RELATIONSHIP MANAGER") || s === "6";
+  });
+
+  const isSuperAdmin = storeIsAdmin || activeRoles.some(r => {
+    const s = String(r).toUpperCase();
+    return s.includes("SUPER_ADMIN") || s.includes("SUPERADMIN") || s === "1";
+  });
+
+  const isGovOfficer = activeRoles.some(r => {
+    const s = String(r).toUpperCase();
+    return (
+      s.includes("GOVERNMENT") ||
+      s.includes("GOV_") ||
+      s.includes("DEPT") ||
+      s.includes("DISTRICT_NODAL") ||
+      s === "7" || s === "4" || s === "5"
+    );
+  });
+
+  // Pitch creation is reserved for Government Department Officers submitting proposals.
+  // Superadmin and Relationship Managers oversee/manage the platform and do not submit pitches.
+  const canCreatePitch = isGovOfficer && !isSuperAdmin && !isRM;
 
   const { data: envelope, isLoading, error: fetchError } = useApiQuery<any>(
     [isRM ? "rm-pitches" : "government-pitches"],
@@ -37,6 +63,7 @@ export default function PitchesPage() {
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const rawPitches: any[] = Array.isArray(envelope)
     ? envelope
@@ -76,13 +103,14 @@ export default function PitchesPage() {
           eyebrow="Department Pitches"
           description="Statewide directory of departmental proposals seeking corporate partner empanelement and CSR funding."
           actions={
-            !isRM &&
-            <Link
-              href="/pitches/create"
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
-            >
-              <Plus size={16} /> Create Pitch Proposal
-            </Link>
+            canCreatePitch && (
+              <Link
+                href="/pitches/create"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
+              >
+                <Plus size={16} /> Create Pitch Proposal
+              </Link>
+            )
           }
         />
 
@@ -147,12 +175,8 @@ export default function PitchesPage() {
                 </select>
               </div>
 
-              {!isRM && <Link
-                href="/pitches/create"
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105"
-              >
-                <Plus size={16} /> Create Pitch Proposal
-              </Link>}
+              {/* View Toggle Component (Grid / List) */}
+              <ViewToggle view={viewMode} onChange={setViewMode} />
             </div>
           </div>
 
@@ -172,7 +196,7 @@ export default function PitchesPage() {
                 There are currently no government pitch proposals recorded in the database.
               </p>
             </div>
-          ) : (
+          ) : viewMode === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filtered.map((item, idx) => (
                 <motion.div
@@ -218,9 +242,72 @@ export default function PitchesPage() {
                 </motion.div>
               ))}
             </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs overflow-x-auto">
+              <table className="gov-table w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-left font-bold text-slate-700">
+                    <th className="p-3">Ref ID</th>
+                    <th className="p-3">Pitch Title & Department</th>
+                    <th className="p-3">District</th>
+                    <th className="p-3">Estimated Outlay</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.length > 0 ? (
+                    filtered.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3 font-mono font-bold text-purple-900">
+                          <span className="bg-purple-100 px-2.5 py-0.5 rounded-md text-xs">{item.refNo}</span>
+                        </td>
+                        <td className="p-3">
+                          <div className="font-extrabold text-slate-900 line-clamp-1">{item.title}</div>
+                          <div className="text-[11px] text-slate-500 font-medium">{item.department}</div>
+                        </td>
+                        <td className="p-3 text-slate-700 font-medium">
+                          <span className="flex items-center gap-1">
+                            <MapPin size={13} className="text-blue-600" />
+                            {item.district}
+                          </span>
+                        </td>
+                        <td className="p-3 font-extrabold text-blue-950 font-heading">
+                          ₹{item.outlayLakhs} Lakhs
+                        </td>
+                        <td className="p-3">
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            item.status === "CSR_COMMITTED" || item.status === "APPROVED" || item.status === "VERIFIED"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}>
+                            {item.status.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <Link
+                            href={`/pitches/${item.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
+                          >
+                            {isRM ? "Review Pitch" : "View Pitch"} <ArrowUpRight size={13} />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-slate-500 font-medium">
+                        No pitches match your search criteria
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
     </GovPortalLayout>
   );
 }
+
