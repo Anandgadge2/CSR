@@ -185,6 +185,12 @@ export const convertToConvergenceProject = async (req: AuthenticatedRequest, res
   try {
     const enquiry = await prisma.corporateEnquiry.findUnique({ where: { id: req.params.id } });
     if (!enquiry) return notFoundResponse(res, "Enquiry not found");
+};
+
+export const convertToConvergenceProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const enquiry = await prisma.corporateEnquiry.findUnique({ where: { id: req.params.id } });
+    if (!enquiry) return notFoundResponse(res, "Enquiry not found");
 
     await prisma.corporateEnquiry.update({
       where: { id: req.params.id },
@@ -192,6 +198,19 @@ export const convertToConvergenceProject = async (req: AuthenticatedRequest, res
     });
 
     return res.json({ success: true, message: "Converted to project" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const acceptEnquiry = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const updated = await prisma.corporateEnquiry.update({
+      where: { id },
+      data: { status: "UNDER_RM_REVIEW" }
+    });
+    return res.json({ success: true, message: "Enquiry accepted. Case status updated to UNDER_RM_REVIEW.", data: updated });
   } catch (error) {
     next(error);
   }

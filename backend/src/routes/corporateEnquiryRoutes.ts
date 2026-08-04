@@ -9,6 +9,7 @@ import {
   assignRelationshipManager,
   recordRmContact,
   convertToConvergenceProject,
+  acceptEnquiry,
   getEnquiryById
 } from "../controllers/corporateEnquiryController";
 
@@ -18,6 +19,7 @@ router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOr
 router.get("/tracking/:trackingId", getEnquiryByTrackingId);
 router.get("/", authenticateToken, listCorporateEnquiries);
 router.post("/:id/assign-rm", authenticateToken, authorizeRoles([ROLE_ID.JOINT_SECRETARY]), assignRelationshipManager);
+router.post("/:id/accept", authenticateToken, acceptEnquiry);
 router.post("/:id/record-contact", authenticateToken, recordRmContact);
 router.post("/:id/convert", authenticateToken, convertToConvergenceProject);
 router.get("/:id", authenticateToken, getEnquiryById);
