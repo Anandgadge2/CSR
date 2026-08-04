@@ -22,9 +22,9 @@ interface PageHeaderProps {
   className?: string;
 }
 
-export function PageHeader({ 
-  title, 
-  description, 
+export function PageHeader({
+  title,
+  description,
   breadcrumbs = [],
   actions,
   className
@@ -42,8 +42,8 @@ export function PageHeader({
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
         <nav className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-          <Link 
-            href={homeHref} 
+          <Link
+            href={homeHref}
             className="hover:text-gray-700 transition-colors flex items-center"
             title={user ? "Go to Dashboard" : "Go to Home"}
           >
@@ -53,8 +53,8 @@ export function PageHeader({
             <span key={i} className="flex items-center gap-2">
               <ChevronRight size={14} className="text-gray-400" />
               {crumb.href ? (
-                <Link 
-                  href={crumb.href} 
+                <Link
+                  href={crumb.href}
                   className="hover:text-gray-700 transition-colors"
                 >
                   {crumb.label}
@@ -99,8 +99,8 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
 
   return (
     <nav className={cn("flex items-center gap-2 text-sm text-gray-500", className)}>
-      <Link 
-        href={homeHref} 
+      <Link
+        href={homeHref}
         className="hover:text-gray-700 transition-colors flex items-center"
         title={user ? "Go to Dashboard" : "Go to Home"}
       >
@@ -110,8 +110,8 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
         <span key={i} className="flex items-center gap-2">
           <ChevronRight size={14} className="text-gray-400" />
           {item.href ? (
-            <Link 
-              href={item.href} 
+            <Link
+              href={item.href}
               className="hover:text-gray-700 transition-colors"
             >
               {item.label}

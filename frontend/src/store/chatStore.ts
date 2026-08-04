@@ -42,7 +42,7 @@ export const useChatStore = create<ChatState>((set) => ({
   setMessages: (messages) => set({ messages }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
   setTyping: (email, isTyping) => set((state) => ({
-    typingUsers: isTyping 
+    typingUsers: isTyping
       ? [...state.typingUsers.filter(u => u !== email), email]
       : state.typingUsers.filter(u => u !== email)
   })),

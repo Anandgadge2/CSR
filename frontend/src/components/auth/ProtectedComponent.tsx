@@ -8,44 +8,44 @@ interface ProtectedComponentProps {
    * Required permission to view the component
    */
   permission?: string;
-  
+
   /**
    * Required permissions (user must have ALL)
    */
   permissions?: string[];
-  
+
   /**
    * Required permissions (user must have ANY)
    */
   anyPermission?: string[];
-  
+
   /**
    * Required role to view the component
    */
   role?: string;
-  
+
   /**
    * Required roles (user must have ANY)
    */
   roles?: string[];
-  
+
   /**
    * Content to render if user has access
    */
   children: ReactNode;
-  
+
   /**
    * Content to render if user doesn't have access
    * @default null
    */
   fallback?: ReactNode;
-  
+
   /**
    * Whether to show loading state
    * @default false
    */
   showLoading?: boolean;
-  
+
   /**
    * Loading component to show
    */
@@ -54,31 +54,31 @@ interface ProtectedComponentProps {
 
 /**
  * Component that conditionally renders children based on user permissions/roles
- * 
+ *
  * @example
  * ```tsx
  * // Check single permission
  * <ProtectedComponent permission="requirement:create">
  *   <CreateRequirementButton />
  * </ProtectedComponent>
- * 
+ *
  * // Check all permissions
  * <ProtectedComponent permissions={["requirement:view", "requirement:update"]}>
  *   <EditRequirementForm />
  * </ProtectedComponent>
- * 
+ *
  * // Check any permission
  * <ProtectedComponent anyPermission={["requirement:approve", "requirement:submit"]}>
  *   <ActionButtons />
  * </ProtectedComponent>
- * 
+ *
  * // Check role
  * <ProtectedComponent role="NGO_ADMIN">
  *   <AdminPanel />
  * </ProtectedComponent>
- * 
+ *
  * // With fallback
- * <ProtectedComponent 
+ * <ProtectedComponent
  *   permission="organization:view"
  *   fallback={<div>You don't have access to view organizations</div>}
  * >
@@ -142,12 +142,12 @@ interface ProtectedButtonProps extends ProtectedComponentProps {
    * @default false
    */
   disableInsteadOfHide?: boolean;
-  
+
   /**
    * Tooltip text to show when disabled
    */
   disabledTooltip?: string;
-  
+
   /**
    * Additional className for the wrapper
    */
@@ -185,12 +185,12 @@ interface ProtectedMenuItemProps extends ProtectedComponentProps {
    * Menu item href
    */
   href?: string;
-  
+
   /**
    * Menu item label
    */
   label: string;
-  
+
   /**
    * Icon component
    */

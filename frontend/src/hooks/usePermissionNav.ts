@@ -44,16 +44,16 @@ export interface NavGroup {
 
 /**
  * Hook to filter navigation items based on user permissions
- * 
+ *
  * @example
  * ```tsx
  * const navItems: NavItem[] = [
  *   { label: "Dashboard", href: "/dashboard" },
  *   { label: "Requirements", href: "/requirements", permission: "requirement:view" },
  *   { label: "Create", href: "/requirements/create", permission: "requirement:create" },
- *   { 
- *     label: "Admin", 
- *     href: "/admin", 
+ *   {
+ *     label: "Admin",
+ *     href: "/admin",
  *     permissions: ["user:invite", "role:create"],
  *     children: [
  *       { label: "Users", href: "/admin/users", permission: "user:invite" },
@@ -61,18 +61,18 @@ export interface NavGroup {
  *     ]
  *   },
  * ];
- * 
+ *
  * const { filteredItems, isLoading } = usePermissionNav(navItems);
  * ```
  */
 export function usePermissionNav(items: NavItem[], tenantFeatures?: Record<string, boolean>) {
-  const { 
-    hasPermission, 
-    hasAnyPermission, 
-    hasAllPermissions, 
-    hasRole, 
+  const {
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
     hasAnyRole,
-    isLoading 
+    isLoading
   } = usePermission();
 
   const checkNavItem = (item: NavItem): boolean => {
@@ -150,11 +150,11 @@ export function usePermissionNavGroups(groups: NavGroup[], tenantFeatures?: Reco
 
   const filteredGroups = useMemo(() => {
     if (isLoading) return [];
-    
+
     return groups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => 
+        items: group.items.filter((item) =>
           filteredItems.some((fi) => fi.href === item.href)
         ),
       }))

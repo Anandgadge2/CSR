@@ -35,9 +35,9 @@ export default function KnowledgeCenter() {
     setChatInput("");
 
     setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        sender: "agent", 
-        text: "Thank you for the message. A support executive from Department of Industries is reviewing your profile." 
+      setChatMessages(prev => [...prev, {
+        sender: "agent",
+        text: "Thank you for the message. A support executive from Department of Industries is reviewing your profile."
       }]);
     }, 1500);
   };
@@ -50,39 +50,39 @@ export default function KnowledgeCenter() {
   ];
 
   const downloads = [
-    { 
-      title: "Aspirational Districts Framework (PDF)", 
-      desc: "Framework guidelines for focusing CSR activities in underdeveloped and aspirational districts.", 
+    {
+      title: "Aspirational Districts Framework (PDF)",
+      desc: "Framework guidelines for focusing CSR activities in underdeveloped and aspirational districts.",
       type: "PDF",
       href: "/docs/aspirational_district.pdf"
     },
-    { 
-      title: "Development Sectors in CSR (PDF)", 
-      desc: "Official schedule and guidelines of developmental sectors covered under CSR convergence.", 
+    {
+      title: "Development Sectors in CSR (PDF)",
+      desc: "Official schedule and guidelines of developmental sectors covered under CSR convergence.",
       type: "PDF",
       href: "/docs/DEVELOPMENT_SECTORS_IN_CSR.pdf"
     },
-    { 
-      title: "Section 135 Companies Act Compliance (PDF)", 
-      desc: "Statutory provisions and compliance mandates of Section 135 of the Companies Act, 2013.", 
+    {
+      title: "Section 135 Companies Act Compliance (PDF)",
+      desc: "Statutory provisions and compliance mandates of Section 135 of the Companies Act, 2013.",
       type: "PDF",
       href: "/docs/Section_135_CSR.pdf"
     },
-    { 
-      title: "Standard Project Proposal Template (PDF)", 
-      desc: "Mandatory structural format for submitting capital proposals to the marketplace.", 
+    {
+      title: "Standard Project Proposal Template (PDF)",
+      desc: "Mandatory structural format for submitting capital proposals to the marketplace.",
       type: "PDF",
       href: ""
     },
-    { 
-      title: "Annual Corporate CSR Compliance Report (Excel)", 
-      desc: "Pre-formatted ledger sheets mapped to MCA Section 135 reporting needs.", 
+    {
+      title: "Annual Corporate CSR Compliance Report (Excel)",
+      desc: "Pre-formatted ledger sheets mapped to MCA Section 135 reporting needs.",
       type: "XLSX",
       href: ""
     },
-    { 
-      title: "Escrow Account Setup Agreement Framework", 
-      desc: "Sample state escrow agreement for releasing milestone-based tranches.", 
+    {
+      title: "Escrow Account Setup Agreement Framework",
+      desc: "Sample state escrow agreement for releasing milestone-based tranches.",
       type: "DOCX",
       href: ""
     }
@@ -211,8 +211,8 @@ export default function KnowledgeCenter() {
                         </GovButton>
                       </a>
                     ) : (
-                      <GovButton 
-                        variant="secondary" 
+                      <GovButton
+                        variant="secondary"
                         style={{ fontSize: 12, padding: "6px 12px", whiteSpace: "nowrap" }}
                         onClick={() => alert("This document template is currently being finalized by the Coordinating Unit.")}
                       >
@@ -304,11 +304,11 @@ export default function KnowledgeCenter() {
             <GovCardBody>
               <div style={{ display: "flex", flexDirection: "column", gap: 12, height: 280 }}>
                 {/* Messages */}
-                <div style={{ 
-                  flex: 1, 
-                  overflowY: "auto", 
-                  display: "flex", 
-                  flexDirection: "column", 
+                <div style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
                   gap: 8,
                   padding: 8,
                   background: "var(--gov-bg-secondary)",

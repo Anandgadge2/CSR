@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import type { Permission, RiskLevel } from "@/types/accessControl";
 import "@/styles/gov-theme.css";
 
+import AccessControlTabs from "@/components/access-control/AccessControlTabs";
+
 export default function PermissionsPage() {
   const { data: permissions = [], isLoading } = usePermissions();
   const [search, setSearch] = useState("");
@@ -28,12 +30,12 @@ export default function PermissionsPage() {
   }, [permissions]);
 
   const filtered = useMemo(() => {
-    const term = search.toLowerCase();
     return modules
       .map(([mod, perms]) => {
         const f = perms.filter((p) => {
           if (riskFilter !== "ALL" && (p.riskLevel || "LOW") !== riskFilter) return false;
-          if (!term) return true;
+          if (!search.trim()) return true;
+          const term = search.toLowerCase();
           return (
             p.key.toLowerCase().includes(term) ||
             (p.title || "").toLowerCase().includes(term) ||
@@ -54,6 +56,8 @@ export default function PermissionsPage() {
         title="Permission Catalog"
         breadcrumb="Administration / Access Control"
       />
+
+      <AccessControlTabs />
 
       <div className="space-y-4">
         {/* Search + Filters */}

@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import type { Assignment, DefaultScope } from "@/types/accessControl";
 import "@/styles/gov-theme.css";
 
+import AccessControlTabs from "@/components/access-control/AccessControlTabs";
+
 export default function AssignmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -43,9 +45,9 @@ export default function AssignmentsPage() {
     if (!search) return assignments;
     const term = search.toLowerCase();
     return assignments.filter((a) => {
-      const userName = a.user ? `${a.user.firstName} ${a.user.lastName}`.toLowerCase() : "";
-      const email = a.user?.email?.toLowerCase() || "";
-      const roleName = a.role?.displayName?.toLowerCase() || a.role?.name?.toLowerCase() || "";
+      const userName = a.user ? `${a.user.firstName || ""} ${a.user.lastName || ""}`.toLowerCase() : "";
+      const email = (a.user?.email || "").toLowerCase();
+      const roleName = (a.role?.name || "").toLowerCase();
       return userName.includes(term) || email.includes(term) || roleName.includes(term);
     });
   }, [assignments, search]);
@@ -82,6 +84,8 @@ export default function AssignmentsPage() {
           ) : undefined
         }
       />
+
+      <AccessControlTabs />
 
       <div className="space-y-4">
         {/* Toolbar */}

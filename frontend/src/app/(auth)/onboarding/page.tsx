@@ -52,7 +52,7 @@ interface FormState {
   city: string;
   pincode: string;
   selectedSectors: string[];
-  
+
   // Statutory
   gstRegistered: boolean;
   gstin: string;
@@ -80,7 +80,7 @@ interface FormState {
   governancePolicies: string[];
   relatedPartyDisclosure: string;
   governanceRemarks: string;
-  
+
   // Financial
   bankAccountHolder: string;
   bankName: string;
@@ -104,7 +104,7 @@ interface FormState {
   impactMeasurementProcess: string;
   thirdPartyAssessment: string;
   awardsOrRecognitions: string;
-  
+
   // Declarations
   blacklistDeclaration: boolean;
   litigationDeclaration: boolean;

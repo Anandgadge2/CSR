@@ -24,7 +24,7 @@ export default function FaqAccordion({ faqs }: FaqAccordionProps) {
       <div className="flex flex-col gap-4">
         {faqs.map((faq, idx) => (
           <div key={idx} className="bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
-            <button 
+            <button
               onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
               className="w-full text-left p-5 font-bold text-slate-100 flex justify-between items-center hover:bg-slate-955 transition-colors"
             >

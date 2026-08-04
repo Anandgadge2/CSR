@@ -73,31 +73,31 @@ export default function InspectionsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard 
-          label="Verified Inspections" 
-          value={items.filter(i => i.status === "VERIFIED").length} 
-          icon={CheckCircle2} 
-          index={0} 
-          colorTheme="emerald" 
-          badge="Validated" 
+        <StatCard
+          label="Verified Inspections"
+          value={items.filter(i => i.status === "VERIFIED").length}
+          icon={CheckCircle2}
+          index={0}
+          colorTheme="emerald"
+          badge="Validated"
           sublabel="Site proof validated"
         />
-        <StatCard 
-          label="Pending Field Reviews" 
-          value={items.filter(i => i.status === "PENDING_VERIFICATION").length} 
-          icon={Clock} 
-          index={1} 
-          colorTheme="amber" 
-          badge="Awaiting DNO" 
+        <StatCard
+          label="Pending Field Reviews"
+          value={items.filter(i => i.status === "PENDING_VERIFICATION").length}
+          icon={Clock}
+          index={1}
+          colorTheme="amber"
+          badge="Awaiting DNO"
           sublabel="Awaiting verification"
         />
-        <StatCard 
-          label="Geo-Tagged Evidence" 
-          value={`${items.reduce((acc, curr) => acc + curr.photosUploaded, 0)} Photos`} 
-          icon={Camera} 
-          index={2} 
-          colorTheme="blue" 
-          badge="Audit Vault" 
+        <StatCard
+          label="Geo-Tagged Evidence"
+          value={`${items.reduce((acc, curr) => acc + curr.photosUploaded, 0)} Photos`}
+          icon={Camera}
+          index={2}
+          colorTheme="blue"
+          badge="Audit Vault"
           sublabel="Stored in audit vault"
         />
       </div>

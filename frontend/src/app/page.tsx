@@ -230,7 +230,7 @@ export default function LandingPage() {
                       <h3 className="text-base font-extrabold text-slate-900 tracking-tight">{step.title}</h3>
                       <p className="mt-2 text-xs leading-relaxed text-slate-600 font-medium">{step.detail}</p>
                     </div>
-                
+
                   </div>
                 </motion.div>
               ))}
@@ -255,7 +255,7 @@ export default function LandingPage() {
                 className="liquid-glass-card-light p-5 relative overflow-hidden group border-blue-200/50 bg-gradient-to-br from-white/95 via-slate-50/95 to-blue-50/30"
               >
                 {/* Photo graphic overlay with smooth gradient fade */}
-                <div 
+                <div
                   className="absolute inset-0 bg-cover bg-right opacity-10 group-hover:opacity-[0.14] transition-opacity duration-500 pointer-events-none rounded-2xl"
                   style={{ backgroundImage: `url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80')` }}
                 />
@@ -296,7 +296,7 @@ export default function LandingPage() {
                 className="liquid-glass-card-light p-8 relative overflow-hidden group border-amber-200/50 bg-gradient-to-br from-white/95 via-slate-50/95 to-amber-50/30"
               >
                 {/* Photo graphic overlay with smooth gradient fade */}
-                <div 
+                <div
                   className="absolute inset-0 bg-cover bg-right opacity-10 group-hover:opacity-[0.14] transition-opacity duration-500 pointer-events-none rounded-2xl"
                   style={{ backgroundImage: `url('https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=800&q=80')` }}
                 />

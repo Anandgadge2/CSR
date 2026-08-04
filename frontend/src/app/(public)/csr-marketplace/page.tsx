@@ -101,7 +101,7 @@ export default function CSRMarketplace() {
   };
 
   const filteredRequirements = requirements.filter(req => {
-    const matchesSearch = 
+    const matchesSearch =
       req.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       req.beneficiaryProfile.agencyName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -152,7 +152,7 @@ export default function CSRMarketplace() {
         <aside className="bg-white border rounded-xl p-5 shadow-sm space-y-4">
           <div className="flex justify-between items-center pb-2 border-b">
             <h3 className="font-bold text-sm text-slate-800 uppercase tracking-wider">Search Filters</h3>
-            <button 
+            <button
               onClick={() => {
                 setSearchTerm("");
                 setDistrict("All");
@@ -170,7 +170,7 @@ export default function CSRMarketplace() {
           <div className="space-y-1">
             <label className="text-slate-700 text-xs font-bold block">Keywords Search</label>
             <div className="relative">
-              <input 
+              <input
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -272,7 +272,7 @@ export default function CSRMarketplace() {
                     </div>
 
                     <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-2">{req.title}</h3>
-                    
+
                     <div className="text-[11px] text-slate-600 font-semibold space-y-0.5">
                       <div className="text-slate-800 font-bold">{req.beneficiaryProfile.agencyName}</div>
                       <div className="text-slate-500">Department Type: {req.beneficiaryProfile.agencyType}</div>

@@ -6,8 +6,8 @@ import { apiFetch, API_BASE_URL, getAccessToken } from "@/lib/api";
 import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { Button } from "@/components/ui/Button";
-import { 
-  Building2, Landmark, Coins, Users, Clock, FileText, Compass, AlertTriangle, 
+import {
+  Building2, Landmark, Coins, Users, Clock, FileText, Compass, AlertTriangle,
   MapPin, CheckCircle2, ChevronRight, User, PlusCircle, ArrowLeft, UploadCloud, Target, ShieldCheck,
   XCircle
 } from "lucide-react";
@@ -25,7 +25,7 @@ export default function CSRRequirementDetail() {
   // Response forms states
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showInterestModal, setShowInterestModal] = useState(false);
-  
+
   // NGO application form
   const [ngoForm, setNgoForm] = useState({
     proposedPlan: "",
@@ -100,7 +100,7 @@ export default function CSRRequirementDetail() {
     // Get user info
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
-    
+
     fetchRequirementDetails();
   }, [id]);
 
@@ -109,7 +109,7 @@ export default function CSRRequirementDetail() {
     try {
       const data = await apiFetch<any>(`/csr-requirements/${id}`);
       setRequirement(data);
-      
+
       // Autofill forms
       setNgoForm(prev => ({ ...prev, estimatedCost: data.estimatedCost }));
       setCompanyForm(prev => ({ ...prev, fundingAmount: data.estimatedCost }));
@@ -438,7 +438,7 @@ export default function CSRRequirementDetail() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Back to marketplace */}
       <div className="flex items-center gap-2">
-        <Button 
+        <Button
           onClick={() => {
             const backDest = pathname.startsWith("/company/marketplace")
               ? "/company/marketplace"
@@ -507,8 +507,8 @@ export default function CSRRequirementDetail() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-xs font-bold rounded-md transition-colors whitespace-nowrap ${
-              activeTab === tab.id 
-                ? "bg-blue-900 text-white shadow-sm" 
+              activeTab === tab.id
+                ? "bg-blue-900 text-white shadow-sm"
                 : "text-slate-650 hover:text-blue-900 hover:bg-slate-50"
             }`}
           >
@@ -520,7 +520,7 @@ export default function CSRRequirementDetail() {
       {/* Tab Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (
             <GovCard>
@@ -617,8 +617,8 @@ export default function CSRRequirementDetail() {
                         </div>
 
                         {/* Selection Button: Visible to companies who expressed interest */}
-                        {user?.role === "COMPANY_ADMIN" && 
-                         requirement.companyInterests?.some((i: any) => i.companyId === user.companyId && i.status !== "NGO_SELECTED") && 
+                        {user?.role === "COMPANY_ADMIN" &&
+                         requirement.companyInterests?.some((i: any) => i.companyId === user.companyId && i.status !== "NGO_SELECTED") &&
                          app.status === "NGO_APPLIED" && (
                           <div className="flex justify-end pt-2">
                             <Button
@@ -689,11 +689,11 @@ export default function CSRRequirementDetail() {
               <GovCardHeader className="bg-slate-50 border-b flex justify-between items-center">
                 <GovCardTitle>Agreement Management</GovCardTitle>
                 {/* Government Department can track agreement once NGO is selected */}
-                {user?.role === "BENEFICIARY_AGENCY" && 
-                 requirement.status === "NGO_SELECTED" && 
-                 !showAgreementForm && 
+                {user?.role === "BENEFICIARY_AGENCY" &&
+                 requirement.status === "NGO_SELECTED" &&
+                 !showAgreementForm &&
                  requirement.agreements?.length === 0 && (
-                  <Button 
+                  <Button
                     onClick={() => setShowAgreementForm(true)}
                     className="bg-blue-900 text-white hover:bg-blue-950 text-xs font-bold"
                   >
@@ -805,7 +805,7 @@ export default function CSRRequirementDetail() {
                             <p className="text-[10px] text-slate-500 text-center">
                               Once all three parties (Beneficiary, Company, NGO) execute the agreement, scan and upload the signed PDF.
                             </p>
-                            
+
                             <div className="relative cursor-pointer bg-blue-900 text-white hover:bg-blue-950 font-bold px-6 py-2 rounded shadow-sm text-center">
                               <input
                                 type="file"
@@ -1013,7 +1013,7 @@ export default function CSRRequirementDetail() {
                       <div key={rep.id} className="relative space-y-2">
                         {/* Dot */}
                         <div className="absolute -left-[31px] top-1 bg-blue-900 h-4 h-4 rounded-full border-4 border-white shadow-sm" />
-                        
+
                         <div className="flex justify-between items-start">
                           <div>
                             <h4 className="font-bold text-slate-900 text-sm">{rep.progressTitle}</h4>

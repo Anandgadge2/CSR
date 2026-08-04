@@ -10,8 +10,8 @@ import {
   QUICK_ACTIONS,
   visibleByPermission,
 } from "@/lib/dashboardEngine";
-import { 
-  AlertTriangle, ArrowRight, ShieldAlert, Clock, CheckCircle2, 
+import {
+  AlertTriangle, ArrowRight, ShieldAlert, Clock, CheckCircle2,
   FolderKanban, ShieldCheck, FileText, Compass, Building2, Users,
   HeartHandshake, TrendingUp, Sparkles, Activity, Landmark, Coins, Layers, Send, FileCheck,
   Briefcase, BarChart2, Target, Award, Globe, ClipboardCheck
@@ -155,14 +155,14 @@ export default function DashboardEngine() {
   const { data: summaryEnvelope, isLoading } = useApiQuery<SummaryEnvelope>(
     ["dashboard", "summary"],
     "/dashboard/summary",
-    { 
+    {
       staleTime: 60 * 1000,
       gcTime: 5 * 60 * 1000,
     }
   );
 
   const rawData: any = (summaryEnvelope as any)?.data || summaryEnvelope;
-  
+
   const summary: DashboardSummary = {
     generatedAt: rawData?.generatedAt || new Date().toISOString(),
     permissions: rawData?.permissions || {},
@@ -486,9 +486,9 @@ export default function DashboardEngine() {
         key={card.id}
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ 
+        whileHover={{
           y: -4, rotateX: 3, rotateY: -3, scale: 1.018,
-          transition: { duration: 0.2, ease: "easeOut" } 
+          transition: { duration: 0.2, ease: "easeOut" }
         }}
         transition={{ duration: 0.25, delay: delayIdx * 0.03 }}
         className={`group relative rounded-xl border border-slate-200/90 bg-gradient-to-br ${card.bgTint} p-3.5 shadow-xs hover:shadow-lg ${card.borderHover} transition-all duration-200 cursor-pointer transform-gpu flex flex-col justify-between h-[105px] overflow-hidden`}

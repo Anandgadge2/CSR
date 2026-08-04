@@ -68,9 +68,9 @@ export function DistrictBudgetPieChart() {
             <Cell key={`cell-${index}`} fill={BRAND_COLORS[index % BRAND_COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip 
-          contentStyle={{ backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", color: "#0f172a" }} 
-          formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`} 
+        <Tooltip
+          contentStyle={{ backgroundColor: "#ffffff", borderColor: "#e2e8f0", borderRadius: "12px", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", color: "#0f172a" }}
+          formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`}
         />
         <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: "10px", fontWeight: 600, color: "#475569" }} />
       </PieChart>

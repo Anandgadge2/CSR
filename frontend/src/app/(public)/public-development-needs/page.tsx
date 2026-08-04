@@ -152,7 +152,7 @@ export default function PublicDevelopmentNeedsPage() {
             const name = userData.organization?.name || userData.companyName || userData.name || "";
             const cin = userData.organization?.cin || userData.company?.cin || userData.cin || "";
             const email = userData.email || "";
-            
+
             setInterestForm((prev) => ({
               ...prev,
               companyName: name,

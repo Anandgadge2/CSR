@@ -43,10 +43,10 @@ export default function FeedbackPortalPage() {
             <div className="flex gap-4">
               {["Suggestion", "Grievance", "Appreciation"].map((t) => (
                 <label key={t} className="flex items-center gap-1.5 cursor-pointer font-bold text-slate-200">
-                  <input 
-                    type="radio" 
-                    name="feedback-type" 
-                    value={t} 
+                  <input
+                    type="radio"
+                    name="feedback-type"
+                    value={t}
                     checked={type === t}
                     onChange={() => setType(t)}
                     className="accent-[#f7941d]"
@@ -61,9 +61,9 @@ export default function FeedbackPortalPage() {
             <span>Overall Portal Rating:</span>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5].map((star) => (
-                <button 
+                <button
                   key={star}
-                  type="button" 
+                  type="button"
                   onClick={() => setRating(star)}
                   className={`p-1 hover:scale-110 transition-transform ${star <= rating ? "text-[#f7941d]" : "text-slate-650"}`}
                 >
@@ -75,12 +75,12 @@ export default function FeedbackPortalPage() {
 
           <div className="flex flex-col gap-1.5">
             <span>Details / Message:</span>
-            <textarea 
+            <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Write your suggestions or report platform issues here..."
-              className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 h-32 focus:outline-none focus:border-violet-500" 
-              required 
+              className="bg-slate-900 border border-slate-800 rounded-xl py-2 px-3 text-slate-200 h-32 focus:outline-none focus:border-violet-500"
+              required
             />
           </div>
 

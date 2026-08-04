@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   Building2, Landmark, Search, Bell, Mail, ChevronLeft, ChevronRight,
   Layers, Sparkles, Award, Coins, Compass, FileText, BarChart2,
   HelpCircle, Menu, X, LogOut, ShieldCheck, BookOpen, ShieldAlert,
-  Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone, CheckCircle2, Handshake
+  Clock, Users, Globe2, ChevronDown, ArrowUp, MapPin, Phone, CheckCircle2, Handshake,
+  User, Settings, LayoutDashboard
 } from "lucide-react";
 import { Button } from "./ui/Button";
 import { Loader } from "./ui/Loader";
@@ -19,6 +20,8 @@ import { isNavItemVisible } from "@/lib/pageRegistry";
 import { resolveNavItems, normalizeRole, type NavItem } from "@/lib/navRegistry";
 import { resolveDashboardPath } from "@/lib/roleRouting";
 import { resolveNotificationUrl } from "@/lib/notificationUtils";
+import { Sidebar, resolveNavIcon } from "@/components/layout/Sidebar";
+import { NAVIGATION_GROUPS, NAVIGATION_MANIFEST, isNavItemAllowed, NavItemDef } from "@/lib/navigationManifest";
 
 interface SaaSLayoutProps {
   children: React.ReactNode;
@@ -77,7 +80,13 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user: storeUser, roles: storeRoles = [], isAdmin: storeIsAdmin, hasPermission, isLoadingPermissions } = useAuthStore();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("mahacsr_sidebar_collapsed");
+      return stored !== null ? JSON.parse(stored) : false;
+    }
+    return false;
+  });
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const isExpanded = !sidebarCollapsed || sidebarHovered;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -94,6 +103,23 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   const [tenantFeatures, setTenantFeatures] = useState<Record<string, boolean>>({});
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mahacsr_sidebar_collapsed", JSON.stringify(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -166,8 +192,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
     pathname.startsWith("/communications") ||
     pathname.startsWith("/notifications");
 
-  const isDashboard = pathname.startsWith("/ngo-dashboard") || 
-                      pathname.startsWith("/company-dashboard") || 
+  const isDashboard = pathname.startsWith("/ngo-dashboard") ||
+                      pathname.startsWith("/company-dashboard") ||
                       pathname.startsWith("/government-portal") ||
                       pathname.startsWith("/department") ||
                       pathname.startsWith("/company/") ||
@@ -187,8 +213,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       pathname.startsWith("/audit-logs") ||
                       pathname.startsWith("/profile") ||
                       pathname.startsWith("/settings") ||
-                      pathname.startsWith("/chat") || 
-                      pathname.startsWith("/analytics") || 
+                      pathname.startsWith("/chat") ||
+                      pathname.startsWith("/analytics") ||
                       pathname.startsWith("/beneficiary") ||
                       pathname.startsWith("/admin") ||
                       pathname.startsWith("/rm") ||
@@ -271,7 +297,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
       "/help"
     ];
 
-    const isPublicRoute = 
+    const isPublicRoute =
       cleanPath === "/" ||
       cleanPath === "/login" ||
       cleanPath === "/register" ||
@@ -627,9 +653,18 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                         setUserDropdownOpen(false);
                         router.push("/profile");
                       }}
-                      className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50/80 hover:text-slate-900 transition-colors flex items-center gap-2 mt-1"
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition-colors flex items-center gap-2 mt-1"
                     >
-                      <Users size={14} className="text-slate-400" /> Account
+                      <User size={14} className="text-slate-400" /> Profile
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        router.push("/settings");
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition-colors flex items-center gap-2"
+                    >
+                      <Settings size={14} className="text-slate-400" /> Settings
                     </button>
                     <button
                       onClick={() => {
@@ -648,8 +683,8 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
         </header>
       ) : (
         <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled 
-            ? "liquid-glass-nav-scrolled" 
+          scrolled
+            ? "liquid-glass-nav-scrolled"
             : "liquid-glass-nav"
         }`}>
           <div className="max-w-[1380px] w-full mx-auto px-4 sm:px-6 md:px-8 h-14 sm:h-[60px] flex items-center justify-between">
@@ -691,7 +726,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
               >
                 Home
               </Link>
-              
+
               {publicNavGroups.map((group) => {
                 const isActive = pathname === group.href || group.links.some((link) => pathname === link.href || pathname.startsWith(link.href + "/"));
                 const isOpen = openNavGroup === group.label;
@@ -718,15 +753,15 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                       }`}
                     >
                       {group.label}
-                      <ChevronDown 
-                        size={11} 
-                        aria-hidden="true" 
-                        className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
+                      <ChevronDown
+                        size={11}
+                        aria-hidden="true"
+                        className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                       />
                     </Link>
                     <AnimatePresence>
                       {isOpen && (
-                        <motion.div 
+                        <motion.div
                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
                            animate={{ opacity: 1, y: 0, scale: 1 }}
                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -758,14 +793,14 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
             {/* Right Block: Liquid Glass Buttons and Mobile Toggle */}
             <div className="flex items-center gap-3 shrink-0">
               <div className="hidden sm:flex items-center gap-2">
-                <Link 
-                  href="/login" 
+                <Link
+                  href="/login"
                   className="liquid-glass-pill-btn inline-flex h-8 items-center justify-center px-4 text-xs font-bold text-slate-700 hover:text-slate-900 hover:no-underline"
                 >
                   Login
                 </Link>
-                <Link 
-                  href="/register" 
+                <Link
+                  href="/register"
                   className="inline-flex h-8 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 px-4.5 text-xs font-bold text-white hover:no-underline shadow-md shadow-blue-500/25 border border-white/20 transition-all hover:scale-105"
                 >
                   Register
@@ -787,154 +822,130 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
 
       {/* Main Workspace */}
       <div className={isDashboard ? "flex flex-1 pt-[60px]" : (pathname === "/" || pathname === "/login" || pathname === "/register") ? "flex flex-1 pt-0" : "flex flex-1 pt-20 sm:pt-24"}>
-        
+
         {/* Desktop Sidebar */}
         {isDashboard && (
-          <aside
-            ref={sidebarRef}
-            onMouseEnter={() => setSidebarHovered(true)}
-            onMouseLeave={() => setSidebarHovered(false)}
-            className={`hidden lg:flex flex-col border-r border-slate-200/50 bg-slate-50/75 backdrop-blur-xl shrink-0 transition-all duration-300 fixed left-0 top-[60px] h-[calc(100vh-60px)] z-40 justify-between py-4 shadow-sm overflow-x-hidden ${
-              isExpanded ? "w-60" : "w-[68px]"
-            }`}
-          >
-            {/* Navigation Links */}
-            <div ref={sidebarScrollRef} className="flex-grow min-h-0 overflow-y-auto flex flex-col gap-1 px-3 pr-2 overscroll-y-contain" data-lenis-prevent>
-              {isLoadingPermissions ? (
-                Array.from({ length: 6 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center rounded-xl py-2.5 px-3 justify-start gap-3 animate-pulse bg-slate-50"
-                  >
-                    <div className="h-4 w-4 bg-slate-200 rounded-full" />
-                    {isExpanded && <div className="h-3 bg-slate-200 rounded w-28" />}
-                  </div>
-                ))
-              ) : (
-                dashboardNavigationItems.map((item) => {
-                  const isExact = pathname === item.href ||
-                                  (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
-                                  (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
-                                  (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
-                  const hasExactMatch = dashboardNavigationItems.some((it) => 
-                    pathname === it.href ||
-                    (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
-                    (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
-                    (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
-                  );
-                  const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={`flex items-center rounded-xl text-xs font-semibold transition-all group relative ${
-                        isExpanded ? "gap-3 px-3.5 py-2.5 justify-start" : "justify-center py-2.5 px-2"
-                      } ${
-                        isActive
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 font-bold"
-                          : "text-slate-700 hover:text-blue-600 hover:bg-slate-100/90"
-                      }`}
-                    >
-                      <item.icon size={18} className={isActive ? "text-white shrink-0" : "text-slate-500 group-hover:text-blue-600 shrink-0"} />
-                      
-                      {isExpanded && (
-                        <span className="whitespace-nowrap transition-opacity duration-200 truncate">
-                          {item.label}
-                        </span>
-                      )}
-
-                      {!isExpanded && (
-                        <div className="absolute left-[80px] bg-slate-900 text-white py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap text-xs z-50 font-medium shadow-lg">
-                          {item.label}
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Sidebar Toggle */}
-            <div className="px-3 pt-2 border-t border-slate-100">
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="w-full flex items-center justify-center gap-2 p-2 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-600 hover:text-slate-900 transition-colors text-xs font-semibold"
-              >
-                {sidebarCollapsed ? (
-                  <ChevronRight size={18} />
-                ) : (
-                  <>
-                    <ChevronLeft size={18} />
-                    <span>Collapse Menu</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </aside>
+          <Sidebar
+            collapsed={sidebarCollapsed}
+            onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+            tenantFeatures={tenantFeatures}
+          />
         )}
 
         {/* Mobile Sidebar */}
         <AnimatePresence>
           {mobileMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex bg-black/60 lg:hidden"
             >
-              <motion.div 
+              <motion.div
                 initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="w-72 bg-white p-6 flex flex-col justify-between h-full border-r border-[#e0e4ea] shadow-xl"
+                className="w-72 bg-white p-5 flex flex-col justify-between h-full border-r border-slate-200 shadow-2xl"
               >
                 <div className="flex flex-col gap-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-[#e0e4ea]">
-                    <span className="font-heading font-bold text-[#14274e] text-sm">Navigation</span>
-                    <button onClick={() => setMobileMenuOpen(false)} className="text-[#6b7280] hover:text-[#14274e]"><X size={18} /></button>
+                  <div className="flex justify-between items-center pb-3 border-b border-slate-200">
+                    <span className="font-heading font-extrabold text-slate-900 text-sm">Navigation Menu</span>
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-slate-500 hover:text-slate-900 p-1.5 rounded-lg hover:bg-slate-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                      aria-label="Close menu"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-180px)]" data-lenis-prevent>
+
+                  <div className="flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-160px)]" data-lenis-prevent>
                     {isDashboard ? (
                       isLoadingPermissions ? (
                         Array.from({ length: 6 }).map((_, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center rounded-lg py-2.5 px-3 justify-start gap-3 animate-pulse"
-                          >
+                          <div key={idx} className="flex items-center rounded-lg py-3 px-3 justify-start gap-3 animate-pulse bg-slate-50">
                             <div className="h-4 w-4 bg-slate-200 rounded-full" />
-                            <div className="h-3 bg-slate-200 rounded w-24" />
+                            <div className="h-3 bg-slate-200 rounded w-28" />
                           </div>
                         ))
                       ) : (
-                        dashboardNavigationItems.map((item) => {
-                          const isExact = pathname === item.href ||
-                                          (item.href.endsWith("/overview") && pathname === item.href.replace("/overview", "")) ||
-                                          (item.href.endsWith("/statewide") && pathname === item.href.replace("/statewide", "")) ||
-                                          (item.href.endsWith("/dashboard") && pathname === item.href.replace("/dashboard", ""));
-                          const hasExactMatch = dashboardNavigationItems.some((it) => 
-                            pathname === it.href ||
-                            (it.href.endsWith("/overview") && pathname === it.href.replace("/overview", "")) ||
-                            (it.href.endsWith("/statewide") && pathname === it.href.replace("/statewide", "")) ||
-                            (it.href.endsWith("/dashboard") && pathname === it.href.replace("/dashboard", ""))
-                          );
-                          const isActive = hasExactMatch ? isExact : (item.href !== "/" && pathname.startsWith(item.href));
-                          return (
-                            <Link
-                              key={item.label}
-                              href={item.href}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                                isActive
-                                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm shadow-blue-500/10"
-                                  : "text-[#4b5563] hover:text-[#14274e] hover:bg-[#f4f5f7]"
-                              }`}
-                            >
-                              <item.icon size={16} className={isActive ? "text-white" : "text-[#97a0ac]"} />
-                              <span>{item.label}</span>
-                            </Link>
-                          );
-                        })
+                        <div className="space-y-1.5">
+                          <Link
+                            href="/dashboard"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all min-h-[44px] ${
+                              pathname === "/dashboard"
+                                ? "bg-blue-600 text-white font-extrabold shadow-2xs"
+                                : "text-slate-700 hover:bg-slate-100"
+                            }`}
+                          >
+                            <LayoutDashboard size={18} className={pathname === "/dashboard" ? "text-white" : "text-slate-500"} />
+                            <span>Dashboard</span>
+                          </Link>
+
+                          {NAVIGATION_GROUPS.map((group) => {
+                            const children = group.childIds
+                              .map((id) => NAVIGATION_MANIFEST.find((item) => item.id === id))
+                              .filter((item): item is NavItemDef => {
+                                if (!item || !item.showInSidebar) return false;
+                                return isNavItemAllowed(item, hasPermission, storeIsAdmin);
+                              });
+
+                            if (children.length === 0) return null;
+
+                            const isGroupExpanded = mobileOpenNavGroup === group.id;
+                            const GroupIcon = resolveNavIcon(group.iconName);
+
+                            return (
+                              <div key={group.id} className="space-y-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setMobileOpenNavGroup(isGroupExpanded ? null : group.id)}
+                                  className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold text-slate-800 hover:bg-slate-100 min-h-[44px]"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <GroupIcon size={18} className="text-slate-500" />
+                                    <span>{group.label}</span>
+                                  </div>
+                                  <ChevronDown size={16} className={`text-slate-400 transition-transform ${isGroupExpanded ? "rotate-180" : ""}`} />
+                                </button>
+
+                                <AnimatePresence initial={false}>
+                                  {isGroupExpanded && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="overflow-hidden space-y-1 ml-4 pl-3 border-l border-slate-200"
+                                    >
+                                      {children.map((child) => {
+                                        const ChildIcon = resolveNavIcon(child.iconName);
+                                        const isChildActive = pathname === child.route || pathname.startsWith(child.route + "/");
+
+                                        return (
+                                          <Link
+                                            key={child.id}
+                                            href={child.route}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold min-h-[44px] ${
+                                              isChildActive
+                                                ? "bg-blue-600 text-white font-bold"
+                                                : "text-slate-600 hover:bg-slate-100"
+                                            }`}
+                                          >
+                                            <ChildIcon size={16} className={isChildActive ? "text-white" : "text-slate-400"} />
+                                            <span>{child.label}</span>
+                                          </Link>
+                                        );
+                                      })}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
+                        </div>
                       )
                     ) : (
                       <>
@@ -987,15 +998,15 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
                         {publicNavGroups.map((group) => {
                           const isGroupExpanded = mobileOpenNavGroup === group.label;
                           const isGroupActive = pathname === group.href || group.links.some((link) => pathname === link.href || pathname.startsWith(link.href + "/"));
-                          
+
                           return (
                             <div key={group.label} className="flex flex-col">
                               {/* Group Header Button */}
                               <button
                                 onClick={() => setMobileOpenNavGroup(isGroupExpanded ? null : group.label)}
                                 className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-all ${
-                                  isGroupActive 
-                                    ? "bg-blue-50/50 text-blue-700" 
+                                  isGroupActive
+                                    ? "bg-blue-50/50 text-blue-700"
                                     : "text-[#4b5563] hover:text-[#14274e] hover:bg-[#f4f5f7]"
                                 }`}
                               >

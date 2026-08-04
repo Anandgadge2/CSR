@@ -7,9 +7,9 @@ import { StatCard } from "@/components/ui/StatCard";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import { Loader } from "@/components/ui/Loader";
 import { Pagination } from "@/components/ui/Pagination";
-import { 
+import {
   Coins, Search, ShieldCheck, CheckCircle2, Landmark, Check, FileText
-} from "lucide-react";  
+} from "lucide-react";
 
 interface FundReleaseItem {
   id: string;

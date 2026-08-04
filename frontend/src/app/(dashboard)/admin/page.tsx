@@ -11,18 +11,18 @@ export default function AdminRedirect() {
   }, [router]);
 
   return (
-    <div style={{ 
-      display: "flex", 
-      alignItems: "center", 
-      justifyContent: "center", 
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       minHeight: "100vh",
       fontFamily: "system-ui, sans-serif"
     }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ 
-          width: 48, 
-          height: 48, 
-          border: "4px solid #e5e7eb", 
+        <div style={{
+          width: 48,
+          height: 48,
+          border: "4px solid #e5e7eb",
           borderTopColor: "#14274e",
           borderRadius: "50%",
           animation: "spin 1s linear infinite",

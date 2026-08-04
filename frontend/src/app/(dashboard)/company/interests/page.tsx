@@ -53,7 +53,7 @@ export default function CompanyInterestsPage() {
   };
 
   const filteredInterests = interests.filter(item => {
-    const matchesSearch = 
+    const matchesSearch =
       (item.governmentPitch?.csrRequirement || item.companyName || "").toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });

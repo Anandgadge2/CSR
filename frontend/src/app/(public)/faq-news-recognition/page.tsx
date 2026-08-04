@@ -34,7 +34,7 @@ export default function FaqNewsRecognitionPage() {
   // Filter FAQs based on search query
   const filteredFaqs = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    
+
     // If there is no search query, return all FAQs in the active tab
     if (!query) {
       return (faqsData[activeTab] || []).map((faq, index) => ({
@@ -46,7 +46,7 @@ export default function FaqNewsRecognitionPage() {
 
     // If there is a search query, search across ALL categories or prioritize the active one
     const results: { q: string; a: string; originalIndex: number; category: FAQCategory }[] = [];
-    
+
     // We search across all categories
     (Object.keys(faqsData) as FAQCategory[]).forEach((cat) => {
       const list = faqsData[cat] || [];
@@ -72,7 +72,7 @@ export default function FaqNewsRecognitionPage() {
     if (!searchQuery.trim()) {
       return { [activeTab]: filteredFaqs };
     }
-    
+
     // Group by category
     const groups: Record<string, typeof filteredFaqs> = {};
     filteredFaqs.forEach((item) => {

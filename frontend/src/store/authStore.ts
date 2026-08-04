@@ -20,6 +20,11 @@ export interface UserProfile {
   id: string;
   email: string;
   role: string;
+  name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  designation?: string | null;
+  mobile?: string | null;
   roleNumericId?: number | null;
   roleSlug?: string | null;
   dynamicRole?: string | null;
@@ -28,8 +33,10 @@ export interface UserProfile {
   organizationId?: string | null;
   assignedDistrict?: string | null;
   beneficiaryProfileId?: string | null;
+  tokenVersion?: number | null;
   ngo?: any;
   company?: any;
+  organization?: any;
 }
 
 export type FetchStatus = "IDLE" | "LOADING" | "SUCCESS" | "ERROR";

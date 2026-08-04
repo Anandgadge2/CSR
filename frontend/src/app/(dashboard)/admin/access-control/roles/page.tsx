@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Plus } from "lucide-react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
+import AccessControlTabs from "@/components/access-control/AccessControlTabs";
 import { Button } from "@/components/ui/Button";
 import { RoleListPanel } from "@/components/access-control/RoleListPanel";
 import { RoleDetailPanel } from "@/components/access-control/RoleDetailPanel";
@@ -71,6 +72,8 @@ export default function RolesPage() {
           ) : undefined
         }
       />
+
+      <AccessControlTabs />
 
       {/* Master-Detail Layout */}
       <div className="flex flex-col lg:flex-row gap-4 min-h-[calc(100vh-140px)]">

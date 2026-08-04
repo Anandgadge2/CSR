@@ -18,24 +18,24 @@ interface ModuleCardProps {
   className?: string;
 }
 
-export function ModuleCard({ 
-  title, 
-  description, 
-  href, 
-  icon: Icon, 
-  status, 
+export function ModuleCard({
+  title,
+  description,
+  href,
+  icon: Icon,
+  status,
   statusVariant = "info",
   index = 0,
-  className 
+  className
 }: ModuleCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ 
-        delay: index * 0.05, 
-        duration: 0.4, 
-        ease: [0.16, 1, 0.3, 1] 
+      transition={{
+        delay: index * 0.05,
+        duration: 0.4,
+        ease: [0.16, 1, 0.3, 1]
       }}
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
     >
@@ -82,10 +82,10 @@ interface ModuleCardGridProps {
   columns?: 2 | 3;
 }
 
-export function ModuleCardGrid({ 
-  children, 
+export function ModuleCardGrid({
+  children,
   className,
-  columns = 3 
+  columns = 3
 }: ModuleCardGridProps) {
   const gridCols = {
     2: "grid-cols-1 sm:grid-cols-2",

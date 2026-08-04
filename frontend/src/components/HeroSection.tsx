@@ -301,7 +301,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <div className="relative z-30 mx-auto max-w-[1370px] w-full px-4 pt-24 pb-10 sm:pt-28 sm:pb-16 md:pt-32 sm:px-6 md:px-8 flex flex-col justify-center items-center min-h-[560px] sm:min-h-[620px] md:min-h-[700px]">
-        
+
         {/* Centered Title & Subtitle */}
         <div className="flex flex-col items-center text-center pointer-events-none max-w-4xl px-2 sm:px-0">
           {/* Accent bar */}
@@ -411,8 +411,8 @@ export default function HeroSection() {
           className="liquid-glass-container p-2.5 sm:p-3.5"
         > */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4">
-            <motion.div 
-              variants={statItem} 
+            <motion.div
+              variants={statItem}
               className="liquid-glass-card flex items-center justify-between sm:justify-start gap-3.5 sm:gap-4 py-3.5 sm:py-4 px-4 sm:px-6"
             >
               <div className="flex items-center gap-3.5 sm:gap-4">
@@ -431,8 +431,8 @@ export default function HeroSection() {
               <div className="h-2 w-2 rounded-full bg-blue-400/60 shadow-[0_0_8px_#60a5fa] animate-pulse sm:hidden" />
             </motion.div>
 
-            <motion.div 
-              variants={statItem} 
+            <motion.div
+              variants={statItem}
               className="liquid-glass-card flex items-center justify-between sm:justify-start gap-3.5 sm:gap-4 py-3.5 sm:py-4 px-4 sm:px-6"
             >
               <div className="flex items-center gap-3.5 sm:gap-4">
@@ -451,8 +451,8 @@ export default function HeroSection() {
               <div className="h-2 w-2 rounded-full bg-amber-400/60 shadow-[0_0_8px_#fbbf24] animate-pulse sm:hidden" />
             </motion.div>
 
-            <motion.div 
-              variants={statItem} 
+            <motion.div
+              variants={statItem}
               className="liquid-glass-card flex items-center justify-between sm:justify-start gap-3.5 sm:gap-4 py-3.5 sm:py-4 px-4 sm:px-6"
             >
               <div className="flex items-center gap-3.5 sm:gap-4">

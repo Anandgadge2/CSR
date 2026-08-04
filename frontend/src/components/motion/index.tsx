@@ -16,11 +16,11 @@ interface AnimatedPageProps extends HTMLMotionProps<"div"> {
   variant?: "fade" | "up" | "slide";
 }
 
-export function AnimatedPage({ 
-  children, 
-  className, 
+export function AnimatedPage({
+  children,
+  className,
   variant = "up",
-  ...props 
+  ...props
 }: AnimatedPageProps) {
   const variants = {
     fade: fadeIn,
@@ -53,12 +53,12 @@ interface AnimatedCardProps extends HTMLMotionProps<"div"> {
   index?: number;
 }
 
-export function AnimatedCard({ 
-  children, 
-  className, 
+export function AnimatedCard({
+  children,
+  className,
   hover = true,
   index = 0,
-  ...props 
+  ...props
 }: AnimatedCardProps) {
   return (
     <motion.div
@@ -94,12 +94,12 @@ interface FadeInProps {
   className?: string;
 }
 
-export function FadeIn({ 
-  children, 
-  delay = 0, 
+export function FadeIn({
+  children,
+  delay = 0,
   duration = 0.3,
   direction = "up",
-  className 
+  className
 }: FadeInProps) {
   const directions = {
     up: { y: 20 },
@@ -136,11 +136,11 @@ interface StaggerContainerProps {
   className?: string;
 }
 
-export function StaggerContainer({ 
-  children, 
+export function StaggerContainer({
+  children,
   staggerDelay = 0.05,
   delayChildren = 0.1,
-  className 
+  className
 }: StaggerContainerProps) {
   return (
     <motion.div
@@ -199,10 +199,10 @@ interface AnimatedListProps {
   staggerDelay?: number;
 }
 
-export function AnimatedList({ 
-  children, 
+export function AnimatedList({
+  children,
   className,
-  staggerDelay = 0.05 
+  staggerDelay = 0.05
 }: AnimatedListProps) {
   return (
     <StaggerContainer staggerDelay={staggerDelay} className={className}>
@@ -211,11 +211,11 @@ export function AnimatedList({
   );
 }
 
-export function AnimatedListItem({ 
-  children, 
-  className 
-}: { 
-  children: ReactNode; 
+export function AnimatedListItem({
+  children,
+  className
+}: {
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -235,10 +235,10 @@ interface AnimatedCounterProps {
   className?: string;
 }
 
-export function AnimatedCounter({ 
-  value, 
+export function AnimatedCounter({
+  value,
   duration = 0.5,
-  className 
+  className
 }: AnimatedCounterProps) {
   const [count, setCount] = useState(0);
 
@@ -249,7 +249,7 @@ export function AnimatedCounter({
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / (duration * 1000), 1);
-      
+
       const easeOut = 1 - Math.pow(1 - progress, 3);
       setCount(Math.floor(easeOut * value));
 
@@ -284,9 +284,9 @@ interface AnimatedPresenceProps {
   mode?: "sync" | "wait" | "popLayout";
 }
 
-export function AnimatedPresenceWrapper({ 
-  children, 
-  mode = "wait" 
+export function AnimatedPresenceWrapper({
+  children,
+  mode = "wait"
 }: AnimatedPresenceProps) {
   return (
     <AnimatePresence mode={mode}>

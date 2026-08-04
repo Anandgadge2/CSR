@@ -100,7 +100,7 @@ export default function ImpactSphere() {
     // 3. Create Connection Network Lines
     const linePositions: number[] = [];
     const lineColors: number[] = [];
-    
+
     // Find adjacent nodes and generate lines
     for (let i = 0; i < count; i++) {
       for (let j = i + 1; j < count; j++) {
@@ -108,35 +108,35 @@ export default function ImpactSphere() {
         const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
         const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        
+
         // Connect if close to simulate collaborative nodes network
         if (dist < 4.2) {
           linePositions.push(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
           linePositions.push(positions[j * 3], positions[j * 3 + 1], positions[j * 3 + 2]);
-          
+
           lineColors.push(0.11, 0.22, 0.54); // Subtle Navy R, G, B
           lineColors.push(0.11, 0.22, 0.54);
         }
       }
     }
-    
+
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(linePositions, 3));
     lineGeometry.setAttribute("color", new THREE.Float32BufferAttribute(lineColors, 3));
-    
+
     const lineMaterial = new THREE.LineBasicMaterial({
       color: 0x1e3a8a,
       transparent: true,
       opacity: 0.12, // Subtle light-gray/blue connections mesh
       blending: THREE.NormalBlending
     });
-    
+
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lines);
 
     // Subtle Core Globe Structure
     const coreGeo = new THREE.IcosahedronGeometry(7, 2);
-    
+
     // Solid colored inner core
     const coreSolidMat = new THREE.MeshBasicMaterial({
       color: 0x3b82f6, // Vibrant blue

@@ -28,14 +28,14 @@ const variantIcons: Record<AlertVariant, typeof AlertCircle> = {
   error: XCircle,
 };
 
-export function Alert({ 
-  children, 
-  variant = "info", 
+export function Alert({
+  children,
+  variant = "info",
   className,
-  icon = true 
+  icon = true
 }: AlertProps) {
   const Icon = variantIcons[variant];
-  
+
   return (
     <div
       className={cn(

@@ -12,7 +12,7 @@ export default function ProjectVerificationQueue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedReq, setSelectedReq] = useState<any | null>(null);
-  
+
   // Verification form states
   const [remarks, setRemarks] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
@@ -109,8 +109,8 @@ export default function ProjectVerificationQueue() {
               ) : (
                 <div className="divide-y divide-slate-100">
                   {queue.map((req) => (
-                    <div 
-                      key={req.id} 
+                    <div
+                      key={req.id}
                       onClick={() => {
                         setSelectedReq(req);
                         setRemarks(req.verificationRemarks || "");

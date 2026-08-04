@@ -140,8 +140,8 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
           <p className="font-semibold text-sm text-slate-900 leading-tight">{toast.title}</p>
           {toast.message && <p className="mt-1 text-xs text-slate-500 leading-relaxed">{toast.message}</p>}
         </div>
-        <button 
-          onClick={() => onClose(toast.id)} 
+        <button
+          onClick={() => onClose(toast.id)}
           className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100/50"
         >
           <X size={14} />

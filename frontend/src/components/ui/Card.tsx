@@ -23,26 +23,26 @@ const variantStyles: Record<CardVariant, string> = {
   outlined: "bg-white/50 border border-slate-200/80",
 };
 
-export function Card({ 
-  children, 
-  className, 
+export function Card({
+  children,
+  className,
   hover = true,
   index = 0,
   variant = "glass",
   tilt = true,
-  ...props 
+  ...props
 }: CardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  
+
   // Motion values for normalized coordinates (-0.5 to 0.5)
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  
+
   // Rotate card on hover
   const rotateX = useTransform(mouseY, [-0.5, 0.5], [10, -10]);
   const rotateY = useTransform(mouseX, [-0.5, 0.5], [-10, 10]);
-  
+
   // Translate reflection / glare highlight position
   const glareX = useTransform(mouseX, [-0.5, 0.5], ["0%", "100%"]);
   const glareY = useTransform(mouseY, [-0.5, 0.5], ["0%", "100%"]);
@@ -52,11 +52,11 @@ export function Card({
     const rect = cardRef.current.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
-    
+
     // Normalize coordinate value relative to card center
     const relativeX = (e.clientX - rect.left) / width - 0.5;
     const relativeY = (e.clientY - rect.top) / height - 0.5;
-    
+
     mouseX.set(relativeX);
     mouseY.set(relativeY);
   };
@@ -107,7 +107,7 @@ export function Card({
           }}
         />
       )}
-      
+
       {/* 3D Depth Content Wrapper */}
       <div style={tilt ? { transform: "translateZ(20px)" } : undefined}>
         {children}
@@ -116,11 +116,11 @@ export function Card({
   );
 }
 
-export function CardHeader({ 
-  children, 
-  className 
-}: { 
-  children: ReactNode; 
+export function CardHeader({
+  children,
+  className
+}: {
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -130,11 +130,11 @@ export function CardHeader({
   );
 }
 
-export function CardTitle({ 
-  children, 
-  className 
-}: { 
-  children: ReactNode; 
+export function CardTitle({
+  children,
+  className
+}: {
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -144,11 +144,11 @@ export function CardTitle({
   );
 }
 
-export function CardContent({ 
-  children, 
-  className 
-}: { 
-  children: ReactNode; 
+export function CardContent({
+  children,
+  className
+}: {
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -158,11 +158,11 @@ export function CardContent({
   );
 }
 
-export function CardFooter({ 
-  children, 
-  className 
-}: { 
-  children: ReactNode; 
+export function CardFooter({
+  children,
+  className
+}: {
+  children: ReactNode;
   className?: string;
 }) {
   return (

@@ -199,7 +199,7 @@ export default function WorkflowPage() {
                   </div>
                 ))}
               </div>
-             
+
             </GovCardBody>
           </GovCard>
         </div>
@@ -375,7 +375,7 @@ export default function WorkflowPage() {
                     </table>
                   </div>
                 </div>
-                
+
               </div>
 
               <h3 className="gov-section-title" style={{ marginTop: 18 }}>A.2 13-Point Project Feasibility Checklist</h3>

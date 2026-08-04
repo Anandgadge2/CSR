@@ -225,8 +225,8 @@ export default function RegisterPage() {
           });
           setFieldErrors(errors);
         }
-        const msg = typeof data.error === "string" 
-          ? data.error 
+        const msg = typeof data.error === "string"
+          ? data.error
           : data.error?.message || data.message || "Failed to register";
         throw new Error(msg);
       }
@@ -282,7 +282,7 @@ export default function RegisterPage() {
       <div className="absolute bottom-0 left-0 w-[40rem] h-[40rem] bg-gradient-to-tr from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
       <div className="w-full max-w-3xl bg-white/95 backdrop-blur-3xl p-7 sm:p-9 rounded-[2.25rem] border border-white/60 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6)] relative z-10 flex flex-col gap-6">
-        
+
         {/* Header Branding */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-5">
           <div className="flex items-center gap-3">

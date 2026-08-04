@@ -9,7 +9,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import { Loader } from "@/components/ui/Loader";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
-import { 
+import {
   Compass, Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, Clock, FileText
 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
@@ -30,7 +30,7 @@ export default function PitchesPage() {
   const roles = useAuthStore((s) => s.roles);
   const storeIsAdmin = useAuthStore((s) => s.isAdmin);
   const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
-  
+
   const isRM = activeRoles.some(r => {
     const s = String(r).toUpperCase();
     return s.includes("RELATIONSHIP_MANAGER") || s.includes("RELATIONSHIP MANAGER") || s === "6";
@@ -116,31 +116,31 @@ export default function PitchesPage() {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard 
-            label="Total Submitted Pitches" 
-            value={pitchesList.length} 
-            icon={Compass} 
-            index={0} 
-            colorTheme="blue" 
-            badge="Gov Proposals" 
+          <StatCard
+            label="Total Submitted Pitches"
+            value={pitchesList.length}
+            icon={Compass}
+            index={0}
+            colorTheme="blue"
+            badge="Gov Proposals"
             sublabel="Statewide Department Pitches"
           />
-          <StatCard 
-            label="Total Outlay Required" 
-            value={`₹${(pitchesList.reduce((acc, curr) => acc + curr.outlayLakhs, 0) / 100).toFixed(2)} Cr`} 
-            icon={Coins} 
-            index={1} 
-            colorTheme="amber" 
-            badge="CSR Budget Need" 
+          <StatCard
+            label="Total Outlay Required"
+            value={`₹${(pitchesList.reduce((acc, curr) => acc + curr.outlayLakhs, 0) / 100).toFixed(2)} Cr`}
+            icon={Coins}
+            index={1}
+            colorTheme="amber"
+            badge="CSR Budget Need"
             sublabel="Estimated CSR Outlay"
           />
-          <StatCard 
-            label="CSR Committed / Approved" 
-            value={pitchesList.filter(p => p.status === "APPROVED" || p.status === "CSR_COMMITTED" || p.status === "VERIFIED").length} 
-            icon={CheckCircle2} 
-            index={2} 
-            colorTheme="emerald" 
-            badge="Ready for MOU" 
+          <StatCard
+            label="CSR Committed / Approved"
+            value={pitchesList.filter(p => p.status === "APPROVED" || p.status === "CSR_COMMITTED" || p.status === "VERIFIED").length}
+            icon={CheckCircle2}
+            index={2}
+            colorTheme="emerald"
+            badge="Ready for MOU"
             sublabel="Empaneled with Corporates"
           />
         </div>

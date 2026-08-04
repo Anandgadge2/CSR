@@ -11,9 +11,9 @@ import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/
 import GovAlert from "@/components/gov/GovAlert";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
-import { 
-  Building2, Handshake, CheckCircle, Loader2, Copy, ArrowLeft, ChevronDown, X, 
-  Search, Mail, Coins, ShieldCheck, CheckCircle2, Sparkles, Phone, User, Edit3, Paperclip, FileText, Trash2 
+import {
+  Building2, Handshake, CheckCircle, Loader2, Copy, ArrowLeft, ChevronDown, X,
+  Search, Mail, Coins, ShieldCheck, CheckCircle2, Sparkles, Phone, User, Edit3, Paperclip, FileText, Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { locationData } from "@/lib/locationData";
@@ -60,7 +60,7 @@ function MultiSelectField({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = React.useRef<HTMLDivElement>(null);
-  
+
   const selectedSet = new Set(values || []);
 
   React.useEffect(() => {
@@ -107,7 +107,7 @@ function MultiSelectField({
           </span>
         )}
       </label>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
         className={`min-h-[46px] border bg-slate-50/60 hover:bg-white focus-within:bg-white px-3.5 py-2 flex items-center justify-between gap-2 cursor-pointer outline-none rounded-xl shadow-xs transition-all duration-200 ${
           isOpen ? "border-blue-700 ring-4 ring-blue-800/10 bg-white shadow-md" : "border-slate-200/90"
@@ -118,8 +118,8 @@ function MultiSelectField({
             values.map(val => (
               <span key={val} className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-950 border border-blue-200/70 text-xs font-bold px-2.5 py-1 rounded-lg shadow-2xs">
                 {val}
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={(e) => removeOption(val, e)}
                   className="hover:bg-blue-200/80 rounded p-0.5 transition-colors text-blue-900 focus:outline-none"
                 >
@@ -171,7 +171,7 @@ function MultiSelectField({
                       <input
                         type="checkbox"
                         checked={isChecked}
-                        onChange={() => {}} 
+                        onChange={() => {}}
                         className="rounded border-slate-300 text-blue-900 focus:ring-blue-800 accent-blue-900"
                       />
                       <span>{option}</span>
@@ -449,7 +449,7 @@ export default function CreateCorporateEnquiryPage() {
     if (!form.mobile.trim() || !/^[6-9]\d{9}$/.test(form.mobile)) errs.mobile = "Valid 10-digit mobile number is required";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Valid email is required";
     if (!form.proposedCSRWork.trim()) errs.proposedCSRWork = "Proposed CSR work description is required";
-    
+
     const words = form.proposedCSRWork.trim().split(/\s+/).filter(Boolean).length;
     if (words > 200) errs.proposedCSRWork = "Description must not exceed 200 words";
 
@@ -462,7 +462,7 @@ export default function CreateCorporateEnquiryPage() {
     if (!validateForm()) return;
     setLoading(true);
 
-    const finalSector = form.sector === "OTHER" 
+    const finalSector = form.sector === "OTHER"
       ? (form.customSector.trim() ? `Other: ${form.customSector.trim()}` : "OTHER")
       : form.sector;
 
@@ -884,9 +884,9 @@ export default function CreateCorporateEnquiryPage() {
                           <span className="truncate text-slate-900 font-bold">{doc.name}</span>
                           <span className="text-[10px] text-slate-400 font-mono">({(doc.size / 1024).toFixed(1)} KB)</span>
                         </div>
-                        <button 
-                          type="button" 
-                          onClick={() => removeSupportingDocument(i)} 
+                        <button
+                          type="button"
+                          onClick={() => removeSupportingDocument(i)}
                           className="text-rose-600 hover:text-rose-800 font-bold text-xs shrink-0 ml-2 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors"
                         >
                           Remove

@@ -11,8 +11,8 @@ import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { Loader } from "@/components/ui/Loader";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { 
-  Building2, Coins, CheckCircle2, FileText, ArrowLeft, MapPin, 
+import {
+  Building2, Coins, CheckCircle2, FileText, ArrowLeft, MapPin,
   Calendar, UserCheck, ShieldCheck, FileCheck, ExternalLink, AlertCircle, Layers
 } from "lucide-react";
 

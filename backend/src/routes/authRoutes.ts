@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, verifyOtp, resendOtp, refreshToken, logout } from "../controllers/authController";
+import { register, login, verifyOtp, resendOtp, refreshToken, logout, me } from "../controllers/authController";
 import { getInvitation, acceptInvitation } from "../controllers/invitationController";
 import { getCurrentUserPermissions, getModulePermissions, checkUserPermission } from "../controllers/permissionController";
 import { validateRequest } from "../middlewares/validationMiddleware";
@@ -58,6 +58,9 @@ router.post("/resend-otp", otpRateLimit, validateRequest(resendOtpSchema), async
 router.post("/login", authRateLimit, validateRequest(loginSchema), asyncHandler(login));
 router.post("/refresh", asyncHandler(refreshToken));
 router.post("/logout", asyncHandler(logout));
+
+// Authenticated user profile and permissions route
+router.get("/me", authenticateToken, asyncHandler(me));
 
 // Officer activation via secure single-use invitation token
 router.get("/invitations/:token", strictRateLimiter, asyncHandler(getInvitation));

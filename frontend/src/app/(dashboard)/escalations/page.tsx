@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { 
+import {
   ShieldAlert, Clock, AlertTriangle, CheckCircle2, Filter, Search, ArrowUpRight, UserCheck
 } from "lucide-react";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
@@ -69,7 +69,7 @@ export default function EscalationsPage() {
   };
 
   const filtered = items.filter(item => {
-    const matchesSearch = item.code.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch = item.code.toLowerCase().includes(search.toLowerCase()) ||
                           item.project.toLowerCase().includes(search.toLowerCase()) ||
                           item.category.toLowerCase().includes(search.toLowerCase());
     const matchesSev = filterSeverity === "ALL" || item.severity === filterSeverity;
@@ -86,31 +86,31 @@ export default function EscalationsPage() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard 
-          label="Critical SLA Breaches" 
-          value={items.filter(i => i.severity === "CRITICAL" && i.status !== "RESOLVED").length} 
-          icon={AlertTriangle} 
-          index={0} 
-          colorTheme="rose" 
-          badge="Critical Queue" 
+        <StatCard
+          label="Critical SLA Breaches"
+          value={items.filter(i => i.severity === "CRITICAL" && i.status !== "RESOLVED").length}
+          icon={AlertTriangle}
+          index={0}
+          colorTheme="rose"
+          badge="Critical Queue"
           sublabel="Action within 24h"
         />
-        <StatCard 
-          label="Open Escalations" 
-          value={items.filter(i => i.status === "OPEN").length} 
-          icon={Clock} 
-          index={1} 
-          colorTheme="amber" 
-          badge="Under Review" 
+        <StatCard
+          label="Open Escalations"
+          value={items.filter(i => i.status === "OPEN").length}
+          icon={Clock}
+          index={1}
+          colorTheme="amber"
+          badge="Under Review"
           sublabel="Active SLA monitoring"
         />
-        <StatCard 
-          label="Resolved Cases" 
-          value={items.filter(i => i.status === "RESOLVED").length} 
-          icon={CheckCircle2} 
-          index={2} 
-          colorTheme="emerald" 
-          badge="Clear Queue" 
+        <StatCard
+          label="Resolved Cases"
+          value={items.filter(i => i.status === "RESOLVED").length}
+          icon={CheckCircle2}
+          index={2}
+          colorTheme="emerald"
+          badge="Clear Queue"
           sublabel="Resolved SLA cases"
         />
       </div>

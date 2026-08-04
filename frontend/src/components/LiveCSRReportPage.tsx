@@ -228,7 +228,7 @@ export default function LiveCSRReportPage({ title, description, endpoint }: Live
               <div className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl p-8 text-center text-sm font-medium text-slate-500 shadow-glass">No chart data for the selected filters.</div>
             ) : chartGroups.map(([name, points]) => {
               const isStatusChart = name.toLowerCase().includes("status");
-              
+
               if (isStatusChart) {
                 // Render a beautiful 3D donut chart
                 return (

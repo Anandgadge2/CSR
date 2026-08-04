@@ -12,6 +12,8 @@ import { useToastActions } from "@/components/ui/Toast";
 import { Users, UserCheck, RefreshCw, AlertTriangle, ShieldCheck, History } from "lucide-react";
 import "@/styles/gov-theme.css";
 
+import AssignmentTabs from "@/components/assignments/AssignmentTabs";
+
 interface ProjectItem {
   id: string;
   projectCode: string;
@@ -48,16 +50,16 @@ export default function DncAssignmentQueuePage() {
   const toast = useToastActions();
 
   const fetchData = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await apiFetch<any>("/assignments/dnc/queue");
-      setProjects(res?.data || []);
-      setDistrict(res?.district || "");
-
-      const dnoRes = await apiFetch<any>("/assignments/dnc/eligible-dnos");
-      setDnos(dnoRes?.data || []);
+      if (res) {
+        setDistrict(res.district || "");
+        setProjects(res.projects || []);
+        setDnos(res.eligibleDnos || []);
+      }
     } catch (err) {
-      toast.error("Error", err instanceof Error ? err.message : "Failed to load DNC queue");
+      toast.error("Failed to load queue", err instanceof Error ? err.message : "Error fetching DNC queue");
     } finally {
       setLoading(false);
     }
@@ -67,16 +69,18 @@ export default function DncAssignmentQueuePage() {
     fetchData();
   }, []);
 
-  const handleDelegate = async (e: React.FormEvent) => {
+  const handleDelegateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProject || !selectedDnoId) return;
+    if (!selectedProject || !selectedDnoId || !reason.trim()) {
+      toast.error("Missing Data", "Please select a DNO and enter a reason for delegation.");
+      return;
+    }
 
-    setSubmitting(true);
     try {
-      await apiFetch("/assignments/dnc/delegate", {
+      setSubmitting(true);
+      await apiFetch(`/assignments/dnc/projects/${selectedProject.id}/delegate`, {
         method: "POST",
         body: JSON.stringify({
-          projectId: selectedProject.id,
           dnoUserId: selectedDnoId,
           reason,
         }),
@@ -97,8 +101,8 @@ export default function DncAssignmentQueuePage() {
   return (
     <GovPortalLayout>
       <GovPageHeader
-        title="District Nodal Consultant (DNC) Queue"
-        breadcrumb="Administration / Assignments"
+        title="DNC Delegation Queue"
+        breadcrumb="Projects / Assignments"
         description={`Manage project delegation for district: ${district || "Your District"}`}
         actions={
           <Button variant="outline" size="sm" icon={RefreshCw} onClick={fetchData}>
@@ -106,6 +110,8 @@ export default function DncAssignmentQueuePage() {
           </Button>
         }
       />
+
+      <AssignmentTabs />
 
       <div className="space-y-6">
         {/* District Banner */}
@@ -217,7 +223,7 @@ export default function DncAssignmentQueuePage() {
           onClose={() => setSelectedProject(null)}
           title={`Delegate District Nodal Officer — ${selectedProject.projectCode}`}
         >
-          <form onSubmit={handleDelegate} className="space-y-4">
+          <form onSubmit={handleDelegateSubmit} className="space-y-4">
             <div>
               <p className="text-xs text-slate-500 mb-2">
                 Project: <strong>{selectedProject.title}</strong> ({selectedProject.district})

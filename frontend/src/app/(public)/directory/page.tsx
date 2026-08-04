@@ -184,8 +184,8 @@ export default function DirectoryPage() {
                 {unique("division").map((value) => <option key={value}>{value}</option>)}
               </GovSelect>
               <GovSelect label="District" value={district} onChange={(event) => setDistrict(event.target.value)}>
-                {(division === "All" 
-                  ? unique("district") 
+                {(division === "All"
+                  ? unique("district")
                   : ["All", ...districts.filter(([_, div]) => div === division).map(([dist]) => dist)]
                 ).map((value) => <option key={value}>{value}</option>)}
               </GovSelect>

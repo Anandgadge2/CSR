@@ -9,18 +9,18 @@ interface UsePermissionReturn {
   hasPermission: (permission: string) => boolean;
   hasAnyPermission: (permissions: string[]) => boolean;
   hasAllPermissions: (permissions: string[]) => boolean;
-  
+
   // Role checks
   hasRole: (role: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
-  
+
   // State
   permissions: string[];
   roles: string[];
   isAdmin: boolean;
   isLoading: boolean;
   error: Error | null;
-  
+
   // Actions
   refreshPermissions: () => Promise<void>;
 }

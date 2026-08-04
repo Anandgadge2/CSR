@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
-import { 
+import {
   Building2, Search, Filter, Mail, Coins, ArrowUpRight, ShieldCheck, Clock, CheckCircle2, Plus, Landmark, AlertCircle, Loader2
 } from "lucide-react";
 
@@ -93,28 +93,28 @@ export default function EnquiriesPage() {
 
       {/* 3D Compact Metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard 
-          label="Total Enquiries" 
-          value={items.length} 
-          icon={Building2} 
-          index={0} 
-          badge="Corporate Desk" 
+        <StatCard
+          label="Total Enquiries"
+          value={items.length}
+          icon={Building2}
+          index={0}
+          badge="Corporate Desk"
           sublabel="Received submissions"
         />
-        <StatCard 
-          label="Indicative Outlay" 
+        <StatCard
+          label="Indicative Outlay"
           value={`₹${items.reduce((acc, curr) => acc + (curr.indicativeBudgetCr || 0), 0).toFixed(1)} Cr`}
-          icon={Coins} 
-          index={1} 
-          badge="Pledged Budget" 
+          icon={Coins}
+          index={1}
+          badge="Pledged Budget"
           sublabel="Aggregated outlay"
         />
-        <StatCard 
-          label="Under Review" 
-          value={items.filter(e => e.status === "UNDER_ASSESSMENT" || e.status === "SUBMITTED").length} 
-          icon={Clock} 
-          index={2} 
-          badge="Pending Review" 
+        <StatCard
+          label="Under Review"
+          value={items.filter(e => e.status === "UNDER_ASSESSMENT" || e.status === "SUBMITTED").length}
+          icon={Clock}
+          index={2}
+          badge="Pending Review"
           sublabel="Active verification queue"
         />
       </div>

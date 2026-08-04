@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { 
-  Search, MapPin, Tag, Compass, Landmark, Coins, Star, 
-  List, Grid, Columns, FileText, CheckCircle2, Bookmark, 
+import {
+  Search, MapPin, Tag, Compass, Landmark, Coins, Star,
+  List, Grid, Columns, FileText, CheckCircle2, Bookmark,
   BookmarkCheck, ArrowUpRight, HelpCircle, ShieldCheck, Building2, User, ExternalLink, Filter
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
@@ -178,7 +178,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
   const [selectedCompanyDetail, setSelectedCompanyDetail] = useState<Company | null>(null);
 
   const filteredProjects = projects.filter((proj) => {
-    const matchesSearch = proj.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = proj.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           proj.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           proj.ngoName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDistrict = selectedDistrict === "All" || proj.district === selectedDistrict;
@@ -227,7 +227,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
   return (
     <div className="space-y-6">
-      
+
       {/* Standard Portal Page Header */}
       <GovPageHeader
         breadcrumb="Home / Marketplace Directory"
@@ -296,8 +296,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
                   router.push(`/marketplace/${tab.id}`);
                 }}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                  isActive 
-                    ? "bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-md" 
+                  isActive
+                    ? "bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-md"
                     : "text-slate-600 hover:text-blue-900 hover:bg-slate-100/80 font-semibold"
                 }`}
               >
@@ -316,7 +316,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
       {/* Main Content Layout: Filter Sidebar + Listings Grid */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        
+
         {/* Left Sidebar: Clean Light Theme Search Filters */}
         <aside className="w-full lg:w-72 bg-white border border-slate-200/90 p-5 rounded-2xl flex flex-col gap-5 shrink-0 shadow-xs">
           <div className="flex justify-between items-center pb-3 border-b border-slate-100">
@@ -324,7 +324,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
               <Filter size={15} className="text-blue-600" />
               <h3 className="font-extrabold text-xs text-slate-800 uppercase tracking-wider">Search Filters</h3>
             </div>
-            <button 
+            <button
               onClick={() => {
                 setSelectedDistrict("All");
                 setSelectedFocus("All");
@@ -341,8 +341,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
           <div className="flex flex-col gap-1.5">
             <label className="text-slate-700 text-xs font-bold">Search Name / Keywords</label>
             <div className="relative">
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Type to search..."
@@ -390,7 +390,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
           {activeTab === "projects" && (
             <div className="flex flex-col gap-1.5">
               <label className="text-slate-700 text-xs font-bold">Minimum Budget (INR)</label>
-              <input 
+              <input
                 type="number"
                 value={minBudget || ""}
                 onChange={(e) => setMinBudget(Number(e.target.value))}
@@ -403,7 +403,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
         {/* Right Area: Results Grid */}
         <div className="flex-grow flex flex-col gap-5 w-full">
-          
+
           {/* Header count bar */}
           <div className="bg-white border border-slate-200/90 px-5 py-3.5 rounded-2xl shadow-xs flex justify-between items-center text-xs font-bold text-slate-700">
             <span className="flex items-center gap-2">
@@ -483,14 +483,14 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            
+
             {/* 1. Projects View */}
             {activeTab === "projects" && filteredProjects.map((project) => {
               const isComparing = compareIds.includes(project.id);
               const isBookmarked = bookmarkedIds.includes(project.id);
               return (
-                <motion.div 
-                  key={project.id} 
+                <motion.div
+                  key={project.id}
                   whileHover={{ y: -4, rotateX: 2, rotateY: -2, scale: 1.012 }}
                   transition={{ duration: 0.2 }}
                   className="group relative rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-blue-50/20 p-5 shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between gap-5 overflow-hidden"
@@ -529,8 +529,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
                     <div className="flex gap-2.5 pt-1">
                       <Button variant="primary" size="sm" className="flex-grow font-bold shadow-2xs">Fund Initiative</Button>
-                      <Button 
-                        variant={isComparing ? "secondary" : "outline"} 
+                      <Button
+                        variant={isComparing ? "secondary" : "outline"}
                         size="sm"
                         onClick={() => handleToggleCompare(project.id)}
                         className="px-3 text-xs"
@@ -545,8 +545,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
             {/* 2. NGOs View */}
             {activeTab === "ngos" && filteredNGOs.map((ngo) => (
-              <motion.div 
-                key={ngo.id} 
+              <motion.div
+                key={ngo.id}
                 whileHover={{ y: -4, rotateX: 2, rotateY: -2, scale: 1.012 }}
                 transition={{ duration: 0.2 }}
                 className="group relative rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-emerald-50/20 p-5 shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between gap-5 overflow-hidden"
@@ -587,8 +587,8 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
             {/* 3. Companies View */}
             {activeTab === "companies" && filteredCompanies.map((comp) => (
-              <motion.div 
-                key={comp.id} 
+              <motion.div
+                key={comp.id}
                 whileHover={{ y: -4, rotateX: 2, rotateY: -2, scale: 1.012 }}
                 transition={{ duration: 0.2 }}
                 className="group relative rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50/50 to-purple-50/20 p-5 shadow-xs hover:shadow-xl transition-all duration-200 flex flex-col justify-between gap-5 overflow-hidden"
@@ -694,7 +694,7 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
               <h3 className="font-heading font-extrabold text-lg text-slate-900">{selectedNgoDetail.name}</h3>
               <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">{selectedNgoDetail.category}</span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 border-t border-b border-slate-200 py-4">
               <div>
                 <span className="text-slate-500 text-[10px] block uppercase font-bold">NITI Darpan ID</span>
@@ -765,10 +765,10 @@ export default function ProjectMarketplace({ params }: { params?: { tab?: string
 
             <div className="flex flex-col gap-2.5">
               <span className="text-slate-900 font-bold">CSR Board Policy Circular</span>
-              <a 
-                href={selectedCompanyDetail.policyLink} 
-                target="_blank" 
-                rel="noreferrer" 
+              <a
+                href={selectedCompanyDetail.policyLink}
+                target="_blank"
+                rel="noreferrer"
                 className="bg-slate-50 border border-slate-200 hover:bg-slate-100 p-3 rounded-xl flex items-center justify-between text-slate-800 transition-colors font-medium"
               >
                 <span>Read Board approved CSR Policy statement</span>
