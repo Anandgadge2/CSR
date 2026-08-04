@@ -127,13 +127,13 @@ export const colors = {
     bgSecondary: '#f8fafc',
     bgTertiary: '#f1f5f9',
     bgMuted: '#f4f5f7',
-    
+
     textPrimary: '#111827',
     textSecondary: '#4b5563',
     textMuted: '#6b7280',
     textDisabled: '#9ca3af',
     textInverse: '#ffffff',
-    
+
     borderSubtle: '#e5e7eb',
     borderDefault: '#d1d5db',
     borderStrong: '#9ca3af',

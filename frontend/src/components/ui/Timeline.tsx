@@ -22,9 +22,9 @@ export function Timeline({ items, className }: TimelineProps) {
   return (
     <div className={cn("space-y-0", className)}>
       {items.map((item, index) => (
-        <TimelineItem 
-          key={item.id} 
-          item={item} 
+        <TimelineItem
+          key={item.id}
+          item={item}
           isLast={index === items.length - 1}
         />
       ))}
@@ -39,7 +39,7 @@ interface TimelineItemProps {
 
 export function TimelineItem({ item, isLast }: TimelineItemProps) {
   const Icon = item.icon;
-  
+
   return (
     <div className="flex gap-4 group">
       <div className="flex flex-col items-center">

@@ -85,31 +85,31 @@ export default function CommunicationsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard 
-          label="Total Interactions" 
-          value={items.length} 
-          icon={MessageSquare} 
-          index={0} 
-          colorTheme="blue" 
-          badge="Logged Comms" 
+        <StatCard
+          label="Total Interactions"
+          value={items.length}
+          icon={MessageSquare}
+          index={0}
+          colorTheme="blue"
+          badge="Logged Comms"
           sublabel="Logged stakeholder comms"
         />
-        <StatCard 
-          label="Follow-Ups Pending" 
-          value={items.filter(i => i.followupRequired).length} 
-          icon={Calendar} 
-          index={1} 
-          colorTheme="amber" 
-          badge="Action Items" 
+        <StatCard
+          label="Follow-Ups Pending"
+          value={items.filter(i => i.followupRequired).length}
+          icon={Calendar}
+          index={1}
+          colorTheme="amber"
+          badge="Action Items"
           sublabel="Action items assigned"
         />
-        <StatCard 
-          label="Meetings Conducted" 
-          value={items.filter(i => i.channel === "MEETING").length} 
-          icon={Building2} 
-          index={2} 
-          colorTheme="purple" 
-          badge="Meetings" 
+        <StatCard
+          label="Meetings Conducted"
+          value={items.filter(i => i.channel === "MEETING").length}
+          icon={Building2}
+          index={2}
+          colorTheme="purple"
+          badge="Meetings"
           sublabel="In-person & Virtual"
         />
       </div>

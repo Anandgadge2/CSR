@@ -81,7 +81,7 @@ export default function AnalyticsDashboard() {
 
       {/* Recharts Analytics Grids */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
+
         {/* Cumulative Funding Trend */}
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col gap-5 shadow-glass">
           <h3 className="font-heading font-bold text-lg text-slate-200">Cumulative Funding Growth (INR)</h3>

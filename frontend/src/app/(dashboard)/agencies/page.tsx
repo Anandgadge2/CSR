@@ -9,7 +9,7 @@ import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { DataView } from "@/components/ui/DataView";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { 
+import {
   Building2, Search, Filter, ShieldCheck, CheckCircle2, Clock, Landmark, ArrowUpRight, Award,
   MapPin, Mail, Phone, Globe, ExternalLink, FileText, Check, Shield, Star
 } from "lucide-react";
@@ -135,7 +135,7 @@ export default function AgenciesPage() {
   const [selectedAgency, setSelectedAgency] = useState<AgencyItem | null>(null);
 
   const apiAgencies = envelope?.data?.organizations || envelope?.data || envelope?.organizations || (Array.isArray(envelope) ? envelope : []);
-  
+
   const agenciesList: AgencyItem[] = apiAgencies.length > 0 ? apiAgencies.map((a: any) => ({
     id: a.id,
     name: a.name || a.legalName || "Implementing NGO Partner",
@@ -177,31 +177,31 @@ export default function AgenciesPage() {
 
       {/* Metrics Bar */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard 
-          label="Verified Implementing Agencies" 
-          value={agenciesList.length} 
-          icon={Building2} 
-          index={0} 
+        <StatCard
+          label="Verified Implementing Agencies"
+          value={agenciesList.length}
+          icon={Building2}
+          index={0}
           colorTheme="blue"
-          badge="Verified Agencies" 
+          badge="Verified Agencies"
           sublabel="Active agency partners"
         />
-        <StatCard 
-          label="Darpan & CSR-1 Verified" 
-          value="100% Verified" 
-          icon={ShieldCheck} 
-          index={1} 
+        <StatCard
+          label="Darpan & CSR-1 Verified"
+          value="100% Verified"
+          icon={ShieldCheck}
+          index={1}
           colorTheme="emerald"
-          badge="100% Compliant" 
+          badge="100% Compliant"
           sublabel="Regulatory cleared"
         />
-        <StatCard 
-          label="Due Diligence Grade" 
-          value="Grade A" 
-          icon={Award} 
-          index={2} 
+        <StatCard
+          label="Due Diligence Grade"
+          value="Grade A"
+          icon={Award}
+          index={2}
           colorTheme="purple"
-          badge="High Performance" 
+          badge="High Performance"
           sublabel="Secretariat vetted"
         />
       </div>
@@ -298,10 +298,10 @@ export default function AgenciesPage() {
       />
 
       {/* Agency Details Comprehensive Modal */}
-      <Modal 
-        isOpen={!!selectedAgency} 
-        onClose={() => setSelectedAgency(null)} 
-        title="Implementing Agency Compliance Ledger Profile" 
+      <Modal
+        isOpen={!!selectedAgency}
+        onClose={() => setSelectedAgency(null)}
+        title="Implementing Agency Compliance Ledger Profile"
         className="max-w-2xl"
       >
         {selectedAgency && (

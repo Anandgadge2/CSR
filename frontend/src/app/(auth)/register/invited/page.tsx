@@ -206,7 +206,7 @@ function RegisterInvitedForm() {
   return (
     <div className="flex-grow flex items-center justify-center px-6 py-16 bg-[#f5f6f8] text-slate-900 min-h-screen relative">
       <div className="w-full max-w-3xl bg-white border border-slate-200 p-8 flex flex-col gap-6 relative shadow-sm">
-        
+
         <div className="flex flex-col gap-1 text-center items-center">
           <div className="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mb-2">
             <Landmark size={24} className="text-indigo-700" />
@@ -235,7 +235,7 @@ function RegisterInvitedForm() {
 
         {!errorMsg && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-            
+
             <div className="bg-slate-50 p-4 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">NGO Name</label>
@@ -248,19 +248,19 @@ function RegisterInvitedForm() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
+
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">Password</label>
                 <div className="relative">
-                  <input 
-                    required 
-                    type={showPassword ? "text" : "password"} 
-                    name="password" 
-                    value={formData.password} 
-                    onChange={handleChange} 
-                    minLength={6} 
-                    placeholder="Set Account Password" 
-                    className={`govt-input !pr-10 ${fieldErrors.password ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                  <input
+                    required
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    minLength={6}
+                    placeholder="Set Account Password"
+                    className={`govt-input !pr-10 ${fieldErrors.password ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                   />
                   <button
                     type="button"
@@ -291,24 +291,24 @@ function RegisterInvitedForm() {
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <label className="text-gray-800 text-xs font-bold">Registered Office Address</label>
-                <input 
-                  required 
-                  name="address" 
-                  value={formData.address} 
-                  onChange={handleChange} 
-                  minLength={5} 
-                  placeholder="Plot No, Street, Landmark" 
-                  className={`govt-input ${fieldErrors.address ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  minLength={5}
+                  placeholder="Plot No, Street, Landmark"
+                  className={`govt-input ${fieldErrors.address ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.address && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.address}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">State</label>
-                <select 
-                  name="state" 
-                  value={formData.state} 
-                  onChange={(e) => handleStateChange(e.target.value)} 
+                <select
+                  name="state"
+                  value={formData.state}
+                  onChange={(e) => handleStateChange(e.target.value)}
                   className="govt-input"
                 >
                   <option value="Maharashtra">Maharashtra</option>
@@ -317,10 +317,10 @@ function RegisterInvitedForm() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">District</label>
-                <select 
-                  name="district" 
-                  value={formData.district} 
-                  onChange={(e) => handleDistrictChange(e.target.value)} 
+                <select
+                  name="district"
+                  value={formData.district}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
                   className="govt-input"
                 >
                   {availableDistricts.map(d => (
@@ -331,10 +331,10 @@ function RegisterInvitedForm() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">Taluka</label>
-                <select 
-                  name="taluka" 
-                  value={formData.taluka} 
-                  onChange={handleChange} 
+                <select
+                  name="taluka"
+                  value={formData.taluka}
+                  onChange={handleChange}
                   className="govt-input"
                 >
                   {availableTalukas.map(t => (
@@ -345,10 +345,10 @@ function RegisterInvitedForm() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">City / Town</label>
-                <select 
-                  name="city" 
-                  value={formData.city} 
-                  onChange={handleChange} 
+                <select
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
                   className="govt-input"
                 >
                   {availableCities.map(c => (
@@ -359,68 +359,68 @@ function RegisterInvitedForm() {
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">Village (Optional)</label>
-                <input 
-                  name="village" 
-                  value={formData.village} 
-                  onChange={handleChange} 
-                  placeholder="Village Name" 
-                  className="govt-input" 
+                <input
+                  name="village"
+                  value={formData.village}
+                  onChange={handleChange}
+                  placeholder="Village Name"
+                  className="govt-input"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">Website URL (Optional)</label>
-                <input 
-                  name="website" 
-                  value={formData.website} 
-                  onChange={handleChange} 
-                  placeholder="https://myngo.org" 
-                  className="govt-input" 
+                <input
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder="https://myngo.org"
+                  className="govt-input"
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">NGO Registration Number</label>
-                <input 
-                  required 
-                  name="registrationNumber" 
-                  value={formData.registrationNumber} 
-                  onChange={handleChange} 
-                  placeholder="MH/MUM/123/2026" 
-                  className={`govt-input ${fieldErrors.registrationNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  name="registrationNumber"
+                  value={formData.registrationNumber}
+                  onChange={handleChange}
+                  placeholder="MH/MUM/123/2026"
+                  className={`govt-input ${fieldErrors.registrationNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.registrationNumber && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.registrationNumber}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-gray-800 text-xs font-bold">CSR-1 Registry Code</label>
-                <input 
-                  required 
-                  name="csr1Number" 
-                  value={formData.csr1Number} 
-                  onChange={handleChange} 
-                  placeholder="CSR00012345" 
-                  className={`govt-input ${fieldErrors.csr1Number ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  name="csr1Number"
+                  value={formData.csr1Number}
+                  onChange={handleChange}
+                  placeholder="CSR00012345"
+                  className={`govt-input ${fieldErrors.csr1Number ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.csr1Number && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.csr1Number}</span>}
               </div>
 
               <div className="flex flex-col gap-1.5 md:col-span-2">
                 <label className="text-gray-800 text-xs font-bold">NGO Darpan ID</label>
-                <input 
-                  required 
-                  name="darpanNumber" 
-                  value={formData.darpanNumber} 
-                  onChange={handleChange} 
-                  placeholder="MH/2021/012345" 
-                  className={`govt-input ${fieldErrors.darpanNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`} 
+                <input
+                  required
+                  name="darpanNumber"
+                  value={formData.darpanNumber}
+                  onChange={handleChange}
+                  placeholder="MH/2021/012345"
+                  className={`govt-input ${fieldErrors.darpanNumber ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/20" : ""}`}
                 />
                 {fieldErrors.darpanNumber && <span className="text-rose-600 text-[10px] font-semibold mt-0.5">{fieldErrors.darpanNumber}</span>}
               </div>
 
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={submitting}
               className="w-full bg-indigo-750 hover:bg-indigo-800 text-white font-bold py-3.5 flex items-center justify-center gap-2 mt-2 transition-all shadow-sm rounded-lg"

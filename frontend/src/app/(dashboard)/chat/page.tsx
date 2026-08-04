@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Send, Paperclip, CheckCheck, Landmark, Building2, UserCheck, 
+import {
+  Send, Paperclip, CheckCheck, Landmark, Building2, UserCheck,
   Search, Pin, Smile, Mic, MicOff, Play, Pause, MoreVertical, Heart, ThumbsUp, AlertCircle,
   FileText, ShieldCheck, Sparkles, Phone, Plus, X, ArrowUpRight, Download, Check, Trash2
 } from "lucide-react";
@@ -105,27 +105,27 @@ const initialChats: ChatRoom[] = [
 
 const initialMessagesStore: Record<string, Message[]> = {
   "chat-1": [
-    { 
-      id: "m-1", 
-      senderName: "Sahyadri Eco Foundation", 
-      senderRole: "NGO_ADMIN", 
-      text: "Hello team, we have completed geological surveying for check dam sites in Aheri.", 
-      time: "14:15 PM", 
-      reactions: ["👍"] 
+    {
+      id: "m-1",
+      senderName: "Sahyadri Eco Foundation",
+      senderRole: "NGO_ADMIN",
+      text: "Hello team, we have completed geological surveying for check dam sites in Aheri.",
+      time: "14:15 PM",
+      reactions: ["👍"]
     },
-    { 
-      id: "m-2", 
-      senderName: "You", 
-      senderRole: "COMPANY_ADMIN", 
-      text: "Great! Can you share the certificate reports or soil analysis results?", 
-      time: "14:18 PM", 
-      pinned: true 
+    {
+      id: "m-2",
+      senderName: "You",
+      senderRole: "COMPANY_ADMIN",
+      text: "Great! Can you share the certificate reports or soil analysis results?",
+      time: "14:18 PM",
+      pinned: true
     },
-    { 
-      id: "m-3", 
-      senderName: "Sahyadri Eco Foundation", 
-      senderRole: "NGO_ADMIN", 
-      text: "Please verify the S3 PDF links for Phase 1 check dam reports.", 
+    {
+      id: "m-3",
+      senderName: "Sahyadri Eco Foundation",
+      senderRole: "NGO_ADMIN",
+      text: "Please verify the S3 PDF links for Phase 1 check dam reports.",
       time: "14:22 PM",
       attachment: { name: "Phase_1_Site_Survey_Gadchiroli.pdf", size: "3.4 MB" }
     }
@@ -184,7 +184,7 @@ export default function ChatSystem() {
     if (scrollRef.current) {
       const isNewRoom = prevChatIdRef.current !== activeChat.id;
       const isNewMessageAdded = messages.length > prevMessageCountRef.current;
-      
+
       if (isNewRoom || isNewMessageAdded) {
         setTimeout(() => {
           if (scrollRef.current) {
@@ -192,7 +192,7 @@ export default function ChatSystem() {
           }
         }, 30);
       }
-      
+
       prevChatIdRef.current = activeChat.id;
       prevMessageCountRef.current = messages.length;
     }
@@ -201,7 +201,7 @@ export default function ChatSystem() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const emojiList = [
-    "👍", "❤️", "🎉", "🙏", "🚀", "💡", "🤝", "🔥", "⚡", "👏", 
+    "👍", "❤️", "🎉", "🙏", "🚀", "💡", "🤝", "🔥", "⚡", "👏",
     "💯", "📌", "📄", "🔒", "📊", "🎯", "✨", "😊", "😀", "✅"
   ];
 
@@ -257,7 +257,7 @@ export default function ChatSystem() {
     const updatedCurrentMessages = [...messages, newMessage];
     setMessagesStore(prev => ({ ...prev, [activeChat.id]: updatedCurrentMessages }));
     setChats(prev => prev.map(c => c.id === activeChat.id ? { ...c, lastMessage: newMessage.text, updatedAt: newMessage.time } : c));
-    
+
     setInputVal("");
     setSelectedFile(null);
     setShowEmojiPicker(false);
@@ -425,8 +425,8 @@ export default function ChatSystem() {
           const reactions = m.reactions || [];
           return {
             ...m,
-            reactions: reactions.includes(emoji) 
-              ? reactions.filter(r => r !== emoji) 
+            reactions: reactions.includes(emoji)
+              ? reactions.filter(r => r !== emoji)
               : [...reactions, emoji]
           };
         }
@@ -447,21 +447,21 @@ export default function ChatSystem() {
     return true;
   });
 
-  const displayMessages = messages.filter(m => 
+  const displayMessages = messages.filter(m =>
     !searchQuery || m.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="mx-auto flex flex-col gap-6 max-w-7xl px-4 py-6 md:px-8 min-h-[calc(100vh-100px)]">
-      
+
       <GovPageHeader
         title="Collaboration Hub & Partner Messaging"
         eyebrow="Real-Time Workspace"
         description="Encrypted multi-stakeholder messaging channel for Corporate CSR teams, Government Nodal Officers, and Implementing Agencies."
         actions={
-          <Button 
+          <Button
             onClick={() => setNewChatModalOpen(true)}
-            variant="primary" 
+            variant="primary"
             className="flex items-center gap-1.5 shadow-md"
           >
             <Plus size={15} /> New Conversation
@@ -471,12 +471,12 @@ export default function ChatSystem() {
 
       {/* Main 3D Glassmorphism Chat Card Container */}
       <div className="flex flex-col md:flex-row rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl shadow-glass overflow-hidden h-[700px] w-full border-slate-200/80">
-        
+
         {/* Left Panel: Conversations Index */}
         <div className={`w-full md:w-80 lg:w-96 border-b md:border-b-0 md:border-r border-slate-200/80 flex flex-col h-full bg-slate-50/50 shrink-0 ${
           mobileTab === "chat" ? "hidden md:flex" : "flex"
         }`}>
-          
+
           {/* Filter & Search Header */}
           <div className="p-4 border-b border-slate-200/80 flex flex-col gap-3 bg-white">
             <div className="flex items-center justify-between">
@@ -498,8 +498,8 @@ export default function ChatSystem() {
                   key={f.id}
                   onClick={() => setFilterMode(f.id as any)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    filterMode === f.id 
-                      ? "bg-white text-blue-900 shadow-xs" 
+                    filterMode === f.id
+                      ? "bg-white text-blue-900 shadow-xs"
                       : "text-slate-500 hover:text-slate-900"
                   }`}
                 >
@@ -512,7 +512,7 @@ export default function ChatSystem() {
           {/* Rooms List */}
           <div className="flex-grow overflow-y-auto flex flex-col divide-y divide-slate-100/80">
             {filteredChats.map((chat) => (
-              <motion.div 
+              <motion.div
                 key={chat.id}
                 whileHover={{ x: 3, transition: { duration: 0.15 } }}
                 onClick={() => {
@@ -521,8 +521,8 @@ export default function ChatSystem() {
                   setChats(prev => prev.map(c => c.id === chat.id ? { ...c, unread: false } : c));
                 }}
                 className={`p-4 flex gap-3.5 items-start cursor-pointer transition-all relative ${
-                  activeChat.id === chat.id 
-                    ? "bg-gradient-to-r from-blue-50/80 via-blue-50/30 to-transparent border-l-4 border-blue-900" 
+                  activeChat.id === chat.id
+                    ? "bg-gradient-to-r from-blue-50/80 via-blue-50/30 to-transparent border-l-4 border-blue-900"
                     : "hover:bg-slate-50/80"
                 }`}
               >
@@ -556,12 +556,12 @@ export default function ChatSystem() {
         <div className={`flex-1 flex flex-col h-full bg-slate-50/30 justify-between min-w-0 ${
           mobileTab === "list" ? "hidden md:flex" : "flex"
         }`}>
-          
+
           {/* Active Room Header */}
           <div className="p-4 border-b border-slate-200/80 flex justify-between items-center bg-white shadow-xs z-10 shrink-0">
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setMobileTab("list")} 
+              <button
+                onClick={() => setMobileTab("list")}
                 className="md:hidden text-slate-500 hover:text-slate-800 p-1 rounded-lg"
               >
                 ← Channels
@@ -583,17 +583,17 @@ export default function ChatSystem() {
             <div className="flex items-center gap-2">
               {/* Search in chat */}
               {searchOpen && (
-                <motion.input 
+                <motion.input
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: 160, opacity: 1 }}
-                  type="text" 
+                  type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search messages..." 
+                  placeholder="Search messages..."
                   className="bg-slate-50 border border-slate-200 rounded-xl py-1.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-blue-600"
                 />
               )}
-              <button 
+              <button
                 onClick={() => {
                   setSearchOpen(!searchOpen);
                   setSearchQuery("");
@@ -605,7 +605,7 @@ export default function ChatSystem() {
 
 
 
-              <a 
+              <a
                 href={`tel:${activeChat.phone || '+91 98230 41102'}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 font-mono font-bold text-xs hover:bg-slate-200 transition-colors shadow-2xs"
                 title="Contact Phone Number"
@@ -622,8 +622,8 @@ export default function ChatSystem() {
           </div>
 
           {/* Messages Stream Container (Fixed Height & Auto Scroll) */}
-          <div 
-            ref={scrollRef} 
+          <div
+            ref={scrollRef}
             style={{ height: 'calc(100% - 130px)' }}
             className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 flex flex-col gap-4 bg-gradient-to-b from-slate-50/50 via-white/40 to-blue-50/20 scroll-smooth shadow-inner"
           >
@@ -631,7 +631,7 @@ export default function ChatSystem() {
               {displayMessages.map((m) => {
                 const isMe = m.senderName === "You";
                 return (
-                  <motion.div 
+                  <motion.div
                     key={m.id}
                     initial={{ opacity: 0, y: 10, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -647,10 +647,10 @@ export default function ChatSystem() {
 
                     {/* Message Card Bubble */}
                     <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed relative shadow-md transition-all ${
-                      m.isDeleted 
+                      m.isDeleted
                         ? "bg-slate-100/70 border border-slate-200/80 text-slate-400 italic rounded-2xl flex items-center gap-2 font-medium"
-                        : isMe 
-                          ? "bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white rounded-tr-none" 
+                        : isMe
+                          ? "bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white rounded-tr-none"
                           : "bg-white border border-slate-200/90 text-slate-900 rounded-tl-none"
                     }`}>
                       {m.isDeleted ? (
@@ -660,7 +660,7 @@ export default function ChatSystem() {
                         </div>
                       ) : m.isVoice ? (
                         <div className="flex items-center gap-3 w-56">
-                          <button 
+                          <button
                             type="button"
                             onClick={() => handlePlayVoice(m)}
                             className={`p-2.5 rounded-xl shadow-xs transition-transform transform hover:scale-105 ${
@@ -672,12 +672,12 @@ export default function ChatSystem() {
                           <div className="flex-grow flex flex-col gap-1">
                             <div className="h-5 flex items-center gap-1">
                               {[3, 6, 2, 8, 4, 7, 5, 9, 3, 6, 4, 8, 2, 5].map((h, i) => (
-                                <span 
-                                  key={i} 
+                                <span
+                                  key={i}
                                   className={`flex-grow rounded-full transition-all ${
                                     playingVoiceId === m.id ? "bg-emerald-400 animate-pulse" : isMe ? "bg-white/40" : "bg-slate-300"
-                                  }`} 
-                                  style={{ height: `${h * 10}%` }} 
+                                  }`}
+                                  style={{ height: `${h * 10}%` }}
                                 />
                               ))}
                             </div>
@@ -702,7 +702,7 @@ export default function ChatSystem() {
                               <span className="text-[10px] opacity-75">{m.attachment.size}</span>
                             </div>
                           </div>
-                          <button 
+                          <button
                             type="button"
                             onClick={() => handleDownloadAttachment(m.attachment!)}
                             className={`p-1.5 rounded-lg transition-colors ${isMe ? "hover:bg-white/20 text-white" : "hover:bg-slate-200 text-blue-900"}`}
@@ -725,7 +725,7 @@ export default function ChatSystem() {
 
                     {/* Enhanced Animated Glassmorphism Hover Toolbar */}
                     {!m.isDeleted && (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, scale: 0.9, y: 4 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         className={`hidden group-hover:flex items-center gap-1.5 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-xl px-3 py-1.5 rounded-2xl absolute -top-5 z-20 ${
@@ -733,21 +733,21 @@ export default function ChatSystem() {
                         }`}
                       >
                         {["👍", "❤️", "🎉", "🔥", "🚀"].map((emoji, i) => (
-                          <button 
+                          <button
                             key={i}
-                            type="button" 
-                            onClick={() => handleReact(m.id, emoji)} 
+                            type="button"
+                            onClick={() => handleReact(m.id, emoji)}
                             className="hover:scale-135 hover:-translate-y-1 active:scale-90 transition-all duration-200 text-sm p-1 rounded-lg hover:bg-slate-100 flex items-center justify-center"
                           >
                             {emoji}
                           </button>
                         ))}
-                        
+
                         <div className="w-px h-3.5 bg-slate-200 mx-0.5" />
 
-                        <button 
+                        <button
                           type="button"
-                          onClick={() => handleTogglePinMessage(m.id)} 
+                          onClick={() => handleTogglePinMessage(m.id)}
                           className="hover:text-blue-600 p-1.5 rounded-lg hover:bg-slate-100 transition-all text-slate-400 hover:scale-110"
                           title={m.pinned ? "Unpin message" : "Pin message"}
                         >
@@ -756,9 +756,9 @@ export default function ChatSystem() {
 
                         {/* WhatsApp-Style Delete Button (Only for sender & within 10 min) */}
                         {isMe && (
-                          <button 
+                          <button
                             type="button"
-                            onClick={() => handleDeleteMessage(m)} 
+                            onClick={() => handleDeleteMessage(m)}
                             className="hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-all text-slate-400 hover:scale-110"
                             title="Delete for Everyone (Within 10 min)"
                           >
@@ -778,7 +778,7 @@ export default function ChatSystem() {
 
             {/* Live Typing Indicator */}
             {isTyping && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-1 max-w-[70%] self-start items-start"
@@ -816,17 +816,17 @@ export default function ChatSystem() {
                   <span>Recording voice note... <span className="font-mono font-extrabold text-rose-900 ml-1">0:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}</span></span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     type="button"
-                    onClick={() => { setIsRecording(false); if (recordingTimerRef.current) clearInterval(recordingTimerRef.current); }} 
+                    onClick={() => { setIsRecording(false); if (recordingTimerRef.current) clearInterval(recordingTimerRef.current); }}
                     className="text-slate-500 hover:text-slate-800 text-xs font-bold px-2 py-1"
                   >
                     Cancel
                   </button>
-                  <Button 
+                  <Button
                     type="button"
-                    size="sm" 
-                    variant="primary" 
+                    size="sm"
+                    variant="primary"
                     onClick={stopVoiceRecording}
                     className="bg-rose-600 hover:bg-rose-700 text-white font-bold"
                   >
@@ -836,16 +836,16 @@ export default function ChatSystem() {
               </div>
             ) : (
               <form onSubmit={handleSendMessage} className="flex items-center gap-2 sm:gap-3 relative">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileSelect} 
-                  className="hidden" 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                 />
-                
-                <button 
-                  type="button" 
+
+                <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="text-slate-400 hover:text-blue-700 transition-colors p-2 hover:bg-blue-50 rounded-xl shrink-0"
                   title="Attach File"
@@ -855,7 +855,7 @@ export default function ChatSystem() {
 
                 {/* Emoji Picker Trigger & Popover */}
                 <div className="relative shrink-0">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     className={`p-2 rounded-xl transition-colors ${showEmojiPicker ? "text-amber-500 bg-amber-50" : "text-slate-400 hover:text-amber-600 hover:bg-amber-50"}`}
@@ -865,7 +865,7 @@ export default function ChatSystem() {
                   </button>
 
                   {showEmojiPicker && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10 }}
@@ -887,26 +887,26 @@ export default function ChatSystem() {
                   )}
                 </div>
 
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   placeholder={`Write message to ${activeChat.partnerName}...`}
                   className="flex-grow bg-slate-50 border border-slate-200/80 rounded-2xl py-2.5 px-4 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white transition-all shadow-xs min-w-0"
                 />
-                
+
                 {/* Voice Note Trigger */}
-                <button 
-                  type="button" 
-                  onClick={startVoiceRecording} 
+                <button
+                  type="button"
+                  onClick={startVoiceRecording}
                   className="text-slate-400 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-xl transition-colors shrink-0"
                   title="Record Voice Note"
                 >
                   <Mic size={18} />
                 </button>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   variant="primary"
                   className="px-5 py-2.5 shadow-md flex items-center gap-1.5 shrink-0"
                 >
@@ -936,7 +936,7 @@ export default function ChatSystem() {
               { name: "Tata CSR Desk", type: "COMPANY", project: "Maharashtra Skill Labs" },
               { name: "District Collectorate Gadchiroli", type: "GOVT", project: "Tribal Development" },
             ].map((partner, idx) => (
-              <div 
+              <div
                 key={idx}
                 onClick={() => {
                   const newRoom: ChatRoom = {

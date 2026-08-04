@@ -40,12 +40,12 @@ const dotColors: Record<BadgeVariant, string> = {
   glass: "bg-slate-500",
 };
 
-export function Badge({ 
-  children, 
-  variant = "primary", 
+export function Badge({
+  children,
+  variant = "primary",
   size = "md",
   dot = false,
-  className 
+  className
 }: BadgeProps) {
   return (
     <span

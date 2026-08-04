@@ -4,14 +4,21 @@ export type NavSection =
   | "Projects"
   | "Organizations"
   | "Finance and Monitoring"
-  | "Administration";
+  | "Administration"
+  | "Help and Support";
+
+export type NavLevel = "PRIMARY" | "CHILD" | "WORKSPACE_TAB" | "HIDDEN";
 
 export interface NavItemDef {
   id: string;
-  label: string;
+  label: string; // Concise sidebar label (e.g. "Pitches", "Interests", "Agencies")
+  formalTitle?: string; // Formal long title for page headers & breadcrumbs
   route: string;
   iconName: string;
   section: NavSection;
+  navigationLevel: NavLevel;
+  parentNavId?: string; // Group ID or Parent Item ID
+  showInSidebar: boolean;
   requiredAnyPermissions?: string[];
   requiredAllPermissions?: string[];
   featureFlag?: string;
@@ -23,14 +30,77 @@ export interface NavItemDef {
   };
 }
 
+export interface NavGroupDef {
+  id: string;
+  label: string;
+  iconName: string;
+  section: NavSection;
+  ordering: number;
+  childIds: string[];
+}
+
+export const NAVIGATION_GROUPS: NavGroupDef[] = [
+  {
+    id: "group-applications",
+    label: "Applications",
+    iconName: "FileText",
+    section: "Applications",
+    ordering: 20,
+    childIds: ["enquiries", "pitches", "interests", "assessments", "requirements", "marketplace"]
+  },
+  {
+    id: "group-projects",
+    label: "Projects",
+    iconName: "Briefcase",
+    section: "Projects",
+    ordering: 30,
+    childIds: ["convergence-projects", "assignments", "milestones", "inspections", "handover"]
+  },
+  {
+    id: "group-organizations",
+    label: "Organizations",
+    iconName: "Building2",
+    section: "Organizations",
+    ordering: 40,
+    childIds: ["organizations", "companies", "ngo-registry", "organization-onboarding", "sub-logins"]
+  },
+  {
+    id: "group-finance",
+    label: "Finance & Monitoring",
+    iconName: "DollarSign",
+    section: "Finance and Monitoring",
+    ordering: 50,
+    childIds: ["fund-releases", "reports", "audit-logs"]
+  },
+  {
+    id: "group-administration",
+    label: "Administration",
+    iconName: "Shield",
+    section: "Administration",
+    ordering: 60,
+    childIds: ["user-management", "access-control", "onboarding-approvals", "sla-config"]
+  },
+  {
+    id: "group-help",
+    label: "Help & Support",
+    iconName: "HelpCircle",
+    section: "Help and Support",
+    ordering: 70,
+    childIds: ["helpdesk", "grievances"]
+  }
+];
+
 export const NAVIGATION_MANIFEST: NavItemDef[] = [
   // Overview
   {
     id: "dashboard",
     label: "Dashboard",
+    formalTitle: "Executive CSR Dashboard",
     route: "/dashboard",
     iconName: "LayoutDashboard",
     section: "Overview",
+    navigationLevel: "PRIMARY",
+    showInSidebar: true,
     requiredAnyPermissions: ["dashboard:view", "project:view", "pitch:view", "enquiry:view", "user:view"],
     ordering: 10,
     breadcrumbMetadata: { title: "Dashboard" }
@@ -38,68 +108,93 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
   {
     id: "profile",
     label: "Profile",
+    formalTitle: "User Profile Settings",
     route: "/profile",
     iconName: "User",
     section: "Overview",
+    navigationLevel: "HIDDEN",
+    showInSidebar: false,
     ordering: 20,
     breadcrumbMetadata: { title: "User Profile", parentRoute: "/dashboard" }
   },
   {
     id: "settings",
     label: "Settings",
+    formalTitle: "Account Settings",
     route: "/settings",
     iconName: "Settings",
     section: "Overview",
+    navigationLevel: "HIDDEN",
+    showInSidebar: false,
     ordering: 30,
     breadcrumbMetadata: { title: "Account Settings", parentRoute: "/dashboard" }
   },
   {
     id: "notifications",
     label: "Notifications",
+    formalTitle: "System Notifications",
     route: "/notifications",
     iconName: "Bell",
     section: "Overview",
+    navigationLevel: "HIDDEN",
+    showInSidebar: false,
     ordering: 40,
     breadcrumbMetadata: { title: "Notifications", parentRoute: "/dashboard" }
   },
 
-  // Applications
+  // Applications Group Items
   {
     id: "enquiries",
-    label: "Corporate Enquiries",
+    label: "Enquiries",
+    formalTitle: "Corporate Enquiries",
     route: "/enquiries",
     iconName: "FileText",
     section: "Applications",
+    navigationLevel: "CHILD",
+    parentNavId: "group-applications",
+    showInSidebar: true,
     requiredAnyPermissions: ["enquiry:view", "enquiry:create", "enquiry:respond"],
     ordering: 10,
     breadcrumbMetadata: { title: "Corporate Enquiries", parentRoute: "/dashboard" }
   },
   {
     id: "pitches",
-    label: "Government Pitches",
+    label: "Pitches",
+    formalTitle: "Government Pitches",
     route: "/pitches",
     iconName: "Send",
     section: "Applications",
+    navigationLevel: "CHILD",
+    parentNavId: "group-applications",
+    showInSidebar: true,
     requiredAnyPermissions: ["pitch:view", "pitch:create", "pitch:verify", "pitch:approve", "pitch:assign"],
     ordering: 20,
     breadcrumbMetadata: { title: "Government Pitches", parentRoute: "/dashboard" }
   },
   {
     id: "interests",
-    label: "Corporate Interests",
+    label: "Interests",
+    formalTitle: "Corporate Interests",
     route: "/interests",
     iconName: "Heart",
     section: "Applications",
+    navigationLevel: "CHILD",
+    parentNavId: "group-applications",
+    showInSidebar: true,
     requiredAnyPermissions: ["interest:view", "interest:express", "interest:create"],
     ordering: 30,
     breadcrumbMetadata: { title: "Corporate Interests", parentRoute: "/dashboard" }
   },
   {
     id: "assessments",
-    label: "Feasibility Assessments",
+    label: "Assessments",
+    formalTitle: "Feasibility Assessments",
     route: "/assessments",
     iconName: "ClipboardCheck",
     section: "Applications",
+    navigationLevel: "CHILD",
+    parentNavId: "group-applications",
+    showInSidebar: true,
     requiredAnyPermissions: ["assessment:view", "assessment:create", "assessment:review", "assessment:decide"],
     ordering: 40,
     breadcrumbMetadata: { title: "Feasibility Assessments", parentRoute: "/dashboard" }
@@ -107,164 +202,229 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
   {
     id: "requirements",
     label: "CSR Requirements",
+    formalTitle: "CSR Requirements Directory",
     route: "/requirements",
     iconName: "ListTodo",
     section: "Applications",
+    navigationLevel: "CHILD",
+    parentNavId: "group-applications",
+    showInSidebar: true,
     requiredAnyPermissions: ["requirement:view", "requirement:create", "requirement:verify", "requirement:approve"],
     ordering: 50,
     breadcrumbMetadata: { title: "CSR Requirements", parentRoute: "/dashboard" }
   },
   {
     id: "marketplace",
-    label: "CSR Marketplace",
+    label: "Marketplace",
+    formalTitle: "CSR Marketplace",
     route: "/marketplace",
     iconName: "Store",
     section: "Applications",
+    navigationLevel: "CHILD",
+    parentNavId: "group-applications",
+    showInSidebar: true,
     requiredAnyPermissions: ["requirement:view", "pitch:view", "project:view"],
     ordering: 60,
     breadcrumbMetadata: { title: "CSR Marketplace", parentRoute: "/dashboard" }
   },
-  {
-    id: "helpdesk",
-    label: "Helpdesk & Support",
-    route: "/helpdesk",
-    iconName: "HelpCircle",
-    section: "Applications",
-    requiredAnyPermissions: ["helpdesk:view", "query:respond", "dashboard:view"],
-    ordering: 70,
-    breadcrumbMetadata: { title: "Helpdesk", parentRoute: "/dashboard" }
-  },
-  {
-    id: "grievances",
-    label: "Grievance Redressal",
-    route: "/grievances",
-    iconName: "AlertTriangle",
-    section: "Applications",
-    requiredAnyPermissions: ["grievance:view", "grievance:resolve"],
-    ordering: 80,
-    breadcrumbMetadata: { title: "Grievances", parentRoute: "/dashboard" }
-  },
 
-  // Projects
+  // Projects Group Items
   {
     id: "convergence-projects",
-    label: "Projects Overview",
+    label: "Projects",
+    formalTitle: "Projects Overview",
     route: "/convergence-projects",
     iconName: "Briefcase",
     section: "Projects",
+    navigationLevel: "CHILD",
+    parentNavId: "group-projects",
+    showInSidebar: true,
     requiredAnyPermissions: ["project:view", "project:create", "project:update", "project:approve", "project:assign"],
     ordering: 10,
     breadcrumbMetadata: { title: "Projects", parentRoute: "/dashboard" }
   },
   {
     id: "assignments",
-    label: "Project Assignments",
+    label: "Assignments",
+    formalTitle: "Project Assignments",
     route: "/assignments",
     iconName: "UserCheck",
     section: "Projects",
-    requiredAnyPermissions: ["project:assign", "pitch:assign", "user:assign-role"],
+    navigationLevel: "CHILD",
+    parentNavId: "group-projects",
+    showInSidebar: true,
+    requiredAnyPermissions: ["project:assign", "pitch:assign", "user:assign-role", "project:view"],
     ordering: 20,
     breadcrumbMetadata: { title: "Assignments", parentRoute: "/convergence-projects" }
   },
+  // Assignment Workspace Tabs (Hidden in Sidebar)
+  {
+    id: "dnc-queue",
+    label: "DNC Delegation",
+    formalTitle: "DNC Delegation Queue",
+    route: "/assignments/dnc",
+    iconName: "ShieldCheck",
+    section: "Projects",
+    navigationLevel: "WORKSPACE_TAB",
+    parentNavId: "assignments",
+    showInSidebar: false,
+    requiredAnyPermissions: ["project:view", "project:assign"],
+    ordering: 25,
+    breadcrumbMetadata: { title: "DNC Delegation Queue", parentRoute: "/assignments" }
+  },
+  {
+    id: "gov-admin-queue",
+    label: "Department Officer Assignment",
+    formalTitle: "Department Officer Queue",
+    route: "/assignments/gov-admin",
+    iconName: "Building2",
+    section: "Projects",
+    navigationLevel: "WORKSPACE_TAB",
+    parentNavId: "assignments",
+    showInSidebar: false,
+    requiredAnyPermissions: ["project:view", "project:assign"],
+    ordering: 26,
+    breadcrumbMetadata: { title: "Department Officer Queue", parentRoute: "/assignments" }
+  },
   {
     id: "milestones",
-    label: "Milestones Tracking",
+    label: "Milestones",
+    formalTitle: "Milestones Tracking",
     route: "/milestones",
     iconName: "Flag",
     section: "Projects",
+    navigationLevel: "CHILD",
+    parentNavId: "group-projects",
+    showInSidebar: true,
     requiredAnyPermissions: ["milestone:update", "milestone:verify", "project:view"],
     ordering: 30,
     breadcrumbMetadata: { title: "Milestones", parentRoute: "/convergence-projects" }
   },
   {
     id: "inspections",
-    label: "Field Inspections",
+    label: "Inspections",
+    formalTitle: "Field Inspections",
     route: "/inspections",
     iconName: "Search",
     section: "Projects",
+    navigationLevel: "CHILD",
+    parentNavId: "group-projects",
+    showInSidebar: true,
     requiredAnyPermissions: ["inspection:create", "inspection:view"],
     ordering: 40,
     breadcrumbMetadata: { title: "Field Inspections", parentRoute: "/convergence-projects" }
   },
   {
     id: "handover",
-    label: "Project Handover",
+    label: "Handover",
+    formalTitle: "Project Handover",
     route: "/handover",
     iconName: "CheckCircle",
     section: "Projects",
+    navigationLevel: "CHILD",
+    parentNavId: "group-projects",
+    showInSidebar: true,
     requiredAnyPermissions: ["requirement:handover", "project:close"],
     ordering: 50,
     breadcrumbMetadata: { title: "Project Handover", parentRoute: "/convergence-projects" }
   },
 
-  // Organizations
+  // Organizations Group Items
   {
     id: "organizations",
-    label: "Organizations Directory",
+    label: "Organizations",
+    formalTitle: "Organizations Directory",
     route: "/admin/organizations",
     iconName: "Building2",
     section: "Organizations",
+    navigationLevel: "CHILD",
+    parentNavId: "group-organizations",
+    showInSidebar: true,
     requiredAnyPermissions: ["organization:view", "organization:update", "organization:approve"],
     ordering: 10,
     breadcrumbMetadata: { title: "Organizations", parentRoute: "/dashboard" }
   },
   {
     id: "companies",
-    label: "Corporate Partners",
+    label: "Companies",
+    formalTitle: "Corporate Partners",
     route: "/admin/companies",
     iconName: "Building",
     section: "Organizations",
+    navigationLevel: "CHILD",
+    parentNavId: "group-organizations",
+    showInSidebar: true,
     requiredAnyPermissions: ["organization:view", "company_profile:manage"],
     ordering: 20,
     breadcrumbMetadata: { title: "Corporate Partners", parentRoute: "/admin/organizations" }
   },
   {
     id: "ngo-registry",
-    label: "Implementing Agencies",
+    label: "Agencies",
+    formalTitle: "Implementing Agencies",
     route: "/admin/ngo-registry",
     iconName: "Users",
     section: "Organizations",
+    navigationLevel: "CHILD",
+    parentNavId: "group-organizations",
+    showInSidebar: true,
     requiredAnyPermissions: ["organization:view", "ngo_login:create"],
     ordering: 30,
     breadcrumbMetadata: { title: "Implementing Agencies", parentRoute: "/admin/organizations" }
   },
   {
     id: "organization-onboarding",
-    label: "Org Onboarding Status",
+    label: "Onboarding Status",
+    formalTitle: "Org Onboarding Status",
     route: "/organization/onboarding",
     iconName: "FileCheck",
     section: "Organizations",
+    navigationLevel: "CHILD",
+    parentNavId: "group-organizations",
+    showInSidebar: true,
     ordering: 40,
     breadcrumbMetadata: { title: "Onboarding Status", parentRoute: "/dashboard" }
   },
   {
     id: "sub-logins",
-    label: "Sub-Logins Management",
+    label: "Sub-Logins",
+    formalTitle: "Sub-Logins Management",
     route: "/organization/sub-logins",
     iconName: "UserPlus",
     section: "Organizations",
+    navigationLevel: "CHILD",
+    parentNavId: "group-organizations",
+    showInSidebar: true,
     requiredAnyPermissions: ["organization:manage-users", "user:create"],
     ordering: 50,
     breadcrumbMetadata: { title: "Sub-Logins", parentRoute: "/dashboard" }
   },
 
-  // Finance and Monitoring
+  // Finance and Monitoring Group Items
   {
     id: "fund-releases",
-    label: "CSR Fund Monitoring",
+    label: "Fund Monitoring",
+    formalTitle: "CSR Fund Monitoring",
     route: "/fund-releases",
     iconName: "DollarSign",
     section: "Finance and Monitoring",
+    navigationLevel: "CHILD",
+    parentNavId: "group-finance",
+    showInSidebar: true,
     requiredAnyPermissions: ["fund:view", "fund:commit", "fund:release", "fund:verify"],
     ordering: 10,
     breadcrumbMetadata: { title: "Fund Monitoring", parentRoute: "/dashboard" }
   },
   {
     id: "reports",
-    label: "Analytics & Reports",
+    label: "Reports",
+    formalTitle: "Analytics & Reports",
     route: "/reports",
     iconName: "BarChart3",
     section: "Finance and Monitoring",
+    navigationLevel: "CHILD",
+    parentNavId: "group-finance",
+    showInSidebar: true,
     requiredAnyPermissions: ["report:view", "report:generate", "report:export"],
     ordering: 20,
     breadcrumbMetadata: { title: "Reports", parentRoute: "/dashboard" }
@@ -272,21 +432,29 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
   {
     id: "audit-logs",
     label: "Audit Trail",
+    formalTitle: "Audit Trail",
     route: "/audit-logs",
     iconName: "ShieldAlert",
     section: "Finance and Monitoring",
+    navigationLevel: "CHILD",
+    parentNavId: "group-finance",
+    showInSidebar: true,
     requiredAnyPermissions: ["user:view", "audit:view", "role:view"],
     ordering: 30,
     breadcrumbMetadata: { title: "Audit Trail", parentRoute: "/dashboard" }
   },
 
-  // Administration
+  // Administration Group Items
   {
     id: "user-management",
     label: "User Management",
+    formalTitle: "User Management",
     route: "/admin/user-management",
     iconName: "UserCog",
     section: "Administration",
+    navigationLevel: "CHILD",
+    parentNavId: "group-administration",
+    showInSidebar: true,
     requiredAnyPermissions: ["user:view", "user:create", "user:update", "user:assign-role"],
     ordering: 10,
     breadcrumbMetadata: { title: "User Management", parentRoute: "/dashboard" }
@@ -294,29 +462,42 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
   {
     id: "access-control",
     label: "Access Control",
+    formalTitle: "Access Control Overview",
     route: "/admin/access-control",
     iconName: "Shield",
     section: "Administration",
+    navigationLevel: "CHILD",
+    parentNavId: "group-administration",
+    showInSidebar: true,
     requiredAnyPermissions: ["role:view", "role:create", "role:configure", "user:view", "user:assign-role"],
     ordering: 20,
     breadcrumbMetadata: { title: "Access Control Overview", parentRoute: "/dashboard" }
   },
+  // Access Control Workspace Tabs (Hidden in Sidebar)
   {
     id: "access-control-roles",
     label: "Roles",
+    formalTitle: "Role Management",
     route: "/admin/access-control/roles",
     iconName: "ShieldCheck",
     section: "Administration",
+    navigationLevel: "WORKSPACE_TAB",
+    parentNavId: "access-control",
+    showInSidebar: false,
     requiredAnyPermissions: ["role:view", "role:create", "role:configure"],
     ordering: 21,
     breadcrumbMetadata: { title: "Role Management", parentRoute: "/admin/access-control" }
   },
   {
     id: "access-control-permissions",
-    label: "Permissions Catalog",
+    label: "Permissions",
+    formalTitle: "Permissions Catalog",
     route: "/admin/access-control/permissions",
     iconName: "Key",
     section: "Administration",
+    navigationLevel: "WORKSPACE_TAB",
+    parentNavId: "access-control",
+    showInSidebar: false,
     requiredAnyPermissions: ["role:view"],
     ordering: 22,
     breadcrumbMetadata: { title: "Permissions Catalog", parentRoute: "/admin/access-control" }
@@ -324,49 +505,41 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
   {
     id: "access-control-assignments",
     label: "Role Assignments",
+    formalTitle: "Role Assignments",
     route: "/admin/access-control/assignments",
     iconName: "Users",
     section: "Administration",
+    navigationLevel: "WORKSPACE_TAB",
+    parentNavId: "access-control",
+    showInSidebar: false,
     requiredAnyPermissions: ["user:view", "user:assign-role"],
     ordering: 23,
     breadcrumbMetadata: { title: "Role Assignments", parentRoute: "/admin/access-control" }
   },
   {
     id: "access-control-audit",
-    label: "Access Audit Log",
+    label: "Audit History",
+    formalTitle: "Access Control Audit",
     route: "/admin/access-control/audit",
     iconName: "Activity",
     section: "Administration",
+    navigationLevel: "WORKSPACE_TAB",
+    parentNavId: "access-control",
+    showInSidebar: false,
     requiredAnyPermissions: ["user:view", "role:view"],
     ordering: 24,
     breadcrumbMetadata: { title: "Access Control Audit", parentRoute: "/admin/access-control" }
   },
   {
-    id: "dnc-queue",
-    label: "DNC Delegation Queue",
-    route: "/assignments/dnc",
-    iconName: "ShieldCheck",
-    section: "Administration",
-    requiredAnyPermissions: ["project:view", "project:assign"],
-    ordering: 25,
-    breadcrumbMetadata: { title: "DNC Delegation Queue", parentRoute: "/dashboard" }
-  },
-  {
-    id: "gov-admin-queue",
-    label: "Dept Officer Queue",
-    route: "/assignments/gov-admin",
-    iconName: "Building2",
-    section: "Administration",
-    requiredAnyPermissions: ["project:view", "project:assign"],
-    ordering: 26,
-    breadcrumbMetadata: { title: "Department Officer Queue", parentRoute: "/dashboard" }
-  },
-  {
     id: "onboarding-approvals",
     label: "Onboarding Approvals",
+    formalTitle: "Onboarding Approvals Queue",
     route: "/admin/onboarding-approvals",
     iconName: "CheckSquare",
     section: "Administration",
+    navigationLevel: "CHILD",
+    parentNavId: "group-administration",
+    showInSidebar: true,
     requiredAnyPermissions: ["organization:approve", "organization:reject"],
     ordering: 30,
     breadcrumbMetadata: { title: "Onboarding Approvals", parentRoute: "/dashboard" }
@@ -374,12 +547,46 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
   {
     id: "sla-config",
     label: "SLA Configuration",
+    formalTitle: "SLA & Escalation Rules",
     route: "/admin/sla-config",
     iconName: "Sliders",
     section: "Administration",
+    navigationLevel: "CHILD",
+    parentNavId: "group-administration",
+    showInSidebar: true,
     requiredAnyPermissions: ["role:configure", "user:view"],
     ordering: 40,
     breadcrumbMetadata: { title: "SLA Configuration", parentRoute: "/dashboard" }
+  },
+
+  // Help & Support Group Items
+  {
+    id: "helpdesk",
+    label: "Helpdesk",
+    formalTitle: "Helpdesk & Support",
+    route: "/helpdesk",
+    iconName: "HelpCircle",
+    section: "Help and Support",
+    navigationLevel: "CHILD",
+    parentNavId: "group-help",
+    showInSidebar: true,
+    requiredAnyPermissions: ["helpdesk:view", "query:respond", "dashboard:view"],
+    ordering: 10,
+    breadcrumbMetadata: { title: "Helpdesk", parentRoute: "/dashboard" }
+  },
+  {
+    id: "grievances",
+    label: "Grievances",
+    formalTitle: "Grievance Redressal Portal",
+    route: "/grievances",
+    iconName: "AlertTriangle",
+    section: "Help and Support",
+    navigationLevel: "CHILD",
+    parentNavId: "group-help",
+    showInSidebar: true,
+    requiredAnyPermissions: ["grievance:view", "grievance:resolve"],
+    ordering: 20,
+    breadcrumbMetadata: { title: "Grievances", parentRoute: "/dashboard" }
   }
 ];
 

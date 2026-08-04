@@ -45,7 +45,7 @@ export const ADMIN_ROLES = [
   "CSR_ADMIN",
 ] as const;
 
-/** 
+/**
  * Check if user is an admin
  * @deprecated Use usePermission() hook or authStore.isAdmin instead
  */
@@ -54,7 +54,7 @@ export function isAdmin(): boolean {
   if (store.isAuthenticated) {
     return store.isAdmin;
   }
-  
+
   const user = getCurrentUser();
   if (!user) return false;
   return ADMIN_ROLES.includes(user.role as any);
@@ -186,14 +186,14 @@ export const PERMISSIONS = {
     APPROVE: "requirement:approve",
     PUBLISH: "requirement:publish",
   },
-  
+
   // Interest permissions
   INTEREST: {
     CREATE: "interest:create",
     VIEW: "interest:view",
     APPROVE: "interest:approve",
   },
-  
+
   // Project permissions
   PROJECT: {
     VIEW: "project:view",
@@ -201,14 +201,14 @@ export const PERMISSIONS = {
     UPDATE: "project:update",
     APPROVE: "project:approve",
   },
-  
+
   // Milestone permissions
   MILESTONE: {
     CREATE: "milestone:create",
     UPDATE: "milestone:update",
     VERIFY: "milestone:verify",
   },
-  
+
   // Fund permissions
   FUND: {
     VIEW: "fund:view",
@@ -216,13 +216,13 @@ export const PERMISSIONS = {
     RELEASE: "fund:release",
     VERIFY_UTILIZATION: "fund:verify-utilization",
   },
-  
+
   // Report permissions
   REPORT: {
     VIEW: "report:view",
     EXPORT: "report:export",
   },
-  
+
   // Organization permissions
   ORGANIZATION: {
     VIEW: "organization:view",
@@ -230,26 +230,26 @@ export const PERMISSIONS = {
     APPROVE: "organization:approve",
     SUSPEND: "organization:suspend",
   },
-  
+
   // User permissions
   USER: {
     INVITE: "user:invite",
     UPDATE: "user:update",
   },
-  
+
   // Role permissions
   ROLE: {
     CREATE: "role:create",
     UPDATE: "role:update",
     DELETE: "role:delete",
   },
-  
+
   // Feature toggle permissions
   FEATURE_TOGGLE: {
     VIEW: "feature-toggle:view",
     UPDATE: "feature-toggle:update",
   },
-  
+
   // Tenant permissions
   TENANT: {
     CREATE: "tenant:create",
@@ -257,12 +257,12 @@ export const PERMISSIONS = {
     DISABLE: "tenant:disable",
     DELETE: "tenant:delete",
   },
-  
+
   // Audit permissions
   AUDIT: {
     VIEW: "audit:view",
   },
-  
+
   // Marketplace permissions
   MARKETPLACE: {
     VIEW: "marketplace:view",
@@ -275,30 +275,30 @@ export const PERMISSIONS = {
 
 /**
  * MIGRATION GUIDE: From Hardcoded Roles to Dynamic Permissions
- * 
+ *
  * OLD WAY (using hardcoded role lists):
  * ```tsx
  * import { GRIEVANCE_ACCESS_ROLES, hasRoleAccess } from "@/lib/roleAccess";
- * 
+ *
  * if (hasRoleAccess(GRIEVANCE_ACCESS_ROLES)) {
  *   // Show grievance section
  * }
  * ```
- * 
+ *
  * NEW WAY (using dynamic permissions):
  * ```tsx
  * import { usePermission } from "@/hooks/usePermission";
  * import { ProtectedComponent } from "@/components/auth/ProtectedComponent";
- * 
+ *
  * // Option 1: Using the hook
  * function MyComponent() {
  *   const { hasPermission } = usePermission();
- *   
+ *
  *   if (hasPermission("grievance:view")) {
  *     return <GrievanceSection />;
  *   }
  * }
- * 
+ *
  * // Option 2: Using the ProtectedComponent
  * function MyComponent() {
  *   return (
@@ -307,10 +307,10 @@ export const PERMISSIONS = {
  *     </ProtectedComponent>
  *   );
  * }
- * 
+ *
  * // Option 3: Using permission constants
  * import { PERMISSIONS } from "@/lib/roleAccess";
- * 
+ *
  * <ProtectedComponent permission={PERMISSIONS.GRIEVANCE.VIEW}>
  *   <GrievanceSection />
  * </ProtectedComponent>

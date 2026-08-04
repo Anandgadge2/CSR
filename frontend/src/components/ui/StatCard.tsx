@@ -153,16 +153,16 @@ const COLOR_THEMES = {
 
 const THEME_KEYS = ["blue", "purple", "emerald", "amber", "sky", "indigo", "teal", "rose"] as const;
 
-export function StatCard({ 
-  label, 
-  value, 
-  icon: Icon, 
-  trend, 
+export function StatCard({
+  label,
+  value,
+  icon: Icon,
+  trend,
   index = 0,
   badge,
   sublabel,
   colorTheme,
-  className 
+  className
 }: StatCardProps) {
   const themeKey = colorTheme || THEME_KEYS[index % THEME_KEYS.length];
   const theme = COLOR_THEMES[themeKey];
@@ -171,12 +171,12 @@ export function StatCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ 
-        y: -4, 
+      whileHover={{
+        y: -4,
         rotateX: 3,
         rotateY: -3,
         scale: 1.018,
-        transition: { duration: 0.2, ease: "easeOut" } 
+        transition: { duration: 0.2, ease: "easeOut" }
       }}
       transition={{ duration: 0.25, delay: index * 0.04 }}
       className={cn(
@@ -203,7 +203,7 @@ export function StatCard({
           )}
         </div>
 
-        <div 
+        <div
           className={cn(
             "w-7 h-7 rounded-lg border shadow-2xs group-hover:scale-110 transition-all flex items-center justify-center shrink-0",
             theme.iconBg,
@@ -246,10 +246,10 @@ interface StatCardGroupProps {
   columns?: 2 | 3 | 4;
 }
 
-export function StatCardGroup({ 
-  children, 
+export function StatCardGroup({
+  children,
   className,
-  columns = 4 
+  columns = 4
 }: StatCardGroupProps) {
   const gridCols = {
     2: "grid-cols-1 sm:grid-cols-2",

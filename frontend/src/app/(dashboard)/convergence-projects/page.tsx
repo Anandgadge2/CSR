@@ -12,7 +12,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { Loader } from "@/components/ui/Loader";
-import { 
+import {
   Layers, Search, MapPin, Building2, Coins, CheckCircle2, Eye, FileText, ArrowUpRight
 } from "lucide-react";
 
@@ -45,7 +45,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const roles = useAuthStore((s) => s.roles);
-  
+
   const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
   const isCompany = activeRoles.some(r => r.includes("COMPANY") || r.includes("CORPORATE"));
   const companyName = (user as any)?.organization?.name || (user as any)?.companyName || "";
@@ -69,7 +69,7 @@ export default function ProjectsPage() {
     : Array.isArray(apiResponse?.projects)
     ? apiResponse.projects
     : [];
-  
+
   const projectsList: Project[] = rawProjects.map((p: any, index: number) => ({
     id: p.id || String(index + 1),
     projectId: p.projectId || `PRJ-2026-00${index + 40}`,
@@ -88,30 +88,30 @@ export default function ProjectsPage() {
   }));
 
   const scopedProjects = isCompany && companyName
-    ? projectsList.filter((p) => 
-        p.company.toLowerCase().includes(companyName.toLowerCase()) || 
+    ? projectsList.filter((p) =>
+        p.company.toLowerCase().includes(companyName.toLowerCase()) ||
         companyName.toLowerCase().includes(p.company.toLowerCase())
       )
     : projectsList;
 
   const filteredProjects = scopedProjects.filter((project) => {
-    const matchesSearch = 
+    const matchesSearch =
       project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.projectId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.implementingAgency.toLowerCase().includes(searchQuery.toLowerCase()) ||
       project.district.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesStatus = statusFilter ? project.status === statusFilter : true;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const totalOutlay = scopedProjects.reduce((acc, p) => acc + p.budget, 0);
-  const formattedOutlay = totalOutlay >= 10000000 
-    ? `₹${(totalOutlay / 10000000).toFixed(2)} Cr` 
-    : totalOutlay > 0 
-    ? `₹${(totalOutlay / 100000).toFixed(1)} Lakhs` 
+  const formattedOutlay = totalOutlay >= 10000000
+    ? `₹${(totalOutlay / 10000000).toFixed(2)} Cr`
+    : totalOutlay > 0
+    ? `₹${(totalOutlay / 100000).toFixed(1)} Lakhs`
     : "₹0.0 Cr";
 
   const completedCount = scopedProjects.filter(p => p.status === "COMPLETED").length;

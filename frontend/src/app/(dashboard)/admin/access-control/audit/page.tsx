@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import type { AuditEntry } from "@/types/accessControl";
 import "@/styles/gov-theme.css";
 
+import AccessControlTabs from "@/components/access-control/AccessControlTabs";
+
 export default function AuditPage() {
   const [page, setPage] = useState(1);
   const [actionFilter, setActionFilter] = useState("");
@@ -44,7 +46,7 @@ export default function AuditPage() {
   return (
     <GovPortalLayout>
       <GovPageHeader
-        title="Access Control Audit Log"
+        title="Access Audit Log"
         breadcrumb="Administration / Access Control"
         actions={
           <Button variant="ghost" size="sm" icon={RefreshCw} onClick={() => refetch()}>
@@ -52,6 +54,8 @@ export default function AuditPage() {
           </Button>
         }
       />
+
+      <AccessControlTabs />
 
       <div className="space-y-4">
         {/* Search + Filters */}

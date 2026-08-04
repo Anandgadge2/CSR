@@ -22,9 +22,9 @@ export default function BudgetPieChart({ data, colors }: BudgetPieChartProps) {
             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Pie>
-        <Tooltip 
-          contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", color: "#f8fafc" }} 
-          formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`} 
+        <Tooltip
+          contentStyle={{ backgroundColor: "#0f172a", borderColor: "#1e293b", color: "#f8fafc" }}
+          formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`}
         />
       </PieChart>
     </ResponsiveContainer>

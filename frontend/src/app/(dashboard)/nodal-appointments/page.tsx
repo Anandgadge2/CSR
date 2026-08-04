@@ -87,31 +87,31 @@ export default function NodalAppointmentsPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard 
-          label="Pending Appointments" 
-          value={items.filter(i => i.status === "PENDING_APPOINTMENT").length} 
-          icon={UserPlus} 
-          index={0} 
-          colorTheme="amber" 
-          badge="Awaiting DNO" 
+        <StatCard
+          label="Pending Appointments"
+          value={items.filter(i => i.status === "PENDING_APPOINTMENT").length}
+          icon={UserPlus}
+          index={0}
+          colorTheme="amber"
+          badge="Awaiting DNO"
           sublabel="Awaiting DNO designation"
         />
-        <StatCard 
-          label="Active Nodal Officers" 
-          value={items.filter(i => i.status === "ASSIGNED").length} 
-          icon={CheckCircle2} 
-          index={1} 
-          colorTheme="emerald" 
-          badge="Assigned" 
+        <StatCard
+          label="Active Nodal Officers"
+          value={items.filter(i => i.status === "ASSIGNED").length}
+          icon={CheckCircle2}
+          index={1}
+          colorTheme="emerald"
+          badge="Assigned"
           sublabel="Assigned to field monitoring"
         />
-        <StatCard 
-          label="Total Projects Gated" 
-          value={items.length} 
-          icon={Users} 
-          index={2} 
-          colorTheme="blue" 
-          badge="State Matrix" 
+        <StatCard
+          label="Total Projects Gated"
+          value={items.length}
+          icon={Users}
+          index={2}
+          colorTheme="blue"
+          badge="State Matrix"
           sublabel="State Convergence Matrix"
         />
       </div>

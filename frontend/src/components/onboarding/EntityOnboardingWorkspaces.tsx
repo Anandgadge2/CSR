@@ -314,8 +314,8 @@ function Field({
           else setFieldError(validateField(format, val));
         }}
         className={`w-full rounded-xl border bg-slate-50/80 px-3.5 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition-all focus:bg-white focus:outline-none ${
-          fieldError 
-            ? "border-red-300 bg-red-50/50 text-red-900 focus:border-red-600 focus:ring-2 focus:ring-red-500/20" 
+          fieldError
+            ? "border-red-300 bg-red-50/50 text-red-900 focus:border-red-600 focus:ring-2 focus:ring-red-500/20"
             : "border-slate-200/80 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
         }`}
       />
@@ -331,10 +331,10 @@ function SelectField({ label, value, onChange, options, required }: { label: str
         {label}
         {required && <span className="text-red-500 font-bold">*</span>}
       </span>
-      <select 
-        value={value || ""} 
-        required={required} 
-        onChange={(event) => onChange(event.target.value)} 
+      <select
+        value={value || ""}
+        required={required}
+        onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-2.5 text-xs font-semibold text-slate-900 shadow-sm transition-all focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
       >
         <option value="">Select option</option>
@@ -372,8 +372,8 @@ function CheckboxList({ label, values, options, onChange }: { label: string; val
         {options.map((option) => {
           const isChecked = selected.has(option);
           return (
-            <label 
-              key={option} 
+            <label
+              key={option}
               className={`flex items-start gap-3 rounded-xl border p-3.5 text-xs font-semibold cursor-pointer transition-all ${
                 isChecked
                   ? "bg-blue-50/60 border-blue-300 text-blue-950 shadow-sm"
@@ -416,7 +416,7 @@ function MultiSelectField({
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const selectedSet = new Set(values || []);
 
   useEffect(() => {
@@ -453,7 +453,7 @@ function MultiSelectField({
   return (
     <div className={`flex flex-col gap-1.5 text-xs font-bold text-slate-800 md:col-span-2 relative ${isOpen ? "z-50" : "z-10"}`} ref={dropdownRef}>
       <span>{label}</span>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
         className="min-h-[42px] rounded-xl border border-slate-200/80 bg-slate-50/80 px-3.5 py-1.5 flex items-center justify-between gap-2 cursor-pointer focus-within:border-blue-600 focus-within:bg-white shadow-sm transition-all"
       >
@@ -462,8 +462,8 @@ function MultiSelectField({
             values.map(val => (
               <span key={val} className="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-900 text-xs font-semibold px-2.5 py-0.5 rounded-lg border border-blue-200">
                 {val}
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={(e) => removeOption(val, e)}
                   className="hover:text-red-600 focus:outline-none"
                 >
@@ -628,16 +628,16 @@ export function CompanyOnboardingStep() {
   const maharashtraState = locationData.find(s => s.name === "Maharashtra");
   const maharashtraDistrictsList = maharashtraState?.districts.map(d => d.name) || [];
 
-  const availableDistrictsOptions = selectedDivisions.length > 0 
-    ? selectedDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || []) 
+  const availableDistrictsOptions = selectedDivisions.length > 0
+    ? selectedDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || [])
     : maharashtraDistrictsList;
 
-  const availableCitiesOptions = selectedDistricts.length > 0 
-    ? maharashtraState?.districts.filter(d => selectedDistricts.includes(d.name)).flatMap(d => d.cities) || [] 
+  const availableCitiesOptions = selectedDistricts.length > 0
+    ? maharashtraState?.districts.filter(d => selectedDistricts.includes(d.name)).flatMap(d => d.cities) || []
     : [];
 
-  const availableTalukasOptions = selectedDistricts.length > 0 
-    ? maharashtraState?.districts.filter(d => selectedDistricts.includes(d.name)).flatMap(d => d.talukas) || [] 
+  const availableTalukasOptions = selectedDistricts.length > 0
+    ? maharashtraState?.districts.filter(d => selectedDistricts.includes(d.name)).flatMap(d => d.talukas) || []
     : [];
 
   const setData = (key: string, value: any) => {
@@ -659,7 +659,7 @@ export function CompanyOnboardingStep() {
       // Hydrate from the database after saving so the next render represents
       // persisted values, not merely the local draft.
       await load();
-      
+
       const currentIdx = companySteps.findIndex((s) => s.key === step);
       if (currentIdx < companySteps.length - 1) {
         setStep(companySteps[currentIdx + 1].key as any);
@@ -708,8 +708,8 @@ export function CompanyOnboardingStep() {
             <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-600 shrink-0" size={18} /> Sensitive payment and compliance documents will not be public.</p>
           </div>
           <div className="pt-4 border-t border-slate-100">
-            <button 
-              onClick={submit} 
+            <button
+              onClick={submit}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-6 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105 disabled:opacity-50"
             >
@@ -990,7 +990,7 @@ function DocumentsStep({
   return (
     <Shell title={title} description="Upload onboarding verification documents. Each document type below has a dedicated upload slot. Mandatory documents are marked with a red star (*)." steps={steps} currentStep={currentStep} onStepChange={onStepChange} status={status}>
       <ErrorBox error={error} />
-      
+
       <div className="rounded-3xl border border-white/80 bg-white/90 backdrop-blur-2xl shadow-glass overflow-hidden flex flex-col">
         <div className="border-b border-slate-100 p-6 flex justify-between items-center bg-slate-50/50">
           <div>
@@ -1036,8 +1036,8 @@ function DocumentsStep({
             const uploadedDoc = documents.find((doc) => doc.documentType === type);
             const isUploading = uploadingType === type;
             return (
-              <div 
-                key={type} 
+              <div
+                key={type}
                 className={`flex flex-col md:flex-row md:items-center md:justify-between p-4 md:p-5 gap-4 transition-colors ${
                   isUploading ? "bg-blue-50/60 border-l-4 border-l-blue-600" : "hover:bg-slate-50/50"
                 }`}
@@ -1093,8 +1093,8 @@ function DocumentsStep({
                     </>
                   ) : (
                     <label className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-xl text-xs font-bold text-white shadow-sm transition-all px-4 ${
-                      isUploading 
-                        ? "bg-blue-800 cursor-wait opacity-90 shadow-inner" 
+                      isUploading
+                        ? "bg-blue-800 cursor-wait opacity-90 shadow-inner"
                         : "bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 hover:shadow hover:scale-105 cursor-pointer"
                     }`}>
                       {isUploading ? (
@@ -1168,7 +1168,7 @@ export function DepartmentOnboardingStep() {
       await apiFetch(endpoint, { method: "PUT", body: JSON.stringify(data) }).catch((err) => {
         console.warn("[Dept save] API endpoint warning:", err.message);
       });
-      
+
       const currentIdx = departmentSteps.findIndex((s) => s.key === step);
       if (currentIdx < departmentSteps.length - 1) {
         setStep(departmentSteps[currentIdx + 1].key as any);
@@ -1213,8 +1213,8 @@ export function DepartmentOnboardingStep() {
             <p className="flex items-center gap-2"><CheckCircle2 className="text-emerald-600 shrink-0" size={18} /> Designated Nodal Officer holds authorization to submit CSR pitches.</p>
           </div>
           <div className="pt-4 border-t border-slate-100">
-            <button 
-              onClick={submit} 
+            <button
+              onClick={submit}
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 px-6 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-105 disabled:opacity-50"
             >

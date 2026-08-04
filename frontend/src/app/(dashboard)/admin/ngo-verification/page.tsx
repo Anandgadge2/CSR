@@ -80,7 +80,7 @@ export default function NGOEmpanelmentVerification() {
     }
   };
 
-  const filteredNgos = ngos.filter(ngo => 
+  const filteredNgos = ngos.filter(ngo =>
     ngo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ngo.registrationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ngo.district.toLowerCase().includes(searchTerm.toLowerCase())
@@ -147,8 +147,8 @@ export default function NGOEmpanelmentVerification() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {filteredNgos.map((ngo) => (
-                        <tr 
-                          key={ngo.id} 
+                        <tr
+                          key={ngo.id}
                           onClick={() => {
                             setSelectedNgo(ngo);
                             setRemarks(ngo.empanelmentRemarks || "");

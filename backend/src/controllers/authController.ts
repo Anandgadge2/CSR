@@ -470,16 +470,39 @@ export const me = async (req: any, res: Response, next: NextFunction) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ error: "Not authenticated" });
 
-    const user = await prisma.user.findUnique({
+    const userRecord = await prisma.user.findUnique({
       where: { id: userId },
       include: { organization: true, role: true }
     });
 
-    if (!user || user.deletedAt || user.accountStatus !== "ACTIVE" || !user.isVerified) {
+    if (!userRecord || userRecord.deletedAt || userRecord.accountStatus !== "ACTIVE" || !userRecord.isVerified) {
       return res.status(401).json({ error: "User inactive or disabled" });
     }
 
-    return res.json({ user });
+    const roleName = userRecord.role?.name || "GUEST";
+    const roleSlug = roleName.toLowerCase().replace(/_/g, "-");
+
+    const user = {
+      ...userRecord,
+      roleNumericId: userRecord.roleId,
+      roleSlug,
+      role: roleName
+    };
+
+    const permissionData = await computeUserPermissions({
+      userId: userRecord.id,
+      role: userRecord.role?.name,
+      roleId: userRecord.roleId,
+      organizationId: userRecord.organizationId
+    });
+
+    return res.json({
+      user,
+      permissions: permissionData.permissions,
+      roles: permissionData.roles,
+      roleDetails: permissionData.roleDetails,
+      isAdmin: permissionData.isAdmin
+    });
   } catch (error) {
     next(error);
   }

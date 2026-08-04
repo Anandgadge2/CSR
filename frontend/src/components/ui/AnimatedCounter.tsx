@@ -53,7 +53,7 @@ export function AnimatedCounter({
     const animate = (currentTime: number) => {
       if (!startTime) startTime = currentTime;
       const progress = Math.min((currentTime - startTime) / (duration * 1000), 1);
-      
+
       // Cubic ease-out
       const easeProgress = 1 - Math.pow(1 - progress, 3);
       const currentNum = targetNum * easeProgress;

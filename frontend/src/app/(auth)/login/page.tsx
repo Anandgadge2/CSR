@@ -158,7 +158,7 @@ function LoginForm() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[42rem] h-[42rem] bg-gradient-to-tl from-blue-600/20 via-indigo-600/15 to-transparent rounded-full blur-[140px] pointer-events-none" />
 
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center z-10">
-        
+
         {/* Left Side: Brand Showcase & Emblem */}
         <motion.div
           initial={{ opacity: 0, x: -25 }}

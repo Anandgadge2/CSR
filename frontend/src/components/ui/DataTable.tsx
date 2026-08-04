@@ -3,10 +3,10 @@
 
 import { ReactNode, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ChevronUp, 
-  ChevronDown, 
-  ChevronLeft, 
+import {
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Search,
   Filter,
@@ -220,8 +220,8 @@ export function DataTable<T>({
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.15 }}
                         >
-                          {sortConfig.direction === "asc" ? 
-                            <ChevronUp size={14} className="text-blue-500" /> : 
+                          {sortConfig.direction === "asc" ?
+                            <ChevronUp size={14} className="text-blue-500" /> :
                             <ChevronDown size={14} className="text-blue-500" />
                           }
                         </motion.span>

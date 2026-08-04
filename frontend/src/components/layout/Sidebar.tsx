@@ -1,14 +1,35 @@
-// Sidebar Component with Animations
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, ChevronLeft, LucideIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ChevronLeft, ChevronRight, ChevronDown, LayoutDashboard, FileText,
+  Briefcase, Building2, DollarSign, Shield, HelpCircle, Send, Heart,
+  ClipboardCheck, ListTodo, Store, UserCheck, Flag, Search, CheckCircle,
+  Building, Users, FileCheck, UserPlus, BarChart3, ShieldAlert, UserCog,
+  CheckSquare, Sliders, AlertTriangle, ShieldCheck, LucideIcon
+} from "lucide-react";
+import {
+  NAVIGATION_GROUPS,
+  NAVIGATION_MANIFEST,
+  isNavItemAllowed,
+  NavItemDef,
+  NavGroupDef
+} from "@/lib/navigationManifest";
+import { useAuthStore } from "@/store/authStore";
 import { cn } from "@/lib/utils";
 
+const ICON_MAP: Record<string, LucideIcon> = {
+  LayoutDashboard, FileText, Send, Heart, ClipboardCheck, ListTodo, Store,
+  Briefcase, UserCheck, Flag, Search, CheckCircle, Building2, Building,
+  Users, FileCheck, UserPlus, DollarSign, BarChart3, ShieldAlert, UserCog,
+  Shield, CheckSquare, Sliders, HelpCircle, AlertTriangle, ShieldCheck
+};
+
 export interface SidebarItem {
+  id: string;
   label: string;
   href: string;
   icon: LucideIcon;
@@ -16,133 +37,266 @@ export interface SidebarItem {
   children?: SidebarItem[];
 }
 
-interface SidebarProps {
-  items: SidebarItem[];
-  collapsed?: boolean;
-  onCollapse?: (collapsed: boolean) => void;
-  className?: string;
+export function resolveNavIcon(name: string): LucideIcon {
+  return ICON_MAP[name] || FileText;
 }
 
-export function Sidebar({ 
-  items, 
-  collapsed = false,
-  onCollapse,
-  className 
-}: SidebarProps) {
-  const pathname = usePathname();
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+export function getActiveNavContext(pathname: string) {
+  let matchedItem = NAVIGATION_MANIFEST.find((item) => item.route === pathname);
 
-  const toggleGroup = (label: string) => {
-    setExpandedGroups(prev => 
-      prev.includes(label) 
-        ? prev.filter(l => l !== label)
-        : [...prev, label]
+  if (!matchedItem) {
+    const candidates = NAVIGATION_MANIFEST.filter((item) =>
+      pathname === item.route || pathname.startsWith(item.route + "/")
     );
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => b.route.length - a.route.length);
+      matchedItem = candidates[0];
+    }
+  }
+
+  if (!matchedItem) {
+    return { activeItemId: null, activeGroupId: null };
+  }
+
+  let activeItemId = matchedItem.id;
+  if (matchedItem.navigationLevel === "WORKSPACE_TAB" && matchedItem.parentNavId) {
+    activeItemId = matchedItem.parentNavId;
+  }
+
+  const activeItemDef = NAVIGATION_MANIFEST.find((i) => i.id === activeItemId);
+  const activeGroupId = activeItemDef?.parentNavId || null;
+
+  return { activeItemId, activeGroupId };
+}
+
+interface SidebarProps {
+  collapsed?: boolean;
+  onCollapseToggle?: () => void;
+  className?: string;
+  tenantFeatures?: Record<string, boolean>;
+}
+
+export function Sidebar({
+  collapsed = false,
+  onCollapseToggle,
+  className,
+  tenantFeatures
+}: SidebarProps) {
+  const pathname = usePathname() || "";
+  const { hasPermission, isAdmin, isLoadingPermissions, fetchStatus } = useAuthStore();
+
+  const [isHovered, setIsHovered] = useState(false);
+  const isEffectiveExpanded = !collapsed || isHovered;
+
+  const { activeItemId, activeGroupId } = useMemo(() => getActiveNavContext(pathname), [pathname]);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(activeGroupId);
+
+  // Auto-expand group containing the active route
+  useEffect(() => {
+    if (activeGroupId) {
+      setExpandedGroup(activeGroupId);
+    }
+  }, [activeGroupId]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroup((prev) => (prev === groupId ? null : groupId));
   };
 
+  // Filter items by permission, feature flag, and scope
+  const { visibleDashboard, visibleGroups } = useMemo(() => {
+    if (fetchStatus === "ERROR") {
+      return { visibleDashboard: null, visibleGroups: [] };
+    }
+
+    const dashboardItem = NAVIGATION_MANIFEST.find((i) => i.id === "dashboard");
+    const canSeeDashboard = dashboardItem
+      ? isNavItemAllowed(dashboardItem, hasPermission, isAdmin)
+      : false;
+
+    const filteredGroups = NAVIGATION_GROUPS.map((group) => {
+      const children = group.childIds
+        .map((id) => NAVIGATION_MANIFEST.find((item) => item.id === id))
+        .filter((item): item is NavItemDef => {
+          if (!item) return false;
+          if (!item.showInSidebar) return false;
+          if (item.featureFlag && tenantFeatures && tenantFeatures[item.featureFlag] === false) {
+            return false;
+          }
+          return isNavItemAllowed(item, hasPermission, isAdmin);
+        });
+
+      return {
+        ...group,
+        children
+      };
+    }).filter((group) => group.children.length > 0);
+
+    return {
+      visibleDashboard: canSeeDashboard ? dashboardItem : null,
+      visibleGroups: filteredGroups
+    };
+  }, [hasPermission, isAdmin, fetchStatus, tenantFeatures]);
+
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 80 : 280 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+    <aside
+      role="navigation"
+      aria-label="Main Sidebar Navigation"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "fixed left-0 top-16 bottom-0 bg-white border-r border-gray-200 z-40",
+        "hidden lg:flex flex-col border-r border-slate-200/80 bg-slate-50/80 backdrop-blur-xl shrink-0 transition-all duration-300 ease-in-out fixed left-0 top-[56px] h-[calc(100vh-56px)] z-40 justify-between py-3 select-none",
+        isEffectiveExpanded ? "w-64 shadow-xl border-slate-300/80 bg-white/95" : "w-[68px] shadow-xs bg-slate-50/80",
         className
       )}
     >
-      {/* Collapse Toggle */}
-      <button
-        onClick={() => onCollapse?.(!collapsed)}
-        className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors shadow-sm"
-      >
-        <motion.div
-          animate={{ rotate: collapsed ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <ChevronLeft size={14} />
-        </motion.div>
-      </button>
-
-      <nav className="p-3 space-y-1 h-full overflow-y-auto">
-        {items.map((item) => {
-          const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
-          const hasChildren = item.children && item.children.length > 0;
-          const isExpanded = expandedGroups.includes(item.label);
-          const Icon = item.icon;
-
-          return (
-            <div key={item.label}>
+      {/* Scrollable Navigation Area */}
+      <div className="flex-1 overflow-y-auto px-3 space-y-1.5 scrollbar-thin">
+        {isLoadingPermissions ? (
+          <div className="space-y-3 py-2" role="status" aria-label="Loading navigation">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100/70 animate-pulse">
+                <div className="h-4 w-4 rounded-full bg-slate-200 shrink-0" />
+                {isEffectiveExpanded && <div className="h-3.5 bg-slate-200 rounded w-28" />}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* Direct Dashboard Link */}
+            {visibleDashboard && (
               <Link
-                href={item.href}
-                prefetch={true}
-                onClick={(e) => {
-                  if (hasChildren) {
-                    e.preventDefault();
-                    toggleGroup(item.label);
-                  }
-                }}
+                href={visibleDashboard.route}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150",
-                  isActive 
-                    ? "bg-primary-50 text-primary-700 font-medium" 
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all group relative no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                  activeItemId === "dashboard"
+                    ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20 font-extrabold"
+                    : "text-slate-700 hover:text-blue-900 hover:bg-slate-200/60"
                 )}
               >
-                <Icon size={20} className="shrink-0" />
-                {!collapsed && (
-                  <>
-                    <span className="flex-1 text-sm truncate">{item.label}</span>
-                    {item.badge && (
-                      <span className="bg-primary-100 text-primary-700 text-xs font-medium px-2 py-0.5 rounded-full shrink-0">
-                        {item.badge}
-                      </span>
-                    )}
-                    {hasChildren && (
-                      <motion.span
-                        animate={{ rotate: isExpanded ? 90 : 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="shrink-0"
-                      >
-                        <ChevronRight size={14} />
-                      </motion.span>
-                    )}
-                  </>
+                <LayoutDashboard
+                  size={18}
+                  className={activeItemId === "dashboard" ? "text-white shrink-0" : "text-slate-500 group-hover:text-blue-700 shrink-0"}
+                />
+                {isEffectiveExpanded && <span className="truncate">{visibleDashboard.label}</span>}
+                {!isEffectiveExpanded && (
+                  <div className="absolute left-[74px] bg-slate-900 text-white py-1 px-2.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity text-xs whitespace-nowrap z-50 shadow-md font-medium">
+                    Dashboard
+                  </div>
                 )}
               </Link>
+            )}
 
-              {/* Submenu */}
-              <AnimatePresence>
-                {!collapsed && hasChildren && isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
+            {/* Grouped Collapsible Sections */}
+            {visibleGroups.map((group) => {
+              const GroupIcon = resolveNavIcon(group.iconName);
+              const isGroupActive = activeGroupId === group.id;
+              const isSectionExpanded = expandedGroup === group.id;
+
+              return (
+                <div key={group.id} className="space-y-0.5">
+                  {/* Group Trigger Button */}
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.id)}
+                    aria-expanded={isSectionExpanded}
+                    aria-controls={`group-menu-${group.id}`}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all group relative text-left no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                      isGroupActive
+                        ? "text-blue-900 bg-blue-50/70 font-extrabold"
+                        : "text-slate-700 hover:text-slate-900 hover:bg-slate-200/50"
+                    )}
                   >
-                    <div className="ml-6 pl-3 border-l border-gray-200 mt-1 space-y-1">
-                      {item.children!.map((child) => (
-                        <Link
-                          key={child.label}
-                          href={child.href}
-                          className={cn(
-                            "block px-3 py-2 rounded-lg text-sm transition-colors",
-                            pathname === child.href
-                              ? "text-primary-700 font-medium"
-                              : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                          )}
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <GroupIcon
+                        size={18}
+                        className={isGroupActive ? "text-blue-700 shrink-0" : "text-slate-500 group-hover:text-slate-800 shrink-0"}
+                      />
+                      {isEffectiveExpanded && <span className="truncate">{group.label}</span>}
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
-      </nav>
-    </motion.aside>
+
+                    {isEffectiveExpanded && (
+                      <ChevronDown
+                        size={14}
+                        className={cn("text-slate-400 transition-transform duration-200 shrink-0", isSectionExpanded && "rotate-180")}
+                      />
+                    )}
+
+                    {!isEffectiveExpanded && (
+                      <div className="absolute left-[74px] bg-slate-900 text-white py-1 px-2.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity text-xs whitespace-nowrap z-50 shadow-md font-medium">
+                        {group.label}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Group Children Links */}
+                  <AnimatePresence initial={false}>
+                    {isEffectiveExpanded && isSectionExpanded && (
+                      <motion.div
+                        id={`group-menu-${group.id}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.18, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-0.5 ml-4 pl-3 border-l border-slate-200"
+                      >
+                        {group.children.map((child) => {
+                          const isChildActive = activeItemId === child.id;
+                          const ChildIcon = resolveNavIcon(child.iconName);
+
+                          return (
+                            <Link
+                              key={child.id}
+                              href={child.route}
+                              title={child.formalTitle || child.label}
+                              className={cn(
+                                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600",
+                                isChildActive
+                                  ? "bg-blue-600 text-white shadow-2xs font-bold"
+                                  : "text-slate-600 hover:text-blue-900 hover:bg-slate-100"
+                              )}
+                            >
+                              <ChildIcon
+                                size={15}
+                                className={isChildActive ? "text-white shrink-0" : "text-slate-400 shrink-0"}
+                              />
+                              <span className="truncate">{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* Secondary Bottom Collapse Control */}
+      <div className="px-3 pt-2 border-t border-slate-200/80">
+        <button
+          type="button"
+          onClick={onCollapseToggle}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="w-full h-10 flex items-center justify-center gap-2 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 shadow-2xs"
+        >
+          {collapsed ? (
+            <>
+              <ChevronRight size={16} />
+              {isEffectiveExpanded && <span>Expand sidebar</span>}
+            </>
+          ) : (
+            <>
+              <ChevronLeft size={16} />
+              {isEffectiveExpanded && <span>Collapse sidebar</span>}
+            </>
+          )}
+        </button>
+      </div>
+    </aside>
   );
 }
+
+export default Sidebar;

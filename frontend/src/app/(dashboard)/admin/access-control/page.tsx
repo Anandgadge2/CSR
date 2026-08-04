@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
+import AccessControlTabs from "@/components/access-control/AccessControlTabs";
 import { useOverviewStats } from "@/hooks/useAccessControl";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
@@ -65,6 +66,8 @@ export default function AccessControlOverviewPage() {
         breadcrumb="Administration"
         description="Manage roles, permissions, assignments, and audit trails."
       />
+
+      <AccessControlTabs />
 
       <div className="space-y-6">
         {/* KPI Stat Cards */}

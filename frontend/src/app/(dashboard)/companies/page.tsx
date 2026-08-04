@@ -84,12 +84,12 @@ export default function CompaniesPage() {
     ? `₹${(totalBudget / 10000000).toFixed(1)} Cr`
     : "₹0.0 Cr";
 
-  const filteredCompanies = companiesList.filter((c: any) => 
+  const filteredCompanies = companiesList.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.cin.toLowerCase().includes(search.toLowerCase()) ||
     c.district.toLowerCase().includes(search.toLowerCase())
   );
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 9;
 

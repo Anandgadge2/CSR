@@ -215,9 +215,9 @@ function TrackContent() {
       }
 
       setTrackingData({
-        trackingId: isPitch 
-          ? (enquiry.pitchReferenceId ?? response.trackingId) 
-          : isInterest 
+        trackingId: isPitch
+          ? (enquiry.pitchReferenceId ?? response.trackingId)
+          : isInterest
           ? (enquiry.interestTrackingId ?? response.trackingId)
           : enquiry.trackingId,
         type: isPitch ? "PITCH" : isInterest ? "INTEREST" : "ENQUIRY",
@@ -228,20 +228,20 @@ function TrackContent() {
         details: {
           companyName: isPitch ? enquiry.department : enquiry.companyName,
           sector: isPitch ? enquiry.officeName : enquiry.sector,
-          district: isPitch 
+          district: isPitch
             ? (enquiry.districts?.join(", ") || enquiry.district)
-            : isInterest 
-            ? enquiry.governmentPitch?.district 
+            : isInterest
+            ? enquiry.governmentPitch?.district
             : enquiry.preferredDistricts?.join(", "),
-          contactPerson: isPitch 
-            ? `${enquiry.officialName} (${enquiry.designation})` 
+          contactPerson: isPitch
+            ? `${enquiry.officialName} (${enquiry.designation})`
             : enquiry.contactPersonName,
-          requirement: isPitch 
-            ? enquiry.csrRequirement 
-            : isInterest 
-            ? enquiry.governmentPitch?.csrRequirement 
+          requirement: isPitch
+            ? enquiry.csrRequirement
+            : isInterest
+            ? enquiry.governmentPitch?.csrRequirement
             : enquiry.proposedCsrWork,
-          estimatedCost: isPitch 
+          estimatedCost: isPitch
             ? (enquiry.estimatedCost ? Number(enquiry.estimatedCost) : enquiry.budget ? Number(enquiry.budget) : undefined)
             : isInterest
             ? (enquiry.governmentPitch?.estimatedCost ? Number(enquiry.governmentPitch?.estimatedCost) : undefined)
@@ -363,8 +363,8 @@ function TrackContent() {
                   <div className="bg-slate-50 p-4 rounded">
                     <p className="text-xs text-slate-500 mb-1">Application Type</p>
                     <p className="font-bold text-[#14274e]">
-                      {trackingData.type === "ENQUIRY" 
-                        ? "CSR Enquiry" 
+                      {trackingData.type === "ENQUIRY"
+                        ? "CSR Enquiry"
                         : trackingData.type === "INTEREST"
                         ? "Corporate CSR Interest"
                         : "Development Pitch"}

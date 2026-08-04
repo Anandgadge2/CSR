@@ -5,12 +5,12 @@ import { ReactNode } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  Bell, 
-  Search, 
-  Menu, 
-  ChevronDown, 
-  LogOut, 
+import {
+  Bell,
+  Search,
+  Menu,
+  ChevronDown,
+  LogOut,
   User,
   Settings,
   Mail
@@ -70,7 +70,7 @@ export function Header({
               <Menu size={20} />
             </button>
           )}
-          
+
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">M</span>
@@ -135,15 +135,15 @@ export function Header({
                 <p className="text-sm text-gray-500">{userEmail}</p>
               </div>
               <div className="p-2">
-                <Link 
-                  href="/profile" 
+                <Link
+                  href="/profile"
                   className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <User size={16} />
                   Profile
                 </Link>
-                <Link 
-                  href="/settings" 
+                <Link
+                  href="/settings"
                   className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <Settings size={16} />
@@ -151,7 +151,7 @@ export function Header({
                 </Link>
               </div>
               <div className="p-2 border-t border-gray-100">
-                <button 
+                <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 rounded-lg transition-colors w-full"
                 >

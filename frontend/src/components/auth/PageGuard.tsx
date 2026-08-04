@@ -59,7 +59,7 @@ export default function PageGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-gray-500" role="status" aria-live="polite">
         <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-4" />
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Verifying authorization permissions...</p>
+        <p className="text-sm font-medium text-gray-700 dark:text-black">Verifying authorization permissions...</p>
       </div>
     );
   }

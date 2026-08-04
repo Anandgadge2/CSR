@@ -8,7 +8,7 @@ import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
 import { Loader } from "@/components/ui/Loader";
-import { 
+import {
   Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, FileText
 } from "lucide-react";
 
@@ -81,31 +81,31 @@ export default function RequirementsPage() {
 
       {/* Modern Metrics Grid */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <StatCard 
-          label="Total Requirements" 
-          value={reqsList.length} 
-          icon={FileText} 
-          index={0} 
-          colorTheme="blue" 
-          badge="CSR Needs" 
+        <StatCard
+          label="Total Requirements"
+          value={reqsList.length}
+          icon={FileText}
+          index={0}
+          colorTheme="blue"
+          badge="CSR Needs"
           sublabel="Departmental CSR Needs"
         />
-        <StatCard 
-          label="Total Funding Needed" 
-          value={`₹${(reqsList.reduce((acc, curr) => acc + curr.estimatedCostLakhs, 0) / 100).toFixed(2)} Cr`} 
-          icon={Coins} 
-          index={1} 
-          colorTheme="amber" 
-          badge="Gap Funding" 
+        <StatCard
+          label="Total Funding Needed"
+          value={`₹${(reqsList.reduce((acc, curr) => acc + curr.estimatedCostLakhs, 0) / 100).toFixed(2)} Cr`}
+          icon={Coins}
+          index={1}
+          colorTheme="amber"
+          badge="Gap Funding"
           sublabel="Gap funding requirement"
         />
-        <StatCard 
-          label="Published Needs" 
-          value={reqsList.filter(r => r.status === "PUBLISHED" || r.status === "APPROVED").length} 
-          icon={CheckCircle2} 
-          index={2} 
-          colorTheme="emerald" 
-          badge="Open Pledges" 
+        <StatCard
+          label="Published Needs"
+          value={reqsList.filter(r => r.status === "PUBLISHED" || r.status === "APPROVED").length}
+          icon={CheckCircle2}
+          index={2}
+          colorTheme="emerald"
+          badge="Open Pledges"
           sublabel="Open for CSR pledges"
         />
       </div>

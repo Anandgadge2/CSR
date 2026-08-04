@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
-import { 
+import {
   FileText, Download, Filter, Search, CheckCircle2, ShieldCheck, BarChart3, ArrowUpRight, Sparkles, TrendingUp, PieChart, Coins, Activity, Layers, Landmark
 } from "lucide-react";
 import {
@@ -140,7 +140,7 @@ export default function ReportsPage() {
     updatedAt: r.updatedAt ? new Date(r.updatedAt).toISOString().split("T")[0] : "2026-07-25",
   })) : defaultReports;
 
-  const filtered = reportsList.filter(r => 
+  const filtered = reportsList.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
     r.code.toLowerCase().includes(search.toLowerCase()) ||
     r.category.toLowerCase().includes(search.toLowerCase())
@@ -187,36 +187,36 @@ export default function ReportsPage() {
 
       {/* 3D KPI Key Statistics Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard 
-          label="Total CSR Committed" 
-          value="₹141.1 Cr" 
-          icon={Coins} 
-          index={0} 
-          badge="+24% YoY" 
+        <StatCard
+          label="Total CSR Committed"
+          value="₹141.1 Cr"
+          icon={Coins}
+          index={0}
+          badge="+24% YoY"
           sublabel="Outlay Growth"
         />
-        <StatCard 
-          label="Utilization Rate" 
-          value="91.4%" 
-          icon={Activity} 
-          index={1} 
-          badge="Verified" 
+        <StatCard
+          label="Utilization Rate"
+          value="91.4%"
+          icon={Activity}
+          index={1}
+          badge="Verified"
           sublabel="Tranche Releases"
         />
-        <StatCard 
-          label="Aspirational Priority" 
-          value="56%" 
-          icon={Landmark} 
-          index={2} 
-          badge="Tribal Focus" 
+        <StatCard
+          label="Aspirational Priority"
+          value="56%"
+          icon={Landmark}
+          index={2}
+          badge="Tribal Focus"
           sublabel="Tribal Districts Outlay"
         />
-        <StatCard 
-          label="MCA Compliance" 
-          value="100%" 
-          icon={Sparkles} 
-          index={3} 
-          badge="Sec 135 OK" 
+        <StatCard
+          label="MCA Compliance"
+          value="100%"
+          icon={Sparkles}
+          index={3}
+          badge="Sec 135 OK"
           sublabel="Section 135 Compliant"
         />
       </div>

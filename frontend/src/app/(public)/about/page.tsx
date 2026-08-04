@@ -189,13 +189,13 @@ export default function AboutPage({ params }: { params?: { tab?: string } }) {
             <GovCard key={sec.index}>
               <GovCardBody>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ 
-                    fontSize: 10, 
-                    fontWeight: 800, 
-                    color: "var(--gov-saffron)", 
-                    background: "#fef3e0", 
-                    padding: "4px 10px", 
-                    borderRadius: 12 
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: "var(--gov-saffron)",
+                    background: "#fef3e0",
+                    padding: "4px 10px",
+                    borderRadius: 12
                   }}>
                     Clause {sec.index}
                   </span>

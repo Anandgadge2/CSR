@@ -1709,7 +1709,7 @@ export function AdminOnboardingApprovalsWorkspace() {
       const queryParams = new URLSearchParams();
       if (typeFilter !== "ALL") queryParams.append("kind", typeFilter);
       queryParams.append("status", statusFilter);
-      
+
       const endpoint = `/admin/organizations/pending?${queryParams.toString()}`;
       setItems(await apiFetch<Organization[]>(endpoint));
     } catch (err: any) {
@@ -1719,9 +1719,9 @@ export function AdminOnboardingApprovalsWorkspace() {
     }
   };
 
-  useEffect(() => { 
+  useEffect(() => {
     setCurrentPage(1);
-    load(); 
+    load();
   }, [typeFilter, statusFilter]);
 
   const action = async (id: string, type: "approve" | "reject" | "request-clarification" | "suspend") => {
@@ -1737,8 +1737,8 @@ export function AdminOnboardingApprovalsWorkspace() {
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return items;
     const q = searchQuery.toLowerCase();
-    return items.filter(i => 
-      i.name.toLowerCase().includes(q) || 
+    return items.filter(i =>
+      i.name.toLowerCase().includes(q) ||
       (i.email || i.officialEmail || "").toLowerCase().includes(q) ||
       (i.district || "").toLowerCase().includes(q)
     );
@@ -1751,9 +1751,9 @@ export function AdminOnboardingApprovalsWorkspace() {
   }, [filteredItems, currentPage]);
 
   return (
-    <WorkspaceShell 
-      eyebrow="Portal Admin" 
-      title="Onboarding Approvals" 
+    <WorkspaceShell
+      eyebrow="Portal Admin"
+      title="Onboarding Approvals"
       description="Review and approve NGO, CSR company and government department onboarding applications."
       actions={
         <div className="flex items-center gap-3">
@@ -1888,7 +1888,7 @@ export function AdminOnboardingApprovalsWorkspace() {
                     const isApproved = statusLabel === "APPROVED" || item.status === "ACTIVE";
 
                     return (
-                      <motion.tr 
+                      <motion.tr
                         key={item.id}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -3227,7 +3227,7 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
                     <h4 className="font-bold text-purple-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                       <Target size={14} className="text-purple-700" /> Sector & Target Geography Preferences
                     </h4>
-                    
+
                     <div>
                       <span className="text-slate-400 block text-[10px] font-bold uppercase mb-1">Preferred Focus Sectors</span>
                       <div className="flex flex-wrap gap-1.5">
@@ -3374,9 +3374,9 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
                       Approved & Active
                     </div>
                   ) : (
-                    <Button 
-                      onClick={() => executeAction("approve")} 
-                      loading={actionLoading && activeAction === "approve"} 
+                    <Button
+                      onClick={() => executeAction("approve")}
+                      loading={actionLoading && activeAction === "approve"}
                       disabled={actionLoading}
                       className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 shadow-2xs cursor-pointer"
                     >
@@ -3385,10 +3385,10 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
                   )}
 
                   {!(org.onboardingStatus === "APPROVED" || org.status === "ACTIVE" || org.onboardingStatus === "ACTIVE") && (
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => openActionModal("request-clarification")} 
-                      loading={actionLoading && activeAction === "request-clarification"} 
+                    <Button
+                      variant="secondary"
+                      onClick={() => openActionModal("request-clarification")}
+                      loading={actionLoading && activeAction === "request-clarification"}
                       disabled={actionLoading}
                       className="w-full font-bold cursor-pointer"
                     >
@@ -3402,10 +3402,10 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
                       Application Rejected
                     </div>
                   ) : (
-                    <Button 
-                      variant="danger" 
-                      onClick={() => openActionModal("reject")} 
-                      loading={actionLoading && activeAction === "reject"} 
+                    <Button
+                      variant="danger"
+                      onClick={() => openActionModal("reject")}
+                      loading={actionLoading && activeAction === "reject"}
                       disabled={actionLoading}
                       className="w-full font-bold cursor-pointer"
                     >
@@ -3419,10 +3419,10 @@ export function AdminOrganizationDetailsWorkspace({ organizationId }: { organiza
                       Organization Access Suspended
                     </div>
                   ) : (
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => openActionModal("suspend")} 
-                      loading={actionLoading && activeAction === "suspend"} 
+                    <Button
+                      variant="secondary"
+                      onClick={() => openActionModal("suspend")}
+                      loading={actionLoading && activeAction === "suspend"}
                       disabled={actionLoading}
                       className="w-full font-bold text-slate-600 cursor-pointer"
                     >

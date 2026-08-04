@@ -92,28 +92,28 @@ export default function AuditLogsPage() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard 
-          label="Total Logged Events" 
-          value={logs.length} 
-          icon={Activity} 
-          index={0} 
-          badge="Audit Logged" 
+        <StatCard
+          label="Total Logged Events"
+          value={logs.length}
+          icon={Activity}
+          index={0}
+          badge="Audit Logged"
           sublabel="System events recorded"
         />
-        <StatCard 
-          label="Distinct Active Users" 
-          value={distinctUsers} 
-          icon={Users} 
-          index={1} 
-          badge="Active Users" 
+        <StatCard
+          label="Distinct Active Users"
+          value={distinctUsers}
+          icon={Users}
+          index={1}
+          badge="Active Users"
           sublabel="Unique active accounts"
         />
-        <StatCard 
-          label="Action Categories" 
-          value={actions.length} 
-          icon={ShieldCheck} 
-          index={2} 
-          badge="Audit Operations" 
+        <StatCard
+          label="Action Categories"
+          value={actions.length}
+          icon={ShieldCheck}
+          index={2}
+          badge="Audit Operations"
           sublabel="Tracked operation types"
         />
       </div>

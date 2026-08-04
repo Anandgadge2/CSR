@@ -12,6 +12,8 @@ import { useToastActions } from "@/components/ui/Toast";
 import { Building2, UserCheck, RefreshCw, AlertTriangle, History } from "lucide-react";
 import "@/styles/gov-theme.css";
 
+import AssignmentTabs from "@/components/assignments/AssignmentTabs";
+
 interface GovProjectItem {
   id: string;
   projectCode: string;
@@ -51,16 +53,16 @@ export default function GovAdminAssignmentQueuePage() {
   const toast = useToastActions();
 
   const fetchData = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const res = await apiFetch<any>("/assignments/gov-admin/queue");
-      setProjects(res?.data || []);
-      setOrganizationId(res?.organizationId || "");
-
-      const officerRes = await apiFetch<any>("/assignments/gov-admin/eligible-officers");
-      setOfficers(officerRes?.data || []);
+      if (res) {
+        setOrganizationId(res.organizationId || "");
+        setProjects(res.projects || []);
+        setOfficers(res.eligibleOfficers || []);
+      }
     } catch (err) {
-      toast.error("Error", err instanceof Error ? err.message : "Failed to load Government Admin queue");
+      toast.error("Failed to load queue", err instanceof Error ? err.message : "Error fetching Department Officer queue");
     } finally {
       setLoading(false);
     }
@@ -100,8 +102,8 @@ export default function GovAdminAssignmentQueuePage() {
   return (
     <GovPortalLayout>
       <GovPageHeader
-        title="Government Department Queue"
-        breadcrumb="Administration / Assignments"
+        title="Department Officer Assignment Queue"
+        breadcrumb="Projects / Assignments"
         description="Designate project officers for approved department CSR projects."
         actions={
           <Button variant="outline" size="sm" icon={RefreshCw} onClick={fetchData}>
@@ -109,6 +111,8 @@ export default function GovAdminAssignmentQueuePage() {
           </Button>
         }
       />
+
+      <AssignmentTabs />
 
       <div className="space-y-6">
         {/* Org Banner */}

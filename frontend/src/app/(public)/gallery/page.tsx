@@ -28,11 +28,11 @@ export default function GalleryPage() {
 
       <div className="flex gap-2 border-b border-slate-850 pb-2 overflow-x-auto">
         {["All", "Water", "Education", "Healthcare", "Environment"].map((tag) => (
-          <button 
+          <button
             key={tag}
             onClick={() => setSelectedTag(tag)}
             className={`px-4 py-2 text-xs font-bold border-b-2 transition-all ${
-              selectedTag === tag 
+              selectedTag === tag
                 ? "border-[#f7941d] text-[#f7941d]"
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}

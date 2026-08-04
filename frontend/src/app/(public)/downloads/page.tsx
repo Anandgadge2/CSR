@@ -14,8 +14,8 @@ const templatesList = [
 export default function DownloadsPage() {
   const [search, setSearch] = useState("");
 
-  const filtered = templatesList.filter(t => 
-    t.title.toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = templatesList.filter(t =>
+    t.title.toLowerCase().includes(search.toLowerCase()) ||
     t.id.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -30,12 +30,12 @@ export default function DownloadsPage() {
       </div>
 
       <div className="flex gap-4 items-center relative max-w-md w-full">
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Search templates or guides..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500" 
+          className="w-full bg-slate-900 border border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500"
         />
         <Search size={16} className="absolute left-3.5 text-slate-500" />
       </div>
