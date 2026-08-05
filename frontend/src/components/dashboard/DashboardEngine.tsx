@@ -212,6 +212,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-blue-50/30 to-slate-50/50", borderHover: "hover:border-blue-400/80 hover:shadow-blue-500/10",
       badgeBg: "bg-blue-50/90 border-blue-200/80", badgeText: "text-blue-700",
       iconBg: "bg-blue-100/70 border-blue-200/80", iconText: "text-blue-600", metricColor: "text-blue-950",
+      href: "/enquiries",
     },
     {
       id: "my-projects", label: "My Active Projects", sublabel: "Company Convergence Projects",
@@ -220,6 +221,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-purple-50/30 to-slate-50/50", borderHover: "hover:border-purple-400/80 hover:shadow-purple-500/10",
       badgeBg: "bg-purple-50/90 border-purple-200/80", badgeText: "text-purple-700",
       iconBg: "bg-purple-100/70 border-purple-200/80", iconText: "text-purple-600", metricColor: "text-purple-950",
+      href: "/convergence-projects",
     },
   ];
   const companyRow1Right: KpiCard3D[] = [
@@ -230,6 +232,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-emerald-50/30 to-slate-50/50", borderHover: "hover:border-emerald-400/80 hover:shadow-emerald-500/10",
       badgeBg: "bg-emerald-50/90 border-emerald-200/80", badgeText: "text-emerald-700",
       iconBg: "bg-emerald-100/70 border-emerald-200/80", iconText: "text-emerald-600", metricColor: "text-emerald-950",
+      href: "/assignments",
     },
     {
       id: "my-outlay", label: "CSR Outlay", sublabel: "Indicative Budget Pledged",
@@ -238,6 +241,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-amber-50/30 to-slate-50/50", borderHover: "hover:border-amber-400/80 hover:shadow-amber-500/10",
       badgeBg: "bg-amber-50/90 border-amber-200/80", badgeText: "text-amber-800",
       iconBg: "bg-amber-100/70 border-amber-200/80", iconText: "text-amber-600", metricColor: "text-amber-950",
+      href: "/enquiries",
     },
   ];
   const companyRow2Left: KpiCard3D[] = [
@@ -248,6 +252,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
       badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
       iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
+      href: "/convergence-projects",
     },
     {
       id: "platform-orgs", label: "Registered Organizations", sublabel: "Government & Partner Orgs",
@@ -256,6 +261,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-indigo-50/30 to-slate-50/50", borderHover: "hover:border-indigo-400/80 hover:shadow-indigo-500/10",
       badgeBg: "bg-indigo-50/90 border-indigo-200/80", badgeText: "text-indigo-700",
       iconBg: "bg-indigo-100/70 border-indigo-200/80", iconText: "text-indigo-600", metricColor: "text-indigo-950",
+      href: "/organization",
     },
   ];
   const companyRow2Right: KpiCard3D[] = [
@@ -266,6 +272,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-sky-50/30 to-slate-50/50", borderHover: "hover:border-sky-400/80 hover:shadow-sky-500/10",
       badgeBg: "bg-sky-50/90 border-sky-200/80", badgeText: "text-sky-700",
       iconBg: "bg-sky-100/70 border-sky-200/80", iconText: "text-sky-600", metricColor: "text-sky-950",
+      href: "/pitches",
     },
     {
       id: "my-onboarding", label: "Profile Status", sublabel: "Organization Verification",
@@ -281,6 +288,7 @@ export default function DashboardEngine() {
       iconBg: rawData?.orgStatus === "ACTIVE" ? "bg-emerald-100/70 border-emerald-200/80" : "bg-rose-100/70 border-rose-200/80",
       iconText: rawData?.orgStatus === "ACTIVE" ? "text-emerald-600" : "text-rose-600",
       metricColor: rawData?.orgStatus === "ACTIVE" ? "text-emerald-950" : "text-rose-950",
+      href: "/organization/onboarding",
     },
   ];
 
@@ -293,6 +301,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-sky-50/30 to-slate-50/50", borderHover: "hover:border-sky-400/80 hover:shadow-sky-500/10",
       badgeBg: "bg-sky-50/90 border-sky-200/80", badgeText: "text-sky-700",
       iconBg: "bg-sky-100/70 border-sky-200/80", iconText: "text-sky-600", metricColor: "text-sky-950",
+      href: "/pitches",
     },
     {
       id: "received-interests", label: "Received Corporate Interests", sublabel: "Companies Interested in My Pitches",
@@ -301,6 +310,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-purple-50/30 to-slate-50/50", borderHover: "hover:border-purple-400/80 hover:shadow-purple-500/10",
       badgeBg: "bg-purple-50/90 border-purple-200/80", badgeText: "text-purple-700",
       iconBg: "bg-purple-100/70 border-purple-200/80", iconText: "text-purple-600", metricColor: "text-purple-950",
+      href: "/interests",
     },
   ];
   const govtRow1Right: KpiCard3D[] = [
@@ -311,6 +321,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-emerald-50/30 to-slate-50/50", borderHover: "hover:border-emerald-400/80 hover:shadow-emerald-500/10",
       badgeBg: "bg-emerald-50/90 border-emerald-200/80", badgeText: "text-emerald-700",
       iconBg: "bg-emerald-100/70 border-emerald-200/80", iconText: "text-emerald-600", metricColor: "text-emerald-950",
+      href: "/convergence-projects",
     },
     {
       id: "my-dept-assignments", label: "My Assignments", sublabel: "Tasks Assigned to Department",
@@ -319,6 +330,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-amber-50/30 to-slate-50/50", borderHover: "hover:border-amber-400/80 hover:shadow-amber-500/10",
       badgeBg: "bg-amber-50/90 border-amber-200/80", badgeText: "text-amber-800",
       iconBg: "bg-amber-100/70 border-amber-200/80", iconText: "text-amber-600", metricColor: "text-amber-950",
+      href: "/assignments",
     },
   ];
   const govtRow2Left: KpiCard3D[] = [
@@ -329,6 +341,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
       badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
       iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
+      href: "/convergence-projects",
     },
     {
       id: "platform-orgs-g", label: "Registered Organizations", sublabel: "Government & Partner Orgs",
@@ -337,6 +350,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-indigo-50/30 to-slate-50/50", borderHover: "hover:border-indigo-400/80 hover:shadow-indigo-500/10",
       badgeBg: "bg-indigo-50/90 border-indigo-200/80", badgeText: "text-indigo-700",
       iconBg: "bg-indigo-100/70 border-indigo-200/80", iconText: "text-indigo-600", metricColor: "text-indigo-950",
+      href: "/organization",
     },
   ];
   const govtRow2Right: KpiCard3D[] = [
@@ -363,6 +377,7 @@ export default function DashboardEngine() {
       iconBg: rawData?.orgStatus === "ACTIVE" ? "bg-emerald-100/70 border-emerald-200/80" : "bg-rose-100/70 border-rose-200/80",
       iconText: rawData?.orgStatus === "ACTIVE" ? "text-emerald-600" : "text-rose-600",
       metricColor: rawData?.orgStatus === "ACTIVE" ? "text-emerald-950" : "text-rose-950",
+      href: "/organization/onboarding",
     },
   ];
 
@@ -375,6 +390,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-blue-50/30 to-slate-50/50", borderHover: "hover:border-blue-400/80 hover:shadow-blue-500/10",
       badgeBg: "bg-blue-50/90 border-blue-200/80", badgeText: "text-blue-700",
       iconBg: "bg-blue-100/70 border-blue-200/80", iconText: "text-blue-600", metricColor: "text-blue-950",
+      href: "/enquiries",
     },
     {
       id: "company-interests", label: "Corporate Interests", sublabel: "Received Intent Forms",
@@ -383,6 +399,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-purple-50/30 to-slate-50/50", borderHover: "hover:border-purple-400/80 hover:shadow-purple-500/10",
       badgeBg: "bg-purple-50/90 border-purple-200/80", badgeText: "text-purple-700",
       iconBg: "bg-purple-100/70 border-purple-200/80", iconText: "text-purple-600", metricColor: "text-purple-950",
+      href: "/interests",
     },
   ];
   const adminRow1Right: KpiCard3D[] = [
@@ -393,6 +410,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-sky-50/30 to-slate-50/50", borderHover: "hover:border-sky-400/80 hover:shadow-sky-500/10",
       badgeBg: "bg-sky-50/90 border-sky-200/80", badgeText: "text-sky-700",
       iconBg: "bg-sky-100/70 border-sky-200/80", iconText: "text-sky-600", metricColor: "text-sky-950",
+      href: "/pitches",
     },
     {
       id: "govt-orgs", label: "Government & Partner Orgs", sublabel: "Departments & Agencies",
@@ -401,6 +419,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-indigo-50/30 to-slate-50/50", borderHover: "hover:border-indigo-400/80 hover:shadow-indigo-500/10",
       badgeBg: "bg-indigo-50/90 border-indigo-200/80", badgeText: "text-indigo-700",
       iconBg: "bg-indigo-100/70 border-indigo-200/80", iconText: "text-indigo-600", metricColor: "text-indigo-950",
+      href: "/organization",
     },
   ];
   const adminRow2Left: KpiCard3D[] = [
@@ -411,6 +430,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-emerald-50/30 to-slate-50/50", borderHover: "hover:border-emerald-400/80 hover:shadow-emerald-500/10",
       badgeBg: "bg-emerald-50/90 border-emerald-200/80", badgeText: "text-emerald-700",
       iconBg: "bg-emerald-100/70 border-emerald-200/80", iconText: "text-emerald-600", metricColor: "text-emerald-950",
+      href: "/convergence-projects",
     },
     {
       id: "company-outlay", label: "Indicative CSR Outlay", sublabel: "Pledged Outlay Budget",
@@ -419,6 +439,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-amber-50/30 to-slate-50/50", borderHover: "hover:border-amber-400/80 hover:shadow-amber-500/10",
       badgeBg: "bg-amber-50/90 border-amber-200/80", badgeText: "text-amber-800",
       iconBg: "bg-amber-100/70 border-amber-200/80", iconText: "text-amber-600", metricColor: "text-amber-950",
+      href: "/enquiries",
     },
   ];
   const adminRow2Right: KpiCard3D[] = [
@@ -429,7 +450,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-teal-50/30 to-slate-50/50", borderHover: "hover:border-teal-400/80 hover:shadow-teal-500/10",
       badgeBg: "bg-teal-50/90 border-teal-200/80", badgeText: "text-teal-700",
       iconBg: "bg-teal-100/70 border-teal-200/80", iconText: "text-teal-600", metricColor: "text-teal-950",
-      href: "/admin/onboarding-approvals",
+      href: "/decisions",
     },
     {
       id: "govt-escalations", label: "Active Escalations", sublabel: "SLA Monitored Queue",
@@ -438,6 +459,7 @@ export default function DashboardEngine() {
       bgTint: "from-white via-rose-50/30 to-slate-50/50", borderHover: "hover:border-rose-400/80 hover:shadow-rose-500/10",
       badgeBg: "bg-rose-50/90 border-rose-200/80", badgeText: "text-rose-700",
       iconBg: "bg-rose-100/70 border-rose-200/80", iconText: "text-rose-600", metricColor: "text-rose-950",
+      href: "/escalations",
     },
   ];
 

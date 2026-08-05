@@ -21,6 +21,7 @@ const router = Router();
 router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOrganization("GOVERNMENT_DEPARTMENT"), requirePermission("pitch:create"), submitPitch);
 router.get("/", authenticateToken, requirePermission("pitch:view"), listGovernmentPitches);
 router.get("/public", getPublicPitches);
+router.post("/public/:id/interests", authenticateToken, requirePermission("pitch:view"), submitInterest);
 router.get("/my", authenticateToken, requirePermission("pitch:view"), getMyPitches);
 router.get("/:id", authenticateToken, requirePermission("pitch:view"), getPitchById);
 router.post("/:id/interest", authenticateToken, requirePermission("pitch:view"), submitInterest);

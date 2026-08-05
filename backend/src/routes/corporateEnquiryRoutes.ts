@@ -10,13 +10,15 @@ import {
   recordRmContact,
   convertToConvergenceProject,
   acceptEnquiry,
-  getEnquiryById
+  getEnquiryById,
+  listActiveDepartmentsForEnquiry
 } from "../controllers/corporateEnquiryController";
 
 const router = Router();
 
 router.post("/", authenticateToken, requireVerifiedActiveUser, requireApprovedOrganization("CSR_COMPANY"), submitCorporateEnquiry);
 router.get("/tracking/:trackingId", getEnquiryByTrackingId);
+router.get("/departments/active", authenticateToken, requireVerifiedActiveUser, listActiveDepartmentsForEnquiry);
 router.get("/", authenticateToken, listCorporateEnquiries);
 router.post("/:id/assign-rm", authenticateToken, authorizeRoles([ROLE_ID.JOINT_SECRETARY]), assignRelationshipManager);
 router.post("/:id/accept", authenticateToken, acceptEnquiry);

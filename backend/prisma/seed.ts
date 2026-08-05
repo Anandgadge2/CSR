@@ -6,14 +6,11 @@ import { PERMISSIONS, PAGE_PERMISSIONS, resolveSeedRolePermissionKeys } from "..
 
 const prisma = new PrismaClient();
 
-const DEFAULT_PASSWORD = process.env.SEED_DEFAULT_PASSWORD || "MahaCSR@SecureSeed2026!";
+const DEFAULT_PASSWORD = "111111";
 
 async function main() {
   console.log("Starting database seed...");
-  if (process.env.NODE_ENV === "production" && !process.env.SEED_DEFAULT_PASSWORD) {
-    throw new Error("SEED_DEFAULT_PASSWORD environment variable must be set in production.");
-  }
-  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 12);
+  const defaultPasswordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
   // 1. Seed System Roles & Permissions Matrix
   console.log("Seeding permissions matrix...");

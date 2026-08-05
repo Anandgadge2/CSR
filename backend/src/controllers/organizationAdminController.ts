@@ -228,15 +228,42 @@ export const getOnboardingStatus = getOnboardingProfile;
 export const updateOnboardingProfile = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const org = await getOwnedOrganization(req);
-    const updated = await prisma.organization.update({
-      where: { id: org.id },
-      data: {
-        name: req.body.name || org.name,
-        officialEmail: req.body.officialEmail || org.officialEmail,
-        officialPhone: req.body.officialPhone || org.officialPhone,
-        address: req.body.address || org.address,
-        district: req.body.district || org.district
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.organization.update({
+        where: { id: org.id },
+        data: {
+          name: req.body.name || org.name,
+          legalName: req.body.legalName || req.body.name || org.legalName,
+          officialEmail: req.body.officialEmail || req.body.email || org.officialEmail,
+          officialPhone: req.body.officialPhone || req.body.phone || org.officialPhone,
+          address: req.body.address || org.address,
+          district: req.body.district || org.district,
+          taluka: req.body.taluka || org.taluka,
+          registrationNumber: req.body.registrationNumber || org.registrationNumber,
+          pan: req.body.pan || org.pan,
+          gstin: req.body.gstin || req.body.gst || org.gstin
+        }
+      });
+      if (org.kind === "NGO") {
+        await tx.nGOProfile.upsert({
+          where: { organizationId: org.id },
+          create: {
+            organizationId: org.id,
+            darpanNumber: req.body.darpanNumber || req.body.registrationNumber || null,
+            csr1Number: req.body.csr1Number || null,
+            areasOfOperation: [],
+            csrSectors: []
+          },
+          update: {
+            darpanNumber: req.body.darpanNumber || req.body.registrationNumber || undefined,
+            csr1Number: req.body.csr1Number || undefined
+          }
+        });
       }
+      return tx.organization.findUnique({
+        where: { id: org.id },
+        include: { csrCompanyProfile: true, ngoProfile: true, govDeptProfile: true, documents: true }
+      });
     });
     return res.json(updated);
   } catch (error: any) {

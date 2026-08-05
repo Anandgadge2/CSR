@@ -145,6 +145,16 @@ export const sendOtpEmail = async (toEmail: string, otp: string) => {
 };
 
 export const sendNgoInvitationEmail = async (toEmail: string, ngoName: string, inviteUrl: string, companyName: string) => {
+  const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character] || character);
+  const safeNgoName = escapeHtml(ngoName);
+  const safeCompanyName = escapeHtml(companyName);
+  const safeInviteUrl = escapeHtml(inviteUrl);
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -240,16 +250,16 @@ export const sendNgoInvitationEmail = async (toEmail: string, ngoName: string, i
         </div>
         <div class="content">
           <h2>Partner NGO Invitation</h2>
-          <p>Dear Administrator at ${ngoName},</p>
-          <p>You have been invited by <strong>${companyName}</strong> to register as a partner NGO on the official MahaCSR platform.</p>
-          <p>Upon completing your registration and uploading required credentials, your account will undergo a two-level verification process (corporate preliminary review and government final approval). Once approved, you will have sub-login access to update project progress and upload geo-tagged evidence.</p>
+          <p>Dear Administrator at ${safeNgoName},</p>
+          <p>You have been invited by <strong>${safeCompanyName}</strong> to onboard as a partner NGO or implementing agency on the official MahaCSR platform.</p>
+          <p>Set your password, sign in, and complete the onboarding application. A Super Admin must approve the application before the inviting company can assign a project.</p>
           
           <div class="btn-box">
-            <a href="${inviteUrl}" class="btn">Register on MahaCSR</a>
+            <a href="${safeInviteUrl}" class="btn">Activate and Start Onboarding</a>
           </div>
           
           <p>If the button doesn't work, copy and paste the link below in your browser:</p>
-          <p style="word-break: break-all;"><a href="${inviteUrl}">${inviteUrl}</a></p>
+          <p style="word-break: break-all;"><a href="${safeInviteUrl}">${safeInviteUrl}</a></p>
           
           <p>Best regards,<br><strong>MahaCSR Administration Team</strong><br>Government of Maharashtra</p>
         </div>
@@ -265,7 +275,7 @@ export const sendNgoInvitationEmail = async (toEmail: string, ngoName: string, i
   await transporter.sendMail({
     from: `"MahaCSR Portal" <${smtpUser}>`,
     to: toEmail,
-    subject: `[MahaCSR] Invitation to register as partner NGO - ${ngoName}`,
+    subject: `[MahaCSR] NGO onboarding invitation - ${ngoName.replace(/[\r\n]/g, " ")}`,
     html: htmlContent,
   });
 };

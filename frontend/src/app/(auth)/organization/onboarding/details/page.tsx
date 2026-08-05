@@ -55,6 +55,8 @@ type Organization = {
   documents?: OrganizationDocument[];
   csrCompanyProfile?: Record<string, any> | null;
   governmentDepartmentProfile?: Record<string, any> | null;
+  govDeptProfile?: Record<string, any> | null;
+  ngoProfile?: Record<string, any> | null;
   onboardingReviews?: OnboardingReview[];
 };
 
@@ -115,7 +117,7 @@ export default function OnboardingDetailsPage() {
   }, []);
 
   const org: Organization = organization || ({ id: "" } as Organization);
-  const profile = org.csrCompanyProfile || org.governmentDepartmentProfile || null;
+  const profile = org.csrCompanyProfile || org.govDeptProfile || org.governmentDepartmentProfile || org.ngoProfile || null;
 
   const organizationRows: Array<[string, any]> = [
     ["Legal Name", org.legalName || org.name],
@@ -217,7 +219,7 @@ export default function OnboardingDetailsPage() {
               <GovCard className="gov-mb-4">
                 <GovCardHeader>
                   <GovCardTitle>
-                    {org.csrCompanyProfile ? "CSR Compliance & Preferences" : "Department Details"}
+                    {org.csrCompanyProfile ? "CSR Compliance & Preferences" : org.ngoProfile ? "NGO Registration Details" : "Department Details"}
                   </GovCardTitle>
                 </GovCardHeader>
                 <GovCardBody>

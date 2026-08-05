@@ -2092,7 +2092,7 @@ export function OrganizationOnboardingWorkspace() {
     setSaving(true);
     try {
       setOrganization(await apiFetch<Organization>("/onboarding/profile", {
-        method: "PUT",
+        method: "PATCH",
         body: JSON.stringify(organization)
       }));
     } catch (err: any) {

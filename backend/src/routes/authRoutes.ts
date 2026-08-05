@@ -14,7 +14,10 @@ const registerSchema = z.object({
   body: z.object({
     email: z.string().email("Invalid email format"),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    role: z.union([z.number(), z.string()]),
+    accountType: z.enum(["CSR_COMPANY", "GOVERNMENT_DEPARTMENT"]),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    designation: z.string().optional(),
     profile: z.object({
       name: z.string().min(2, "Name is required"),
       cin: z.string().optional(),

@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import prisma from "../config/db";
 
 const INVITATION_TTL_HOURS = parseInt(process.env.INVITATION_TTL_HOURS || "72", 10);
@@ -25,8 +26,10 @@ export interface CreateInvitationInput {
   agencySubLoginId?: string | null;
 }
 
-export async function createInvitation(input: CreateInvitationInput) {
-  const existing = await prisma.userInvitation.findFirst({
+type InvitationDb = Pick<Prisma.TransactionClient, "userInvitation">;
+
+export async function createInvitation(input: CreateInvitationInput, db: InvitationDb = prisma) {
+  const existing = await db.userInvitation.findFirst({
     where: {
       email: input.email.toLowerCase(),
       status: "PENDING"
@@ -39,7 +42,7 @@ export async function createInvitation(input: CreateInvitationInput) {
 
   const token = crypto.randomBytes(32).toString("hex");
 
-  const invitation = await prisma.userInvitation.create({
+  const invitation = await db.userInvitation.create({
     data: {
       email: input.email.toLowerCase(),
       token,
@@ -67,7 +70,12 @@ export async function getInvitationByToken(token: string) {
     throw new InvitationError("Invitation not found or invalid", 404);
   }
 
-  return invitation;
+  const expiresAt = new Date(invitation.createdAt.getTime() + INVITATION_TTL_HOURS * 60 * 60 * 1000);
+  if (expiresAt <= new Date()) {
+    throw new InvitationError("Invitation has expired. Ask the company to send a new invitation.", 410);
+  }
+
+  return { ...invitation, expiresAt };
 }
 
 export async function acceptInvitation(input: { token: string; password: string }) {
@@ -76,6 +84,9 @@ export async function acceptInvitation(input: { token: string; password: string 
   if (!input.password || input.password.length < 8) {
     throw new InvitationError("Password must be at least 8 characters long", 400);
   }
+
+  const existingUser = await prisma.user.findUnique({ where: { email: invitation.email }, select: { id: true } });
+  if (existingUser) throw new InvitationError("An account already exists for this email. Sign in or reset your password.", 409);
 
   const passwordHash = await bcrypt.hash(input.password, 10);
 
@@ -98,7 +109,10 @@ export async function acceptInvitation(input: { token: string; password: string 
     });
 
     if (invitation.agencySubLoginId) {
-      await tx.agencySubLogin.update({ where: { id: invitation.agencySubLoginId }, data: { userId: createdUser.id, status: "ACTIVE" } });
+      await tx.agencySubLogin.update({
+        where: { id: invitation.agencySubLoginId },
+        data: { userId: createdUser.id, status: "ONBOARDING_REQUIRED" }
+      });
     }
 
     return createdUser;

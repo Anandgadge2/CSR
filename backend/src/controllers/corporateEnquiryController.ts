@@ -9,6 +9,7 @@ import { generateCorporateEnquiryTrackingId } from "../services/trackingIdServic
 import { createSLAEscalation } from "../services/slaEscalationService";
 import { calculateSlaDueDate } from "../services/slaConfigService";
 import { dispatchNotification, dispatchToContact } from "../services/notificationOrchestrator";
+import { validateCorporateEnquirySubmission } from "../utils/workflowValidation";
 
 export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -35,19 +36,26 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       });
     }
 
-    const preferredDistrict = req.body.geography?.[0] || req.body.district || (Array.isArray(req.body.preferredDistricts) ? req.body.preferredDistricts[0] : null);
+    const validation = validateCorporateEnquirySubmission(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: "Corporate enquiry submission is incomplete.", validationErrors: validation.errors });
+    }
+    const submission = validation.value;
+    const targetDepartment = await prisma.organization.findFirst({
+      where: { id: submission.departmentId, kind: "GOVERNMENT_DEPARTMENT", status: "ACTIVE" },
+      select: { id: true, name: true }
+    });
+    if (!targetDepartment) {
+      return res.status(400).json({ error: "Select an active government department." });
+    }
+
+    const preferredDistrict = submission.district;
 
     // Auto-assign RM via round-robin least loaded algorithm
     const assignedRmId = await selectLeastLoadedRm(preferredDistrict);
     if (!assignedRmId) {
       return res.status(503).json({ error: "No active Relationship Manager is available. Please retry shortly; your enquiry was not submitted." });
     }
-
-    const documents = Array.isArray(req.body.documents)
-      ? req.body.documents
-      : Array.isArray(req.body.supportingDocuments)
-      ? req.body.supportingDocuments
-      : [];
 
     // Persist the complete submitted application. The tracking code is generated
     // before saving and retried on a unique collision so it remains safe to share.
@@ -58,19 +66,19 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
           data: {
         trackingId: await generateCorporateEnquiryTrackingId(),
         organizationId: user?.organizationId || null,
-        corporateName: req.body.companyName || req.body.corporateName || user?.organization?.name || "Company",
-        contactEmail: req.body.email || req.body.contactEmail || user?.email || "contact@company.com",
-        mca21CIN: req.body.mca21CIN || null,
-        sector: req.body.sector || null,
-        indicativeBudget: req.body.indicativeBudget ?? null,
+        corporateName: user?.organization?.name || submission.corporateName,
+        contactEmail: submission.contactEmail,
+        mca21CIN: user?.organization?.cin || submission.cin,
+        sector: submission.sector,
+        indicativeBudget: submission.indicativeBudget,
         preferredDivisions: Array.isArray(req.body.preferredDivisions) ? req.body.preferredDivisions : [],
-        preferredDistricts: Array.isArray(req.body.preferredDistricts) ? req.body.preferredDistricts : [],
+        preferredDistricts: [submission.district],
         preferredCities: Array.isArray(req.body.preferredCities) ? req.body.preferredCities : [],
         preferredTalukas: Array.isArray(req.body.preferredTalukas) ? req.body.preferredTalukas : [],
-        contactPersonName: req.body.contactPersonName || null,
-        mobile: req.body.mobile || null,
-        proposedCSRWork: req.body.proposedCSRWork || null,
-        documents,
+        contactPersonName: submission.contactPersonName,
+        mobile: submission.mobile,
+        proposedCSRWork: submission.proposedCSRWork,
+        documents: submission.documents,
         submittedByUserId: userId,
         assignedRelationshipManagerId: assignedRmId,
         status: "SUBMITTED"
@@ -82,6 +90,24 @@ export const submitCorporateEnquiry = async (req: AuthenticatedRequest, res: Res
       }
     }
     if (!enquiry) throw new Error("Unable to generate a unique enquiry tracking code");
+
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: userId,
+        userId,
+        action: "CORPORATE_ENQUIRY_SUBMITTED",
+        entityType: "CorporateEnquiry",
+        entityId: enquiry.id,
+        details: {
+          trackingId: enquiry.trackingId,
+          district: submission.district,
+          departmentId: targetDepartment.id,
+          departmentName: targetDepartment.name,
+          declarationAccepted: true,
+          submittedDocumentCount: submission.documents.length
+        }
+      }
+    });
 
     await createSLAEscalation({ entityType: "CORPORATE_ENQUIRY", entityId: enquiry.id, stage: "RM_RESPONSE", responsibleUserId: assignedRmId, dueAt: await calculateSlaDueDate("RM_RESPONSE") });
     await Promise.all([
@@ -177,14 +203,21 @@ export const assignRelationshipManager = async (req: AuthenticatedRequest, res: 
   }
 };
 
-export const recordRmContact = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  return res.status(410).json({ error: "Use the assigned Relationship Manager interaction endpoint." });
+export const listActiveDepartmentsForEnquiry = async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const departments = await prisma.organization.findMany({
+      where: { kind: "GOVERNMENT_DEPARTMENT", status: "ACTIVE", deletedAt: null },
+      select: { id: true, name: true, district: true },
+      orderBy: { name: "asc" }
+    });
+    return res.json({ success: true, data: departments });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const convertToConvergenceProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const enquiry = await prisma.corporateEnquiry.findUnique({ where: { id: req.params.id } });
-    if (!enquiry) return notFoundResponse(res, "Enquiry not found");
+export const recordRmContact = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return res.status(410).json({ error: "Use the assigned Relationship Manager interaction endpoint." });
 };
 
 export const convertToConvergenceProject = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {

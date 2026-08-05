@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { resolvePublicRegistrationAccountType } from "../utils/publicRegistration";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -149,27 +150,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Map account/entity type or role string to allowed public system role ID
-    const accountInput = String(rawAccountType || rawEntityType || rawRole || "").trim().toUpperCase();
-
-    const accountTypeRoleMap: Record<string, number> = {
-      CSR_COMPANY: 8,
-      COMPANY_ADMIN: 8,
-      CORPORATE: 8,
-      GOVERNMENT_DEPARTMENT: 7,
-      GOVERNMENT_OFFICER: 7,
-      GOVERNMENT: 7,
-      NGO: 9,
-      NGO_ADMIN: 9,
-    };
-
-    const effectiveRoleId = accountTypeRoleMap[accountInput];
-
-    if (!effectiveRoleId) {
+    const publicAccount = resolvePublicRegistrationAccountType(rawAccountType || rawEntityType || rawRole);
+    if (!publicAccount) {
       return res.status(400).json({
-        error: "Invalid or missing account type. Public registration accepts only CSR_COMPANY, GOVERNMENT_DEPARTMENT, or NGO."
+        error: "Invalid or missing account type. Public registration accepts only CSR_COMPANY or GOVERNMENT_DEPARTMENT. NGOs and implementing agencies must use a company invitation."
       });
     }
+    const effectiveRoleId = publicAccount.roleId;
 
     // 1. Ensure target Role exists in DB (never create system roles during public registration)
     const existingRole = await prisma.role.findUnique({ where: { id: effectiveRoleId } });
@@ -219,7 +206,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const orgKind = effectiveRoleId === 8 ? "CSR_COMPANY" : effectiveRoleId === 7 ? "GOVERNMENT_DEPARTMENT" : "NGO";
+    const orgKind = publicAccount.kind;
 
     // 5. Execute User & Organization creation / update inside atomic Prisma Transaction
     const user = await prisma.$transaction(async (tx) => {

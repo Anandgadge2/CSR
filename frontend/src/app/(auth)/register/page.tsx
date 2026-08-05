@@ -186,6 +186,7 @@ export default function RegisterPage() {
         lastName: formData.lastName,
         designation: formData.designation,
         role: isGovEntity ? 7 : 8,
+        accountType: isGovEntity ? "GOVERNMENT_DEPARTMENT" : "CSR_COMPANY",
         profile: {
           name: formData.name,
           firstName: formData.firstName,

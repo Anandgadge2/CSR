@@ -95,7 +95,7 @@ function ActivatePageInner() {
         if (payload.user) localStorage.setItem("user", JSON.stringify(payload.user));
       }
       setActivated(true);
-      setTimeout(() => router.push("/dashboard"), 1800);
+      setTimeout(() => router.push("/login"), 1800);
     } catch {
       setSubmitError("Could not reach the server. Please try again later.");
     } finally {
@@ -139,7 +139,7 @@ function ActivatePageInner() {
             <div className="flex flex-col items-center py-8 text-center gap-3">
               <CheckCircle2 className="w-12 h-12 text-emerald-600" />
               <h2 className="text-lg font-semibold text-slate-900">Account activated</h2>
-              <p className="text-sm text-slate-500">Redirecting you to your dashboard…</p>
+              <p className="text-sm text-slate-500">Sign in with your new password to complete NGO onboarding. Redirecting to login…</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

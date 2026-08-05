@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, uploadPortalFile } from "@/lib/api";
 import GovInput from "@/components/gov/GovInput";
 import GovSelect from "@/components/gov/GovSelect";
 import GovTextarea from "@/components/gov/GovTextarea";
@@ -203,6 +203,8 @@ interface EnquiryForm {
   email: string;
   proposedCSRWork: string;
   supportingDocuments: File[];
+  departmentId: string;
+  declarationAccepted: boolean;
 }
 
 interface FormErrors {
@@ -221,30 +223,6 @@ export default function CreateCorporateEnquiryPage() {
   const [referenceId, setReferenceId] = useState("");
   const [copied, setCopied] = useState(false);
 
-  if (isRM) {
-    return (
-      <GovPortalLayout userRole="RELATIONSHIP_MANAGER">
-        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 mb-4 border border-amber-200">
-            <ShieldCheck size={32} />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">Access Restricted</h2>
-          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-            Relationship Managers cannot submit corporate enquiries. Your role is restricted to reviewing, assessing, and managing assigned enquiries.
-          </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <GovButton variant="primary" onClick={() => router.push("/enquiries")}>
-              Go to Enquiries Register
-            </GovButton>
-            <GovButton variant="secondary" onClick={() => router.push("/dashboard")}>
-              Dashboard
-            </GovButton>
-          </div>
-        </div>
-      </GovPortalLayout>
-    );
-  }
-
   const [form, setForm] = useState<EnquiryForm>({
     companyName: "",
     mca21CIN: "",
@@ -260,7 +238,10 @@ export default function CreateCorporateEnquiryPage() {
     email: "",
     proposedCSRWork: "",
     supportingDocuments: [],
+    departmentId: "",
+    declarationAccepted: false,
   });
+  const [departments, setDepartments] = useState<Array<{ id: string; name: string }>>([]);
 
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -398,6 +379,7 @@ export default function CreateCorporateEnquiryPage() {
   };
 
   const handleDistrictsChange = (nextDistricts: string[]) => {
+    nextDistricts = nextDistricts.slice(-1);
     const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
     const nextCities = form.preferredCities.filter(c => validCities.includes(c));
 
@@ -433,22 +415,28 @@ export default function CreateCorporateEnquiryPage() {
     }));
   };
 
-  const uploadFile = async (file: File): Promise<string> =>
-    `https://dev.mahacsr.local/uploads/${encodeURIComponent(file.name)}`;
+  useEffect(() => {
+    apiFetch<any>("/corporate-enquiries/departments/active")
+      .then((response) => setDepartments(response?.data || []))
+      .catch(() => setDepartments([]));
+  }, []);
 
   const validateForm = (): boolean => {
     const errs: FormErrors = {};
     if (!form.companyName.trim()) errs.companyName = "Company name is required";
+    if (!/^[A-Z0-9]{21}$/i.test(form.mca21CIN.trim())) errs.mca21CIN = "Valid 21-character CIN is required";
     if (!form.sector) errs.sector = "Primary sector is required";
     if (form.sector === "OTHER" && !form.customSector.trim()) {
       errs.customSector = "Please specify your custom focus sector";
     }
     if (form.preferredDivisions.length === 0) errs.preferredDivisions = "At least one division must be selected";
-    if (form.preferredDistricts.length === 0) errs.preferredDistricts = "At least one district must be selected";
+    if (form.preferredDistricts.length !== 1) errs.preferredDistricts = "Select exactly one district";
+    if (!form.departmentId) errs.departmentId = "Government department is required";
     if (!form.contactPersonName.trim()) errs.contactPersonName = "Contact person name is required";
     if (!form.mobile.trim() || !/^[6-9]\d{9}$/.test(form.mobile)) errs.mobile = "Valid 10-digit mobile number is required";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = "Valid email is required";
     if (!form.proposedCSRWork.trim()) errs.proposedCSRWork = "Proposed CSR work description is required";
+    if (!form.declarationAccepted) errs.declarationAccepted = "You must accept the submission declaration";
 
     const words = form.proposedCSRWork.trim().split(/\s+/).filter(Boolean).length;
     if (words > 200) errs.proposedCSRWork = "Description must not exceed 200 words";
@@ -469,7 +457,7 @@ export default function CreateCorporateEnquiryPage() {
     try {
       const documentUrls: string[] = [];
       for (const doc of form.supportingDocuments) {
-        documentUrls.push(await uploadFile(doc));
+        documentUrls.push(await uploadPortalFile(doc));
       }
 
       const response = await apiFetch<any>("/corporate-enquiries", {
@@ -488,6 +476,8 @@ export default function CreateCorporateEnquiryPage() {
           email: form.email,
           proposedCSRWork: form.proposedCSRWork,
           documents: documentUrls,
+          departmentId: form.departmentId,
+          declarationAccepted: form.declarationAccepted,
         }),
       });
 
@@ -509,6 +499,19 @@ export default function CreateCorporateEnquiryPage() {
   };
 
   const wordCount = form.proposedCSRWork.trim().split(/\s+/).filter(Boolean).length;
+
+  if (isRM) {
+    return (
+      <GovPortalLayout userRole="RELATIONSHIP_MANAGER">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600"><ShieldCheck size={32} /></div>
+          <h2 className="text-2xl font-bold text-slate-900">Access Restricted</h2>
+          <p className="mt-2 text-sm text-slate-600">Relationship Managers review assigned enquiries and cannot submit corporate enquiries.</p>
+          <div className="mt-6 flex justify-center gap-3"><GovButton variant="primary" onClick={() => router.push("/enquiries")}>Go to Enquiries Register</GovButton><GovButton variant="secondary" onClick={() => router.push("/dashboard")}>Dashboard</GovButton></div>
+        </div>
+      </GovPortalLayout>
+    );
+  }
 
   if (submitted) {
     return (
@@ -700,13 +703,29 @@ export default function CreateCorporateEnquiryPage() {
 
                 <div className="gov-field">
                   <MultiSelectField
-                    label="Preferred District(s)"
+                    label="Project District"
                     required
                     values={form.preferredDistricts}
                     options={form.preferredDivisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || [])}
                     onChange={handleDistrictsChange}
-                    placeholder={form.preferredDivisions.length === 0 ? "Select division first..." : "Select district(s)..."}
+                    placeholder={form.preferredDivisions.length === 0 ? "Select division first..." : "Select one district..."}
                   />
+                </div>
+
+                <div className="gov-field">
+                  <GovSelect
+                    label="Responsible Government Department"
+                    required
+                    value={form.departmentId}
+                    error={errors.departmentId}
+                    onChange={(event) => {
+                      setForm((current) => ({ ...current, departmentId: event.target.value }));
+                      if (errors.departmentId) setErrors((current) => ({ ...current, departmentId: "" }));
+                    }}
+                  >
+                    <option value="">Select one active department</option>
+                    {departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
+                  </GovSelect>
                 </div>
 
                 <div className="gov-field">
@@ -898,6 +917,20 @@ export default function CreateCorporateEnquiryPage() {
               </div>
             </GovCardBody>
           </GovCard>
+
+          <label className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-xs font-semibold text-blue-950">
+            <input
+              type="checkbox"
+              checked={form.declarationAccepted}
+              onChange={(event) => {
+                setForm((current) => ({ ...current, declarationAccepted: event.target.checked }));
+                if (errors.declarationAccepted) setErrors((current) => ({ ...current, declarationAccepted: "" }));
+              }}
+              className="mt-0.5 h-4 w-4 rounded border-blue-300 accent-blue-900"
+            />
+            <span>I confirm that the information and uploaded documents are accurate, and understand that the submitted case will be locked and assigned to a Relationship Manager.</span>
+          </label>
+          {errors.declarationAccepted && <GovAlert variant="danger">{errors.declarationAccepted}</GovAlert>}
 
           {/* ACTION BUTTONS */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">

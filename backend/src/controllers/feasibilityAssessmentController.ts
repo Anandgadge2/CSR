@@ -61,11 +61,11 @@ export const submitJSDecision = async (req: AuthenticatedRequest, res: Response,
   try {
     const { id } = req.params;
     const { decision, reason } = req.body;
-    if (!["PROCEED", "PROCEED_WITH_CONDITIONS", "DO_NOT_PROCEED"].includes(decision)) {
-      return res.status(400).json({ error: "Decision must be PROCEED, PROCEED_WITH_CONDITIONS, or DO_NOT_PROCEED." });
+    if (!["PROCEED", "PROCEED_WITH_CONDITIONS", "DO_NOT_PROCEED", "RETURN_FOR_CLARIFICATION", "RETURN_FOR_CORRECTION"].includes(decision)) {
+      return res.status(400).json({ error: "Select approve, conditional approve, reject, return for clarification, or return for correction." });
     }
-    if (decision === "DO_NOT_PROCEED" && (typeof reason !== "string" || reason.trim().length < 5)) {
-      return res.status(400).json({ error: "Record a clear reason when deciding not to proceed." });
+    if (decision !== "PROCEED" && (typeof reason !== "string" || reason.trim().length < 5)) {
+      return res.status(400).json({ error: "Record a clear reason or conditions for this decision." });
     }
 
     const assessment = await prisma.feasibilityAssessment.findUnique({ where: { id } });
@@ -73,20 +73,23 @@ export const submitJSDecision = async (req: AuthenticatedRequest, res: Response,
     if (assessment.status !== "SUBMITTED_TO_JS") return res.status(409).json({ error: "A Joint Secretary decision has already been recorded for this assessment." });
 
     const isApproved = decision === "PROCEED" || decision === "PROCEED_WITH_CONDITIONS";
+    const isReturned = decision === "RETURN_FOR_CLARIFICATION" || decision === "RETURN_FOR_CORRECTION";
+    const assessmentStatus = isApproved ? "JS_APPROVED" : isReturned ? decision : "JS_REJECTED";
+    const enquiryStatus = isApproved ? "JS_APPROVED" : isReturned ? decision : "JS_REJECTED";
     try {
       const routing = isApproved ? await routeApprovedCorporateEnquiry({ assessmentId: assessment.id, actorUserId: req.user!.id }) : null;
       await prisma.$transaction([
         prisma.feasibilityAssessment.update({
           where: { id },
           data: {
-            status: isApproved ? "JS_APPROVED" : "JS_REJECTED",
+            status: assessmentStatus,
             jsDecision: decision,
             jsDecisionReason: reason || null,
             jsDecidedByUserId: req.user?.id || null,
             jsDecidedAt: new Date()
           }
         }),
-        ...(isApproved ? [] : [prisma.corporateEnquiry.update({ where: { id: assessment.enquiryId }, data: { status: "JS_REJECTED" } })]),
+        ...(!isApproved ? [prisma.corporateEnquiry.update({ where: { id: assessment.enquiryId }, data: { status: enquiryStatus } })] : []),
         prisma.sLAEscalation.updateMany({
           where: { entityType: "CORPORATE_ENQUIRY", entityId: assessment.enquiryId, stage: "JS_DECISION", isResolved: false },
           data: { isResolved: true, resolvedAt: new Date() }
@@ -98,9 +101,9 @@ export const submitJSDecision = async (req: AuthenticatedRequest, res: Response,
         email: enquiry.contactEmail,
         phone: enquiry.mobile,
         title: "Joint Secretary decision recorded",
-        message: isApproved ? `Your application ${enquiry.trackingId || enquiry.id} has been approved.` : `A decision has been recorded for application ${enquiry.trackingId || enquiry.id}.`,
+        message: isApproved ? `Your application ${enquiry.trackingId || enquiry.id} has been approved.` : isReturned ? `Application ${enquiry.trackingId || enquiry.id} has been returned to the Relationship Manager for ${decision === "RETURN_FOR_CLARIFICATION" ? "clarification" : "correction"}.` : `A decision has been recorded for application ${enquiry.trackingId || enquiry.id}.`,
         trackingId: enquiry.trackingId || undefined,
-        currentStatus: isApproved ? "JS_APPROVED" : "JS_REJECTED",
+        currentStatus: enquiryStatus,
         actionButtonUrl: `/track?trackingId=${encodeURIComponent(enquiry.trackingId || enquiry.id)}`,
         correlationId: assessment.id,
         notificationType: "JS_DECISION"

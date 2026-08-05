@@ -7,6 +7,7 @@ import { createSLAEscalation } from "../services/slaEscalationService";
 import { calculateSlaDueDate } from "../services/slaConfigService";
 import { ROLE_ID } from "../types/role";
 import { dispatchNotification, dispatchToContact } from "../services/notificationOrchestrator";
+import { validatePitchVerificationChecklist } from "../utils/workflowValidation";
 
 export const getRMOverview = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -129,19 +130,25 @@ export const verifyGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
   try {
     const userId = req.user!.id;
     const { id } = req.params;
-    const { status } = req.body;
+    const verification = validatePitchVerificationChecklist(req.body);
+    if (!verification.ok) {
+      return res.status(400).json({ error: "Complete the mandatory pitch verification before submitting to JS.", validationErrors: verification.errors });
+    }
 
     const assignedPitch = await prisma.governmentPitch.findFirst({
       where: { id, assignedRelationshipManagerId: userId },
-      select: { id: true }
+      select: { id: true, status: true }
     });
     if (!assignedPitch) return res.status(404).json({ error: "Pitch not found" });
+    if (!["SUBMITTED", "UNDER_RM_REVIEW", "RETURNED_FOR_CORRECTION", "RETURNED_FOR_CLARIFICATION"].includes(assignedPitch.status)) {
+      return res.status(409).json({ error: "This pitch is not in an RM-reviewable state." });
+    }
 
     const jointSecretary = await prisma.user.findFirst({
       where: { roleId: ROLE_ID.JOINT_SECRETARY, accountStatus: "ACTIVE" },
       select: { id: true }
     });
-    const nextStatus = status || "JS_APPROVAL_PENDING";
+    const nextStatus = "JS_APPROVAL_PENDING";
     const pitch = await prisma.governmentPitch.update({
       where: { id },
       data: { status: nextStatus }
@@ -181,7 +188,14 @@ export const verifyGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
       });
     }
 
-    await auditLog(userId, "GOVERNMENT_PITCH_VERIFIED", { pitchId: id, status: nextStatus });
+    await auditLog(userId, "GOVERNMENT_PITCH_VERIFIED", {
+      pitchId: id,
+      status: nextStatus,
+      checklist: verification.value.checklist,
+      recommendation: verification.value.recommendation,
+      summary: verification.value.summary,
+      conditions: req.body.conditions || null
+    });
     return res.json({ success: true, data: pitch });
   } catch (error) {
     next(error);
@@ -207,7 +221,7 @@ export const logEnquiryInteraction = async (req: AuthenticatedRequest, res: Resp
 
     const assignedEnquiry = await prisma.corporateEnquiry.findFirst({
       where: { id, assignedRelationshipManagerId: userId },
-      select: { id: true }
+      select: { id: true, status: true }
     });
     if (!assignedEnquiry) return res.status(404).json({ error: "Enquiry not found" });
 
@@ -247,9 +261,14 @@ export const submitFeasibilityAssessment = async (req: AuthenticatedRequest, res
     }
 
     const districts = Array.isArray(targetDistricts) ? [...new Set(targetDistricts.map((district: unknown) => String(district).trim()).filter(Boolean))] : [];
-    if (!targetDepartmentId || districts.length === 0) {
-      return res.status(400).json({ error: "Select the target Government Department and one or more target districts before sending the assessment to JS." });
+    if (!targetDepartmentId || districts.length !== 1) {
+      return res.status(400).json({ error: "Select exactly one target Government Department and one target district before sending the assessment to JS." });
     }
+    if (typeof executiveSummary !== "string" || executiveSummary.trim().length < 20) {
+      return res.status(400).json({ error: "Assessment summary must contain at least 20 characters." });
+    }
+    const department = await prisma.organization.findFirst({ where: { id: targetDepartmentId, kind: "GOVERNMENT_DEPARTMENT", status: "ACTIVE" }, select: { id: true } });
+    if (!department) return res.status(400).json({ error: "Select an active Government Department." });
     const criticalGaps = normalizedChecklist.filter((item) => item.isCritical && item.answer !== "YES");
     const normalisedConditions = Array.isArray(conditions) ? conditions
       .filter((condition: any) => condition && Number.isInteger(Number(condition.itemNumber)))

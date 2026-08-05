@@ -8,6 +8,8 @@ import { generateGovernmentPitchTrackingId } from "../services/trackingIdService
 import { createSLAEscalation } from "../services/slaEscalationService";
 import { calculateSlaDueDate } from "../services/slaConfigService";
 import { dispatchNotification, dispatchToContact } from "../services/notificationOrchestrator";
+import { PUBLIC_PITCH_SELECT, validateGovernmentPitchSubmission } from "../utils/workflowValidation";
+import { generateInterestTrackingId } from "../services/trackingIdService";
 
 export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -33,7 +35,13 @@ export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
       });
     }
 
-    const preferredDistrict = req.body.district || req.body.location || null;
+    const validation = validateGovernmentPitchSubmission(req.body);
+    if (!validation.ok) {
+      return res.status(400).json({ error: "Government pitch submission is incomplete.", validationErrors: validation.errors });
+    }
+    const submission = validation.value;
+
+    const preferredDistrict = submission.district;
 
     // Auto-assign Relationship Manager via round-robin least loaded algorithm
     const assignedRmId = await selectLeastLoadedRm(preferredDistrict);
@@ -47,29 +55,29 @@ export const submitGovernmentPitch = async (req: AuthenticatedRequest, res: Resp
         pitch = await prisma.governmentPitch.create({
           data: {
         pitchReferenceId: await generateGovernmentPitchTrackingId(),
-        title: req.body.title || req.body.csrRequirement || "Development Need",
-        budget: Number(req.body.budget || req.body.estimatedCost || 0),
+        title: req.body.title || submission.csrRequirement.slice(0, 120),
+        budget: submission.estimatedCost,
         assignedRelationshipManagerId: assignedRmId,
         departmentId: req.body.departmentId || user?.organizationId || null,
-        officialName: req.body.officialName || null,
-        designation: req.body.designation || null,
+        officialName: submission.officialName,
+        designation: submission.designation,
         department: req.body.department || user?.organization?.name || null,
         officeName: req.body.officeName || null,
-        serviceClass: req.body.serviceClass || null,
-        mobile: req.body.mobile || null,
-        email: req.body.email || user?.email || null,
+        serviceClass: submission.serviceClass,
+        mobile: submission.mobile,
+        email: submission.email,
         divisions: Array.isArray(req.body.divisions) ? req.body.divisions : [],
-        districts: Array.isArray(req.body.districts) ? req.body.districts : [],
+        districts: [submission.district],
         cities: Array.isArray(req.body.cities) ? req.body.cities : [],
-        talukas: Array.isArray(req.body.talukas) ? req.body.talukas : [],
-        exactLocation: req.body.exactLocation || null,
-        csrRequirement: req.body.csrRequirement || null,
-        estimatedCost: req.body.estimatedCost ?? null,
-        govtFundDeclaration: typeof req.body.govtFundDeclaration === "boolean" ? req.body.govtFundDeclaration : null,
-        certificationType: req.body.certificationType || null,
-        hodCertificationDocument: req.body.hodCertificationDocument || null,
-        supportingDocuments: Array.isArray(req.body.supportingDocuments) ? req.body.supportingDocuments : [],
-        geoTaggedPhotos: Array.isArray(req.body.geoTaggedPhotos) ? req.body.geoTaggedPhotos : [],
+        talukas: submission.talukas,
+        exactLocation: submission.exactLocation,
+        csrRequirement: submission.csrRequirement,
+        estimatedCost: submission.estimatedCost,
+        govtFundDeclaration: true,
+        certificationType: submission.certificationType,
+        hodCertificationDocument: submission.hodCertificationDocument,
+        supportingDocuments: submission.supportingDocuments,
+        geoTaggedPhotos: submission.geoTaggedPhotos,
         submittedByUserId: userId,
         status: "SUBMITTED"
           }
@@ -160,7 +168,7 @@ export const getPublicPitches = async (_req: AuthenticatedRequest, res: Response
   try {
     const pitches = await prisma.governmentPitch.findMany({
       where: { status: "PUBLIC_LISTED" },
-      select: { id: true, pitchReferenceId: true, title: true, department: true, districts: true, cities: true, talukas: true, exactLocation: true, csrRequirement: true, estimatedCost: true, budget: true, status: true, createdAt: true },
+      select: PUBLIC_PITCH_SELECT,
       orderBy: { createdAt: "desc" }
     });
     return res.json(pitches);
@@ -216,13 +224,29 @@ export const convertPitchToProject = async (req: AuthenticatedRequest, res: Resp
 
 export const submitInterest = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const pitchId = req.params.id;
+    const corporateId = req.user?.organizationId;
+    if (!corporateId) return res.status(403).json({ error: "An approved company organization is required." });
+    const pitch = await prisma.governmentPitch.findFirst({ where: { id: pitchId, status: "PUBLIC_LISTED" }, select: { id: true, pitchReferenceId: true } });
+    if (!pitch) return res.status(404).json({ error: "This public pitch is not available for expressions of interest." });
+    const existing = await prisma.corporatePitchInterest.findFirst({ where: { pitchId, corporateId } });
+    if (existing) return res.status(409).json({ error: "Your company has already expressed interest in this pitch.", data: existing });
+    const indicativeBudget = Number(req.body.indicativeBudget);
+    const preferredStartPeriod = typeof (req.body.preferredStartPeriod || req.body.preferredStartTimeline) === "string" ? String(req.body.preferredStartPeriod || req.body.preferredStartTimeline).trim() : "";
+    const implementationMode = typeof req.body.implementationMode === "string" ? req.body.implementationMode.trim() : "";
+    const message = typeof (req.body.message || req.body.messageToGovernment) === "string" ? String(req.body.message || req.body.messageToGovernment).trim() : "";
+    if (!Number.isFinite(indicativeBudget) || indicativeBudget <= 0 || !preferredStartPeriod || !implementationMode || message.length < 10 || req.body.declarationAccepted !== true) {
+      return res.status(400).json({ error: "Complete the budget, start period, implementation mode, message, and declaration." });
+    }
     const interest = await prisma.corporatePitchInterest.create({
       data: {
-        pitchId: req.body.pitchId || req.params.id,
-        corporateId: req.user?.organizationId || req.body.corporateId || "unknown",
+        interestTrackingId: await generateInterestTrackingId(),
+        pitchId,
+        corporateId,
         status: "INTERESTED"
       }
     });
+    await prisma.auditLog.create({ data: { actorUserId: req.user?.id || null, userId: req.user?.id || null, action: "PITCH_INTEREST_SUBMITTED", entityType: "CorporatePitchInterest", entityId: interest.id, details: { pitchId, pitchReferenceId: pitch.pitchReferenceId, corporateId, indicativeBudget, preferredStartPeriod, implementationMode, ngoOrFoundationDetails: req.body.ngoOrFoundationDetails || null, message, declarationAccepted: true } } });
     return res.status(201).json(interest);
   } catch (error) {
     next(error);
@@ -230,15 +254,7 @@ export const submitInterest = async (req: AuthenticatedRequest, res: Response, n
 };
 
 export const verifyPitch = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    const updated = await prisma.governmentPitch.update({
-      where: { id: req.params.id },
-      data: { status: "VERIFIED" }
-    });
-    return res.json(updated);
-  } catch (error) {
-    next(error);
-  }
+  return res.status(410).json({ error: "Use the assigned Relationship Manager verification workspace, including the mandatory checklist and recommendation." });
 };
 
 /**
@@ -246,28 +262,43 @@ export const verifyPitch = async (req: AuthenticatedRequest, res: Response, next
  */
 export const approvePitch = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const decision = String(req.body.decision || "APPROVE").toUpperCase();
+    const reason = typeof req.body.reason === "string" ? req.body.reason.trim() : "";
+    const conditions = typeof req.body.conditions === "string" ? req.body.conditions.trim() : "";
+    const allowed = ["APPROVE", "APPROVE_WITH_CONDITIONS", "REJECT", "RETURN_FOR_CLARIFICATION", "RETURN_FOR_CORRECTION"];
+    if (!allowed.includes(decision)) return res.status(400).json({ error: "Select a valid Joint Secretary decision." });
+    if (decision !== "APPROVE" && reason.length < 5) return res.status(400).json({ error: "Record the reason for this decision." });
+    if (decision === "APPROVE_WITH_CONDITIONS" && conditions.length < 10) return res.status(400).json({ error: "Document the approval conditions." });
     const pitch = await prisma.governmentPitch.findUnique({ where: { id: req.params.id } });
     if (!pitch) return res.status(404).json({ error: "Pitch not found" });
     if (pitch.status !== "JS_APPROVAL_PENDING") {
       return res.status(409).json({ error: "Only an RM-verified pitch awaiting JS approval can be published." });
     }
-    // A pitch is an approved public CSR opportunity. It becomes a project only
-    // after a corporate interest and MoU workflow, never at publication time.
-    const updated = await prisma.governmentPitch.update({ where: { id: pitch.id }, data: { status: "PUBLIC_LISTED" } });
+    const statusByDecision: Record<string, string> = {
+      APPROVE: "PUBLIC_LISTED",
+      APPROVE_WITH_CONDITIONS: "PUBLIC_LISTED",
+      REJECT: "JS_REJECTED",
+      RETURN_FOR_CLARIFICATION: "RETURNED_FOR_CLARIFICATION",
+      RETURN_FOR_CORRECTION: "RETURNED_FOR_CORRECTION"
+    };
+    // Approved pitches are published immediately through the public-safe field projection.
+    const updated = await prisma.governmentPitch.update({ where: { id: pitch.id }, data: { status: statusByDecision[decision] } });
     await prisma.sLAEscalation.updateMany({ where: { entityType: "GOVERNMENT_PITCH", entityId: pitch.id, stage: "JS_DECISION", isResolved: false }, data: { isResolved: true, resolvedAt: new Date() } });
+    await prisma.auditLog.create({ data: { actorUserId: req.user?.id || null, userId: req.user?.id || null, action: "GOVERNMENT_PITCH_JS_DECISION", entityType: "GovernmentPitch", entityId: pitch.id, details: { decision, reason: reason || null, conditions: conditions || null, resultingStatus: updated.status } } });
+    const published = updated.status === "PUBLIC_LISTED";
     await dispatchToContact({
       referenceId: updated.pitchReferenceId || updated.id,
       email: updated.email,
       phone: updated.mobile,
-      title: "Government pitch approved and published",
-      message: `Your pitch ${updated.pitchReferenceId || updated.id} has been approved by the Joint Secretary and is now publicly listed for corporate interest.`,
+      title: published ? "Government pitch approved and published" : "Joint Secretary decision recorded",
+      message: published ? `Your pitch ${updated.pitchReferenceId || updated.id} has been approved by the Joint Secretary and is now publicly listed for corporate interest.` : `A Joint Secretary decision has been recorded for pitch ${updated.pitchReferenceId || updated.id}: ${decision.replace(/_/g, " ")}.`,
       trackingId: updated.pitchReferenceId || undefined,
       currentStatus: updated.status,
       actionButtonUrl: `/track?trackingId=${encodeURIComponent(updated.pitchReferenceId || updated.id)}`,
       correlationId: updated.id,
       notificationType: "JS_DECISION"
     });
-    return res.json({ success: true, message: "Pitch approved and published for corporate interest.", pitch: updated });
+    return res.json({ success: true, message: published ? "Pitch approved and published for corporate interest." : "Joint Secretary decision recorded.", pitch: updated, decision });
   } catch (error) {
     next(error);
   }

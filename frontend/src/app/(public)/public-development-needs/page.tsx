@@ -102,9 +102,9 @@ export default function PublicDevelopmentNeedsPage() {
       setNeeds(rawNeeds.map((need: any) => ({
         id: need.id,
         trackingId: need.trackingId ?? need.pitchReferenceId,
-        district: need.district,
-        taluka: need.taluka,
-        village: need.exactLocation,
+        district: need.district ?? need.districts?.[0] ?? "Maharashtra",
+        taluka: need.taluka ?? need.talukas?.[0] ?? "—",
+        village: undefined,
         csrRequirement: need.csrRequirement,
         estimatedCost: Number(need.estimatedCost ?? 0),
         department: need.department,
@@ -147,7 +147,7 @@ export default function PublicDevelopmentNeedsPage() {
       if (user) {
         try {
           const userData = JSON.parse(user);
-          if (["COMPANY_ADMIN", "COMPANY_MEMBER", "CORPORATE_USER", "CORPORATE_PARTNER"].includes(userData.role)) {
+          if (userData.organization?.kind === "CSR_COMPANY" || ["COMPANY_ADMIN", "COMPANY_MEMBER", "CORPORATE_USER", "CORPORATE_PARTNER"].includes(userData.role)) {
             setIsAuthenticatedCorporate(true);
             const name = userData.organization?.name || userData.companyName || userData.name || "";
             const cin = userData.organization?.cin || userData.company?.cin || userData.cin || "";
@@ -182,6 +182,10 @@ export default function PublicDevelopmentNeedsPage() {
   };
 
   const openInterestDialog = (need: DevelopmentNeed) => {
+    if (!isAuthenticatedCorporate) {
+      router.push(`/login?next=${encodeURIComponent("/public-development-needs")}`);
+      return;
+    }
     setSelectedNeed(need);
     setInterestResult("");
     // Authenticated corporates are pre-verified; only reset OTP tokens for anonymous visitors
@@ -210,7 +214,7 @@ export default function PublicDevelopmentNeedsPage() {
           emailVerificationToken: interestTokens.email,
         }),
       });
-      setInterestResult(response.interest?.interestTrackingId ?? response.data?.interest?.interestTrackingId ?? "Submitted");
+      setInterestResult(response.interestTrackingId ?? response.interest?.interestTrackingId ?? response.data?.interest?.interestTrackingId ?? "Submitted");
       // Remember this need so its "I am Interested" button stays disabled
       setSubmittedNeedIds((prev) => {
         const next = prev.includes(selectedNeed.id) ? prev : [...prev, selectedNeed.id];

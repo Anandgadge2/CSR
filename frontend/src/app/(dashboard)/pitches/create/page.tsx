@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, uploadPortalFile } from "@/lib/api";
 import GovInput from "@/components/gov/GovInput";
 import GovSelect from "@/components/gov/GovSelect";
 import GovTextarea from "@/components/gov/GovTextarea";
@@ -229,30 +229,6 @@ export default function CreatePitchDashboardPage() {
   const [referenceId, setReferenceId] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
 
-  if (isRM) {
-    return (
-      <GovPortalLayout userRole="RELATIONSHIP_MANAGER">
-        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-600 mb-4 border border-amber-200">
-            <ShieldCheck size={32} />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">Access Restricted</h2>
-          <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-            Relationship Managers cannot submit government pitches. Your role is restricted to reviewing, assessing, and managing assigned pitches.
-          </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <GovButton variant="primary" onClick={() => router.push("/pitches")}>
-              Go to Pitches Register
-            </GovButton>
-            <GovButton variant="secondary" onClick={() => router.push("/dashboard")}>
-              Dashboard
-            </GovButton>
-          </div>
-        </div>
-      </GovPortalLayout>
-    );
-  }
-
   const [form, setForm] = useState<PitchForm>({
     officialName: "",
     designation: "",
@@ -323,6 +299,7 @@ export default function CreatePitchDashboardPage() {
   };
 
   const handleDistrictsChange = (nextDistricts: string[]) => {
+    nextDistricts = nextDistricts.slice(-1);
     const validCities = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.cities || []);
     const nextCities = form.cities.filter(c => validCities.includes(c));
     const validTalukas = districtsList.filter(d => nextDistricts.includes(d.name)).flatMap(d => d.talukas || []);
@@ -355,7 +332,7 @@ export default function CreatePitchDashboardPage() {
     if (!form.mobile.trim() || !/^[6-9]\d{9}$/.test(form.mobile)) e.mobile = "Valid 10-digit mobile is required";
     if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Valid email is required";
     if (form.divisions.length === 0) e.divisions = "At least one division must be selected";
-    if (form.districts.length === 0) e.districts = "At least one district must be selected";
+    if (form.districts.length !== 1) e.districts = "Select exactly one district";
     if (!form.exactLocation.trim()) e.exactLocation = "Exact location is required";
     if (!form.csrRequirement.trim()) e.csrRequirement = "CSR requirement is required";
     const words = form.csrRequirement.trim().split(/\s+/).filter(Boolean).length;
@@ -408,22 +385,19 @@ export default function CreatePitchDashboardPage() {
     }));
   };
 
-  const uploadFile = async (file: File): Promise<string> =>
-    `https://dev.mahacsr.local/uploads/${encodeURIComponent(file.name)}`;
-
   const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validateForm()) return;
     setLoading(true);
     try {
       const photoUrls: string[] = [];
-      for (const photo of form.geoTaggedPhotos) photoUrls.push(await uploadFile(photo));
+      for (const photo of form.geoTaggedPhotos) photoUrls.push(await uploadPortalFile(photo));
       let hodCertificationDocument = "";
-      if (form.hodDocument) hodCertificationDocument = await uploadFile(form.hodDocument);
+      if (form.hodDocument) hodCertificationDocument = await uploadPortalFile(form.hodDocument);
 
       const supportingDocumentUrls: string[] = [];
       for (const doc of form.supportingDocuments) {
-        supportingDocumentUrls.push(await uploadFile(doc));
+        supportingDocumentUrls.push(await uploadPortalFile(doc));
       }
 
       const response = await apiFetch<any>("/government-pitches", {
@@ -462,6 +436,19 @@ export default function CreatePitchDashboardPage() {
   };
 
   const wordCount = form.csrRequirement.trim().split(/\s+/).filter(Boolean).length;
+
+  if (isRM) {
+    return (
+      <GovPortalLayout userRole="RELATIONSHIP_MANAGER">
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600"><ShieldCheck size={32} /></div>
+          <h2 className="text-2xl font-bold text-slate-900">Access Restricted</h2>
+          <p className="mt-2 text-sm text-slate-600">Relationship Managers review assigned pitches and cannot submit government pitches.</p>
+          <div className="mt-6 flex justify-center gap-3"><GovButton variant="primary" onClick={() => router.push("/pitches")}>Go to Pitches Register</GovButton><GovButton variant="secondary" onClick={() => router.push("/dashboard")}>Dashboard</GovButton></div>
+        </div>
+      </GovPortalLayout>
+    );
+  }
 
   if (submitted) {
     return (
@@ -676,12 +663,12 @@ export default function CreatePitchDashboardPage() {
 
                 <div className="gov-field">
                   <MultiSelectField
-                    label="Preferred District(s)"
+                    label="Project District"
                     required
                     values={form.districts}
                     options={form.divisions.flatMap(div => DIVISION_TO_DISTRICTS[div] || [])}
                     onChange={handleDistrictsChange}
-                    placeholder={form.divisions.length === 0 ? "Select division first..." : "Select target district(s)..."}
+                    placeholder={form.divisions.length === 0 ? "Select division first..." : "Select one target district..."}
                   />
                 </div>
 
