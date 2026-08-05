@@ -150,7 +150,9 @@ export default function DashboardEngine() {
   const activeRoles = (roles || []).length > 0 ? roles : (user?.role ? [user.role] : []);
   const isCorporate = activeRoles.some((r: string) => r.includes("COMPANY") || r.includes("CORPORATE"));
   const isGovernment = activeRoles.some((r: string) => r.includes("GOVERNMENT") || r.includes("DEPARTMENT"));
-  const isRM = activeRoles.some((r: string) => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER"));
+  const isRM = activeRoles.some((r: string) => r.toUpperCase().includes("RELATIONSHIP_MANAGER") || r.toUpperCase().includes("RELATIONSHIP MANAGER") || user?.roleId === 6 || r === "6");
+  const isJS = activeRoles.some((r: string) => r.toUpperCase().includes("JOINT_SECRETARY") || r.toUpperCase().includes("JOINT SECRETARY") || user?.roleId === 3 || r === "3");
+  const isPS = activeRoles.some((r: string) => r.toUpperCase().includes("PLANNING_SECRETARY") || r.toUpperCase().includes("PLANNING SECRETARY") || user?.roleId === 2 || r === "2");
 
   const { data: summaryEnvelope, isLoading } = useApiQuery<SummaryEnvelope>(
     ["dashboard", "summary"],
@@ -486,6 +488,24 @@ export default function DashboardEngine() {
     rightTitle = "Platform Overview";
     rightSubtitle = "MahaCSR platform-wide statistics & approvals";
     rightIcon = Globe;
+  } else if (isJS || isPS) {
+    r1Left = adminRow1Right; r1Right = adminRow1Left;
+    r2Left = adminRow2Right; r2Right = adminRow2Left;
+    leftTitle = "Joint Secretary State Secretariat Desk";
+    leftSubtitle = "Secretariat approvals, feasibility decision queue & SLA escalations";
+    leftIcon = ShieldCheck;
+    rightTitle = "Corporate & Industry Portfolio Desk";
+    rightSubtitle = "Corporate enquiries, funding outlays & active convergence projects";
+    rightIcon = Building2;
+  } else if (isRM) {
+    r1Left = adminRow1Left; r1Right = adminRow1Right;
+    r2Left = adminRow2Left; r2Right = adminRow2Right;
+    leftTitle = "Relationship Manager Portfolio Desk";
+    leftSubtitle = "Corporate enquiries, interest submissions & feasibility assessments";
+    leftIcon = Building2;
+    rightTitle = "Government & Department Desk";
+    rightSubtitle = "State pitches, approvals & escalations queue";
+    rightIcon = Landmark;
   } else {
     r1Left = adminRow1Left; r1Right = adminRow1Right;
     r2Left = adminRow2Left; r2Right = adminRow2Right;

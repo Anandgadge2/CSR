@@ -2,21 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
 import { apiFetch } from "@/lib/api";
-import GovSelect from "@/components/gov/GovSelect";
-import GovButton from "@/components/gov/GovButton";
-import GovInput from "@/components/gov/GovInput";
-import GovTextarea from "@/components/gov/GovTextarea";
-import { GovCard, GovCardHeader, GovCardTitle, GovCardBody } from "@/components/gov/GovCard";
-import GovAlert from "@/components/gov/GovAlert";
-import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
-import OtpVerification from "@/components/OtpVerification";
-import { ListFilter, MapPin, ChevronLeft, ChevronRight, Loader2, HeartHandshake, LayoutGrid, List, Eye } from "lucide-react";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
+import { ViewToggle } from "@/components/ui/ViewToggle";
+import {
+  HeartHandshake, MapPin, Search, Filter, Loader2, Eye, CheckCircle2,
+  Building2, ArrowUpRight, ChevronLeft, ChevronRight, X, LogIn, UserPlus, Lock, ShieldCheck
+} from "lucide-react";
 
 interface DevelopmentNeed {
   id: string;
   trackingId: string;
+  title: string;
   district: string;
   taluka: string;
   village?: string;
@@ -59,8 +59,13 @@ export default function PublicDevelopmentNeedsPage() {
     totalPages: 0,
   });
   const [selectedDistrict, setSelectedDistrict] = useState("All Districts");
+  const [searchTerm, setSearchTerm] = useState("");
   const [expressingInterest, setExpressingInterest] = useState<string | null>(null);
   const [selectedNeed, setSelectedNeed] = useState<DevelopmentNeed | null>(null);
+  const [viewingNeed, setViewingNeed] = useState<DevelopmentNeed | null>(null);
+  const [loginRequiredNeed, setLoginRequiredNeed] = useState<DevelopmentNeed | null>(null);
+  const [viewMode, setViewMode] = useResponsiveViewMode();
+
   const [interestForm, setInterestForm] = useState({
     companyName: "",
     mca21Cin: "",
@@ -74,12 +79,9 @@ export default function PublicDevelopmentNeedsPage() {
     messageToGovernment: "",
     declarationAccepted: false,
   });
-  const [interestTokens, setInterestTokens] = useState({ mobile: "", email: "" });
   const [interestResult, setInterestResult] = useState("");
   const [isAuthenticatedCorporate, setIsAuthenticatedCorporate] = useState(false);
   const [submittedNeedIds, setSubmittedNeedIds] = useState<string[]>([]);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-  const [viewingNeed, setViewingNeed] = useState<DevelopmentNeed | null>(null);
 
   const fetchNeeds = async (page: number = 1, district: string = "All Districts") => {
     setLoading(true);
@@ -89,7 +91,6 @@ export default function PublicDevelopmentNeedsPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: ITEMS_PER_PAGE.toString(),
-        status: "PUBLISHED",
       });
 
       if (district !== "All Districts") {
@@ -98,35 +99,43 @@ export default function PublicDevelopmentNeedsPage() {
 
       const response = await apiFetch<any>(`/government-pitches/public?${params}`);
 
-      const rawNeeds = response.needs ?? response.data ?? [];
-      setNeeds(rawNeeds.map((need: any) => ({
-        id: need.id,
-        trackingId: need.trackingId ?? need.pitchReferenceId,
-        district: need.district ?? need.districts?.[0] ?? "Maharashtra",
-        taluka: need.taluka ?? need.talukas?.[0] ?? "—",
-        village: undefined,
-        csrRequirement: need.csrRequirement,
-        estimatedCost: Number(need.estimatedCost ?? 0),
-        department: need.department,
-        officeName: need.officeName,
-        publishedAt: need.publishedAt ?? need.createdAt,
-        interestedCompaniesCount: need.interestedCompaniesCount ?? need._count?.interests ?? 0,
-      })));
-      setPagination(response.pagination ?? {
-        page,
-        limit: ITEMS_PER_PAGE,
-        total: rawNeeds.length,
-        totalPages: rawNeeds.length > 0 ? 1 : 0,
-      });
+      const rawNeeds = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.needs)
+        ? response.needs
+        : Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.pitches)
+        ? response.pitches
+        : [];
+
+      setNeeds(
+        rawNeeds.map((need: any) => ({
+          id: need.id,
+          trackingId: need.trackingId ?? need.pitchReferenceId ?? `GP-${need.id.slice(0, 6)}`,
+          title: need.title || need.projectName || "Government Development Proposal",
+          district: Array.isArray(need.districts) && need.districts.length > 0 ? need.districts.join(", ") : (need.district || "Maharashtra"),
+          taluka: Array.isArray(need.talukas) && need.talukas.length > 0 ? need.talukas.join(", ") : (need.taluka || "—"),
+          village: need.exactLocation || need.village || undefined,
+          csrRequirement: need.csrRequirement || "Government pitch requirement",
+          estimatedCost: Number(need.estimatedCost ?? need.budget ?? 0),
+          department: need.department || "Government Department",
+          officeName: need.officeName || need.department || "Department Office",
+          publishedAt: need.publishedAt ?? need.createdAt,
+          interestedCompaniesCount: need.interestedCompaniesCount ?? need._count?.interests ?? 0,
+        }))
+      );
+      setPagination(
+        response.pagination ?? {
+          page,
+          limit: ITEMS_PER_PAGE,
+          total: rawNeeds.length,
+          totalPages: rawNeeds.length > 0 ? 1 : 0,
+        }
+      );
     } catch (err: any) {
       setError(err.message || "Failed to load public development needs");
       setNeeds([]);
-      setPagination({
-        page: 1,
-        limit: ITEMS_PER_PAGE,
-        total: 0,
-        totalPages: 0,
-      });
     } finally {
       setLoading(false);
     }
@@ -143,25 +152,20 @@ export default function PublicDevelopmentNeedsPage() {
         console.error("Error parsing submitted interests", e);
       }
 
-      const user = localStorage.getItem("user");
-      if (user) {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
         try {
-          const userData = JSON.parse(user);
+          const userData = JSON.parse(userStr);
           if (userData.organization?.kind === "CSR_COMPANY" || ["COMPANY_ADMIN", "COMPANY_MEMBER", "CORPORATE_USER", "CORPORATE_PARTNER"].includes(userData.role)) {
             setIsAuthenticatedCorporate(true);
-            const name = userData.organization?.name || userData.companyName || userData.name || "";
-            const cin = userData.organization?.cin || userData.company?.cin || userData.cin || "";
-            const email = userData.email || "";
-
             setInterestForm((prev) => ({
               ...prev,
-              companyName: name,
-              mca21Cin: cin,
-              email: email,
+              companyName: userData.organization?.name || userData.companyName || userData.name || "",
+              mca21Cin: userData.organization?.cin || userData.company?.cin || userData.cin || "",
+              email: userData.email || "",
               contactPersonName: userData.contactPersonName || userData.name || prev.contactPersonName,
               mobile: userData.mobile || prev.mobile,
             }));
-            setInterestTokens({ mobile: "authenticated", email: "authenticated" });
           }
         } catch (e) {
           console.error("Error parsing user data", e);
@@ -175,47 +179,28 @@ export default function PublicDevelopmentNeedsPage() {
     fetchNeeds(1, district);
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= pagination.totalPages) {
-      fetchNeeds(page, selectedDistrict);
-    }
-  };
-
   const openInterestDialog = (need: DevelopmentNeed) => {
     if (!isAuthenticatedCorporate) {
-      router.push(`/login?next=${encodeURIComponent("/public-development-needs")}`);
+      setLoginRequiredNeed(need);
       return;
     }
     setSelectedNeed(need);
     setInterestResult("");
-    // Authenticated corporates are pre-verified; only reset OTP tokens for anonymous visitors
-    setInterestTokens(
-      isAuthenticatedCorporate
-        ? { mobile: "authenticated", email: "authenticated" }
-        : { mobile: "", email: "" }
-    );
   };
 
   const handleExpressInterest = async () => {
     if (!selectedNeed) return;
-    const messageWordCount = interestForm.messageToGovernment.trim().split(/\s+/).filter(Boolean).length;
-    if (messageWordCount > 100) {
-      alert(`Message to Government is optional, max 100 words. Current: ${messageWordCount} words.`);
-      return;
-    }
     try {
       setExpressingInterest(selectedNeed.id);
       const response = await apiFetch<any>(`/government-pitches/public/${selectedNeed.id}/interests`, {
         method: "POST",
         body: JSON.stringify({
           ...interestForm,
-          indicativeBudget: Number(interestForm.indicativeBudget),
-          mobileVerificationToken: interestTokens.mobile,
-          emailVerificationToken: interestTokens.email,
+          indicativeBudget: Number(interestForm.indicativeBudget || selectedNeed.estimatedCost),
+          declarationAccepted: true
         }),
       });
-      setInterestResult(response.interestTrackingId ?? response.interest?.interestTrackingId ?? response.data?.interest?.interestTrackingId ?? "Submitted");
-      // Remember this need so its "I am Interested" button stays disabled
+      setInterestResult(response.interestTrackingId ?? response.id ?? "Submitted");
       setSubmittedNeedIds((prev) => {
         const next = prev.includes(selectedNeed.id) ? prev : [...prev, selectedNeed.id];
         localStorage.setItem("submittedInterestNeedIds", JSON.stringify(next));
@@ -223,662 +208,489 @@ export default function PublicDevelopmentNeedsPage() {
       });
       fetchNeeds(pagination.page, selectedDistrict);
     } catch (err: any) {
-      alert(err.message || "Failed to express interest. Please try again.");
+      alert(err.message || "Failed to express corporate interest. Please check budget details.");
     } finally {
       setExpressingInterest(null);
     }
   };
 
-  const truncateText = (text: string, maxWords: number): string => {
-    const words = text.split(/\s+/);
-    if (words.length <= maxWords) return text;
-    return words.slice(0, maxWords).join(" ") + "...";
-  };
+  const filteredNeeds = needs.filter((need) => {
+    const query = searchTerm.toLowerCase();
+    return (
+      need.title.toLowerCase().includes(query) ||
+      need.trackingId.toLowerCase().includes(query) ||
+      need.department.toLowerCase().includes(query) ||
+      need.district.toLowerCase().includes(query) ||
+      need.csrRequirement.toLowerCase().includes(query)
+    );
+  });
+
+  const totalEstimatedOutlay = needs.reduce((acc, curr) => acc + curr.estimatedCost, 0);
 
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(amount);
+    if (!amount) return "₹0.00";
+    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)} Cr`;
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)} Lakhs`;
+    return `₹${amount.toLocaleString("en-IN")}`;
   };
-
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return "—";
-    return new Intl.DateTimeFormat("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }).format(date);
-  };
-
-  const interestMissingItems: string[] = [];
-  if (!interestForm.companyName) interestMissingItems.push("Company Name");
-  if (!interestForm.mca21Cin) interestMissingItems.push("MCA21 CIN");
-  if (!interestForm.contactPersonName) interestMissingItems.push("Contact Person");
-  if (!interestForm.contactPersonDesignation) interestMissingItems.push("Designation");
-  if (!interestTokens.mobile) interestMissingItems.push("Mobile OTP verification");
-  if (!interestTokens.email) interestMissingItems.push("Email OTP verification");
-  if (!interestForm.indicativeBudget) interestMissingItems.push("Indicative Budget");
-  if (!interestForm.declarationAccepted) interestMissingItems.push("Declaration checkbox");
-
-  const isInterestSubmitDisabled =
-    !selectedNeed ||
-    expressingInterest === selectedNeed.id ||
-    interestMissingItems.length > 0;
 
   return (
     <GovPortalLayout>
-      <div className="gov-public-main">
-        <div className="gov-page-header">
-          <div className="gov-breadcrumb">
-            Home / Public Development Needs (Live)
+      <div className="mx-auto flex min-h-screen max-w-screen-2xl flex-col gap-4 px-4 py-4 md:px-6">
+        
+        {/* Compact Light Portal Header */}
+        <div className="rounded-2xl border border-slate-200/90 bg-gradient-to-r from-blue-50/70 via-white to-slate-50 p-4 sm:p-5 shadow-2xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 font-mono text-[11px] font-extrabold text-blue-950 bg-blue-100/80 px-2.5 py-0.5 rounded-md border border-blue-200">
+                  <HeartHandshake size={13} className="text-blue-700" /> STATE CSR MARKETPLACE
+                </span>
+                <span className="rounded-md bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800 border border-emerald-200">
+                  LIVE MARKETPLACE
+                </span>
+              </div>
+              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                Public Development Needs (Live)
+              </h1>
+              <p className="text-xs text-slate-600 font-medium">
+                Official Maharashtra departmental proposals sanctioned by Joint Secretary & open for corporate CSR funding.
+              </p>
+            </div>
+
+            {/* Compact Header Metrics Strip */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-center shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Live Pitches</span>
+                <p className="text-xs font-extrabold text-slate-900 mt-0.5">{needs.length} Published</p>
+              </div>
+              <div className="rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-center shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Outlay</span>
+                <p className="text-xs font-extrabold text-blue-950 mt-0.5">{formatCurrency(totalEstimatedOutlay)}</p>
+              </div>
+              <div className="rounded-xl border border-slate-200/90 bg-white px-3.5 py-2 text-center shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Coverage</span>
+                <p className="text-xs font-extrabold text-emerald-800 mt-0.5">36 Districts</p>
+              </div>
+            </div>
           </div>
-          <h1 className="gov-page-title flex items-center gap-3">
-            <HeartHandshake size={28} className="text-[#f7941d]" />
-            Public Development Needs (Live)
-          </h1>
-          <p className="gov-page-description">
-            Government pitches approved and made public — open for any corporate to fund.
-          </p>
         </div>
 
-        {/* Filters */}
-        <GovCard className="mb-6">
-          <GovCardBody>
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-              <div className="flex items-center gap-2 text-[#14274e] font-bold">
-                <ListFilter size={18} />
-                <span>Filter by District:</span>
-              </div>
-              <GovSelect
-                value={selectedDistrict}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                className="w-full sm:w-64"
-              >
-                {DISTRICTS.map((district) => (
-                  <option key={district} value={district}>
-                    {district}
-                  </option>
-                ))}
-              </GovSelect>
-              <div className="text-sm text-slate-500 ml-auto">
-                Showing {needs.length} of {pagination.total} needs
-              </div>
-              <div className="flex items-center border border-slate-200 rounded overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  title="List view"
-                  aria-pressed={viewMode === "list"}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors ${
-                    viewMode === "list"
-                      ? "bg-[#14274e] text-white"
-                      : "bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <List size={16} />
-                  List
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("grid")}
-                  title="Grid view"
-                  aria-pressed={viewMode === "grid"}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-slate-200 ${
-                    viewMode === "grid"
-                      ? "bg-[#14274e] text-white"
-                      : "bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <LayoutGrid size={16} />
-                  Grid
-                </button>
-              </div>
+        {/* Filter & Search Bar */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative max-w-md w-full">
+              <Search className="absolute left-3.5 top-3 text-slate-400" size={15} />
+              <input
+                type="text"
+                placeholder="Search title, tracking ID, department, or district..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-2 pl-10 pr-4 text-xs font-medium text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none transition-all"
+              />
             </div>
-          </GovCardBody>
-        </GovCard>
 
-        {/* Error */}
-        {error && (
-          <GovAlert variant="danger" className="mb-6">
-            {error}
-          </GovAlert>
-        )}
-
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 size={40} className="animate-spin text-[#14274e]" />
-          </div>
-        )}
-
-        {/* Needs — Grid / List */}
-        {!loading && needs.length > 0 && (
-          <>
-            {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {needs.map((need) => (
-                  <GovCard key={need.id} className="flex flex-col">
-                    <GovCardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <GovCardTitle className="text-base flex items-center gap-2">
-                            <MapPin size={16} className="text-[#f7941d]" />
-                            {need.district}
-                          </GovCardTitle>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {need.taluka}
-                            {need.village && `, ${need.village}`}
-                          </p>
-                        </div>
-                        <GovStatusBadge variant="success">Open</GovStatusBadge>
-                      </div>
-                    </GovCardHeader>
-                    <GovCardBody className="flex-1 flex flex-col">
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 mb-1">Department</p>
-                        <p className="text-sm font-medium">{need.department}</p>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 mb-1">Office</p>
-                        <p className="text-sm">{need.officeName}</p>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 mb-1">Requirement</p>
-                        <p className="text-sm text-slate-700 line-clamp-3">
-                          {truncateText(need.csrRequirement, 25)}
-                        </p>
-                      </div>
-
-                      <div className="mt-auto pt-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <p className="text-xs text-slate-500">Estimated Cost</p>
-                            <p className="text-lg font-bold text-[#14274e]">
-                              {formatCurrency(need.estimatedCost)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-slate-500">Interested</p>
-                            <p className="text-sm font-medium">{need.interestedCompaniesCount} companies</p>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <GovButton
-                            variant="muted"
-                            className="flex-1"
-                            onClick={() => setViewingNeed(need)}
-                          >
-                            <Eye size={16} />
-                            View
-                          </GovButton>
-                          <GovButton
-                            variant="secondary"
-                            className="flex-1"
-                            onClick={() => openInterestDialog(need)}
-                            disabled={expressingInterest === need.id || submittedNeedIds.includes(need.id)}
-                          >
-                            {expressingInterest === need.id ? (
-                              <>
-                                <Loader2 size={16} className="animate-spin" />
-                                Processing...
-                              </>
-                            ) : submittedNeedIds.includes(need.id) ? (
-                              "Interest Submitted"
-                            ) : (
-                              "I am Interested"
-                            )}
-                          </GovButton>
-                        </div>
-                      </div>
-                    </GovCardBody>
-                  </GovCard>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {needs.map((need) => (
-                  <GovCard key={need.id}>
-                    <GovCardBody>
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="flex items-center gap-1.5 font-bold text-[#14274e]">
-                              <MapPin size={16} className="text-[#f7941d]" />
-                              {need.district}
-                            </span>
-                            <span className="text-sm text-slate-500">
-                              {need.taluka}
-                              {need.village && `, ${need.village}`}
-                            </span>
-                            <GovStatusBadge variant="success">Open</GovStatusBadge>
-                          </div>
-                          <p className="text-sm text-slate-700 mb-1">
-                            {truncateText(need.csrRequirement, 30)}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {need.department} · {need.officeName}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-6 shrink-0">
-                          <div>
-                            <p className="text-xs text-slate-500">Estimated Cost</p>
-                            <p className="text-base font-bold text-[#14274e]">
-                              {formatCurrency(need.estimatedCost)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-slate-500">Interested</p>
-                            <p className="text-sm font-medium">{need.interestedCompaniesCount} companies</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 shrink-0">
-                          <GovButton
-                            variant="muted"
-                            onClick={() => setViewingNeed(need)}
-                          >
-                            <Eye size={16} />
-                            View
-                          </GovButton>
-                          <GovButton
-                            variant="secondary"
-                            onClick={() => openInterestDialog(need)}
-                            disabled={expressingInterest === need.id || submittedNeedIds.includes(need.id)}
-                          >
-                            {expressingInterest === need.id ? (
-                              <>
-                                <Loader2 size={16} className="animate-spin" />
-                                Processing...
-                              </>
-                            ) : submittedNeedIds.includes(need.id) ? (
-                              "Interest Submitted"
-                            ) : (
-                              "I am Interested"
-                            )}
-                          </GovButton>
-                        </div>
-                      </div>
-                    </GovCardBody>
-                  </GovCard>
-                ))}
-              </div>
-            )}
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page === 1}
-                  className="p-2 rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            {/* Filter Dropdown & View Mode */}
+            <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-2">
+                <Filter size={15} className="text-slate-400" />
+                <select
+                  value={selectedDistrict}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600"
                 >
-                  <ChevronLeft size={18} />
-                </button>
+                  {DISTRICTS.map((dist) => (
+                    <option key={dist} value={dist}>{dist}</option>
+                  ))}
+                </select>
+              </div>
 
-                <div className="flex gap-1">
-                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                    .filter((page) => {
-                      // Show first, last, current, and neighbors
-                      return (
-                        page === 1 ||
-                        page === pagination.totalPages ||
-                        Math.abs(page - pagination.page) <= 1
-                      );
-                    })
-                    .reduce((acc: (number | string)[], page, index, arr) => {
-                      if (index > 0 && page !== arr[index - 1] + 1) {
-                        acc.push("...");
-                      }
-                      acc.push(page);
-                      return acc;
-                    }, [])
-                    .map((page, index) =>
-                      typeof page === "string" ? (
-                        <span key={`ellipsis-${index}`} className="px-3 py-2 text-slate-400">
-                          {page}
-                        </span>
-                      ) : (
+              <ViewToggle view={viewMode} onChange={setViewMode} />
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Spinner */}
+        {loading ? (
+          <div className="py-16 flex justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="animate-spin text-blue-900" size={32} />
+              <span className="text-xs font-bold text-slate-600">Loading Live Published Pitches from Database...</span>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center text-xs font-bold text-rose-800">
+            {error}
+          </div>
+        ) : filteredNeeds.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
+            <HeartHandshake className="mx-auto text-slate-300 mb-3" size={48} />
+            <h3 className="text-base font-bold text-slate-800">No Development Needs Found</h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              {selectedDistrict !== "All Districts"
+                ? `No published development needs found in ${selectedDistrict}. Try selecting a different district.`
+                : "There are currently no published development needs matching your search query."}
+            </p>
+            {selectedDistrict !== "All Districts" && (
+              <button
+                onClick={() => handleDistrictChange("All Districts")}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-900 px-4 py-2 text-xs font-bold text-white hover:bg-blue-950 transition-all"
+              >
+                Reset District Filter
+              </button>
+            )}
+          </div>
+        ) : viewMode === "grid" ? (
+          /* Grid View Layout */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredNeeds.map((item, idx) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2, delay: idx * 0.03 }}
+                className="group relative rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/40 to-blue-50/20 p-4 shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-purple-900 bg-purple-100 px-2.5 py-0.5 rounded-md">
+                      {item.trackingId}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      LIVE MARKETPLACE
+                    </span>
+                  </div>
+
+                  <h3 className="mt-3 text-sm font-extrabold text-slate-900 group-hover:text-blue-900 transition-colors line-clamp-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-1">{item.department}</p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1">
+                    <MapPin size={13} className="text-blue-600" /> District: {item.district}
+                  </p>
+                  <p className="text-xs text-slate-600 mt-2.5 line-clamp-3 leading-relaxed bg-white/60 p-2.5 rounded-xl border border-slate-100">
+                    {item.csrRequirement}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Estimated Outlay</span>
+                      <p className="text-sm font-extrabold text-blue-950 font-heading">{formatCurrency(item.estimatedCost)}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Corporate Interest</span>
+                      <p className="text-xs font-bold text-emerald-700">{item.interestedCompaniesCount} Companies</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setViewingNeed(item)}
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Eye size={14} className="text-slate-500" /> Details
+                    </button>
+                    <button
+                      onClick={() => openInterestDialog(item)}
+                      disabled={submittedNeedIds.includes(item.id)}
+                      className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-extrabold text-white transition-all shadow-xs ${
+                        submittedNeedIds.includes(item.id)
+                          ? "bg-slate-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-950 hover:to-indigo-950 cursor-pointer"
+                      }`}
+                    >
+                      <HeartHandshake size={14} />
+                      {submittedNeedIds.includes(item.id) ? "Interest Sent" : "Express Interest"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          /* List View Table Layout */
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-left font-bold text-slate-700">
+                  <th className="p-3">Ref ID</th>
+                  <th className="p-3">Title & Department</th>
+                  <th className="p-3">District</th>
+                  <th className="p-3">Estimated Outlay</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredNeeds.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="p-3 font-mono font-bold text-purple-900">
+                      <span className="bg-purple-100 px-2.5 py-0.5 rounded-md text-xs">{item.trackingId}</span>
+                    </td>
+                    <td className="p-3">
+                      <div className="font-extrabold text-slate-900 line-clamp-1">{item.title}</div>
+                      <div className="text-[11px] text-slate-500 font-medium">{item.department}</div>
+                    </td>
+                    <td className="p-3 text-slate-700 font-medium">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={13} className="text-blue-600" />
+                        {item.district}
+                      </span>
+                    </td>
+                    <td className="p-3 font-extrabold text-blue-950 font-heading">
+                      {formatCurrency(item.estimatedCost)}
+                    </td>
+                    <td className="p-3">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        LIVE MARKETPLACE
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`min-w-[40px] h-10 px-3 rounded font-medium transition-colors ${
-                            page === pagination.page
-                              ? "bg-[#14274e] text-white"
-                              : "border border-slate-200 hover:bg-slate-50"
+                          onClick={() => setViewingNeed(item)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg hover:bg-slate-200 transition-colors"
+                        >
+                          <Eye size={13} /> View
+                        </button>
+                        <button
+                          onClick={() => openInterestDialog(item)}
+                          disabled={submittedNeedIds.includes(item.id)}
+                          className={`inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1 rounded-lg text-white transition-colors ${
+                            submittedNeedIds.includes(item.id)
+                              ? "bg-slate-400 cursor-not-allowed"
+                              : "bg-blue-900 hover:bg-blue-950 cursor-pointer"
                           }`}
                         >
-                          {page}
+                          <HeartHandshake size={13} />
+                          {submittedNeedIds.includes(item.id) ? "Sent" : "Interest"}
                         </button>
-                      )
-                    )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Corporate Login Required Modal */}
+        {loginRequiredNeed && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100/80 text-blue-900 border border-blue-200">
+                <Lock size={26} />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-slate-900">
+                  Corporate Login Required
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  To submit a corporate expression of interest for this development pitch, please log in with your verified Corporate CSR account.
+                </p>
+              </div>
+
+              {/* Pitch Summary Box */}
+              <div className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-left space-y-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded">
+                    {loginRequiredNeed.trackingId}
+                  </span>
+                  <span className="font-extrabold text-blue-950">{formatCurrency(loginRequiredNeed.estimatedCost)}</span>
                 </div>
+                <p className="font-extrabold text-slate-900 line-clamp-1">{loginRequiredNeed.title}</p>
+                <p className="text-[11px] text-slate-500 font-medium">{loginRequiredNeed.department} · {loginRequiredNeed.district}</p>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <Link
+                  href={`/login?next=${encodeURIComponent("/public-development-needs")}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-blue-950 transition-all no-underline"
+                >
+                  <LogIn size={15} /> Login to Express Interest
+                </Link>
+                
+                <Link
+                  href="/organization/onboarding"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-extrabold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all no-underline"
+                >
+                  <UserPlus size={15} className="text-blue-900" /> Register Corporate Account
+                </Link>
 
                 <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages}
-                  className="p-2 rounded border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  onClick={() => setLoginRequiredNeed(null)}
+                  className="mt-1 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  <ChevronRight size={18} />
+                  Cancel & Dismiss
                 </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Empty State */}
-        {!loading && needs.length === 0 && !error && (
-          <GovCard className="text-center py-16">
-            <GovCardBody>
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <HeartHandshake size={32} className="text-slate-400" />
-              </div>
-              <h3 className="text-lg font-bold text-[#14274e] mb-2">
-                No development needs found
-              </h3>
-              <p className="text-slate-500 max-w-md mx-auto">
-                {selectedDistrict !== "All Districts"
-                  ? `No published needs available in ${selectedDistrict}. Try selecting a different district.`
-                  : "There are currently no published development needs. Please check back later."}
-              </p>
-              {selectedDistrict !== "All Districts" && (
-                <GovButton
-                  variant="secondary"
-                  className="mt-4"
-                  onClick={() => handleDistrictChange("All Districts")}
-                >
-                  View All Districts
-                </GovButton>
-              )}
-            </GovCardBody>
-          </GovCard>
-        )}
-
-        {/* Detail View Modal */}
-        {viewingNeed && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 1000,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(15, 23, 42, 0.55)",
-              padding: 16,
-            }}
-            onClick={() => setViewingNeed(null)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="need-view-modal-title"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: "min(760px, 100%)",
-                maxHeight: "calc(100vh - 48px)",
-                background: "#fff",
-                border: "1px solid var(--gov-border)",
-                boxShadow: "0 24px 60px rgba(15, 23, 42, 0.28)",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                style={{
-                  padding: "18px 22px",
-                  borderBottom: "1px solid var(--gov-border)",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: 16,
-                }}
-              >
-                <div>
-                  <h2 id="need-view-modal-title" style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--gov-primary-dark)" }}>
-                    Development Need Details
-                  </h2>
-                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--gov-text-muted)" }}>
-                    Pitch Reference ID: <strong style={{ color: "var(--gov-text)" }}>{viewingNeed.trackingId}</strong>
-                  </p>
-                </div>
-                <GovButton type="button" variant="muted" onClick={() => setViewingNeed(null)} style={{ minHeight: 34, padding: "6px 12px" }}>
-                  Close
-                </GovButton>
-              </div>
-
-              <div style={{ padding: 22, overflowY: "auto" }}>
-                <div className="flex items-center gap-2 mb-5">
-                  <GovStatusBadge variant="success">Open</GovStatusBadge>
-                  <span className="text-xs text-slate-500">
-                    Published on {formatDate(viewingNeed.publishedAt)}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-6">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">District</p>
-                    <p className="text-sm font-medium flex items-center gap-1.5">
-                      <MapPin size={14} className="text-[#f7941d]" />
-                      {viewingNeed.district}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Taluka</p>
-                    <p className="text-sm font-medium">{viewingNeed.taluka}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Village / Exact Location</p>
-                    <p className="text-sm font-medium">{viewingNeed.village || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Department</p>
-                    <p className="text-sm font-medium">{viewingNeed.department}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Office</p>
-                    <p className="text-sm font-medium">{viewingNeed.officeName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Estimated Cost</p>
-                    <p className="text-base font-bold text-[#14274e]">{formatCurrency(viewingNeed.estimatedCost)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Interested Companies</p>
-                    <p className="text-sm font-medium">{viewingNeed.interestedCompaniesCount}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">CSR Requirement</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                    {viewingNeed.csrRequirement}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  borderTop: "1px solid var(--gov-border)",
-                  background: "var(--gov-surface-muted)",
-                  padding: "14px 22px",
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 10,
-                }}
-              >
-                <GovButton type="button" variant="muted" onClick={() => setViewingNeed(null)}>
-                  Close
-                </GovButton>
-                <GovButton
-                  type="button"
-                  variant="secondary"
-                  disabled={expressingInterest === viewingNeed.id || submittedNeedIds.includes(viewingNeed.id)}
-                  onClick={() => {
-                    const need = viewingNeed;
-                    setViewingNeed(null);
-                    openInterestDialog(need);
-                  }}
-                >
-                  {submittedNeedIds.includes(viewingNeed.id) ? "Interest Submitted" : "I am Interested"}
-                </GovButton>
               </div>
             </div>
           </div>
         )}
 
-        {selectedNeed && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 1000,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(15, 23, 42, 0.55)",
-              padding: 16,
-            }}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="interest-modal-title"
-              style={{
-                width: "min(860px, 100%)",
-                maxHeight: "calc(100vh - 48px)",
-                background: "#fff",
-                border: "1px solid var(--gov-border)",
-                boxShadow: "0 24px 60px rgba(15, 23, 42, 0.28)",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                style={{
-                  padding: "18px 22px",
-                  borderBottom: "1px solid var(--gov-border)",
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "space-between",
-                  gap: 16,
-                }}
-              >
+        {/* View Details Modal */}
+        {viewingNeed && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
-                  <h2 id="interest-modal-title" style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "var(--gov-primary-dark)" }}>
-                    I am Interested
-                  </h2>
-                  <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--gov-text-muted)" }}>
-                    Pitch Reference ID: <strong style={{ color: "var(--gov-text)" }}>{selectedNeed.trackingId}</strong>
-                  </p>
+                  <span className="font-mono text-xs font-bold text-purple-900 bg-purple-100 px-2.5 py-0.5 rounded-md">
+                    {viewingNeed.trackingId}
+                  </span>
+                  <h2 className="text-lg font-extrabold text-slate-900 mt-1">{viewingNeed.title}</h2>
                 </div>
-                <GovButton type="button" variant="muted" onClick={() => setSelectedNeed(null)} style={{ minHeight: 34, padding: "6px 12px" }}>
+                <button onClick={() => setViewingNeed(null)} className="text-slate-400 hover:text-slate-700">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">Department</span>
+                  <p className="font-extrabold text-slate-900 mt-0.5">{viewingNeed.department}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">District / Taluka</span>
+                  <p className="font-extrabold text-slate-900 mt-0.5">{viewingNeed.district} ({viewingNeed.taluka})</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">Estimated CSR Outlay</span>
+                  <p className="font-extrabold text-blue-900 text-sm mt-0.5">{formatCurrency(viewingNeed.estimatedCost)}</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold uppercase text-slate-400">Office Name</span>
+                  <p className="font-extrabold text-slate-900 mt-0.5">{viewingNeed.officeName}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase text-slate-400">CSR Requirement Scope</span>
+                <p className="text-xs text-slate-800 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                  {viewingNeed.csrRequirement}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                <button
+                  onClick={() => setViewingNeed(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                >
                   Close
-                </GovButton>
+                </button>
+                <button
+                  onClick={() => {
+                    const n = viewingNeed;
+                    setViewingNeed(null);
+                    openInterestDialog(n);
+                  }}
+                  className="px-5 py-2 rounded-xl bg-blue-900 text-xs font-extrabold text-white hover:bg-blue-950"
+                >
+                  Express Corporate Interest
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Express Interest Modal (For Authenticated Corporate Users) */}
+        {selectedNeed && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+            <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900">Express Corporate CSR Interest</h2>
+                  <p className="text-xs text-slate-500 font-medium">Pitch ID: {selectedNeed.trackingId} — {selectedNeed.title}</p>
+                </div>
+                <button onClick={() => setSelectedNeed(null)} className="text-slate-400 hover:text-slate-700">
+                  <X size={20} />
+                </button>
               </div>
 
               {interestResult ? (
-                <div style={{ padding: 22 }}>
-                  <GovAlert variant="success">
-                    Interest submitted successfully. Tracking ID: {interestResult}. You can track it from `Track Status`.
-                  </GovAlert>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center space-y-3">
+                  <CheckCircle2 size={40} className="mx-auto text-emerald-600" />
+                  <h3 className="text-base font-extrabold text-emerald-950">Expression of Interest Submitted</h3>
+                  <p className="text-xs text-emerald-800 font-medium">
+                    Your interest has been recorded in the Maharashtra CSR Setu engine. Your tracking reference is <strong className="font-mono">{interestResult}</strong>.
+                  </p>
+                  <button
+                    onClick={() => setSelectedNeed(null)}
+                    className="inline-flex items-center gap-1 px-5 py-2 rounded-xl bg-emerald-800 text-xs font-extrabold text-white hover:bg-emerald-900"
+                  >
+                    Done
+                  </button>
                 </div>
               ) : (
-                <>
-                  <div style={{ padding: 22, overflowY: "auto" }}>
-                    <div className="gov-grid-3">
-                      <GovInput label="Pitch Reference ID" value={selectedNeed.trackingId} disabled />
-                      <GovInput label="Company Name" required value={interestForm.companyName} onChange={(e) => setInterestForm({ ...interestForm, companyName: e.target.value })} />
-                      <GovInput label="MCA21 CIN" required format="cin" value={interestForm.mca21Cin} onChange={(e) => setInterestForm({ ...interestForm, mca21Cin: e.target.value })} />
-                      <GovInput label="Contact Person" required format="name" value={interestForm.contactPersonName} onChange={(e) => setInterestForm({ ...interestForm, contactPersonName: e.target.value })} />
-                      <GovInput label="Contact Person & Designation" required value={interestForm.contactPersonDesignation} onChange={(e) => setInterestForm({ ...interestForm, contactPersonDesignation: e.target.value })} />
-                      <div>
-                        <GovInput label="Mobile Number" required format="phone" value={interestForm.mobile} onChange={(e) => {
-                          setInterestForm({ ...interestForm, mobile: e.target.value });
-                          if (!isAuthenticatedCorporate) setInterestTokens({ ...interestTokens, mobile: "" });
-                        }} />
-                        {!isAuthenticatedCorporate && (
-                          <OtpVerification purpose="CORPORATE_INTEREST" channel="MOBILE" target={interestForm.mobile} onVerified={(token) => setInterestTokens({ ...interestTokens, mobile: token })} />
-                        )}
-                      </div>
-                      <div>
-                        <GovInput label="Email" type="email" required format="email" value={interestForm.email} onChange={(e) => {
-                          setInterestForm({ ...interestForm, email: e.target.value });
-                          if (!isAuthenticatedCorporate) setInterestTokens({ ...interestTokens, email: "" });
-                        }} />
-                        {!isAuthenticatedCorporate && (
-                          <OtpVerification purpose="CORPORATE_INTEREST" channel="EMAIL" target={interestForm.email} onVerified={(token) => setInterestTokens({ ...interestTokens, email: token })} />
-                        )}
-                      </div>
-                      <GovInput label="Indicative Budget" type="number" required value={interestForm.indicativeBudget} onChange={(e) => setInterestForm({ ...interestForm, indicativeBudget: e.target.value })} />
-                      <GovSelect label="Preferred Start Timeline" value={interestForm.preferredStartTimeline} onChange={(e) => setInterestForm({ ...interestForm, preferredStartTimeline: e.target.value })}>
-                        <option value="THIS_QUARTER">This quarter</option>
-                        <option value="NEXT_QUARTER">Next quarter</option>
-                        <option value="THIS_FY">This FY</option>
-                      </GovSelect>
-                      <GovSelect label="Implementation Mode" value={interestForm.implementationMode} onChange={(e) => setInterestForm({ ...interestForm, implementationMode: e.target.value })}>
-                        <option value="SELF">Self</option>
-                        <option value="OWN_FOUNDATION">Own Foundation</option>
-                        <option value="NGO_PARTNER">NGO Partner</option>
-                      </GovSelect>
-                      <div style={{ gridColumn: "1 / -1" }}>
-                        <GovTextarea
-                          label="Message to Government"
-                          rows={4}
-                          value={interestForm.messageToGovernment}
-                          onChange={(e) => setInterestForm({ ...interestForm, messageToGovernment: e.target.value })}
-                          help="Optional, max 100 words"
-                          style={{ minHeight: 110 }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      borderTop: "1px solid var(--gov-border)",
-                      background: "var(--gov-surface-muted)",
-                      padding: "14px 22px",
-                      display: "grid",
-                      gridTemplateColumns: "1fr auto",
-                      gap: 16,
-                      alignItems: "center",
-                    }}
-                  >
-                    <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 13, lineHeight: 1.45, color: "var(--gov-text)", minWidth: 0 }}>
+                <div className="space-y-3 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Company Name</label>
                       <input
-                        type="checkbox"
-                        checked={interestForm.declarationAccepted}
-                        onChange={(e) => setInterestForm({ ...interestForm, declarationAccepted: e.target.checked })}
-                        style={{ marginTop: 2, flex: "0 0 auto" }}
+                        type="text"
+                        value={interestForm.companyName}
+                        onChange={(e) => setInterestForm({ ...interestForm, companyName: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-600"
                       />
-                      <span>Genuine interest; authorise State CSR Cell to contact.</span>
-                    </label>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                      <GovButton
-                        type="button"
-                        disabled={isInterestSubmitDisabled}
-                        onClick={handleExpressInterest}
-                        style={{ minWidth: 150 }}
-                      >
-                        {expressingInterest === selectedNeed.id ? "Submitting..." : "Submit Interest"}
-                      </GovButton>
-                      {interestMissingItems.length > 0 && (
-                        <p style={{ margin: 0, fontSize: 12, color: "var(--gov-text-muted)", textAlign: "right", maxWidth: 320 }}>
-                          Pending: {interestMissingItems.join(", ")}
-                        </p>
-                      )}
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">MCA21 CIN</label>
+                      <input
+                        type="text"
+                        value={interestForm.mca21Cin}
+                        onChange={(e) => setInterestForm({ ...interestForm, mca21Cin: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-600"
+                      />
                     </div>
                   </div>
-                </>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Contact Person</label>
+                      <input
+                        type="text"
+                        value={interestForm.contactPersonName}
+                        onChange={(e) => setInterestForm({ ...interestForm, contactPersonName: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Indicative Budget (₹)</label>
+                      <input
+                        type="number"
+                        placeholder={`e.g. ${selectedNeed.estimatedCost}`}
+                        value={interestForm.indicativeBudget}
+                        onChange={(e) => setInterestForm({ ...interestForm, indicativeBudget: e.target.value })}
+                        className="w-full rounded-xl border border-slate-200 p-2.5 outline-none focus:border-blue-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                    <button
+                      onClick={() => setSelectedNeed(null)}
+                      className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleExpressInterest}
+                      disabled={expressingInterest === selectedNeed.id}
+                      className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-blue-900 text-xs font-extrabold text-white hover:bg-blue-950 disabled:opacity-60"
+                    >
+                      {expressingInterest === selectedNeed.id ? <Loader2 size={14} className="animate-spin" /> : <HeartHandshake size={14} />}
+                      Submit Interest
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         )}
+
       </div>
     </GovPortalLayout>
   );

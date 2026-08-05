@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Search, Filter } from "lucide-react";
 import { ViewToggle, ViewMode } from "./ViewToggle";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
 
 export interface FilterConfig {
   key: string;
@@ -38,12 +39,12 @@ export function DataView<T>({
   onSearchChange,
   searchPlaceholder = "Search...",
   filters = [],
-  defaultView = "grid",
+  defaultView,
   onItemClick,
   emptyMessage = "No records found matching your criteria",
   className = "",
 }: DataViewProps<T>) {
-  const [viewMode, setViewMode] = useState<ViewMode>(defaultView);
+  const [viewMode, setViewMode] = useResponsiveViewMode(defaultView);
 
   return (
     <div className={`space-y-4 ${className}`}>

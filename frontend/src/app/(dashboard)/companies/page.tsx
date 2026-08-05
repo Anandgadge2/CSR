@@ -8,6 +8,7 @@ import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { Loader } from "@/components/ui/Loader";
 import { Pagination } from "@/components/ui/Pagination";
@@ -36,7 +37,7 @@ export default function CompaniesPage() {
     "/companies"
   );
 
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useResponsiveViewMode();
   const [search, setSearch] = useState("");
   const [selectedCompany, setSelectedCompany] = useState<any | null>(null);
 

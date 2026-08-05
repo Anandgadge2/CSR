@@ -164,10 +164,15 @@ export const listGovernmentPitches = async (req: AuthenticatedRequest, res: Resp
   }
 };
 
-export const getPublicPitches = async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const getPublicPitches = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    const districtFilter = typeof req.query?.district === "string" && req.query.district !== "All Districts" ? req.query.district : null;
+    const where: any = { status: "PUBLIC_LISTED" };
+    if (districtFilter) {
+      where.districts = { has: districtFilter };
+    }
     const pitches = await prisma.governmentPitch.findMany({
-      where: { status: "PUBLIC_LISTED" },
+      where,
       select: PUBLIC_PITCH_SELECT,
       orderBy: { createdAt: "desc" }
     });
@@ -271,8 +276,8 @@ export const approvePitch = async (req: AuthenticatedRequest, res: Response, nex
     if (decision === "APPROVE_WITH_CONDITIONS" && conditions.length < 10) return res.status(400).json({ error: "Document the approval conditions." });
     const pitch = await prisma.governmentPitch.findUnique({ where: { id: req.params.id } });
     if (!pitch) return res.status(404).json({ error: "Pitch not found" });
-    if (pitch.status !== "JS_APPROVAL_PENDING") {
-      return res.status(409).json({ error: "Only an RM-verified pitch awaiting JS approval can be published." });
+    if (pitch.status === "PUBLIC_LISTED") {
+      return res.status(400).json({ error: "This pitch is already approved and published publicly." });
     }
     const statusByDecision: Record<string, string> = {
       APPROVE: "PUBLIC_LISTED",
@@ -298,6 +303,21 @@ export const approvePitch = async (req: AuthenticatedRequest, res: Response, nex
       correlationId: updated.id,
       notificationType: "JS_DECISION"
     });
+
+    notifyHierarchy({
+      title: published ? "Government Pitch Approved & Published" : "Joint Secretary Pitch Decision",
+      message: published ? `Government pitch ${updated.pitchReferenceId || updated.id} ("${updated.title}") has been approved by Joint Secretary and published to the public marketplace.` : `Joint Secretary decision recorded for pitch ${updated.pitchReferenceId || updated.id}.`,
+      organizationId: updated.departmentId,
+      assignedRmId: updated.assignedRelationshipManagerId,
+      district: Array.isArray(updated.districts) && updated.districts.length > 0 ? updated.districts[0] : null,
+      includePortalAdmins: true,
+      includeRms: true,
+      includeDistrictOfficers: true,
+      includeStateOfficers: true,
+      includeOrgUsers: true,
+      actionButtonUrl: `/pitches/${updated.id}`
+    }).catch(err => console.error("Notification dispatch failed:", err));
+
     return res.json({ success: true, message: published ? "Pitch approved and published for corporate interest." : "Joint Secretary decision recorded.", pitch: updated, decision });
   } catch (error) {
     next(error);

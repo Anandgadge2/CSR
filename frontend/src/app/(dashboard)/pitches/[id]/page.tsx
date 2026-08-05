@@ -72,6 +72,14 @@ export default function PitchDetailPage() {
     });
   }, [user, roles, roleDetails, isAdmin]);
 
+  const isJS = useMemo(() => {
+    const tokens = extractRoleTokens(user, roles, roleDetails);
+    return tokens.some((t) => {
+      const u = String(t).toUpperCase();
+      return u.includes("JOINT_SECRETARY") || u.includes("JOINT SECRETARY") || u === "3" || (user as any)?.roleId === 3;
+    });
+  }, [user, roles, roleDetails]);
+
   const { data: response, isLoading, error, refetch } = useApiQuery<any>(
     ["pitch", params.id, isRM ? "rm" : "standard"],
     isRM ? `/rm/pitches/${params.id}` : `/government-pitches/${params.id}`,
@@ -82,6 +90,27 @@ export default function PitchDetailPage() {
   const budget = Number(pitch?.budget || pitch?.estimatedCost || 0);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
+  const [localApproved, setLocalApproved] = useState(false);
+
+  const isAlreadyApproved = localApproved || pitch?.status === "PUBLIC_LISTED" || pitch?.status === "APPROVED" || pitch?.status === "JS_APPROVED";
+
+  const handleJsApprove = async (decision: string = "APPROVE") => {
+    setSubmittingReview(true);
+    setReviewMessage("");
+    try {
+      const result = await apiFetch<any>(`/government-pitches/${pitch.id}/approve`, {
+        method: "POST",
+        body: JSON.stringify({ decision, reason: "Approved by Joint Secretary for Public Development Needs listing" })
+      });
+      setLocalApproved(true);
+      setReviewMessage(result?.message || "Pitch approved and published to Public Development Needs (Live)!");
+      refetch();
+    } catch (err) {
+      setReviewMessage(err instanceof Error ? err.message : "Unable to execute Joint Secretary decision.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   const formattedBudget = budget
     ? budget >= 10000000
@@ -137,7 +166,7 @@ export default function PitchDetailPage() {
             <ArrowLeft size={14} /> Back to Government Pitches Register
           </Link>
           <span className="text-[11px] font-bold text-slate-500">
-            Visibility: <strong className="text-amber-800 font-extrabold">{pitch?.status === "PUBLIC_LISTED" ? "PUBLIC (Approved Companies)" : "CONFIDENTIAL (Internal Review)"}</strong>
+            Visibility: <strong className="text-amber-800 font-extrabold">{isAlreadyApproved ? "PUBLIC (Live on Marketplace)" : "CONFIDENTIAL (Internal Review)"}</strong>
           </span>
         </div>
 
@@ -153,11 +182,11 @@ export default function PitchDetailPage() {
                   </button>
                 </span>
                 <span className={`rounded-md px-2.5 py-0.5 text-[10px] font-extrabold border ${
-                  pitch?.status === "APPROVED" || pitch?.status === "PUBLIC_LISTED"
+                  isAlreadyApproved
                     ? "bg-emerald-100 text-emerald-800 border-emerald-200"
                     : "bg-amber-100 text-amber-900 border-amber-200"
                 }`}>
-                  {(pitch?.status || "UNDER RM REVIEW").replace(/_/g, " ")}
+                  {(isAlreadyApproved ? "PUBLIC LISTED" : pitch?.status || "UNDER REVIEW").replace(/_/g, " ")}
                 </span>
                 <span className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold text-slate-700 border border-slate-200">
                   {pitch?.department || "Department Pitch"}
@@ -168,34 +197,63 @@ export default function PitchDetailPage() {
               </h1>
             </div>
 
-            {/* Quick Action Button */}
-            {isRM && (
-              <button
-                type="button"
-                disabled={submittingReview || pitch?.status === "JS_APPROVAL_PENDING" || !reviewReady}
-                onClick={async () => {
-                  setSubmittingReview(true);
-                  setReviewMessage("");
-                  try {
-                    const result = await apiFetch<any>(`/rm/pitches/${pitch.id}/verify`, {
-                      method: "PATCH",
-                      body: JSON.stringify({ checklist: checkedItems, recommendation, summary: assessmentSummary, conditions })
-                    });
-                    setReviewMessage(result?.message || "Pitch verified and forwarded to Joint Secretary.");
-                    refetch();
-                  } catch (err) {
-                    setReviewMessage(err instanceof Error ? err.message : "Unable to send pitch for JS approval.");
-                  } finally {
-                    setSubmittingReview(false);
-                  }
-                }}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-blue-950 transition-all disabled:opacity-60"
-              >
-                {submittingReview ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                {pitch?.status === "JS_APPROVAL_PENDING" ? "With Joint Secretary" : "Verify & Send to JS"}
-              </button>
-            )}
+            {/* Quick Action Buttons */}
+            <div className="flex items-center gap-2">
+              {isJS && !isAlreadyApproved && (
+                <button
+                  type="button"
+                  disabled={submittingReview}
+                  onClick={() => handleJsApprove("APPROVE")}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:from-emerald-700 hover:to-green-800 transition-all disabled:opacity-60 cursor-pointer"
+                >
+                  {submittingReview ? <Loader2 size={15} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                  Approve & Publish to Public
+                </button>
+              )}
+
+              {isAlreadyApproved && (
+                <Link
+                  href="/public-development-needs"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-xs font-extrabold text-emerald-800 shadow-2xs hover:bg-emerald-100 transition-all no-underline"
+                >
+                  <CheckCircle2 size={14} className="text-emerald-600" />
+                  Live on Public Development Needs →
+                </Link>
+              )}
+
+              {isRM && !isAlreadyApproved && (
+                <button
+                  type="button"
+                  disabled={submittingReview || pitch?.status === "JS_APPROVAL_PENDING" || !reviewReady}
+                  onClick={async () => {
+                    setSubmittingReview(true);
+                    setReviewMessage("");
+                    try {
+                      const result = await apiFetch<any>(`/rm/pitches/${pitch.id}/verify`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ checklist: checkedItems, recommendation, summary: assessmentSummary, conditions })
+                      });
+                      setReviewMessage(result?.message || "Pitch verified and forwarded to Joint Secretary.");
+                      refetch();
+                    } catch (err) {
+                      setReviewMessage(err instanceof Error ? err.message : "Unable to send pitch for JS approval.");
+                    } finally {
+                      setSubmittingReview(false);
+                    }
+                  }}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-900 px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-blue-950 transition-all disabled:opacity-60"
+                >
+                  {submittingReview ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                  {pitch?.status === "JS_APPROVAL_PENDING" ? "With Joint Secretary" : "Verify & Send to JS"}
+                </button>
+              )}
+            </div>
           </div>
+          {reviewMessage && (
+            <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/90 p-3 text-xs font-bold text-blue-900 shadow-2xs">
+              {reviewMessage}
+            </div>
+          )}
         </div>
 
         {/* Pitch Content */}

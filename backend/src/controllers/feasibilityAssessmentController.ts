@@ -30,13 +30,74 @@ export const getAssessmentByPitchId = async (req: AuthenticatedRequest, res: Res
 
 export const getAssessmentById = getAssessmentByPitchId;
 
+async function enrichAssessments(assessments: any[]) {
+  if (!assessments.length) return [];
+  const enquiryIds = [...new Set(assessments.map((a: any) => a.enquiryId).filter(Boolean))];
+  const deptIds = [...new Set(assessments.map((a: any) => a.targetDepartmentId).filter(Boolean))];
+  const userIds = [...new Set(assessments.map((a: any) => a.assessedByUserId).filter(Boolean))];
+
+  const [enquiries, depts, users] = await Promise.all([
+    enquiryIds.length
+      ? prisma.corporateEnquiry.findMany({
+          where: { id: { in: enquiryIds } },
+          select: {
+            id: true,
+            trackingId: true,
+            corporateName: true,
+            mca21CIN: true,
+            contactEmail: true,
+            contactPersonName: true,
+            mobile: true,
+            sector: true,
+            indicativeBudget: true,
+            proposedCSRWork: true
+          }
+        })
+      : [],
+    deptIds.length
+      ? prisma.organization.findMany({
+          where: { id: { in: deptIds } },
+          select: { id: true, name: true, displayName: true }
+        })
+      : [],
+    userIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, email: true, firstName: true, lastName: true, designation: true }
+        })
+      : []
+  ]);
+
+  const enquiryMap = new Map(enquiries.map((e) => [e.id, e]));
+  const deptMap = new Map(depts.map((d) => [d.id, d]));
+  const userMap = new Map(
+    users.map((u) => [
+      u.id,
+      {
+        id: u.id,
+        email: u.email,
+        name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email,
+        designation: u.designation
+      }
+    ])
+  );
+
+  return assessments.map((a) => ({
+    ...a,
+    enquiry: enquiryMap.get(a.enquiryId) || null,
+    targetDepartment: deptMap.get(a.targetDepartmentId) || null,
+    assessedBy: userMap.get(a.assessedByUserId) || null
+  }));
+}
+
 export const getPendingAssessments = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const assessments = await prisma.feasibilityAssessment.findMany({
       where: { status: "SUBMITTED_TO_JS" },
       orderBy: { submittedAt: "desc" }
     });
-    return res.json({ success: true, data: assessments });
+    const enriched = await enrichAssessments(assessments);
+    return res.json({ success: true, data: enriched });
   } catch (error) {
     next(error);
   }
@@ -47,7 +108,8 @@ export const getAllAssessments = async (req: AuthenticatedRequest, res: Response
     const assessments = await prisma.feasibilityAssessment.findMany({
       orderBy: { createdAt: "desc" }
     });
-    return res.json({ success: true, data: assessments });
+    const enriched = await enrichAssessments(assessments);
+    return res.json({ success: true, data: enriched });
   } catch (error) {
     next(error);
   }

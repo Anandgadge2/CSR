@@ -131,7 +131,6 @@ export default function AgenciesPage() {
 
   const [search, setSearch] = useState("");
   const [filterDistrict, setFilterDistrict] = useState("ALL");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [selectedAgency, setSelectedAgency] = useState<AgencyItem | null>(null);
 
   const apiAgencies = envelope?.data?.organizations || envelope?.data || envelope?.organizations || (Array.isArray(envelope) ? envelope : []);

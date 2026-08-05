@@ -9,6 +9,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import { Loader } from "@/components/ui/Loader";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
 import {
   Compass, Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, Clock, FileText
 } from "lucide-react";
@@ -34,6 +35,11 @@ export default function PitchesPage() {
   const isRM = activeRoles.some(r => {
     const s = String(r).toUpperCase();
     return s.includes("RELATIONSHIP_MANAGER") || s.includes("RELATIONSHIP MANAGER") || s === "6";
+  });
+
+  const isJS = activeRoles.some(r => {
+    const s = String(r).toUpperCase();
+    return s.includes("JOINT_SECRETARY") || s.includes("JOINT SECRETARY") || s === "3" || (user as any)?.roleId === 3;
   });
 
   const isSuperAdmin = storeIsAdmin || activeRoles.some(r => {
@@ -63,7 +69,7 @@ export default function PitchesPage() {
 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useResponsiveViewMode();
 
   const rawPitches: any[] = Array.isArray(envelope)
     ? envelope
@@ -236,7 +242,7 @@ export default function PitchesPage() {
                       href={`/pitches/${item.id}`}
                       className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 transition-colors"
                     >
-                      {isRM ? "Review Pitch" : "View Pitch"} <ArrowUpRight size={14} />
+                      {isJS ? "Approve / Review" : isRM ? "Review Pitch" : "View Pitch"} <ArrowUpRight size={14} />
                     </Link>
                   </div>
                 </motion.div>
@@ -277,11 +283,11 @@ export default function PitchesPage() {
                         </td>
                         <td className="p-3">
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            item.status === "CSR_COMMITTED" || item.status === "APPROVED" || item.status === "VERIFIED"
+                            (item.status as string) === "CSR_COMMITTED" || (item.status as string) === "APPROVED" || (item.status as string) === "PUBLIC_LISTED"
                               ? "bg-emerald-100 text-emerald-800"
                               : "bg-amber-100 text-amber-800"
                           }`}>
-                            {item.status.replace(/_/g, " ")}
+                            {String(item.status).replace(/_/g, " ")}
                           </span>
                         </td>
                         <td className="p-3 text-right">
@@ -289,7 +295,7 @@ export default function PitchesPage() {
                             href={`/pitches/${item.id}`}
                             className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-lg transition-colors"
                           >
-                            {isRM ? "Review Pitch" : "View Pitch"} <ArrowUpRight size={13} />
+                            {isJS ? "Approve / Review" : isRM ? "Review Pitch" : "View Pitch"} <ArrowUpRight size={13} />
                           </Link>
                         </td>
                       </tr>

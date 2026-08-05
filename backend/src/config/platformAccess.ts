@@ -253,6 +253,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
     "dashboard:view", "dashboard:widget-kpis", "dashboard:widget-approvals", "dashboard:widget-sla",
     "dashboard:widget-charts", "dashboard:widget-activity", "dashboard:widget-quick-actions",
     "dashboard:analytics-global",
+    "pitch:view", "pitch:approve", "pitch:reject", "pitch:verify", "enquiry:view", "assessment:view", "assessment:review",
     "project:view", "organization:view", "requirement:view", "interest:view",
     "override:js_decision", "assign:joint_secretary", "escalation:resolve", "grievance:final_decision",
     "report:view", "report:export", "audit:view", "audit:export",
@@ -264,8 +265,9 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
   JOINT_SECRETARY: [
     "dashboard:view", "dashboard:widget-kpis", "dashboard:widget-approvals", "dashboard:widget-sla",
     "dashboard:widget-workqueue", "dashboard:widget-charts", "dashboard:widget-activity",
-    "project:view", "assessment:review", "project:approve", "project:reject", "project:record_rejection_reason",
-    "pitch:approve", "dno:assign", "report:view_district", "organization:view", "organization:approve",
+    "pitch:view", "pitch:approve", "pitch:reject", "pitch:verify", "enquiry:view", "assessment:view", "assessment:review",
+    "project:view", "project:approve", "project:reject", "project:record_rejection_reason",
+    "dno:assign", "report:view_district", "organization:view", "organization:approve",
     "fund:view", "fund:release", "fund:export", "report:view", "report:export",
     "verification:execute", "verification:reverify", "verification:view-history", "verification:dashboard",
   ],
@@ -301,7 +303,7 @@ export const SEED_ROLE_PERMISSIONS: Record<string, readonly string[]> = {
   // 7. Government Officer: Department Admin
   GOVERNMENT_OFFICER: [
     "dashboard:view", "dashboard:widget-kpis", "dashboard:widget-workqueue",
-    "pitch:create", "pitch:edit_before_approval", "photo:upload", "project:view_assigned",
+    "pitch:view", "pitch:create", "pitch:edit_before_approval", "photo:upload", "project:view_assigned",
     "status:track", "query:respond", "requirement:create", "requirement:view", "organization:view",
     "report:view",
     "verification:execute", "verification:reverify", "verification:view-history",

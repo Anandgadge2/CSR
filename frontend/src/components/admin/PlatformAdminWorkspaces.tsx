@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import GovModal from "@/components/gov/GovModal";
 import { useToastActions } from "@/components/ui/Toast";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
 
 type Tenant = {
   id: string;
@@ -1695,7 +1696,7 @@ export function AdminOnboardingApprovalsWorkspace() {
   const [items, setItems] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [viewMode, setViewMode] = useResponsiveViewMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "NGO" | "CSR_COMPANY" | "GOVERNMENT_DEPARTMENT">("ALL");
   const [statusFilter, setStatusFilter] = useState<"PENDING" | "APPROVED" | "ALL">("ALL");

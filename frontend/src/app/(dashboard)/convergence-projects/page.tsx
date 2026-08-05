@@ -10,6 +10,7 @@ import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import GovPageHeader from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
 import GovStatusBadge from "@/components/gov/GovStatusBadge";
 import { Loader } from "@/components/ui/Loader";
 import {
@@ -58,7 +59,7 @@ export default function ProjectsPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useResponsiveViewMode();
 
   const rawProjects: any[] = Array.isArray(apiResponse)
     ? apiResponse

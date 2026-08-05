@@ -7,6 +7,7 @@ import { useApiQuery } from "@/lib/apiHooks";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { ViewToggle, ViewMode } from "@/components/ui/ViewToggle";
+import { useResponsiveViewMode } from "@/hooks/useResponsiveViewMode";
 import { Loader } from "@/components/ui/Loader";
 import {
   Plus, Search, Filter, MapPin, Coins, ArrowUpRight, CheckCircle2, FileText
@@ -29,7 +30,7 @@ export default function RequirementsPage() {
     "/csr-requirements"
   );
 
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useResponsiveViewMode();
   const [search, setSearch] = useState("");
   const [filterDistrict, setFilterDistrict] = useState("ALL");
 
