@@ -154,6 +154,12 @@ async function main() {
     }
   }
 
+  console.log("Updating password hash for all existing users to default password ('111111')...");
+  await prisma.user.updateMany({
+    data: { passwordHash: defaultPasswordHash }
+  });
+  console.log("✓ All user passwords updated to 111111.");
+
   // 4. Seed Default Platform Settings
   await prisma.platformSetting.upsert({
     where: { key: "hero_slides" },
