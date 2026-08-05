@@ -10,22 +10,6 @@ export function useSmoothScroll() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Disable heavy Lenis smooth scrolling on dashboard & internal portal routes for 60fps native performance
-    const isDashboardRoute =
-      pathname.startsWith("/admin") ||
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/ngo-dashboard") ||
-      pathname.startsWith("/company-dashboard") ||
-      pathname.startsWith("/organization") ||
-      pathname.startsWith("/profile") ||
-      pathname.startsWith("/settings") ||
-      pathname.startsWith("/notifications") ||
-      pathname.startsWith("/convergence-projects") ||
-      pathname.startsWith("/enquiries") ||
-      pathname.startsWith("/pitches");
-
-    if (isDashboardRoute) return;
-
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),

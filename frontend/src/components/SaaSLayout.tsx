@@ -483,7 +483,7 @@ export default function SaaSLayout({ children }: SaaSLayoutProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f4f5f7] text-[#333333] font-sans w-full max-w-full overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-[#f4f5f7] text-[#333333] font-sans w-full max-w-full">
 
 
       {isDashboard && <div className="fixed top-0 left-0 right-0 h-1 z-[60] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600"></div>}

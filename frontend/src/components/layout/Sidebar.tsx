@@ -165,7 +165,7 @@ export function Sidebar({
       )}
     >
       {/* Scrollable Navigation Area */}
-      <div className="flex-1 overflow-y-auto px-3 space-y-1.5 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto px-3 space-y-1.5 scrollbar-none">
         {isLoadingPermissions ? (
           <div className="space-y-3 py-2" role="status" aria-label="Loading navigation">
             {Array.from({ length: 6 }).map((_, idx) => (
