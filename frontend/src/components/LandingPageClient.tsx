@@ -18,7 +18,6 @@ import {
 import HeroSection from "@/components/HeroSection";
 import { GisMap } from "@/components/LazyComponents";
 import HomeStatsStrip from "@/components/HomeStatsStrip";
-import SaaSLayout from "@/components/SaaSLayout";
 
 const workflow = [
   {
@@ -170,7 +169,7 @@ export default function LandingPageClient() {
   }, []);
 
   return (
-    <SaaSLayout>
+    <>
       <div className="relative min-h-screen overflow-x-hidden bg-[#fafcff] text-slate-900 font-sans antialiased selection:bg-blue-900 selection:text-white">
         
         {/* Subtle Ambient Glow Backgrounds */}
@@ -320,6 +319,6 @@ export default function LandingPageClient() {
 
         </Parallax3DSection>
       </div>
-    </SaaSLayout>
+    </>
   );
 }
