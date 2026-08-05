@@ -61,16 +61,18 @@ export const getPublicDirectory = async (req: Request, res: Response) => {
 
 export const getPublicPortalStats = async (req: Request, res: Response) => {
   try {
-    const [totalProjects, completedProjects, budgetAgg, districtsCovered] = await Promise.all([
+    const [totalProjects, completedProjects, budgetAgg, districtsCovered, activePitches] = await Promise.all([
       prisma.project.count(),
       prisma.project.count({ where: { status: "COMPLETED" } }),
       prisma.project.aggregate({ _sum: { approvedBudget: true } }),
-      prisma.project.findMany({ select: { district: true }, distinct: ["district"] })
+      prisma.project.findMany({ select: { district: true }, distinct: ["district"] }),
+      prisma.governmentPitch.count({ where: { status: { in: ["PENDING", "APPROVED"] } } })
     ]);
 
     return successResponse(res, {
       totalProjects,
       completedProjects,
+      activePitches,
       totalCsrCommitted: budgetAgg._sum.approvedBudget ?? 0,
       districtsCovered: districtsCovered.length
     });
