@@ -560,46 +560,25 @@ html.lenis, html.lenis body {
     0 4px 12px 0 rgba(0, 0, 0, 0.25);
 }
 
-/* Light Background Liquid Glass Card (For stats & white/light background sections) */
+/* Light Background Card */
 .liquid-glass-card-light {
   position: relative;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.7) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-top-color: #ffffff;
-  border-left-color: #ffffff;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
   border-radius: 22px;
-  box-shadow: 
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 1),
-    inset 0 -1px 2px 0 rgba(148, 163, 184, 0.12),
-    0 10px 30px -4px rgba(15, 23, 42, 0.06),
-    0 2px 8px 0 rgba(15, 23, 42, 0.03);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s ease;
   overflow: hidden;
 }
 
 .liquid-glass-card-light::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 100%);
-  border-radius: 22px 22px 0 0;
-  pointer-events: none;
+  display: none !important;
 }
 
 .liquid-glass-card-light:hover {
-  transform: translateY(-4px) scale(1.01);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 245, 249, 0.85) 100%);
-  border-color: rgba(59, 130, 246, 0.35);
-  border-top-color: #ffffff;
-  box-shadow: 
-    inset 0 2px 3px 0 #ffffff,
-    0 16px 40px -6px rgba(37, 99, 235, 0.12),
-    0 4px 12px 0 rgba(15, 23, 42, 0.05);
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.08);
 }
 
 
@@ -612,13 +591,11 @@ html.lenis, html.lenis body {
   width: calc(100% - 24px) !important;
   max-width: 1380px !important;
   border-radius: 9999px !important;
-  background: rgba(255, 255, 255, 0.75) !important;
-  backdrop-filter: blur(28px) saturate(210%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(210%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.55) !important;
-  box-shadow: 
-    inset 0 1px 2px 0 rgba(255, 255, 255, 0.5),
-    0 8px 30px -4px rgba(15, 23, 42, 0.06) !important;
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08) !important;
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
@@ -630,14 +607,11 @@ html.lenis, html.lenis body {
   width: calc(100% - 24px) !important;
   max-width: 1380px !important;
   border-radius: 9999px !important;
-  background: rgba(255, 255, 255, 0.92) !important;
-  backdrop-filter: blur(32px) saturate(220%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(220%) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
-  border-bottom-color: rgba(226, 232, 240, 0.9) !important;
-  box-shadow: 
-    inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.8),
-    0 16px 40px -6px rgba(15, 23, 42, 0.1) !important;
+  background: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.12) !important;
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
