@@ -141,6 +141,18 @@ export const NAVIGATION_MANIFEST: NavItemDef[] = [
     ordering: 40,
     breadcrumbMetadata: { title: "Notifications", parentRoute: "/dashboard" }
   },
+  {
+    id: "chat",
+    label: "Messages",
+    formalTitle: "Secure Communications & Messages",
+    route: "/chat",
+    iconName: "MessageSquare",
+    section: "Overview",
+    navigationLevel: "PRIMARY",
+    showInSidebar: true,
+    ordering: 50,
+    breadcrumbMetadata: { title: "Messages & Chat", parentRoute: "/dashboard" }
+  },
 
   // Applications Group Items
   {

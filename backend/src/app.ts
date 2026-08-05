@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Server } from "socket.io";
 import helmet from "helmet";
+import compression from "compression";
 import { assertProductionEnv } from "./config/env";
 import { corsOriginDelegate } from "./config/cors";
 
@@ -37,6 +38,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(compression({ level: 6, threshold: 1024 }));
 app.use(helmet());
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());

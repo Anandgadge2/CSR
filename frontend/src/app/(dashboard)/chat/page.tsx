@@ -145,6 +145,191 @@ const initialMessagesStore: Record<string, Message[]> = {
   ]
 };
 
+function getPersonaChatsAndStore(storedUser: any) {
+  const role = String(storedUser?.role || storedUser?.roleSlug || storedUser?.roleNumericId || "").toUpperCase();
+
+  const isRM = role.includes("RM") || role.includes("RELATIONSHIP") || role === "6";
+  const isCompany = role.includes("COMPANY") || role.includes("CORPORATE") || role === "8";
+
+  if (isRM) {
+    const rmChats: ChatRoom[] = [
+      {
+        id: "chat-rm-1",
+        partnerName: "Tata Consultancy Services Ltd",
+        partnerType: "COMPANY",
+        phone: "+91 98200 11223",
+        lastMessage: "Enquiry CSR-MH-2026-000101 documents updated. Ready for feasibility check.",
+        updatedAt: "10:15 AM",
+        unread: true,
+        pinned: true,
+        projectTitle: "Digital Literacy & STEM Education",
+        onlineStatus: "ONLINE",
+        avatarColor: "from-blue-600 to-indigo-600",
+      },
+      {
+        id: "chat-rm-2",
+        partnerName: "Reliance Foundation",
+        partnerType: "COMPANY",
+        phone: "+91 98200 44556",
+        lastMessage: "Submitted proposal for Rural Healthcare & Water Sanitation in Solapur.",
+        updatedAt: "Yesterday",
+        unread: false,
+        pinned: true,
+        projectTitle: "Healthcare & Water Infrastructure",
+        onlineStatus: "ONLINE",
+        avatarColor: "from-purple-600 to-indigo-600",
+      },
+      {
+        id: "chat-rm-3",
+        partnerName: "State CSR Cell (Joint Secretary Desk)",
+        partnerType: "GOVT",
+        phone: "+91 94220 18392",
+        lastMessage: "Feasibility report for TCS proposal approved for district routing.",
+        updatedAt: "09:30 AM",
+        unread: false,
+        pinned: false,
+        projectTitle: "Secretariat Clearance Queue",
+        onlineStatus: "ONLINE",
+        avatarColor: "from-amber-500 to-orange-600",
+      },
+      {
+        id: "chat-rm-4",
+        partnerName: "Sahyadri Eco Foundation",
+        partnerType: "NGO",
+        phone: "+91 98230 41102",
+        lastMessage: "Site inspection report attached for Nashik watershed project.",
+        updatedAt: "Jul 30",
+        unread: false,
+        pinned: false,
+        projectTitle: "Nashik Watershed Rejuvenation",
+        onlineStatus: "OFFLINE",
+        avatarColor: "from-emerald-500 to-teal-600",
+      }
+    ];
+
+    const rmStore: Record<string, Message[]> = {
+      "chat-rm-1": [
+        {
+          id: "m-rm-1",
+          senderName: "Tata Consultancy Services Ltd",
+          senderRole: "COMPANY_ADMIN",
+          text: "Greetings Relationship Manager, we have submitted our CSR proposal for Digital Literacy labs.",
+          time: "09:00 AM",
+          reactions: ["👍"]
+        },
+        {
+          id: "m-rm-2",
+          senderName: "You (Relationship Manager)",
+          senderRole: "RELATIONSHIP_MANAGER",
+          text: "Thank you for the submission. I have initialized the 13-point feasibility assessment for Pune district.",
+          time: "09:30 AM",
+          pinned: true
+        },
+        {
+          id: "m-rm-3",
+          senderName: "Tata Consultancy Services Ltd",
+          senderRole: "COMPANY_ADMIN",
+          text: "Enquiry CSR-MH-2026-000101 documents updated. Ready for feasibility check.",
+          time: "10:15 AM",
+          attachment: { name: "TCS_CSR_Proposal_2026.pdf", size: "2.4 MB" }
+        }
+      ],
+      "chat-rm-2": [
+        {
+          id: "m-rm-4",
+          senderName: "Reliance Foundation",
+          senderRole: "COMPANY_ADMIN",
+          text: "Submitted proposal for Rural Healthcare & Water Sanitation in Solapur.",
+          time: "Yesterday"
+        }
+      ],
+      "chat-rm-3": [
+        {
+          id: "m-rm-5",
+          senderName: "State CSR Cell (Joint Secretary)",
+          senderRole: "JOINT_SECRETARY",
+          text: "Feasibility report for TCS proposal approved for district routing.",
+          time: "09:30 AM"
+        }
+      ],
+      "chat-rm-4": [
+        {
+          id: "m-rm-6",
+          senderName: "Sahyadri Eco Foundation",
+          senderRole: "NGO_ADMIN",
+          text: "Site inspection report attached for Nashik watershed project.",
+          time: "Jul 30"
+        }
+      ]
+    };
+
+    return { chats: rmChats, store: rmStore };
+  }
+
+  if (isCompany) {
+    const companyChats: ChatRoom[] = [
+      {
+        id: "chat-c-1",
+        partnerName: "MahaCSR Relationship Manager (State Desk)",
+        partnerType: "GOVT",
+        phone: "+91 94220 18392",
+        lastMessage: "Your CSR Enquiry CSR-MH-2026-000101 is undergoing 13-point feasibility verification.",
+        updatedAt: "10:30 AM",
+        unread: true,
+        pinned: true,
+        projectTitle: "State CSR Facilitation Desk",
+        onlineStatus: "ONLINE",
+        avatarColor: "from-blue-600 to-indigo-600",
+      },
+      {
+        id: "chat-c-2",
+        partnerName: "Pune District Nodal Officer Desk",
+        partnerType: "GOVT",
+        phone: "+91 98221 04958",
+        lastMessage: "Land availability confirmed in Loni Kalbhor for smart school installation.",
+        updatedAt: "Yesterday",
+        unread: false,
+        pinned: false,
+        projectTitle: "District Land Clearance",
+        onlineStatus: "ONLINE",
+        avatarColor: "from-emerald-500 to-teal-600",
+      }
+    ];
+
+    const companyStore: Record<string, Message[]> = {
+      "chat-c-1": [
+        {
+          id: "mc-1",
+          senderName: "MahaCSR Relationship Manager",
+          senderRole: "RELATIONSHIP_MANAGER",
+          text: "Welcome to MahaCSR Setu! I am your assigned Relationship Manager.",
+          time: "10:00 AM"
+        },
+        {
+          id: "mc-2",
+          senderName: "MahaCSR Relationship Manager",
+          senderRole: "RELATIONSHIP_MANAGER",
+          text: "Your CSR Enquiry CSR-MH-2026-000101 is undergoing 13-point feasibility verification.",
+          time: "10:30 AM"
+        }
+      ],
+      "chat-c-2": [
+        {
+          id: "mc-3",
+          senderName: "Pune District Nodal Officer",
+          senderRole: "GOVERNMENT_OFFICER",
+          text: "Land availability confirmed in Loni Kalbhor for smart school installation.",
+          time: "Yesterday"
+        }
+      ]
+    };
+
+    return { chats: companyChats, store: companyStore };
+  }
+
+  return { chats: initialChats, store: initialMessagesStore };
+}
+
 export default function ChatSystem() {
   const [user, setUser] = useState<any>(null);
   const [chats, setChats] = useState<ChatRoom[]>(initialChats);
@@ -171,7 +356,13 @@ export default function ChatSystem() {
 
   useEffect(() => {
     const stored = getStoredUser();
-    if (stored) setUser(stored);
+    if (stored) {
+      setUser(stored);
+      const { chats: userChats, store: userStore } = getPersonaChatsAndStore(stored);
+      setChats(userChats);
+      setActiveChat(userChats[0]);
+      setMessagesStore(userStore);
+    }
   }, []);
 
   const messages = messagesStore[activeChat.id] || [];

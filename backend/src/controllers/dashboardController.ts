@@ -5,6 +5,7 @@ import { computeUserPermissions } from "../services/permissionService";
 
 export const getDashboardSummary = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
+    res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
     const userId = req.user?.id;
     const userRole = String(req.user?.role || req.user?.roleSlug || "");
     const orgId = req.user?.organizationId;
