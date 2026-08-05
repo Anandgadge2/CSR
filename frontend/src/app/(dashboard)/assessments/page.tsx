@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -979,6 +979,8 @@ function AuditDetailsModal({
 }) {
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"checklist" | "remediation" | "corporate">("checklist");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   const checklist = Array.isArray(assessment.checklist) && assessment.checklist.length > 0 ? assessment.checklist : MASTER_13_CHECKLIST;
   const conditions = Array.isArray(assessment.conditions) ? assessment.conditions : [];
 
@@ -994,6 +996,25 @@ function AuditDetailsModal({
       document.body.style.overflow = originalStyle;
     };
   }, []);
+
+  // Smooth mouse wheel scroll implementation with animated scrollBy
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      el.scrollBy({
+        top: e.deltaY,
+        behavior: "smooth"
+      });
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+    };
+  }, [mounted, activeTab]);
 
   if (!mounted) return null;
 
@@ -1060,11 +1081,9 @@ function AuditDetailsModal({
 
         {/* Modal Content Scroll Area */}
         <div
+          ref={scrollRef}
           tabIndex={0}
-          onWheel={(e) => {
-            e.stopPropagation();
-          }}
-          className="flex-1 min-h-0 h-[calc(85vh-160px)] max-h-[calc(85vh-160px)] overflow-y-scroll overscroll-contain p-6 space-y-5 focus:outline-none"
+          className="flex-1 min-h-0 h-[calc(85vh-160px)] max-h-[calc(85vh-160px)] overflow-y-auto overscroll-contain scroll-smooth p-6 space-y-5 focus:outline-none"
           style={{ scrollbarWidth: "thin" }}
         >
           {activeTab === "checklist" && (

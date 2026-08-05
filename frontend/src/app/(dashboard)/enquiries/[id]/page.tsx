@@ -92,6 +92,7 @@ export default function EnquiryDetailPage() {
   const isAdmin = useAuthStore((state) => state.isAdmin);
 
   const [copied, setCopied] = useState(false);
+  const [phoneCopied, setPhoneCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "communication" | "feasibility" | "js" | "assignments">("overview");
   const [showMeetingModal, setShowMeetingModal] = useState(false);
 
@@ -390,19 +391,45 @@ export default function EnquiryDetailPage() {
                 <div className="space-y-2.5">
 
                   {/* Call Company */}
-                  <button
-                    onClick={handleCallCompany}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-all group"
-                  >
-                    <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <PhoneCall size={16} />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <p className="text-xs font-extrabold text-emerald-900">Call Company</p>
-                      <p className="text-[11px] text-emerald-700 font-mono truncate">{contactPhone || "No phone available"}</p>
-                    </div>
-                    <ArrowRight size={14} className="text-emerald-500 ml-auto shrink-0" />
-                  </button>
+                  <div className="w-full flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-all group">
+                    <button
+                      onClick={handleCallCompany}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer bg-transparent border-0 p-0"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                        <PhoneCall size={16} />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="text-xs font-extrabold text-emerald-900">Call Company</p>
+                        <p className="text-[11px] text-emerald-700 font-mono truncate">{contactPhone || "No phone available"}</p>
+                      </div>
+                    </button>
+                    {contactPhone && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(contactPhone);
+                          setPhoneCopied(true);
+                          setTimeout(() => setPhoneCopied(false), 2000);
+                        }}
+                        title="Copy Phone Number"
+                        className="ml-auto shrink-0 px-2.5 py-1 rounded-lg bg-emerald-100/90 hover:bg-emerald-200 text-emerald-900 transition-colors border border-emerald-300/80 flex items-center gap-1 text-[11px] font-extrabold cursor-pointer"
+                      >
+                        {phoneCopied ? (
+                          <>
+                            <Check size={13} className="text-emerald-800" />
+                            <span className="text-[10px] text-emerald-900">Copied</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={13} className="text-emerald-800" />
+                            <span className="text-[10px] text-emerald-900">Copy</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
 
                   {/* Send Email */}
                   <button

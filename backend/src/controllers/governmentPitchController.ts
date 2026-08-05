@@ -174,8 +174,10 @@ export const getPublicPitches = async (req: AuthenticatedRequest, res: Response,
     const pitches = await prisma.governmentPitch.findMany({
       where,
       select: PUBLIC_PITCH_SELECT,
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      take: 50
     });
+    res.setHeader("Cache-Control", "public, max-age=15, s-maxage=30, stale-while-revalidate=60");
     return res.json(pitches);
   } catch (error) { next(error); }
 };
