@@ -6,7 +6,6 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import {
   ArrowRight,
   BarChart3,
-  Building2,
   CheckCircle2,
   ClipboardCheck,
   FileCheck2,
@@ -15,7 +14,6 @@ import {
   Users,
   Sparkles,
   ExternalLink,
-  ShieldCheck,
 } from "lucide-react";
 import HeroSection from "@/components/HeroSection";
 import { GisMap } from "@/components/LazyComponents";

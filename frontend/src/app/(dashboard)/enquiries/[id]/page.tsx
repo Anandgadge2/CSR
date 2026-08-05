@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import {
-  ArrowLeft, Building2, Calendar, Loader2, Mail, Send,
-  ShieldCheck, MapPin, Coins, FileText, Phone, ClipboardCheck,
-  Clock, MessageSquare, History, Sparkles, FileCheck,
+  ArrowLeft, Building2, Loader2, Mail, Send,
+  MapPin, FileText, ClipboardCheck,
+  MessageSquare, History, FileCheck,
   Copy, Check, PhoneCall, Video, Globe, User, ArrowRight,
-  X, CalendarDays, FileImage, Download, ExternalLink, Briefcase
+  X, CalendarDays, FileImage, ExternalLink, Briefcase
 } from "lucide-react";
 import GovPortalLayout from "@/components/layout/GovPortalLayout";
 import { useApiQuery } from "@/lib/apiHooks";

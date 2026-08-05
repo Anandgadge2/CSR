@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Send, Paperclip, CheckCheck, Landmark, Building2, UserCheck,
-  Search, Pin, Smile, Mic, MicOff, Play, Pause, MoreVertical, Heart, ThumbsUp, AlertCircle,
-  FileText, ShieldCheck, Sparkles, Phone, Plus, X, ArrowUpRight, Download, Check, Trash2
+  Send, Paperclip, CheckCheck, Landmark, Building2,
+  Search, Pin, Smile, Mic, Play, Pause,
+  FileText, ShieldCheck, Sparkles, Phone, Plus, X, Download, Trash2
 } from "lucide-react";
 import { getStoredUser, API_BASE_URL } from "@/lib/api";
 import { GovPageHeader } from "@/components/layout/GovPageHeader";
