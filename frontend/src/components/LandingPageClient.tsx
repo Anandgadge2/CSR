@@ -618,11 +618,11 @@ export default function LandingPageClient() {
       </main>
 
       {/* Custom fast cursor follower */}
-      <div
+      {/* <div
         ref={cursorRef}
         className="pointer-events-none fixed left-0 top-0 z-50 w-2 h-2 rounded-full bg-amber-400/70 mix-blend-difference opacity-0"
         style={{ willChange: "transform" }}
-      />
+      /> */}
     </div>
   );
 }
