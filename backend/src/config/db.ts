@@ -1,10 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const globalForPrisma = global as unknown as { prismaClient: PrismaClient };
 
-// Initialize Prisma Client with event-based error logging to prevent noisy terminal outputs on Neon idle connection drops
-export const prisma =
-  globalForPrisma.prisma ||
+const basePrisma =
+  globalForPrisma.prismaClient ||
   new PrismaClient({
     log: [
       { emit: "event", level: "error" },
@@ -14,11 +13,11 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  globalForPrisma.prismaClient = basePrisma;
 }
 
 // Suppress transient Neon serverless idle connection drop logs (E57P01)
-(prisma as any).$on("error", (e: any) => {
+(basePrisma as any).$on("error", (e: any) => {
   const msg = e?.message || "";
   if (
     msg.includes("E57P01") ||
@@ -32,43 +31,49 @@ if (process.env.NODE_ENV !== "production") {
 });
 
 /**
- * Resilient DB Query Middleware.
+ * Resilient DB Query Extension.
  * Automatically catches Neon Serverless connection drop errors (E57P01, P1001, P1017, P2024),
  * reconnects Prisma Client, and retries the query up to 3 times before failing.
  */
-prisma.$use(async (params, next) => {
-  let retries = 0;
-  const maxRetries = 3;
+export const prisma = basePrisma.$extends({
+  query: {
+    $allModels: {
+      async $allOperations({ args, query }) {
+        let retries = 0;
+        const maxRetries = 3;
 
-  while (true) {
-    try {
-      return await next(params);
-    } catch (error: any) {
-      const msg = error?.message || "";
-      const code = error?.code || "";
+        while (true) {
+          try {
+            return await query(args);
+          } catch (error: any) {
+            const msg = error?.message || "";
+            const code = error?.code || "";
 
-      const isConnError =
-        msg.includes("E57P01") ||
-        msg.includes("terminating connection due to administrator command") ||
-        msg.includes("Closed connection") ||
-        msg.includes("Connection lost") ||
-        code === "P1001" ||
-        code === "P1017" ||
-        code === "P2024";
+            const isConnError =
+              msg.includes("E57P01") ||
+              msg.includes("terminating connection due to administrator command") ||
+              msg.includes("Closed connection") ||
+              msg.includes("Connection lost") ||
+              code === "P1001" ||
+              code === "P1017" ||
+              code === "P2024";
 
-      if (isConnError && retries < maxRetries) {
-        retries++;
-        try {
-          await prisma.$connect();
-        } catch {
-          // Suppress error during reconnect attempt
+            if (isConnError && retries < maxRetries) {
+              retries++;
+              try {
+                await basePrisma.$connect();
+              } catch {
+                // Suppress error during reconnect attempt
+              }
+              await new Promise((resolve) => setTimeout(resolve, 250 * retries));
+              continue;
+            }
+            throw error;
+          }
         }
-        await new Promise((resolve) => setTimeout(resolve, 250 * retries));
-        continue;
-      }
-      throw error;
-    }
-  }
+      },
+    },
+  },
 });
 
 export default prisma;

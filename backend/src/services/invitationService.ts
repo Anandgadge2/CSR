@@ -26,7 +26,7 @@ export interface CreateInvitationInput {
   agencySubLoginId?: string | null;
 }
 
-type InvitationDb = Pick<Prisma.TransactionClient, "userInvitation">;
+type InvitationDb = { userInvitation: any };
 
 export async function createInvitation(input: CreateInvitationInput, db: InvitationDb = prisma) {
   const existing = await db.userInvitation.findFirst({
